@@ -1,0 +1,17 @@
+{
+  "name": "@lonestone/openapi-generator",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "wait-on http://localhost:3000/docs && pnpm generate --watch",
+    "generate": "openapi-ts -f ./openapi-ts.config.ts"
+  },
+  "main": "./index.ts",
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.64.11",
+    "wait-on": "^8.0.3"
+  },
+  "dependencies": {
+    "@hey-api/client-fetch": "^0.8.3"
+  }
+}

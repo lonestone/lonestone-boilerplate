@@ -1,0 +1,37 @@
+{
+  "name": "@lonestone/web-spa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "dev": "react-router dev",
+    "typecheck": "react-router typegen && tsc"
+  },
+  "dependencies": {
+    "@fontsource/source-sans-pro": "^5.2.5",
+    "@lonestone/openapi-generator": "workspace:*",
+    "@lonestone/ui": "workspace:*",
+    "@react-router/node": "^7.3.0",
+    "@react-router/serve": "^7.3.0",
+    "@tanstack/react-query": "^5.67.3",
+    "better-auth": "^1.2.3",
+    "isbot": "^5.1.23",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.54.2",
+    "react-router": "^7.3.0"
+  },
+  "devDependencies": {
+    "@lonestone/eslint-config": "workspace:*",
+    "@react-router/dev": "^7.3.0",
+    "@tailwindcss/vite": "^4.0.14",
+    "@types/node": "^20.17.24",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "react-router-devtools": "^1.1.6",
+    "tailwindcss": "^4.0.14",
+    "typescript": "^5.8.2",
+    "vite": "^5.4.14",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}

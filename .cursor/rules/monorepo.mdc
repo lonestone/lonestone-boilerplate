@@ -1,0 +1,13 @@
+---
+description: global rules for manage monorepo, dependancies, etc
+globs: 
+alwaysApply: false
+---
+# Rules
+- use pnpm
+
+# Tree
+- `apps/api` : API backend (NestJS)
+- `apps/web-spa` : frontend SPA (React/Vite)
+- `apps/web-ssr` : frontend SSR
+- `packages/` : Shared packages
