@@ -1,10 +1,9 @@
 import { Link } from "react-router";
-import { Welcome } from "@/features/welcome/welcome";
-import { useSession } from "@/lib/auth-client";
 import { Button } from "@lonestone/ui/components/primitives/button";
+import { authClient } from '@/lib/auth-client';
 
 export default function Home() {
-  const { data, isPending } = useSession();
+  const { data, isPending } = authClient.useSession()
 
   return (
     <div className="min-h-screen">
@@ -23,8 +22,7 @@ export default function Home() {
                   type="button"
                   onClick={async () => {
                     try {
-                      await fetch("/api/auth/signout", { method: "POST" });
-                      window.location.reload();
+                      await authClient.signOut();
                     } catch (error) {
                       console.error("Error signing out:", error);
                     }
@@ -48,7 +46,7 @@ export default function Home() {
       </header>
       <main>
         <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
-          <Welcome />
+          <h1>Welcome to the app</h1>
         </div>
       </main>
     </div>

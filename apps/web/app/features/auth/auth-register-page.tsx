@@ -1,35 +1,36 @@
 import { useNavigate, Link } from "react-router";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
-import { authClient, useSession } from "../lib/auth-client";
+import { authClient } from '@/lib/auth-client';
 
-type LoginFormData = {
+type RegisterFormData = {
+  name: string;
   email: string;
   password: string;
 };
 
-export default function Login() {
+export default function Register() {
   const navigate = useNavigate();
-  const { data: sessionData } = useSession();
+  const { data: sessionData } = authClient.useSession();
   
   const {
     register,
     handleSubmit,
     formState: { errors },
     setError,
-  } = useForm<LoginFormData>();
+  } = useForm<RegisterFormData>();
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: LoginFormData) => {
-      const response = await authClient.signIn.email({
+  const registerMutation = useMutation({
+    mutationFn: async (data: RegisterFormData) => {
+      const response = await authClient.signUp.email({
+        name: data.name,
         email: data.email,
         password: data.password,
         callbackURL: "/",
-        rememberMe: true
       });
       
       if (response.error) {
-        throw new Error(response.error.message || "Invalid email or password");
+        throw new Error(response.error.message || "Registration failed. Please try again.");
       }
       
       return response.data;
@@ -39,7 +40,7 @@ export default function Login() {
     },
     onError: (error: Error) => {
       setError("root", { 
-        message: error.message || "Invalid email or password" 
+        message: error.message || "Registration failed. Please try again." 
       });
     }
   });
@@ -49,19 +50,19 @@ export default function Login() {
     navigate("/");
   }
 
-  const onSubmit = (data: LoginFormData) => {
-    loginMutation.mutate(data);
+  const onSubmit = (data: RegisterFormData) => {
+    registerMutation.mutate(data);
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold">Sign in to your account</h1>
+          <h1 className="text-3xl font-bold">Create a new account</h1>
           <p className="mt-2 text-sm text-gray-600">
             Or{" "}
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
-              create a new account
+            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+              sign in to your account
             </Link>
           </p>
         </div>
@@ -74,6 +75,25 @@ export default function Login() {
           )}
           
           <div className="space-y-4 rounded-md shadow-sm">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                Full Name
+              </label>
+              <input
+                id="name"
+                {...register("name", { 
+                  required: "Name is required" 
+                })}
+                type="text"
+                autoComplete="name"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                placeholder="Full Name"
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+              )}
+            </div>
+            
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
@@ -111,7 +131,7 @@ export default function Login() {
                   }
                 })}
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="Password"
               />
@@ -124,14 +144,14 @@ export default function Login() {
           <div>
             <button
               type="submit"
-              disabled={loginMutation.isPending}
+              disabled={registerMutation.isPending}
               className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              {loginMutation.isPending ? "Signing in..." : "Sign in"}
+              {registerMutation.isPending ? "Creating account..." : "Create account"}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
-}
+} 
