@@ -7,25 +7,12 @@ import {
   ManyToOne,
   Index,
   Unique,
-  BeforeUpdate,
   EntityManager,
+  BeforeUpdate,
   BeforeCreate,
 } from "@mikro-orm/core";
 import slugify from "slugify";
 import { User } from "../auth/auth.entity";
-
-async function ensureUniqueSlug(post: Post, em: EntityManager) {
-  const baseSlug = post.slug;
-  let uniqueSlug = baseSlug;
-  let counter = 1;
-
-  while (await em.findOne(Post, { slug: uniqueSlug })) {
-    uniqueSlug = `${baseSlug}-${counter}`;
-    counter++;
-  }
-
-  post.slug = uniqueSlug;
-}
 
 
 export type Content = {
@@ -57,28 +44,15 @@ export class Post {
 
   @Unique()
   @Property({ fieldName: "slug", nullable: true })
+  @Index()
   slug?: string;
 
   async computeSlug() {
     if (this.versions.length === 0) return;
 
-    // Trier par date pour trouver la dernière version publiée
-    const latestVersion = this.versions
-      .getItems()
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
-
-    if (!latestVersion) return;
-
-    const baseSlug = slugify(latestVersion.title, { lower: true, strict: true });
+    const baseSlug = slugify(this.versions.getItems()[0].title, { lower: true, strict: true });
     const shortId = this.id.substring(0, 8);
     this.slug = `${baseSlug}-${shortId}`;
-  }
-
-  @BeforeCreate()
-  @BeforeUpdate()
-  async updateSlug(em: EntityManager) {
-    await this.computeSlug();
-    await ensureUniqueSlug(this, em);
   }
 }
 

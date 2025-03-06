@@ -39,4 +39,11 @@ pnpm-debug.log*
 *.sw?
 
 # OS
-.DS_Store 
+.DS_Store
+temp
+
+.react-router
+./temp
+
+./packages/openapi-generator/client
+openapi-ts-error-*

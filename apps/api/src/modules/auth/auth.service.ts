@@ -1,67 +1,36 @@
 import { Injectable } from "@nestjs/common";
-import { ConfigService } from "../config/config.service";
-import { Auth, betterAuth } from "better-auth";
-import { createAuthMiddleware } from "better-auth/api";
-import { Pool } from "pg";
+import { Auth } from "better-auth";
 import { EmailService } from "../email/email.service";
+import { MikroORM } from "@mikro-orm/core";
+import { createAuthConfig } from "../../config/better-auth.config";
 
 @Injectable()
 export class AuthService {
   auth: Auth;
-  constructor(
-    private readonly configService: ConfigService,
-    private emailService: EmailService
-  ) {
-    this.auth = this.createConfig();
+
+  constructor(private emailService: EmailService, private orm: MikroORM) {
+    this.auth = this.getConfig();
   }
 
   get api() {
     return this.auth.api;
   }
 
-  createConfig(): Auth {
-    const dbConfig = this.configService.database;
-
-    return betterAuth({
-      trustedOrigins: ["http://localhost:5173", "http://localhost:3000"],
-      emailAndPassword: {
-        enabled: true,
-        sendOnSignUp: true,
-        sendResetPassword: async (data) => {
-          await this.emailService.sendEmail({
-            to: data.user.email,
-            subject: "Reset your password",
-            content: `Please reset your password by clicking <a href="${data.url}">here</a>`,
-          });
-        },
+  getConfig(): Auth {
+    return createAuthConfig({
+      sendResetPassword: async (data) => {
+        return this.emailService.sendEmail({
+          to: data.user.email,
+          subject: "Reset your password",
+          content: `Hello ${data.user.name}, please reset your password by clicking on the link below: ${data.url}`,
+        });
       },
-      emailVerification: {
-        sendOnSignUp: true,
-        sendVerificationEmail: async (data) => {
-          await this.emailService.sendEmail({
-            to: data.user.email,
-            subject: "Verify your email",
-            content: `Please verify your email by clicking <a href="${data.url}">here</a>`,
-          });
-        },
-        expiresIn: 60 * 60 * 24 * 10, // 10 days
-      },
-      database: new Pool({
-        connectionString: `postgres://${dbConfig.user}:${dbConfig.password}@${dbConfig.host}:${dbConfig.port}/${dbConfig.name}`,
-      }),
-      advanced: {
-        generateId: false,
-      },
-      rateLimit: {
-        window: 50,
-        max: 100,
-      },
-      hooks: {
-        before: createAuthMiddleware(async (ctx) => {
-          if (ctx.path === "/auth/login") {
-            console.log("before");
-          }
-        }),
+      sendVerificationEmail: async (data) => {
+        return this.emailService.sendEmail({
+          to: data.user.email,
+          subject: "Verify your email",
+          content: `Hello ${data.user.name}, please verify your email by clicking on the link below: ${data.url}`,
+        });
       },
     }) as unknown as Auth;
   }

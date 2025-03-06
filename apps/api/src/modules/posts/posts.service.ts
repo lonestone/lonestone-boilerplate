@@ -1,8 +1,8 @@
-import { Injectable } from "@nestjs/common";
-import { EntityManager, FilterQuery } from "@mikro-orm/core";
-import { Post, PostVersion } from "./posts.entity";
-import { User } from "../auth/auth.entity";
-import type { Content } from "./posts.entity";
+import { Injectable } from '@nestjs/common';
+import { EntityManager, FilterQuery } from '@mikro-orm/core';
+import { Post, PostVersion } from './posts.entity';
+import { User } from '../auth/auth.entity';
+import type { Content } from './posts.entity';
 
 @Injectable()
 export class PostService {
@@ -10,7 +10,7 @@ export class PostService {
 
   async createPost(userId: string, title: string, content: Content[]) {
     const user = await this.em.findOne(User, { id: userId });
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error('User not found');
 
     const post = new Post();
     post.user = user;
@@ -24,18 +24,9 @@ export class PostService {
     return post;
   }
 
-  async updatePost(
-    userId: string,
-    postId: string,
-    title: string,
-    content: Content[]
-  ) {
-    const post = await this.em.findOne(
-      Post,
-      { id: postId, user: userId },
-      { populate: ["versions"] }
-    );
-    if (!post) throw new Error("Post not found");
+  async updatePost(userId: string, postId: string, title: string, content: Content[]) {
+    const post = await this.em.findOne(Post, { id: postId, user: userId }, { populate: ['versions'] });
+    if (!post) throw new Error('Post not found');
 
     const version = new PostVersion();
     version.post = post;
@@ -48,7 +39,7 @@ export class PostService {
 
   async publishPost(userId: string, postId: string) {
     const post = await this.em.findOne(Post, { id: postId, user: userId });
-    if (!post) throw new Error("Post not found");
+    if (!post) throw new Error('Post not found');
 
     post.publishedAt = new Date();
     await this.em.flush();
@@ -57,7 +48,7 @@ export class PostService {
 
   async unpublishPost(userId: string, postId: string) {
     const post = await this.em.findOne(Post, { id: postId, user: userId });
-    if (!post) throw new Error("Post not found");
+    if (!post) throw new Error('Post not found');
 
     post.publishedAt = undefined;
     await this.em.flush();
@@ -65,49 +56,36 @@ export class PostService {
   }
 
   async getPost(postId: string, userId: string) {
-    return await this.em.findOne(
-      Post,
-      { id: postId, user: userId },
-      {
-        populate: ["versions", "user"],
-      }
-    );
+    return await this.em.findOne(Post, { id: postId, user: userId }, {
+      populate: ['versions', 'user']
+    });
   }
 
   async getUserPosts(userId: string) {
-    return await this.em.find(
-      Post,
-      { user: userId },
-      {
-        populate: ["versions"],
-        orderBy: { createdAt: "DESC" },
-      }
-    );
+    return await this.em.find(Post, { user: userId }, {
+      populate: ['versions'],
+      orderBy: { createdAt: 'DESC' }
+    });
   }
 
   async getPosts() {
     const filter: FilterQuery<Post> = { publishedAt: { $ne: null } };
     return await this.em.find(Post, filter, {
       populate: ["versions", "user"],
-      orderBy: { publishedAt: "DESC" },
+      orderBy: { publishedAt: 'DESC' }
     });
   }
 
   async getPublicPost(postId: string) {
-    return await this.em.findOne(
-      Post,
-      { id: postId, publishedAt: { $ne: null } },
-      {
-        populate: ["versions"],
-      }
-    );
+    return await this.em.findOne(Post, { id: postId, publishedAt: { $ne: null } }, {
+      populate: ['versions']
+    });
   }
 
   async getPublicPosts() {
-    const filter: FilterQuery<Post> = { publishedAt: { $ne: null } };
-    return await this.em.find(Post, filter, {
+    return await this.em.find(Post, { publishedAt: { $ne: null } }, {
       populate: ["versions", "user"],
-      orderBy: { publishedAt: "DESC" },
+      orderBy: { publishedAt: 'DESC' }
     });
   }
-}
+} 

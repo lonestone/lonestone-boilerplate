@@ -8,13 +8,14 @@
     "build": "nest build",
     "start": "nest start",
     "dev": "nest start --watch",
-    "db:migrate:create": "npx mikro-orm migration:create",
-    "db:migrate:up": "npx mikro-orm migration:up",
-    "db:migrate:down": "npx mikro-orm migration:down",
-    "db:migrate:fresh": "npx mikro-orm migration:fresh",
-    "db:seed": "npx mikro-orm migration:fresh --seed"
+    "db:migrate:create": "npx mikro-orm migration:create --config=src/config/mikro-orm.config.ts",
+    "db:migrate:up": "npx mikro-orm migration:up --config=src/config/mikro-orm.config.ts",
+    "db:migrate:down": "npx mikro-orm migration:down --config=src/config/mikro-orm.config.ts",
+    "db:migrate:fresh": "npx mikro-orm migration:fresh --config=src/config/mikro-orm.config.ts",
+    "db:seed": "npx mikro-orm migration:fresh --seed --config=src/config/mikro-orm.config.ts"
   },
   "dependencies": {
+    "@lonestone/validations": "workspace:*",
     "@faker-js/faker": "^9.0.3",
     "@mikro-orm/core": "6.4.7",
     "@mikro-orm/migrations": "^6.4.7",
@@ -29,8 +30,8 @@
     "@nestjs/schedule": "^4.1.1",
     "@nestjs/swagger": "8.1.1",
     "better-auth": "^1.2.1",
+    "better-auth-mikro-orm": "^0.2.0",
     "dotenv": "^16.4.5",
-    "openai": "^4.43.0",
     "openapi3-ts": "^4.4.0",
     "pg": "^8.13.3",
     "reflect-metadata": "^0.2.0",
@@ -40,13 +41,16 @@
     "zod-openapi": "^4.2.3"
   },
   "devDependencies": {
+    "@lonestone/eslint-config": "workspace:*",
     "@mikro-orm/cli": "6.4.7",
     "@nestjs/cli": "^10.1.16",
     "@nestjs/schematics": "^10.0.0",
     "@types/express": "^4.17.17",
+    "@types/lodash": "^4.17.16",
     "@types/node": "^20.3.1",
     "@types/pg": "^8.11.11",
-    "@lonestone/eslint-config": "workspace:*",
+    "loadash": "^1.0.0",
+    "lodash": "^4.17.21",
     "source-map-support": "^0.5.21",
     "ts-node": "^10.9.2",
     "typescript": "5.4.5"

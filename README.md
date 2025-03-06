@@ -48,7 +48,13 @@ pnpm docker:up
 pnpm --filter=api db:migrate:up
 ```
 
-6. Démarrez les applications :
+6. Seed les données :
+
+```bash
+pnpm --filter=api db:seed
+```
+
+7. Démarrez les applications :
 
 ```bash
 pnpm dev

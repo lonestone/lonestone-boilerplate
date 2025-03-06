@@ -2,7 +2,7 @@ import { type RouteConfig, index, layout, route } from "@react-router/dev/routes
 
 export default [
   index("features/welcome/welcome-page.tsx"),
-  layout("features/dashboard/dashboard-layout.tsx", [
+  route("dashboard", "features/dashboard/dashboard-page.tsx", [
     index("features/posts/posts-list-page.tsx"),
     // route("posts/new", "features/posts/post-create-page.tsx"),
     // route("posts/:id/edit", "features/posts/post-edit-page.tsx")

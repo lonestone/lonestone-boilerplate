@@ -3,8 +3,11 @@ import { PostService } from './posts.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { Session } from '../auth/auth.decorator';
 import type { Content } from './posts.entity';
+import { paginatedSchema, TypedRoute } from '@lonestone/validations/server';
+import { publicPostSchema, publicPostsSchema } from 'src/modules/posts/contracts/posts.contract';
+import { PublicPost, PublicPosts } from './contracts/posts.contract';
 
-@Controller('posts')
+@Controller('admin/posts')
 @UseGuards(AuthGuard)
 export class PostController {
   constructor(private readonly postService: PostService) {}
@@ -55,12 +58,12 @@ export class PostController {
 export class PublicPostController {
   constructor(private readonly postService: PostService) {}
 
-  @Get(':id')
+  @TypedRoute.Get(':id', publicPostSchema)
   async getPost(@Param('id') id: string) {
     return await this.postService.getPublicPost(id);
   }
 
-  @Get()
+  @TypedRoute.Get('', publicPostsSchema)
   async getPosts() {
     return await this.postService.getPublicPosts();
   }

@@ -9,7 +9,6 @@ import {
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 
-// @ts-expect-error react-router types are not typed
 import type { Route } from "../.react-router/types/app/+types/root";
 
 import "@lonestone/ui/globals.css";
@@ -36,7 +35,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body>
+      <body className="dark min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-100">
         {children}
         <ScrollRestoration />
         <Scripts />

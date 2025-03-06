@@ -6,7 +6,6 @@ import {
 } from "@nestjs/core";
 import type {
   MiddlewareConsumer,
-  ModuleMetadata,
   NestModule,
 } from "@nestjs/common";
 import type {
@@ -20,12 +19,15 @@ import { toNodeHandler } from "better-auth/node";
 import { AuthService } from "./auth.service";
 import { BEFORE_HOOK_KEY, AFTER_HOOK_KEY, HOOK_KEY } from "./auth.decorator";
 import { EmailModule } from "../email/email.module";
-import { ConfigModule } from "../config/config.module";
-import { ConfigService } from "../config/config.service";
 
 @Global()
 @Module({
-  imports: [DiscoveryModule, EmailModule, ConfigModule],
+  imports: [
+    DiscoveryModule,
+    EmailModule,
+  ],
+  providers: [AuthService],
+  exports: [AuthService],
 })
 export class AuthModule implements NestModule {
   constructor(
@@ -58,7 +60,7 @@ export class AuthModule implements NestModule {
     }
 
     const handler = toNodeHandler(this.authService.auth);
-    console.log(handler);
+    
     consumer.apply(handler).forRoutes({
       path: "/auth/*",
       method: RequestMethod.ALL,
@@ -95,40 +97,16 @@ export class AuthModule implements NestModule {
     );
   }
 
-  static forRoot(auth: Pick<Auth, "options">) {
-    // Create auth with passthrough hooks that can be overridden in configure
-    auth.options.hooks = {
-      ...auth.options.hooks,
-    };
 
+  static forRootAsync() {
     return {
       module: AuthModule,
-      providers: [
-        {
-          provide: "AUTH_OPTIONS",
-          useValue: auth,
-        },
-        AuthService,
-      ],
-      exports: [
-        {
-          provide: "AUTH_OPTIONS",
-          useValue: auth,
-        },
-        AuthService,
-      ],
-    };
-  }
-
-  static forRootAsync(options: { imports: ModuleMetadata["imports"] }) {
-    return {
-      module: AuthModule,
-      imports: [...(options.imports || [])],
+      imports: [],
       providers: [
         {
           provide: "AUTH_OPTIONS",
           useFactory: async () => {},
-          inject: [ConfigService],
+          inject: [],
         },
         AuthService,
       ],
