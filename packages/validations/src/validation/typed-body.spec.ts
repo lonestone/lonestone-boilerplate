@@ -6,19 +6,26 @@ import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { TypedBody, TypedFormBody } from './typed-body.decorator'
+import { extendApi } from '@anatine/zod-openapi'
 
 // Test schemas
-const CreateUserSchema = z.object({
+const CreateUserSchema = extendApi(z.object({
   name: z.string().min(2),
   email: z.string().email(),
   age: z.number().int().min(18),
+}), {
+  title: 'CreateUserSchema',
+  description: 'Schema for creating a user',
 })
 
 type CreateUserDto = z.infer<typeof CreateUserSchema>
 
-const FileUploadSchema = z.object({
+const FileUploadSchema = extendApi(z.object({
   file: z.string(),
   description: z.string().optional(),
+}), {
+  title: 'FileUploadSchema',
+  description: 'Schema for file upload',
 })
 
 type FileUploadDto = z.infer<typeof FileUploadSchema>
@@ -33,11 +40,14 @@ class TestController {
 
   @Post('nested')
   nestedBody(
-    @TypedBody(z.object({
+    @TypedBody(extendApi(z.object({
       user: CreateUserSchema,
       metadata: z.object({
         tags: z.array(z.string()),
       }),
+    }), {
+      title: 'NestedUserSchema',
+      description: 'Schema for nested user data with metadata',
     })) data: { user: CreateUserDto, metadata: { tags: string[] } },
   ) {
     return data

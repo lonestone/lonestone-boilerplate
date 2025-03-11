@@ -1,70 +1,121 @@
-import { Controller, Get, Post, Put, Body, Param, UseGuards } from '@nestjs/common';
-import { PostService } from './posts.service';
-import { AuthGuard } from '../auth/auth.guard';
-import { Session } from '../auth/auth.decorator';
-import type { Content } from './posts.entity';
-import { paginatedSchema, TypedRoute } from '@lonestone/validations/server';
-import { publicPostSchema, publicPostsSchema } from 'src/modules/posts/contracts/posts.contract';
-import { PublicPost, PublicPosts } from './contracts/posts.contract';
+import {
+  Controller,
+  Param,
+  UseGuards,
+} from "@nestjs/common";
+import { PostService } from "./posts.service";
+import { AuthGuard } from "../auth/auth.guard";
+import { Session } from "../auth/auth.decorator";
+import {
+  FilteringParams,
+  PaginationParams,
+  SortingParams,
+  TypedRoute,
+  TypedParam,
+  TypedBody,
+} from "@lonestone/validations/server";
+import {
+  CreatePostInput,
+  createPostSchema,
+  PostFiltering,
+  postFilteringSchema,
+  PostPagination,
+  postPaginationSchema,
+  PostSorting,
+  postSortingSchema,
+  publicPostSchema,
+  publicPostsSchema,
+  updatePostSchema,
+  UpdatePostInput,
+  userPostSchema,
+  userPostsSchema,
+  UserPost,
+} from "src/modules/posts/contracts/posts.contract";
 
-@Controller('admin/posts')
+@Controller("admin/posts")
 @UseGuards(AuthGuard)
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  @Post()
+  @TypedRoute.Post("", userPostSchema)
   async createPost(
     @Session() session: { user: { id: string } },
-    @Body() body: { title: string; content: Content[] }
-  ) {
+    @TypedBody(createPostSchema) body: CreatePostInput
+  ): Promise<UserPost> {
     return await this.postService.createPost(
       session.user.id,
-      body.title,
-      body.content
+      body
     );
   }
 
-  @Put(':id')
+  @TypedRoute.Put(":id", userPostSchema)
   async updatePost(
     @Session() session: { user: { id: string } },
-    @Param('id') id: string,
-    @Body() body: { title: string; content: Content[] }
+    @TypedParam("id") id: string,
+    @TypedBody(updatePostSchema) body: UpdatePostInput
   ) {
-    return await this.postService.updatePost(session.user.id, id, body.title, body.content);
+    return await this.postService.updatePost(
+      id,
+      session.user.id,
+      body,
+    );
   }
 
-  @Post(':id/publish')
-  async publishPost(@Session() session: { user: { id: string } }, @Param('id') id: string) {
+  @TypedRoute.Post(":id/publish")
+  async publishPost(
+    @Session() session: { user: { id: string } },
+    @Param("id") id: string
+  ) {
     return await this.postService.publishPost(session.user.id, id);
   }
 
-  @Post(':id/unpublish')
-  async unpublishPost(@Session() session: { user: { id: string } }, @Param('id') id: string) {
+  @TypedRoute.Post(":id/unpublish")
+  async unpublishPost(
+    @Session() session: { user: { id: string } },
+    @Param("id") id: string
+  ) {
     return await this.postService.unpublishPost(session.user.id, id);
   }
 
-  @Get('')
-  async getUserPosts(@Session() session: { user: { id: string } }) {
-    return await this.postService.getUserPosts(session.user.id);
+  @TypedRoute.Get("", userPostsSchema)
+  async getUserPosts(
+    @Session() session: { user: { id: string } },
+    @PaginationParams(postPaginationSchema) pagination: PostPagination,
+    @SortingParams(postSortingSchema) sort?: PostSorting,
+    @FilteringParams(postFilteringSchema) filter?: PostFiltering,
+  ) {
+    return await this.postService.getUserPosts(session.user.id, pagination, sort, filter);
   }
 
-  @Get(':id')
-  async getPost(@Session() session: { user: { id: string } }, @Param('id') id: string) {
-    return await this.postService.getPost(id, session.user.id);
+  @TypedRoute.Get(":id", userPostSchema)
+  async getUserPost(
+    @Session() session: { user: { id: string } },
+    @Param("id") id: string
+  ) {
+    return await this.postService.getUserPost(id, session.user.id);
   }
-} 
+}
 
-@Controller('public/posts')
+@Controller("public/posts")
 export class PublicPostController {
   constructor(private readonly postService: PostService) {}
 
-  @TypedRoute.Get(':id', publicPostSchema)
-  async getPost(@Param('id') id: string) {
-    return await this.postService.getPublicPost(id);
+  @TypedRoute.Get("random", publicPostSchema)
+  async getRandomPost() {
+    return await this.postService.getRandomPublicPost();
   }
 
-  @TypedRoute.Get('', publicPostsSchema)
-  async getPosts() {
-    return await this.postService.getPublicPosts();
+  @TypedRoute.Get(":slug", publicPostSchema)
+  async getPost(@TypedParam("slug") slug: string) {
+    return await this.postService.getPublicPost(slug);
   }
-}   
+
+  @TypedRoute.Get("", publicPostsSchema)
+  async getPosts(
+    @PaginationParams(postPaginationSchema) pagination: PostPagination,
+    @SortingParams(postSortingSchema) sort?: PostSorting,
+    @FilteringParams(postFilteringSchema) filter?: PostFiltering
+  ) {
+    return await this.postService.getPublicPosts(pagination, sort, filter);
+  }
+}

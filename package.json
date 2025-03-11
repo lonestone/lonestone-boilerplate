@@ -12,7 +12,8 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "dotenv": "dotenv -e .env -- pnpm",
-    "lint": "eslint --flag unstable_config_lookup_from_file ."
+    "lint": "eslint --flag unstable_config_lookup_from_file .",
+    "generate": "pnpm --filter=@lonestone/openapi-generator run generate"
   },
   "keywords": [],
   "author": "",

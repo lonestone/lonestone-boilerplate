@@ -1,3 +1,4 @@
+import { extendApi } from '@anatine/zod-openapi'
 import { z } from 'zod'
 
 export const SortDirection = z.enum(['asc', 'desc'], {
@@ -25,7 +26,7 @@ export function SortingToString(sorting: Sort[]): string {
  * @returns A zod schema for sorting items
  */
 export function SortingSchema(enabledKeys: string[]) {
-  return z.object({
+  return extendApi(z.object({
     property: z.string().refine(
       value => enabledKeys.includes(value),
       () => ({
@@ -33,8 +34,13 @@ export function SortingSchema(enabledKeys: string[]) {
         code: 'invalid_property',
       }),
     ),
-    direction: SortDirection,
-  })
+      direction: SortDirection,
+    }),
+    {
+      title: "SortingSchema",
+      description: "Schema for sorting items",
+    }
+  );
 }
 
 /**
@@ -44,7 +50,7 @@ export function SortingSchema(enabledKeys: string[]) {
  * @returns A zod schema for sorting items
  */
 export function SortingStringSchema(enabledKeys: string[]) {
-  return z.string()
+  return extendApi(z.string()
   // First validate basic format
     .regex(
       /^[^:]+(?::(asc|desc))?$/,
@@ -57,7 +63,12 @@ export function SortingStringSchema(enabledKeys: string[]) {
         direction: direction as z.infer<typeof SortDirection>,
       }
     })
-    .pipe(SortingSchema(enabledKeys))
+    .pipe(SortingSchema(enabledKeys)),
+    {
+      title: "SortingStringSchema",
+      description: "Schema for sorting items",
+    }
+  );
 }
 
 /**
@@ -67,10 +78,15 @@ export function SortingStringSchema(enabledKeys: string[]) {
  * @returns A zod schema for sorting items
  */
 export function SortingQueryStringSchema(enabledKeys: string[]) {
-  return z.string()
+  return extendApi(z.string()
     .transform(val => val?.split(',').map(s => s.trim()))
     .pipe(z.array(SortingStringSchema(enabledKeys)))
-    .optional()
+    .optional(),
+    {
+      title: "SortingQueryStringSchema",
+      description: "Schema for sorting items",
+    }
+  );
 }
 
 export type SortingItem = ReturnType<typeof SortingStringSchema>

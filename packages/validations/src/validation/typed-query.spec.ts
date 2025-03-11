@@ -1,22 +1,31 @@
 import type { INestApplication } from '@nestjs/common'
 import { Controller, Get, Module } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
+import { extendApi } from '@anatine/zod-openapi'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { TypedQuery, TypedQueryObject } from './typed-query.decorator'
 
 // Test schemas
-const SearchQuerySchema = z.object({
+const SearchQuerySchema = extendApi(z.object({
   q: z.string().min(2),
   page: z.coerce.number().int().positive().optional(),
   tags: z.array(z.string()).optional(),
+}), {
+  title: 'SearchQuerySchema',
+  description: 'Schema for search query parameters',
 })
 
 type SearchQuery = z.infer<typeof SearchQuerySchema>
 
 // Custom query parameter validator
-const CustomQuery = TypedQuery('customParam', z.string().min(3).max(10))
+const CustomQuerySchema = extendApi(z.string().min(3).max(10), {
+  title: 'CustomQuerySchema',
+  description: 'Schema for custom query parameter',
+})
+
+const CustomQuery = TypedQuery('customParam', CustomQuerySchema)
 
 // Test controller
 @Controller('typed-query')

@@ -6,6 +6,7 @@ import { BadRequestException, createParamDecorator } from '@nestjs/common'
 import { ApiBody } from '@nestjs/swagger'
 import { z } from 'zod'
 import { ZodValidationException } from './validation.exception'
+import { registerSchema } from './typed-schema'
 
 function isApplicationJson(contentType?: string): boolean {
   return contentType !== undefined
@@ -55,10 +56,39 @@ export function TypedBody(schema: ZodSchema) {
   // Generate OpenAPI schema
   const openApiSchema = generateSchema(schema) as SchemaObject
 
+  // Format Name
+  const schemaName = openApiSchema.title || `Body_${Date.now()}`
+
+  // Register all nested schemas recursively
+  function registerNestedSchemas(schema: SchemaObject) {
+    if (schema.title) {
+      registerSchema(schema.title, schema, 'Body');
+    }
+    
+    // Handle nested objects
+    if (schema.properties) {
+      Object.values(schema.properties).forEach((prop) => {
+        if (typeof prop === 'object' && !('$ref' in prop)) {
+          registerNestedSchemas(prop as SchemaObject);
+        }
+      });
+    }
+    
+    // Handle arrays
+    if (schema.items && typeof schema.items === 'object' && !('$ref' in schema.items)) {
+      registerNestedSchemas(schema.items as SchemaObject);
+    }
+  }
+
+  registerNestedSchemas(openApiSchema);
+
+  // Register the main schema and get the reference
+  const refSchema = registerSchema(schemaName, openApiSchema, 'Body');
+
   // Create our base ApiBody decorator first
   const baseDecorator = ApiBody({
     required: true,
-    schema: openApiSchema,
+    schema: refSchema,
     description: openApiSchema.description,
   })
 
@@ -128,10 +158,39 @@ export function TypedFormBody(schema: ZodSchema) {
   // Generate OpenAPI schema
   const openApiSchema = generateSchema(schema) as SchemaObject
 
+  // Format Name
+  const schemaName = openApiSchema.title || `FormBody_${Date.now()}`
+
+  // Register all nested schemas recursively
+  function registerNestedSchemas(schema: SchemaObject) {
+    if (schema.title) {
+      registerSchema(schema.title, schema, 'Body');
+    }
+    
+    // Handle nested objects
+    if (schema.properties) {
+      Object.values(schema.properties).forEach((prop) => {
+        if (typeof prop === 'object' && !('$ref' in prop)) {
+          registerNestedSchemas(prop as SchemaObject);
+        }
+      });
+    }
+    
+    // Handle arrays
+    if (schema.items && typeof schema.items === 'object' && !('$ref' in schema.items)) {
+      registerNestedSchemas(schema.items as SchemaObject);
+    }
+  }
+
+  registerNestedSchemas(openApiSchema);
+
+  // Register the main schema and get the reference
+  const refSchema = registerSchema(schemaName, openApiSchema, 'Body');
+
   // Create our base ApiBody decorator first
   const baseDecorator = ApiBody({
     required: true,
-    schema: openApiSchema,
+    schema: refSchema,
     description: openApiSchema.description,
     type: 'object',
   })
@@ -141,6 +200,7 @@ export function TypedFormBody(schema: ZodSchema) {
     const request = ctx.switchToHttp().getRequest()
     const contentType = request.headers['content-type']
 
+
     if (!isFormUrlEncoded(contentType)) {
       throw new BadRequestException('Content-Type must be application/x-www-form-urlencoded')
     }
@@ -148,7 +208,6 @@ export function TypedFormBody(schema: ZodSchema) {
     // Convert URLSearchParams to object
     const formData = new URLSearchParams(request.body)
     const data = Object.fromEntries(formData)
-
     try {
       return schema.parse(data)
     }

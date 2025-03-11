@@ -1,14 +1,16 @@
-import { Injectable } from '@nestjs/common';
-import { EntityManager, FilterQuery } from '@mikro-orm/core';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { EntityManager, FilterQuery, sql } from '@mikro-orm/core';
 import { Post, PostVersion } from './posts.entity';
 import { User } from '../auth/auth.entity';
-import type { Content } from './posts.entity';
+import { CreatePostInput, PostFiltering, PublicPosts, UpdatePostInput, UserPost, UserPosts } from 'src/modules/posts/contracts/posts.contract';
+import { PostSorting, PostPagination } from 'src/modules/posts/contracts/posts.contract';
+import { PublicPost } from './contracts/posts.contract';
 
 @Injectable()
 export class PostService {
   constructor(private readonly em: EntityManager) {}
 
-  async createPost(userId: string, title: string, content: Content[]) {
+  async createPost(userId: string, data: CreatePostInput): Promise<UserPost> {
     const user = await this.em.findOne(User, { id: userId });
     if (!user) throw new Error('User not found');
 
@@ -17,31 +19,84 @@ export class PostService {
 
     const version = new PostVersion();
     version.post = post;
-    version.title = title;
-    version.content = content;
+    version.title = data.title;
+    version.content = data.content;
 
     await this.em.persistAndFlush([post, version]);
-    return post;
+    return {
+      id: post.id,
+      title: version.title,
+      content: version.content,
+      type: "draft",
+      publishedAt: post.publishedAt,
+      versions: [
+        {
+          id: version.id,
+          title: version.title,
+          createdAt: version.createdAt,
+        },
+      ],
+    } satisfies UserPost;
   }
 
-  async updatePost(userId: string, postId: string, title: string, content: Content[]) {
+  async updatePost(postId: string, userId: string, data: UpdatePostInput): Promise<UserPost> {
     const post = await this.em.findOne(Post, { id: postId, user: userId }, { populate: ['versions'] });
     if (!post) throw new Error('Post not found');
 
-    const version = new PostVersion();
-    version.post = post;
-    version.title = title;
-    version.content = content;
+    const latestVersion = await this.em.findOne(PostVersion, { post: post.id }, {
+      orderBy: { createdAt: 'DESC' }
+    });
+    if (!latestVersion) throw new Error('No version found');
 
-    await this.em.persistAndFlush(version);
-    return post;
+    // On crée une nouvelle version seulement si le post est publié et que la dernière version
+    // a été créée avant la publication
+    const shouldCreateNewVersion = post.publishedAt && post.publishedAt < latestVersion.createdAt;
+
+    if (shouldCreateNewVersion) {
+      const version = new PostVersion();
+      version.post = post;
+      version.title = data.title ?? latestVersion.title;
+      version.content = data.content ?? latestVersion.content;
+      await this.em.persistAndFlush(version);
+    } else {
+      // Sinon on met à jour la dernière version
+      if (data.title) latestVersion.title = data.title;
+      if (data.content) latestVersion.content = data.content;
+      await this.em.flush();
+    }
+
+    return {
+      id: post.id,
+      title: latestVersion.title,
+      content: latestVersion.content ?? [],
+      type: post.publishedAt && post.publishedAt < latestVersion.createdAt ? "published" : "draft",
+      publishedAt: post.publishedAt,
+      versions: [
+        {
+          id: latestVersion.id,
+          title: latestVersion.title,
+          createdAt: latestVersion.createdAt,
+        },
+      ],
+    } satisfies UserPost;
   }
 
   async publishPost(userId: string, postId: string) {
     const post = await this.em.findOne(Post, { id: postId, user: userId });
     if (!post) throw new Error('Post not found');
 
-    post.publishedAt = new Date();
+    const latestVersion = await this.em.findOne(PostVersion, { post: post.id }, {
+      orderBy: { createdAt: 'DESC' }
+    });
+    if (!latestVersion) throw new Error('No version found');
+
+    const now = new Date();
+    // On vérifie que la dernière version est antérieure à la date de publication
+    if (latestVersion.createdAt > now) {
+      throw new Error('Cannot publish: latest version is newer than publication date');
+    }
+
+    post.publishedAt = now;
     await this.em.flush();
     return post;
   }
@@ -55,37 +110,234 @@ export class PostService {
     return post;
   }
 
-  async getPost(postId: string, userId: string) {
-    return await this.em.findOne(Post, { id: postId, user: userId }, {
+  async getUserPost(postId: string, userId: string): Promise<UserPost> {
+    const post = await this.em.findOne(Post, { id: postId, user: userId }, {
       populate: ['versions', 'user']
     });
+    if (!post) throw new Error('Post not found');
+
+    return {
+      id: post.id,
+      title: post.versions.getItems()[post.versions.getItems().length - 1].title,
+      content: post.versions.getItems()[post.versions.getItems().length - 1].content ?? [],
+      type: post.publishedAt && post.publishedAt < post.versions.getItems()[post.versions.getItems().length - 1].createdAt ? "published" : "draft",
+      publishedAt: post.publishedAt,
+      versions: post.versions.getItems().map(version => ({
+        id: version.id,
+        title: version.title,
+        createdAt: version.createdAt,
+      })),
+    } satisfies UserPost;
   }
 
-  async getUserPosts(userId: string) {
-    return await this.em.find(Post, { user: userId }, {
+  async getUserPosts(userId: string, pagination: PostPagination, sort?: PostSorting, filter?: PostFiltering): Promise<UserPosts> {
+    const where: FilterQuery<Post> = { user: userId };
+    const orderBy: Record<string, 'ASC' | 'DESC'> = { createdAt: 'DESC' };
+
+    if (filter?.length) {
+      filter.forEach((item) => {
+        if (item.property === 'title') {
+          where['versions'] = { title: { $like: `%${item.value}%` } };
+        }
+      });
+    }
+
+    if (sort?.length) {
+      sort.forEach((sortItem) => {
+        if (sortItem.property !== 'title') {
+          orderBy[sortItem.property] = sortItem.direction.toUpperCase() as 'ASC' | 'DESC';
+        }
+      });
+    }
+
+    const [posts, total] = await this.em.findAndCount(Post, where, {
       populate: ['versions'],
+      orderBy,
+      limit: pagination.pageSize,
+      offset: pagination.offset,
+      fields: [
+        'id', 'slug', 'publishedAt',
+        'versions.id', 'versions.title', 'versions.createdAt'
+      ]
+    });
+
+    const data = await Promise.all(posts.map(async post => {
+      const latestVersionId = post.versions.getItems()[post.versions.getItems().length - 1].id;
+      if (!latestVersionId) throw new Error(`No version found for post ${post.id}`);
+
+      // Trouver le premier contenu de type text pour l'aperçu
+      const latestVersion = await this.em.findOne(PostVersion, { id: latestVersionId, }, {
+        orderBy: { createdAt: 'ASC' },
+      });
+      
+      if (!latestVersion) throw new Error(`No version found for post ${post.id}`);
+
+      const contentPreview = latestVersion.content?.find(c => c.type === 'text') ?? {
+        type: 'text' as const,
+        data: ''
+      };
+
+
+      return {
+        publishedAt: post.publishedAt,
+        title: latestVersion.title,
+        slug: post.slug,
+        id: post.id,
+        versions: post.versions.getItems().map(version => ({
+          id: version.id,
+          title: version.title,
+          createdAt: version.createdAt,
+        })),
+        type: post.publishedAt && post.publishedAt < latestVersion.createdAt ? "published" : "draft",
+        contentPreview
+      } satisfies UserPosts['data'][number];
+    }));
+
+    return {
+      data,
+      meta: {
+        offset: pagination.offset,
+        pageSize: pagination.pageSize,
+        itemCount: total,
+        hasMore: pagination.offset + pagination.pageSize < total,
+      },
+    };
+  }
+
+  async getPublicPost(slug: string): Promise<PublicPost> {
+    // Récupérer le post publié avec son auteur
+    const post = await this.em.findOne(Post, 
+      { slug, publishedAt: { $ne: null } },
+      {
+        populate: ['user'],
+      }
+    );
+
+    if (!post) throw new Error('Post not found');
+
+    // Récupérer la dernière version antérieure à la date de publication
+    const latestVersion = await this.em.findOne(PostVersion, 
+      { 
+        post: post.id,
+        createdAt: { $lte: post.publishedAt! }
+      }, 
+      {
+        orderBy: { createdAt: 'DESC' }
+      }
+    );
+
+    if (!latestVersion) throw new Error('No valid version found');
+
+    // Retourner le format public
+    return {
+      publishedAt: post.publishedAt!,
+      title: latestVersion.title,
+      content: latestVersion.content || [],
+      author: {
+        name: post.user.name,
+      },
+      slug: post.slug,
+    };
+  }
+
+  async getRandomPublicPost(): Promise<PublicPost> {
+    const postsCount = await this.em.count(Post, { publishedAt: { $ne: null } });
+    const randomIndex = Math.floor(Math.random() * postsCount);
+    const postSlug = await this.em.find(Post, { publishedAt: { $ne: null } }, {
+      populate: ['user'],
+      orderBy: { createdAt: 'DESC' },
+      offset: randomIndex,
+      limit: 1
+    });
+
+    if (!postSlug[0].slug) throw new NotFoundException('No post found');
+    return this.getPublicPost(postSlug[0].slug);
+  }
+
+  async getPublicPosts(
+    pagination: PostPagination,
+    sort?: PostSorting,
+    filter?: PostFiltering
+  ): Promise<PublicPosts> {
+    // Construire la requête de base pour les posts publiés
+    const where: FilterQuery<Post> = { publishedAt: { $ne: null } };
+    const orderBy: Record<string, 'ASC' | 'DESC'> = { publishedAt: 'DESC' };
+
+    // Appliquer les filtres si présents
+    if (filter?.length) {
+      filter.forEach((item) => {
+        if (item.property === 'title') {
+          // Pour le filtre sur le titre, on doit passer par les versions
+          where['versions'] = { title: { $like: `%${item.value}%` } };
+        }
+      });
+    }
+
+    // Appliquer le tri
+    if (sort?.length) {
+      sort.forEach((sortItem) => {
+        if (sortItem.property !== 'title') {
+          orderBy[sortItem.property] = sortItem.direction.toUpperCase() as 'ASC' | 'DESC';
+        }
+      });
+    }
+
+    // Récupérer les posts avec pagination
+    const [posts, total] = await this.em.findAndCount(Post, where, {
+      populate: ['user'],
+      orderBy,
+      limit: pagination.pageSize,
+      offset: pagination.offset,
+    });
+
+    // Récupérer les dernières versions valides pour tous les posts en une seule requête
+    const postIds = posts.map(p => p.id);
+    
+    // D'abord, récupérer toutes les versions pour ces posts
+    const allVersions = await this.em.find(PostVersion, { post: { $in: postIds } }, {
       orderBy: { createdAt: 'DESC' }
     });
-  }
 
-  async getPosts() {
-    const filter: FilterQuery<Post> = { publishedAt: { $ne: null } };
-    return await this.em.find(Post, filter, {
-      populate: ["versions", "user"],
-      orderBy: { publishedAt: 'DESC' }
-    });
-  }
+    // Ensuite, filtrer pour ne garder que les versions valides
+    const versionMap = new Map<string, PostVersion>();
+    for (const version of allVersions) {
+      const post = posts.find(p => p.id === version.post.id);
+      if (!post?.publishedAt) continue;
+      
+      if (version.createdAt <= post.publishedAt && !versionMap.has(version.post.id)) {
+        versionMap.set(version.post.id, version);
+      }
+    }
 
-  async getPublicPost(postId: string) {
-    return await this.em.findOne(Post, { id: postId, publishedAt: { $ne: null } }, {
-      populate: ['versions']
-    });
-  }
+    // Transformer en format public
+    const data = posts.map(post => {
+      const validVersion = versionMap.get(post.id);
+      if (!validVersion) throw new Error(`No valid version found for post ${post.id}`);
 
-  async getPublicPosts() {
-    return await this.em.find(Post, { publishedAt: { $ne: null } }, {
-      populate: ["versions", "user"],
-      orderBy: { publishedAt: 'DESC' }
+      const contentPreview = validVersion.content?.find(c => c.type === 'text') ?? {
+        type: 'text' as const,
+        data: ''
+      };
+
+      return {
+        publishedAt: post.publishedAt!,
+        title: validVersion.title,
+        contentPreview,
+        author: {
+          name: post.user.name,
+        },
+        slug: post.slug,
+      };
     });
+
+    return {
+      data,
+      meta: {
+        offset: pagination.offset,
+        pageSize: pagination.pageSize,
+        itemCount: total,
+        hasMore: pagination.offset + pagination.pageSize < total,
+      },
+    };
   }
 } 

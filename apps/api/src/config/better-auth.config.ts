@@ -46,7 +46,6 @@ export const createAuthConfig = (options?: BetterAuthOptionsDynamic) => {
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
         if (ctx.path === "/auth/login") {
-          console.log("before");
         }
       }),
     },

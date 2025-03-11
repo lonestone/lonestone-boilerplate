@@ -1,0 +1,67 @@
+import { publicPostControllerGetPost } from "@lonestone/openapi-generator";
+
+import { ArrowLeft, Calendar, User } from "lucide-react";
+import { Route } from "./+types/post-detail-page";
+import PostContent from "@lonestone/ui/components/posts/PostContent";
+import { Button } from "@lonestone/ui/components/primitives/button";
+import { Link } from "react-router";
+
+export const loader = async ({ params }: { params: { slug: string } }) => {
+  const post = await publicPostControllerGetPost({
+    path: {
+      slug: params.slug,
+    },
+  });
+
+  return {
+    post: post.data,
+  };
+};
+
+export default function PostPage({ loaderData }: Route.ComponentProps) {
+  return (
+    <div className="container mx-auto py-8 px-4 space-y-6">
+      <Button variant="outline" asChild>
+        <Link to="/posts">
+          <ArrowLeft className="h-4 w-4" />
+          Back to posts
+        </Link>
+      </Button>
+      <h1 className="text-4xl font-bold">{loaderData.post?.title}</h1>
+      <div className="flex items-center gap-6 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <User className="h-4 w-4" />
+          <span>{loaderData.post?.author.name}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4" />
+          <span>
+            {loaderData.post?.publishedAt
+              ? new Date(loaderData.post.publishedAt).toLocaleDateString()
+              : "Date inconnue"}
+          </span>
+        </div>
+      </div>
+
+      {loaderData.post?.content && (
+        <PostContent content={loaderData.post?.content} />
+      )}
+    </div>
+  );
+}
+
+export const meta = ({ data }: Route.MetaArgs) => {
+  return [
+    {
+      title: data.post?.title,
+    },
+    {
+      property: "og:title",
+      content: data.post?.title,
+    },
+    {
+      name: "description",
+      content: data.post?.title,
+    },
+  ];
+};

@@ -1,20 +1,27 @@
 import type { INestApplication } from '@nestjs/common'
 import { Controller, Module } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
+import { extendApi } from '@anatine/zod-openapi'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { TypedRoute } from './typed-route.decorator'
 
 // Test schemas
-const UserSchema = z.object({
+const UserSchema = extendApi(z.object({
   id: z.string().uuid(),
   name: z.string(),
   email: z.string().email(),
   password: z.string(),
+}), {
+  title: 'UserSchema',
+  description: 'Complete user schema with sensitive data',
 })
 
-const PublicUserSchema = UserSchema.omit({ password: true })
+const PublicUserSchema = extendApi(UserSchema.omit({ password: true }), {
+  title: 'PublicUserSchema',
+  description: 'Public user schema without sensitive data',
+})
 
 type User = z.infer<typeof UserSchema>
 
@@ -45,7 +52,10 @@ class TestController {
     return validUser
   }
 
-  @TypedRoute.Get('array', z.array(PublicUserSchema))
+  @TypedRoute.Get('array', extendApi(z.array(PublicUserSchema), {
+    title: 'PublicUserArraySchema',
+    description: 'Array of public users',
+  }))
   getArray() {
     return [validUser, validUser]
   }

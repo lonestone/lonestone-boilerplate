@@ -38,14 +38,17 @@ export function FiltersToString(filters: Filtering[]): string {
  * @param availableFilteringKeys - The list of allowed properties
  * @returns A zod schema for filtering items
  */
-export function FilteringSchema(availableFilteringKeys: string[]) {
-  return z.object({
+export function FilteringSchema<T extends readonly string[]>(availableFilteringKeys: T) {
+  return extendApi(z.object({
     property: z.string().refine(value => availableFilteringKeys.includes(value), () => ({
       message: `Invalid filtering property. Allowed properties are: ${availableFilteringKeys.join(', ')}`,
       code: 'invalid_property',
     })),
     rule: z.nativeEnum(FilterRule),
     value: z.string().optional(),
+  }), {
+    title: 'FilteringSchema',
+    description: 'Schema for a single filtering item',
   })
 }
 
@@ -55,7 +58,7 @@ export function FilteringSchema(availableFilteringKeys: string[]) {
  * @param availableFilteringKeys - The list of allowed properties
  * @returns A zod schema for filtering items
  */
-export function FilteringStringItemSchema(availableFilteringKeys: string[]) {
+export function FilteringStringItemSchema<T extends readonly string[]>(availableFilteringKeys: T) {
   return z.string()
     .superRefine((value, ctx) => {
       const [, rule] = value.split(':')
@@ -117,7 +120,7 @@ export function FilteringStringItemSchema(availableFilteringKeys: string[]) {
  * @param availableFilteringKeys - The list of allowed properties
  * @returns A zod schema for filtering items
  */
-export function FilterQueryStringSchema(availableFilteringKeys: string[]) {
+export function FilterQueryStringSchema<T extends readonly string[]>(availableFilteringKeys: T) {
   const itemSchema = FilteringStringItemSchema(availableFilteringKeys)
 
   return extendApi(z.string()
@@ -125,6 +128,7 @@ export function FilterQueryStringSchema(availableFilteringKeys: string[]) {
     .transform(val => val?.split(';').filter(Boolean).map(s => s.trim()))
     .pipe(z.array(itemSchema))
     .optional(), {
+    title: 'FilterQueryStringSchema',
     description: `Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
     <br> Available rules: ${Object.values(FilterRule).join(', ')} 
     <br> Available properties: ${availableFilteringKeys.join(', ')}`,

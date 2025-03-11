@@ -1,11 +1,12 @@
 import type { ExecutionContext } from '@nestjs/common'
-import type { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface'
+import type { SchemaObject, ReferenceObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface'
 import type { ZodSchema } from 'zod'
 import { generateSchema } from '@anatine/zod-openapi'
 import { BadRequestException, createParamDecorator } from '@nestjs/common'
 import { ApiQuery } from '@nestjs/swagger'
 import { z } from 'zod'
 import { ZodValidationException } from './validation.exception'
+import { registerSchema } from './typed-schema'
 
 type QueryValue = string | string[] | undefined
 
@@ -76,12 +77,41 @@ export function TypedQuery(
   const querySchema = createQuerySchema(schema, options)
   const openApiSchema = generateSchema(querySchema) as SchemaObject
 
+  // Format Name
+  const schemaName = openApiSchema.title || `Query_${key}_${Date.now()}`
+
+  // Register all nested schemas recursively
+  function registerNestedSchemas(schema: SchemaObject) {
+    if (schema.title) {
+      registerSchema(schema.title, schema, 'Query');
+    }
+    
+    // Handle nested objects
+    if (schema.properties) {
+      Object.values(schema.properties).forEach((prop) => {
+        if (typeof prop === 'object' && !('$ref' in prop)) {
+          registerNestedSchemas(prop as SchemaObject);
+        }
+      });
+    }
+    
+    // Handle arrays
+    if (schema.items && typeof schema.items === 'object' && !('$ref' in schema.items)) {
+      registerNestedSchemas(schema.items as SchemaObject);
+    }
+  }
+
+  registerNestedSchemas(openApiSchema);
+
+  // Register the main schema and get the reference
+  const refSchema = registerSchema(schemaName, openApiSchema, 'Query');
+
   // Create our base ApiQuery decorator first
   const baseDecorator = ApiQuery({
     name: key,
     required: !options.optional,
     isArray: options.array,
-    schema: openApiSchema,
+    schema: refSchema as any,
     description: openApiSchema.description,
     example: openApiSchema.example,
   })
@@ -142,14 +172,46 @@ export function TypedQueryObject(schema: ZodSchema) {
   const properties = openApiSchema.properties || {}
   const required = openApiSchema.required || []
 
+  // Format Name
+  const schemaName = openApiSchema.title || `QueryObject_${Date.now()}`
+
+  // Register all nested schemas recursively
+  function registerNestedSchemas(schema: SchemaObject) {
+    if (schema.title) {
+      registerSchema(schema.title, schema, 'Query');
+    }
+    
+    // Handle nested objects
+    if (schema.properties) {
+      Object.values(schema.properties).forEach((prop) => {
+        if (typeof prop === 'object' && !('$ref' in prop)) {
+          registerNestedSchemas(prop as SchemaObject);
+        }
+      });
+    }
+    
+    // Handle arrays
+    if (schema.items && typeof schema.items === 'object' && !('$ref' in schema.items)) {
+      registerNestedSchemas(schema.items as SchemaObject);
+    }
+  }
+
+  registerNestedSchemas(openApiSchema);
+
+  // Register the main schema and get the reference
+  const refSchema = registerSchema(schemaName, openApiSchema, 'Query');
+
   // Create base ApiQuery decorators first for each property
-  const baseDecorators = Object.entries(properties).map(([name, prop]) =>
-    ApiQuery({
+  const baseDecorators = Object.entries(properties).map(([name, prop]) => {
+    // For each property, check if it's a reference or a schema
+    const propSchema = ('$ref' in prop) ? prop : registerSchema(`${schemaName}_${name}`, prop as SchemaObject, 'Query');
+    
+    return ApiQuery({
       name,
       required: required.includes(name),
-      schema: prop as SchemaObject,
-    }),
-  )
+      schema: propSchema as any,
+    });
+  });
 
   // Create parameter decorator for validation
   const paramDecorator = createParamDecorator((_: unknown, ctx: ExecutionContext) => {

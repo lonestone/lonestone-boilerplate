@@ -7,9 +7,6 @@ import {
   ManyToOne,
   Index,
   Unique,
-  EntityManager,
-  BeforeUpdate,
-  BeforeCreate,
 } from "@mikro-orm/core";
 import slugify from "slugify";
 import { User } from "../auth/auth.entity";
@@ -53,6 +50,14 @@ export class Post {
     const baseSlug = slugify(this.versions.getItems()[0].title, { lower: true, strict: true });
     const shortId = this.id.substring(0, 8);
     this.slug = `${baseSlug}-${shortId}`;
+  }
+
+  async currentVersion() {
+    if (this.publishedAt) {
+      return this.versions.getItems()[this.versions.getItems().length - 1];
+    }
+
+    return null;
   }
 }
 

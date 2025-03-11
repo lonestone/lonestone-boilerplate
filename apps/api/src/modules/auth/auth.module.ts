@@ -1,4 +1,4 @@
-import { Global, Inject, Module, RequestMethod } from "@nestjs/common";
+import { Global, Inject, Module, RequestMethod, OnModuleInit } from "@nestjs/common";
 import {
   DiscoveryModule,
   DiscoveryService,
@@ -9,7 +9,6 @@ import type {
   NestModule,
 } from "@nestjs/common";
 import type {
-  Auth,
   MiddlewareOptions,
   MiddlewareContext,
   AuthContext,
@@ -19,6 +18,7 @@ import { toNodeHandler } from "better-auth/node";
 import { AuthService } from "./auth.service";
 import { BEFORE_HOOK_KEY, AFTER_HOOK_KEY, HOOK_KEY } from "./auth.decorator";
 import { EmailModule } from "../email/email.module";
+import { AuthGuard } from "./auth.guard";
 
 @Global()
 @Module({
@@ -26,20 +26,34 @@ import { EmailModule } from "../email/email.module";
     DiscoveryModule,
     EmailModule,
   ],
-  providers: [AuthService],
-  exports: [AuthService],
+  providers: [
+    AuthService,
+    AuthGuard,
+  ],
+  exports: [
+    AuthService,
+    AuthGuard,
+  ],
 })
-export class AuthModule implements NestModule {
+export class AuthModule implements NestModule, OnModuleInit {
   constructor(
     private readonly authService: AuthService,
     @Inject(DiscoveryService)
     private discoveryService: DiscoveryService,
     @Inject(MetadataScanner)
-    private metadataScanner: MetadataScanner
+    private metadataScanner: MetadataScanner,
   ) {}
 
-  configure(consumer: MiddlewareConsumer) {
-    if (!this.authService.auth.options.hooks) return;
+  async onModuleInit() {
+    // Ensure auth service is initialized
+    await this.authService.onModuleInit();
+  }
+
+  async configure(consumer: MiddlewareConsumer) {
+    // Wait for auth to be initialized
+    await this.onModuleInit();
+
+    const auth = this.authService.auth;
 
     const providers = this.discoveryService
       .getProviders()
@@ -59,7 +73,7 @@ export class AuthModule implements NestModule {
       }
     }
 
-    const handler = toNodeHandler(this.authService.auth);
+    const handler = toNodeHandler(auth);
     
     consumer.apply(handler).forRoutes({
       path: "/auth/*",
@@ -80,11 +94,12 @@ export class AuthModule implements NestModule {
       >
     ) => Promise<void>
   ) {
+    const auth = this.authService.auth;
     const hookPath = Reflect.getMetadata(metadataKey, providerMethod);
-    if (!hookPath || !this.authService.auth.options.hooks) return;
+    if (!hookPath || !auth?.options.hooks) return;
 
-    const originalHook = this.authService.auth.options.hooks[hookType];
-    this.authService.auth.options.hooks[hookType] = createAuthMiddleware(
+    const originalHook = auth.options.hooks[hookType];
+    auth.options.hooks[hookType] = createAuthMiddleware(
       async (ctx) => {
         if (originalHook) {
           await originalHook(ctx);
@@ -97,18 +112,16 @@ export class AuthModule implements NestModule {
     );
   }
 
-
   static forRootAsync() {
     return {
       module: AuthModule,
       imports: [],
       providers: [
+        AuthService,
         {
           provide: "AUTH_OPTIONS",
-          useFactory: async () => {},
-          inject: [],
-        },
-        AuthService,
+          useClass: AuthService,
+        }
       ],
       exports: [AuthService, "AUTH_OPTIONS"],
     };

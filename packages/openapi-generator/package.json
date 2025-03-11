@@ -5,13 +5,7 @@
   "scripts": {
     "generate": "openapi-ts -f ./openapi-ts.config.ts"
   },
-  "exports": {
-    "./client": "./client/client.gen.ts",
-    "./types": "./client/types.gen.ts",
-    "./zod": "./client/zod.gen.ts",
-    "./transformers": "./client/transformers.gen.ts",
-    "./schemas": "./client/schemas.gen.ts"
-  },
+  "main": "./index.ts",
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.64.10"
   }
