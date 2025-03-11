@@ -38,7 +38,7 @@ export function registerSchema(
           acc[key] = value;
         }
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, SchemaObject | ReferenceObject>);
     }
 
     if (obj.items && typeof obj.items === 'object' && !('$ref' in obj.items)) {

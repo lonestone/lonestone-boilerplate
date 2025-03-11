@@ -3,7 +3,7 @@ import { PostContentSchema } from "@lonestone/openapi-generator";
 export default function PostContent({
   content,
 }: {
-  content: PostContentSchema;
+  content: Array<PostContentSchema>;
 }) {
   return (
     <div>

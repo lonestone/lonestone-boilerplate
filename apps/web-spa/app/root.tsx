@@ -9,7 +9,7 @@ import {
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 
-import type { Route } from "../.react-router/types/app/+types/root";
+import type { Route } from "./+types/root";
 
 import '@fontsource/source-sans-pro';
 import "@lonestone/ui/globals.css";

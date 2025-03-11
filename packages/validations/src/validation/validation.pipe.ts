@@ -8,6 +8,7 @@ export function createZodValidationPipe(): new (schemaOrDto?: ZodSchema) => Pipe
   class ZodValidationPipe implements PipeTransform {
     constructor(private readonly schema?: ZodSchema) {}
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public transform(value: unknown, _: ArgumentMetadata): unknown {
       if (!this.schema) {
         return value

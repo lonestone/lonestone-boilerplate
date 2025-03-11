@@ -1,10 +1,6 @@
-// @ts-expect-error tsup file outside of src
 import { exec as execCb } from 'node:child_process'
-// @ts-expect-error tsup file outside of src
 import { dirname } from 'node:path'
-// @ts-expect-error tsup file outside of src
 import { fileURLToPath } from 'node:url'
-// @ts-expect-error tsup file outside of src
 import { promisify } from 'node:util'
 
 import { defineConfig } from 'tsup'

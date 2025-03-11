@@ -1,5 +1,5 @@
 import type { ExecutionContext } from '@nestjs/common'
-import type { SchemaObject, ReferenceObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface'
+import type { ReferenceObject, SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface'
 import type { ZodSchema } from 'zod'
 import { generateSchema } from '@anatine/zod-openapi'
 import { BadRequestException, createParamDecorator } from '@nestjs/common'
@@ -111,7 +111,7 @@ export function TypedQuery(
     name: key,
     required: !options.optional,
     isArray: options.array,
-    schema: refSchema as any,
+    schema: refSchema as SchemaObject | ReferenceObject,
     description: openApiSchema.description,
     example: openApiSchema.example,
   })
@@ -197,10 +197,7 @@ export function TypedQueryObject(schema: ZodSchema) {
   }
 
   registerNestedSchemas(openApiSchema);
-
-  // Register the main schema and get the reference
-  const refSchema = registerSchema(schemaName, openApiSchema, 'Query');
-
+  
   // Create base ApiQuery decorators first for each property
   const baseDecorators = Object.entries(properties).map(([name, prop]) => {
     // For each property, check if it's a reference or a schema
@@ -209,7 +206,7 @@ export function TypedQueryObject(schema: ZodSchema) {
     return ApiQuery({
       name,
       required: required.includes(name),
-      schema: propSchema as any,
+      schema: propSchema as SchemaObject | ReferenceObject,
     });
   });
 

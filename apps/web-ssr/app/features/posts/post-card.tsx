@@ -8,7 +8,7 @@ import {
 import { Link } from "react-router";
 import { ArrowUpRight, User, Calendar } from "lucide-react";
 
-import { PublicPostSchema, PublicPostsSchema } from "@lonestone/openapi-generator";
+import { PublicPostsSchema } from "@lonestone/openapi-generator";
 import { useMemo } from "react";
 type PostCardProps = {
   post: PublicPostsSchema["data"][number];

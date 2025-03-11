@@ -13,7 +13,7 @@ export const config = [
   eslintConfigPrettier,
   ...tseslint.configs.recommended,
   {
-    ignores: ["**/.react-router/**"],
+    ignores: ["**/.react-router/**", "**/dist/**", "**/*.gen.ts"],
   },
   {
     plugins: {

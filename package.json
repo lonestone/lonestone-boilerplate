@@ -7,13 +7,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "dotenv -e .env -- pnpm --parallel --filter=* run dev",
-    "build": "pnpm --parallel --filter=* run build",
+    "build": "dotenv -e .env -- pnpm --parallel --filter=* run build",
+    "typecheck": "dotenv -e .env -- pnpm --filter=* run typecheck",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "dotenv": "dotenv -e .env -- pnpm",
     "lint": "eslint --flag unstable_config_lookup_from_file .",
-    "generate": "pnpm --filter=@lonestone/openapi-generator run generate"
+    "generate": "dotenv -e .env -- pnpm --filter=@lonestone/openapi-generator run generate"
   },
   "keywords": [],
   "author": "",

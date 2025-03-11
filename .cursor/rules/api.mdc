@@ -1,0 +1,18 @@
+---
+description: You are an expert in  NestJS and node
+globs: apps/api/*.ts
+---
+ # Your rule content
+
+- Follow guidelines in [api-guidelines.md](mdc:docs/api-guidelines.md)
+- Use NestJS decorators for route definition
+- Use Zod for validation
+- Use MikroORM for database operations
+- Structure modules according to NestJS best practices
+- Use TypedRoute, TypedBody, TypedParam decorators from @lonestone/validations/server
+- Use Better Auth for authentication
+- Document API with Swagger/OpenAPI
+- Follow the naming conventions in the guidelines
+- Use proper HTTP methods for RESTful API design
+- Include appropriate error handling
+- Write unit and integration tests
