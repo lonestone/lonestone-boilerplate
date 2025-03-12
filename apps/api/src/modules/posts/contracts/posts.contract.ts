@@ -97,6 +97,7 @@ export const userPostSchema = extendApi(
     versions: z.array(postVersionSchema),
     publishedAt: z.date().nullish(),
     type: z.enum(["published", "draft"]),
+    commentCount: z.number().optional(),
   }),
   {
     title: "UserPostSchema",
@@ -130,6 +131,7 @@ export const publicPostSchema = extendApi(
     content: z.array(postContentSchema),
     publishedAt: z.date(),
     slug: z.string().optional(),
+    commentCount: z.number().optional(),
   }),
   {
     title: "PublicPostSchema",
@@ -142,6 +144,7 @@ export const publicPostsSchema = extendApi(paginatedSchema(publicPostSchema.omit
   content: true,
 }).extend({
   contentPreview: postContentSchema,
+  commentCount: z.number().optional(),
 })), {
   title: "PublicPostsSchema",
   description: "A list of public posts",

@@ -25,6 +25,14 @@ export type UpdatePostSchema = {
 };
 
 /**
+ * Schema for creating a comment
+ */
+export type CreateCommentSchema = {
+  content: string;
+  parentId?: string;
+};
+
+/**
  * Schema for pagination query
  */
 export type PaginationQuerySchema = {
@@ -56,7 +64,7 @@ export type SortingQueryStringSchema = string;
 /**
  * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
  * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
- * <br> Available properties: title
+ * <br> Available properties: content
  */
 export type FilterQueryStringSchema = string;
 
@@ -71,6 +79,7 @@ export type UserPostSchema = {
   versions: Array<PostVersionSchema>;
   publishedAt?: Date | null;
   type: "published" | "draft";
+  commentCount?: number;
 };
 
 /**
@@ -93,6 +102,7 @@ export type UserPostsSchema = {
     versions: Array<PostVersionSchema>;
     publishedAt?: Date | null;
     type: "published" | "draft";
+    commentCount?: number;
     contentPreview: PostContentSchema;
   }>;
   meta: {
@@ -114,6 +124,7 @@ export type PublicPostSchema = {
   content: Array<PostContentSchema>;
   publishedAt: Date;
   slug?: string;
+  commentCount?: number;
 };
 
 /**
@@ -127,8 +138,39 @@ export type PublicPostsSchema = {
     };
     publishedAt: Date;
     slug?: string;
+    commentCount?: number;
     contentPreview: PostContentSchema;
   }>;
+  meta: {
+    offset: number;
+    pageSize: number;
+    itemCount: number;
+    hasMore: boolean;
+  };
+};
+
+/**
+ * Schema for a comment
+ */
+export type CommentSchema = {
+  id: string;
+  content: string;
+  authorName: string | null;
+  createdAt: Date;
+  user: {
+    id: string;
+    name: string;
+  } | null;
+  parentId: string | null;
+  replyIds?: Array<string>;
+  replyCount?: number;
+};
+
+/**
+ * Schema for a paginated list of comments
+ */
+export type CommentsSchema = {
+  data: Array<CommentSchema>;
   meta: {
     offset: number;
     pageSize: number;
@@ -330,6 +372,112 @@ export type PublicPostControllerGetPostsResponses = {
 
 export type PublicPostControllerGetPostsResponse =
   PublicPostControllerGetPostsResponses[keyof PublicPostControllerGetPostsResponses];
+
+export type CommentsControllerGetCommentsData = {
+  body?: never;
+  path: {
+    postSlug: string;
+  };
+  query?: {
+    /**
+     * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
+     * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
+     * <br> Available properties: content
+     */
+    filter?: FilterQueryStringSchema;
+    /**
+     * Schema for sorting items
+     */
+    sort?: SortingQueryStringSchema;
+    offset?: PaginationQuerySchemaOffset;
+    pageSize?: PaginationQuerySchemaPageSize;
+  };
+  url: "/api/posts/{postSlug}/comments";
+};
+
+export type CommentsControllerGetCommentsResponses = {
+  /**
+   * Schema for a paginated list of comments
+   */
+  200: CommentsSchema;
+};
+
+export type CommentsControllerGetCommentsResponse =
+  CommentsControllerGetCommentsResponses[keyof CommentsControllerGetCommentsResponses];
+
+export type CommentsControllerCreateCommentData = {
+  /**
+   * Schema for creating a comment
+   */
+  body: CreateCommentSchema;
+  path: {
+    postSlug: string;
+  };
+  query?: never;
+  url: "/api/posts/{postSlug}/comments";
+};
+
+export type CommentsControllerCreateCommentResponses = {
+  /**
+   * Schema for a comment
+   */
+  200: CommentSchema;
+};
+
+export type CommentsControllerCreateCommentResponse =
+  CommentsControllerCreateCommentResponses[keyof CommentsControllerCreateCommentResponses];
+
+export type CommentsControllerGetCommentCountData = {
+  body?: never;
+  path: {
+    postSlug: string;
+  };
+  query?: never;
+  url: "/api/posts/{postSlug}/comments/count";
+};
+
+export type CommentsControllerGetCommentCountResponses = {
+  200: unknown;
+};
+
+export type CommentsControllerGetCommentRepliesData = {
+  body?: never;
+  path: {
+    commentId: string;
+  };
+  query?: {
+    /**
+     * Schema for sorting items
+     */
+    sort?: SortingQueryStringSchema;
+    offset?: PaginationQuerySchemaOffset;
+    pageSize?: PaginationQuerySchemaPageSize;
+  };
+  url: "/api/posts/{postSlug}/comments/{commentId}/replies";
+};
+
+export type CommentsControllerGetCommentRepliesResponses = {
+  /**
+   * Schema for a paginated list of comments
+   */
+  200: CommentsSchema;
+};
+
+export type CommentsControllerGetCommentRepliesResponse =
+  CommentsControllerGetCommentRepliesResponses[keyof CommentsControllerGetCommentRepliesResponses];
+
+export type CommentsControllerDeleteCommentData = {
+  body?: never;
+  path: {
+    commentId: string;
+  };
+  query?: never;
+  url: "/api/posts/{postSlug}/comments/{commentId}";
+};
+
+export type CommentsControllerDeleteCommentResponses = {
+  200: unknown;
+};
 
 export type ClientOptions = {
   baseUrl: string;

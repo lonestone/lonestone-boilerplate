@@ -22,6 +22,11 @@ export const zUpdatePostSchema = z.object({
   content: z.array(zPostContentSchema).optional(),
 });
 
+export const zCreateCommentSchema = z.object({
+  content: z.string().min(1).max(1000),
+  parentId: z.string().uuid().optional(),
+});
+
 export const zPaginationQuerySchema = z.object({
   offset: z.number().int().gte(0).optional().default(0),
   pageSize: z.number().int().gte(1).lte(100).optional().default(20),
@@ -54,6 +59,7 @@ export const zUserPostSchema = z.object({
   ),
   publishedAt: z.union([z.string().datetime(), z.null()]).optional(),
   type: z.enum(["published", "draft"]),
+  commentCount: z.number().optional(),
 });
 
 export const zPostVersionSchema = z.object({
@@ -71,6 +77,7 @@ export const zUserPostsSchema = z.object({
       versions: z.array(zPostVersionSchema),
       publishedAt: z.union([z.string().datetime(), z.null()]).optional(),
       type: z.enum(["published", "draft"]),
+      commentCount: z.number().optional(),
       contentPreview: zPostContentSchema,
     })
   ),
@@ -90,6 +97,7 @@ export const zPublicPostSchema = z.object({
   content: z.array(zPostContentSchema),
   publishedAt: z.string().datetime(),
   slug: z.string().optional(),
+  commentCount: z.number().optional(),
 });
 
 export const zPublicPostsSchema = z.object({
@@ -101,9 +109,37 @@ export const zPublicPostsSchema = z.object({
       }),
       publishedAt: z.string().datetime(),
       slug: z.string().optional(),
+      commentCount: z.number().optional(),
       contentPreview: zPostContentSchema,
     })
   ),
+  meta: z.object({
+    offset: z.number(),
+    pageSize: z.number(),
+    itemCount: z.number(),
+    hasMore: z.boolean(),
+  }),
+});
+
+export const zCommentSchema = z.object({
+  id: z.string().uuid(),
+  content: z.string(),
+  authorName: z.union([z.string(), z.null()]),
+  createdAt: z.string().datetime(),
+  user: z.union([
+    z.object({
+      id: z.string().uuid(),
+      name: z.string(),
+    }),
+    z.null(),
+  ]),
+  parentId: z.union([z.string().uuid(), z.null()]),
+  replyIds: z.array(z.string().uuid()).optional(),
+  replyCount: z.number().optional(),
+});
+
+export const zCommentsSchema = z.object({
+  data: z.array(zCommentSchema),
   meta: z.object({
     offset: z.number(),
     pageSize: z.number(),
@@ -125,3 +161,9 @@ export const zPublicPostControllerGetRandomPostResponse = zPublicPostSchema;
 export const zPublicPostControllerGetPostResponse = zPublicPostSchema;
 
 export const zPublicPostControllerGetPostsResponse = zPublicPostsSchema;
+
+export const zCommentsControllerGetCommentsResponse = zCommentsSchema;
+
+export const zCommentsControllerCreateCommentResponse = zCommentSchema;
+
+export const zCommentsControllerGetCommentRepliesResponse = zCommentsSchema;

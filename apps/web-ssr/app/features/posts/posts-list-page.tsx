@@ -31,7 +31,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
   const search = searchParams.get("search") || "";
-const page = parseInt(searchParams.get("page") || "1");
+  const page = parseInt(searchParams.get("page") || "1");
 
   await queryClient.prefetchQuery(
     publicPostPostsQuery({

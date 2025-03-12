@@ -23,6 +23,14 @@ import type {
   PublicPostControllerGetPostResponse,
   PublicPostControllerGetPostsData,
   PublicPostControllerGetPostsResponse,
+  CommentsControllerGetCommentsData,
+  CommentsControllerGetCommentsResponse,
+  CommentsControllerCreateCommentData,
+  CommentsControllerCreateCommentResponse,
+  CommentsControllerGetCommentCountData,
+  CommentsControllerGetCommentRepliesData,
+  CommentsControllerGetCommentRepliesResponse,
+  CommentsControllerDeleteCommentData,
 } from "./types.gen";
 import { client as _heyApiClient } from "./client.gen";
 import {
@@ -33,6 +41,9 @@ import {
   publicPostControllerGetRandomPostResponseTransformer,
   publicPostControllerGetPostResponseTransformer,
   publicPostControllerGetPostsResponseTransformer,
+  commentsControllerGetCommentsResponseTransformer,
+  commentsControllerCreateCommentResponseTransformer,
+  commentsControllerGetCommentRepliesResponseTransformer,
 } from "./transformers.gen";
 
 export type Options<
@@ -197,6 +208,84 @@ export const publicPostControllerGetPosts = <
   >({
     responseTransformer: publicPostControllerGetPostsResponseTransformer,
     url: "/api/public/posts",
+    ...options,
+  });
+};
+
+export const commentsControllerGetComments = <
+  ThrowOnError extends boolean = false
+>(
+  options: Options<CommentsControllerGetCommentsData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<
+    CommentsControllerGetCommentsResponse,
+    unknown,
+    ThrowOnError
+  >({
+    responseTransformer: commentsControllerGetCommentsResponseTransformer,
+    url: "/api/posts/{postSlug}/comments",
+    ...options,
+  });
+};
+
+export const commentsControllerCreateComment = <
+  ThrowOnError extends boolean = false
+>(
+  options: Options<CommentsControllerCreateCommentData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).post<
+    CommentsControllerCreateCommentResponse,
+    unknown,
+    ThrowOnError
+  >({
+    responseTransformer: commentsControllerCreateCommentResponseTransformer,
+    url: "/api/posts/{postSlug}/comments",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
+  });
+};
+
+export const commentsControllerGetCommentCount = <
+  ThrowOnError extends boolean = false
+>(
+  options: Options<CommentsControllerGetCommentCountData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<unknown, unknown, ThrowOnError>({
+    url: "/api/posts/{postSlug}/comments/count",
+    ...options,
+  });
+};
+
+export const commentsControllerGetCommentReplies = <
+  ThrowOnError extends boolean = false
+>(
+  options: Options<CommentsControllerGetCommentRepliesData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<
+    CommentsControllerGetCommentRepliesResponse,
+    unknown,
+    ThrowOnError
+  >({
+    responseTransformer: commentsControllerGetCommentRepliesResponseTransformer,
+    url: "/api/posts/{postSlug}/comments/{commentId}/replies",
+    ...options,
+  });
+};
+
+export const commentsControllerDeleteComment = <
+  ThrowOnError extends boolean = false
+>(
+  options: Options<CommentsControllerDeleteCommentData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).delete<
+    unknown,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/posts/{postSlug}/comments/{commentId}",
     ...options,
   });
 };

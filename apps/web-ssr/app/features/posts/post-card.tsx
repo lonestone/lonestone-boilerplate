@@ -6,7 +6,7 @@ import {
   CardFooter,
 } from "@lonestone/ui/components/primitives/card";
 import { Link } from "react-router";
-import { ArrowUpRight, User, Calendar } from "lucide-react";
+import { ArrowUpRight, User, Calendar, MessageCircle } from "lucide-react";
 
 import { PublicPostsSchema } from "@lonestone/openapi-generator";
 import { useMemo } from "react";
@@ -45,6 +45,12 @@ export default function PostCard({ post }: PostCardProps) {
               <Calendar className="h-4 w-4" />
               <span>{new Date(post.publishedAt).toLocaleDateString()}</span>
             </div>
+            {post.commentCount !== undefined && (
+              <div className="flex items-center gap-1">
+                <MessageCircle className="h-4 w-4" />
+                <span>{post.commentCount} {post.commentCount === 1 ? 'comment' : 'comments'}</span>
+              </div>
+            )}
           </div>
         </CardFooter>
       </Link>

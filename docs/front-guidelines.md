@@ -25,3 +25,7 @@ Globs: apps/web-ssr/* & apps/web-spa/*
 - Use tanstack-query for data fetching.
 - Use react-hook-form for form handling.
 - Use zod for form validation.
+- Use kebab-case for file names.
+- Use features folder to had route components or scoped components.
+- Use app folder to had global components that are used in multiple features.
+- Use utils folder to had utility functions.

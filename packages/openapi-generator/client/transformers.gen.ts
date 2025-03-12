@@ -8,6 +8,9 @@ import type {
   PublicPostControllerGetRandomPostResponse,
   PublicPostControllerGetPostResponse,
   PublicPostControllerGetPostsResponse,
+  CommentsControllerGetCommentsResponse,
+  CommentsControllerCreateCommentResponse,
+  CommentsControllerGetCommentRepliesResponse,
 } from "./types.gen";
 
 const postVersionSchemaSchemaResponseTransformer = (data: any) => {
@@ -97,5 +100,38 @@ export const publicPostControllerGetPostsResponseTransformer = async (
   data: any
 ): Promise<PublicPostControllerGetPostsResponse> => {
   data = publicPostsSchemaSchemaResponseTransformer(data);
+  return data;
+};
+
+const commentSchemaSchemaResponseTransformer = (data: any) => {
+  data.createdAt = new Date(data.createdAt);
+  return data;
+};
+
+const commentsSchemaSchemaResponseTransformer = (data: any) => {
+  data.data = data.data.map((item: any) => {
+    return commentSchemaSchemaResponseTransformer(item);
+  });
+  return data;
+};
+
+export const commentsControllerGetCommentsResponseTransformer = async (
+  data: any
+): Promise<CommentsControllerGetCommentsResponse> => {
+  data = commentsSchemaSchemaResponseTransformer(data);
+  return data;
+};
+
+export const commentsControllerCreateCommentResponseTransformer = async (
+  data: any
+): Promise<CommentsControllerCreateCommentResponse> => {
+  data = commentSchemaSchemaResponseTransformer(data);
+  return data;
+};
+
+export const commentsControllerGetCommentRepliesResponseTransformer = async (
+  data: any
+): Promise<CommentsControllerGetCommentRepliesResponse> => {
+  data = commentsSchemaSchemaResponseTransformer(data);
   return data;
 };

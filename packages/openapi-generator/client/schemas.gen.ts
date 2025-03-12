@@ -53,6 +53,24 @@ export const UpdatePostSchemaSchema = {
   description: "Schema for updating a post",
 } as const;
 
+export const CreateCommentSchemaSchema = {
+  type: ["object"],
+  properties: {
+    content: {
+      type: ["string"],
+      minLength: 1,
+      maxLength: 1000,
+    },
+    parentId: {
+      type: ["string"],
+      format: "uuid",
+    },
+  },
+  required: ["content"],
+  title: "CreateCommentSchema",
+  description: "Schema for creating a comment",
+} as const;
+
 export const PaginationQuerySchemaSchema = {
   type: ["object"],
   properties: {
@@ -100,7 +118,7 @@ export const FilterQueryStringSchemaSchema = {
   title: "FilterQueryStringSchema",
   description: `Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
     <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull 
-    <br> Available properties: title`,
+    <br> Available properties: content`,
   example: "name:eq:John;age:gt:30",
 } as const;
 
@@ -136,6 +154,9 @@ export const UserPostSchemaSchema = {
     type: {
       type: ["string"],
       enum: ["published", "draft"],
+    },
+    commentCount: {
+      type: ["number"],
     },
   },
   required: ["id", "title", "content", "versions", "type"],
@@ -194,6 +215,9 @@ export const UserPostsSchemaSchema = {
           type: {
             type: ["string"],
             enum: ["published", "draft"],
+          },
+          commentCount: {
+            type: ["number"],
           },
           contentPreview: {
             $ref: "#/components/schemas/PostContentSchema",
@@ -254,6 +278,9 @@ export const PublicPostSchemaSchema = {
     slug: {
       type: ["string"],
     },
+    commentCount: {
+      type: ["number"],
+    },
   },
   required: ["title", "author", "content", "publishedAt"],
   title: "PublicPostSchema",
@@ -287,6 +314,9 @@ export const PublicPostsSchemaSchema = {
           slug: {
             type: ["string"],
           },
+          commentCount: {
+            type: ["number"],
+          },
           contentPreview: {
             $ref: "#/components/schemas/PostContentSchema",
           },
@@ -316,4 +346,87 @@ export const PublicPostsSchemaSchema = {
   required: ["data", "meta"],
   title: "PublicPostsSchema",
   description: "A list of public posts",
+} as const;
+
+export const CommentSchemaSchema = {
+  type: ["object"],
+  properties: {
+    id: {
+      type: ["string"],
+      format: "uuid",
+    },
+    content: {
+      type: ["string"],
+    },
+    authorName: {
+      type: ["string", "null"],
+    },
+    createdAt: {
+      type: ["string"],
+      format: "date-time",
+    },
+    user: {
+      type: ["object", "null"],
+      properties: {
+        id: {
+          type: ["string"],
+          format: "uuid",
+        },
+        name: {
+          type: ["string"],
+        },
+      },
+      required: ["id", "name"],
+    },
+    parentId: {
+      type: ["string", "null"],
+      format: "uuid",
+    },
+    replyIds: {
+      type: ["array"],
+      items: {
+        type: ["string"],
+        format: "uuid",
+      },
+    },
+    replyCount: {
+      type: ["number"],
+    },
+  },
+  required: ["id", "content", "authorName", "createdAt", "user", "parentId"],
+  title: "CommentSchema",
+  description: "Schema for a comment",
+} as const;
+
+export const CommentsSchemaSchema = {
+  type: ["object"],
+  properties: {
+    data: {
+      type: ["array"],
+      items: {
+        $ref: "#/components/schemas/CommentSchema",
+      },
+    },
+    meta: {
+      type: ["object"],
+      properties: {
+        offset: {
+          type: ["number"],
+        },
+        pageSize: {
+          type: ["number"],
+        },
+        itemCount: {
+          type: ["number"],
+        },
+        hasMore: {
+          type: ["boolean"],
+        },
+      },
+      required: ["offset", "pageSize", "itemCount", "hasMore"],
+    },
+  },
+  required: ["data", "meta"],
+  title: "CommentsSchema",
+  description: "Schema for a paginated list of comments",
 } as const;

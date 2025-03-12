@@ -5,10 +5,14 @@ import { User } from '../auth/auth.entity';
 import { CreatePostInput, PostFiltering, PublicPosts, UpdatePostInput, UserPost, UserPosts } from 'src/modules/posts/contracts/posts.contract';
 import { PostSorting, PostPagination } from 'src/modules/posts/contracts/posts.contract';
 import { PublicPost } from './contracts/posts.contract';
+import { CommentsService } from '../comments/comments.service';
 
 @Injectable()
 export class PostService {
-  constructor(private readonly em: EntityManager) {}
+  constructor(
+    private readonly em: EntityManager,
+    private readonly commentsService: CommentsService
+  ) {}
 
   async createPost(userId: string, data: CreatePostInput): Promise<UserPost> {
     const user = await this.em.findOne(User, { id: userId });
@@ -196,9 +200,9 @@ export class PostService {
     return {
       data,
       meta: {
-        offset: pagination.offset,
-        pageSize: pagination.pageSize,
         itemCount: total,
+        pageSize: pagination.pageSize,
+        offset: pagination.offset,
         hasMore: pagination.offset + pagination.pageSize < total,
       },
     };
@@ -228,6 +232,9 @@ export class PostService {
 
     if (!latestVersion) throw new Error('No valid version found');
 
+    // Get comment count
+    const commentCount = post.slug ? await this.commentsService.getCommentCount(post.slug) : 0;
+
     // Retourner le format public
     return {
       publishedAt: post.publishedAt!,
@@ -237,6 +244,7 @@ export class PostService {
         name: post.user.name,
       },
       slug: post.slug,
+      commentCount,
     };
   }
 
@@ -298,44 +306,61 @@ export class PostService {
       orderBy: { createdAt: 'DESC' }
     });
 
-    // Ensuite, filtrer pour ne garder que les versions valides
-    const versionMap = new Map<string, PostVersion>();
-    for (const version of allVersions) {
-      const post = posts.find(p => p.id === version.post.id);
-      if (!post?.publishedAt) continue;
-      
-      if (version.createdAt <= post.publishedAt && !versionMap.has(version.post.id)) {
-        versionMap.set(version.post.id, version);
+    // Organiser les versions par post
+    const versionsByPost = new Map<string, PostVersion[]>();
+    allVersions.forEach(version => {
+      const postId = version.post.id;
+      if (!versionsByPost.has(postId)) {
+        versionsByPost.set(postId, []);
       }
-    }
+      versionsByPost.get(postId)!.push(version);
+    });
 
-    // Transformer en format public
+    // Get comment counts for all posts
+    const commentCountsPromises = posts.map(post => 
+      post.slug ? this.commentsService.getCommentCount(post.slug) : 0
+    );
+    const commentCounts = await Promise.all(commentCountsPromises);
+    const commentCountByPostId = new Map<string, number>();
+    posts.forEach((post, index) => {
+      commentCountByPostId.set(post.id, commentCounts[index]);
+    });
+
+    // Construire la réponse
     const data = posts.map(post => {
-      const validVersion = versionMap.get(post.id);
-      if (!validVersion) throw new Error(`No valid version found for post ${post.id}`);
+      // Trouver la dernière version valide pour ce post
+      const versions = versionsByPost.get(post.id) || [];
+      const validVersions = versions.filter(v => v.createdAt <= post.publishedAt!);
+      const latestVersion = validVersions[0]; // Déjà triées par date décroissante
+      
+      if (!latestVersion) {
+        throw new Error(`No valid version found for post ${post.id}`);
+      }
 
-      const contentPreview = validVersion.content?.find(c => c.type === 'text') ?? {
-        type: 'text' as const,
-        data: ''
+      // Trouver un aperçu du contenu (premier élément de type texte)
+      const contentPreview = latestVersion.content?.find(c => c.type === 'text') || {
+        type: 'text',
+        data: '',
       };
 
       return {
+        title: latestVersion.title,
         publishedAt: post.publishedAt!,
-        title: validVersion.title,
-        contentPreview,
+        slug: post.slug,
         author: {
           name: post.user.name,
         },
-        slug: post.slug,
+        contentPreview,
+        commentCount: commentCountByPostId.get(post.id) || 0,
       };
     });
 
     return {
       data,
       meta: {
-        offset: pagination.offset,
-        pageSize: pagination.pageSize,
         itemCount: total,
+        pageSize: pagination.pageSize,
+        offset: pagination.offset,
         hasMore: pagination.offset + pagination.pageSize < total,
       },
     };

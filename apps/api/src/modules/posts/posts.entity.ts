@@ -10,7 +10,7 @@ import {
 } from "@mikro-orm/core";
 import slugify from "slugify";
 import { User } from "../auth/auth.entity";
-
+import { Comment } from "../comments/comments.entity";
 
 export type Content = {
   type: "text" | "image" | "video";
@@ -38,6 +38,9 @@ export class Post {
 
   @OneToMany(() => PostVersion, version => version.post)
   versions = new Collection<PostVersion>(this);
+
+  @OneToMany(() => Comment, comment => comment.post)
+  comments = new Collection<Comment>(this);
 
   @Unique()
   @Property({ fieldName: "slug", nullable: true })

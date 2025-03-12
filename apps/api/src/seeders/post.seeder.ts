@@ -15,6 +15,7 @@ const generateDatePublished = (post: Post) => {
     to: addDays(lastVersion.createdAt, 2),
   });
 }
+
 export class PostSeeder extends Seeder {
   async run(em: EntityManager, context: Dictionary): Promise<void> {
     const posts = [];
@@ -59,5 +60,6 @@ export class PostSeeder extends Seeder {
       }
       await em.persistAndFlush(post);
     }
+    context.posts = posts;
   }
 }
