@@ -51,3 +51,64 @@ src/
 ├── hooks/         # Custom React hooks
 ├── lib/           # Utility functions and configurations
 ```
+
+# Application SSR (Server-Side Rendering)
+
+Cette application utilise le rendu côté serveur (SSR) pour améliorer les performances et le SEO.
+
+## Variables d'environnement
+
+Contrairement à une SPA, une application SSR peut utiliser des variables d'environnement au runtime, car le rendu se fait côté serveur.
+
+| Variable | Description | Obligatoire | Défaut |
+|----------|-------------|-------------|--------|
+| `API_URL` | URL de l'API backend | Oui | - |
+| `PORT` | Port sur lequel l'application SSR écoute | Non | `3000` |
+| `NODE_ENV` | Environnement (development, production) | Non | `production` |
+
+## Construction avec Docker
+
+### Construction de l'image
+
+```bash
+# À la racine du projet
+docker build -t lonestone/web-ssr -f apps/web-ssr/Dockerfile .
+```
+
+### Exécution du conteneur
+
+```bash
+docker run -p 3000:3000 \
+  -e API_URL=https://api.example.com \
+  lonestone/web-ssr
+```
+
+## Développement local
+
+Pour le développement local :
+
+```bash
+# À la racine du projet
+pnpm install
+pnpm --filter web-ssr dev
+```
+
+Vous pouvez définir les variables d'environnement locales en créant un fichier `.env` dans le répertoire `apps/web-ssr` :
+
+```
+API_URL=http://localhost:3000
+PORT=3001
+NODE_ENV=development
+```
+
+## Différences entre SSR et SPA
+
+### Avantages du SSR
+
+- Meilleur SEO car les moteurs de recherche voient le contenu complet
+- Temps de chargement initial plus rapide
+- Meilleure performance sur les appareils à faible puissance
+
+### Gestion des variables d'environnement
+
+Contrairement à une SPA où les variables d'environnement doivent être définies au moment du build, une application SSR peut utiliser des variables d'environnement au runtime, ce qui facilite le déploiement dans différents environnements sans reconstruire l'image.

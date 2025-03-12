@@ -8,7 +8,9 @@
   },
   "main": "./index.ts",
   "devDependencies": {
-    "@hey-api/openapi-ts": "^0.64.10",
     "wait-on": "^8.0.3"
+  },
+  "dependencies": {
+    "@hey-api/client-fetch": "^0.8.3"
   }
 }

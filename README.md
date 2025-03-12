@@ -217,6 +217,120 @@ Les contributions sont les bienvenues ! Veuillez suivre ces étapes pour contrib
 3. Poussez vers la branche (`git push origin feature/amazing-feature`)
 4. Ouvrez une Pull Request
 
+# Socle Lonestone
+
+Ce monorepo contient plusieurs applications qui peuvent être construites et déployées indépendamment avec Docker.
+
+## Structure du projet
+
+- `apps/api` : API backend (NestJS)
+- `apps/web-spa` : Application frontend SPA (React/Vite)
+- `apps/web-ssr` : Application frontend SSR
+- `packages/` : Packages partagés entre les applications
+
+## Construction avec Docker
+
+### Prérequis
+
+- Docker installé sur votre machine
+- Node.js et pnpm pour le développement local
+
+### Construction des images Docker
+
+#### API Backend
+
+```bash
+# À la racine du projet
+docker build -t lonestone/api -f apps/api/Dockerfile .
+```
+
+Variables d'environnement pour l'API (à définir dans votre environnement de déploiement) :
+- `DATABASE_URL` : URL de connexion à la base de données
+- `JWT_SECRET` : Clé secrète pour les JWT
+- `PORT` : Port sur lequel l'API écoute (par défaut: 3000)
+
+#### Application SPA (Single Page Application)
+
+```bash
+# À la racine du projet
+docker build -t lonestone/web-spa \
+  --build-arg VITE_API_URL=https://api.example.com \
+  --build-arg VITE_APP_ENV=production \
+  --build-arg VITE_APP_VERSION=1.0.0 \
+  -f apps/web-spa/Dockerfile .
+```
+
+Variables d'environnement pour la SPA (à définir au moment du build) :
+- `VITE_API_URL` : URL de l'API backend
+- `VITE_APP_ENV` : Environnement (development, staging, production)
+- `VITE_APP_VERSION` : Version de l'application
+
+#### Application SSR (Server-Side Rendering)
+
+```bash
+# À la racine du projet
+docker build -t lonestone/web-ssr -f apps/web-ssr/Dockerfile .
+```
+
+Variables d'environnement pour l'application SSR (à définir dans votre environnement de déploiement) :
+- `API_URL` : URL de l'API backend
+- `PORT` : Port sur lequel l'application SSR écoute (par défaut: 3000)
+
+### Exécution des conteneurs
+
+#### API Backend
+
+```bash
+docker run -p 3000:3000 \
+  -e DATABASE_URL=postgres://user:password@db:5432/dbname \
+  -e JWT_SECRET=your_secret_key \
+  lonestone/api
+```
+
+#### Application SPA
+
+```bash
+docker run -p 80:80 lonestone/web-spa
+```
+
+Pour remplacer des variables d'environnement au runtime (si nécessaire) :
+
+```bash
+docker run -p 80:80 \
+  -e VITE_API_URL=https://api-staging.example.com \
+  lonestone/web-spa
+```
+
+#### Application SSR
+
+```bash
+docker run -p 3000:3000 \
+  -e API_URL=https://api.example.com \
+  lonestone/web-ssr
+```
+
+## Développement local
+
+Pour le développement local, utilisez pnpm :
+
+```bash
+# Installation des dépendances
+pnpm install
+
+# Démarrage de l'API en mode développement
+pnpm --filter api dev
+
+# Démarrage de la SPA en mode développement
+pnpm --filter web-spa dev
+
+# Démarrage de l'application SSR en mode développement
+pnpm --filter web-ssr dev
+```
+
+## Déploiement avec Docker Compose
+
+Un exemple de configuration Docker Compose est disponible dans le fichier `docker-compose.yml` à la racine du projet.
+
 
 
 

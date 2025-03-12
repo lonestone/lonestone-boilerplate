@@ -1,4 +1,80 @@
-# Web Application
+# Application SPA (Single Page Application)
+
+Cette application est une SPA (Single Page Application) construite avec React et Vite.
+
+## Variables d'environnement
+
+### Gestion des variables d'environnement dans une SPA
+
+Dans une SPA, les variables d'environnement doivent être définies au moment du build car elles sont intégrées dans le bundle JavaScript. Cela signifie que vous ne pouvez pas simplement changer ces variables après le build sans reconstruire l'application.
+
+### Variables d'environnement disponibles
+
+| Variable | Description | Obligatoire | Défaut |
+|----------|-------------|-------------|--------|
+| `VITE_API_URL` | URL de l'API backend | Oui | - |
+| `VITE_APP_ENV` | Environnement (development, staging, production) | Non | `production` |
+| `VITE_APP_VERSION` | Version de l'application | Non | - |
+
+> **Note**: Toutes les variables d'environnement utilisées dans l'application doivent commencer par `VITE_` pour être accessibles dans le code client.
+
+## Construction avec Docker
+
+### Construction de l'image
+
+```bash
+# À la racine du projet
+docker build -t lonestone/web-spa \
+  --build-arg VITE_API_URL=https://api.example.com \
+  --build-arg VITE_APP_ENV=production \
+  --build-arg VITE_APP_VERSION=1.0.0 \
+  -f apps/web-spa/Dockerfile .
+```
+
+### Exécution du conteneur
+
+```bash
+docker run -p 80:80 lonestone/web-spa
+```
+
+### Remplacement des variables au runtime
+
+Si vous avez besoin de remplacer certaines variables d'environnement sans reconstruire l'image, vous pouvez utiliser le mécanisme de remplacement au runtime :
+
+```bash
+docker run -p 80:80 \
+  -e VITE_API_URL=https://api-staging.example.com \
+  lonestone/web-spa
+```
+
+> **Important**: Ce mécanisme fonctionne en recherchant des placeholders comme `%VITE_API_URL%` dans les fichiers JavaScript et en les remplaçant par les valeurs fournies. Pour que cela fonctionne, votre code doit utiliser ces placeholders.
+
+Exemple d'utilisation dans le code :
+
+```typescript
+// Utilisation directe (sera remplacé au runtime)
+const apiUrl = "%VITE_API_URL%";
+
+// Ou avec une valeur par défaut
+const apiUrl = "%VITE_API_URL%" || "https://api.default.com";
+```
+
+## Développement local
+
+Pour le développement local :
+
+```bash
+# À la racine du projet
+pnpm install
+pnpm --filter web-spa dev
+```
+
+Vous pouvez définir les variables d'environnement locales en créant un fichier `.env.local` dans le répertoire `apps/web-spa` :
+
+```
+VITE_API_URL=http://localhost:3000
+VITE_APP_ENV=development
+```
 
 ## Overview
 

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "react-router build",
     "dev": "react-router dev",
     "typecheck": "react-router typegen && tsc"
   },

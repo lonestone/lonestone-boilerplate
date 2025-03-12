@@ -1,6 +1,63 @@
-# API Lonestone
+# API Backend
 
-Cette API est construite avec NestJS et fournit les fonctionnalités backend pour l'application Lonestone.
+Cette API est construite avec NestJS et sert de backend pour les applications frontend.
+
+## Variables d'environnement
+
+| Variable | Description | Obligatoire | Défaut |
+|----------|-------------|-------------|--------|
+| `DATABASE_URL` | URL de connexion à la base de données | Oui | - |
+| `JWT_SECRET` | Clé secrète pour les JWT | Oui | - |
+| `PORT` | Port sur lequel l'API écoute | Non | `3000` |
+| `NODE_ENV` | Environnement (development, production) | Non | `production` |
+
+## Construction avec Docker
+
+### Construction de l'image
+
+```bash
+# À la racine du projet
+docker build -t lonestone/api -f apps/api/Dockerfile .
+```
+
+### Exécution du conteneur
+
+```bash
+docker run -p 3000:3000 \
+  -e DATABASE_URL=postgres://user:password@db:5432/dbname \
+  -e JWT_SECRET=your_secret_key \
+  lonestone/api
+```
+
+### Exécution avec migrations (si applicable)
+
+Si vous utilisez des migrations de base de données, vous pouvez les exécuter au démarrage du conteneur en décommentant la ligne appropriée dans le Dockerfile ou en utilisant une commande personnalisée :
+
+```bash
+docker run -p 3000:3000 \
+  -e DATABASE_URL=postgres://user:password@db:5432/dbname \
+  -e JWT_SECRET=your_secret_key \
+  lonestone/api sh -c "pnpm migration:run && node dist/main.js"
+```
+
+## Développement local
+
+Pour le développement local :
+
+```bash
+# À la racine du projet
+pnpm install
+pnpm --filter api dev
+```
+
+Vous pouvez définir les variables d'environnement locales en créant un fichier `.env` dans le répertoire `apps/api` :
+
+```
+DATABASE_URL=postgres://user:password@localhost:5432/dbname
+JWT_SECRET=dev_secret_key
+PORT=3000
+NODE_ENV=development
+```
 
 ## Architecture
 

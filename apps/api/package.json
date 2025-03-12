@@ -15,6 +15,7 @@
     "db:seed": "npx mikro-orm migration:fresh --seed --config=src/config/mikro-orm.config.ts"
   },
   "dependencies": {
+    "@anatine/zod-openapi": "^2.2.7",
     "@faker-js/faker": "^9.0.3",
     "@lonestone/validations": "workspace:*",
     "@mikro-orm/core": "6.4.7",
