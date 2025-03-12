@@ -6,9 +6,14 @@ Cette API est construite avec NestJS et sert de backend pour les applications fr
 
 | Variable | Description | Obligatoire | Défaut |
 |----------|-------------|-------------|--------|
-| `DATABASE_URL` | URL de connexion à la base de données | Oui | - |
+| `DATABASE_PORT` | Port de connexion à la base de données | Oui | - |
+| `DATABASE_HOST` | Host de connexion à la base de données | Oui | - |
+| `DATABASE_USER` | Utilisateur de connexion à la base de données | Oui | - |
+| `DATABASE_PASSWORD` | Mot de passe de connexion à la base de données | Oui | - |
+| `DATABASE_NAME` | Nom de la base de données | Oui | - |
 | `JWT_SECRET` | Clé secrète pour les JWT | Oui | - |
-| `PORT` | Port sur lequel l'API écoute | Non | `3000` |
+| `API_PORT` | Port sur lequel l'API écoute | Non | `3000` |
+| `TRUSTED_ORIGINS` | Origines approuvées pour les CORS | Non | - |
 | `NODE_ENV` | Environnement (development, production) | Non | `production` |
 
 ## Construction avec Docker
