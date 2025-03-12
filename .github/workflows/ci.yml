@@ -80,9 +80,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Generate OpenAPI clients
-        run: pnpm generate
-
       - name: Type check
         run: |
           pnpm --filter=@lonestone/validations run typecheck
@@ -126,9 +123,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-
-      - name: Generate OpenAPI clients
-        run: pnpm generate
 
       - name: Build packages
         run: pnpm build
