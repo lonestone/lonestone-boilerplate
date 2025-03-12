@@ -78,7 +78,7 @@ ENV NODE_ENV=production
 
 # Copier les fichiers de configuration
 COPY --from=builder /app/apps/api/package.json ./
-COPY --from=builder /app/apps/api/dist ./
+COPY --from=builder /app/apps/api/dist ./dist
 
 # Copier les dépendances de production
 COPY --from=prod-deps /app/node_modules ./node_modules
