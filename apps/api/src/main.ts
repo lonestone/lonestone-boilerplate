@@ -5,6 +5,7 @@ import { AppModule } from "./app.module";
 import { config } from "./config/env.config";
 import { addSchemasToSwagger } from "@lonestone/validations/server";
 import * as express from "express";
+import { Logger } from "nestjs-pino";
 
 dotenv.config();
 
@@ -14,8 +15,11 @@ const PORT = process.env.API_PORT || 3000;
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
-    logger: ["error", "warn", "log", "verbose", "debug"],
+    logger: false, // Disable default logger as we'll use Pino
   });
+
+  // Use Pino logger
+  app.useLogger(app.get(Logger));
 
   // Conditional middleware for better auth
   app.use(
