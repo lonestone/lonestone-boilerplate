@@ -33,6 +33,9 @@ importers:
       '@lonestone/validations':
         specifier: workspace:*
         version: link:../../packages/validations
+      '@mikro-orm/cli':
+        specifier: 6.4.7
+        version: 6.4.7(pg@8.13.3)
       '@mikro-orm/core':
         specifier: 6.4.7
         version: 6.4.7
@@ -118,9 +121,6 @@ importers:
       '@lonestone/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
-      '@mikro-orm/cli':
-        specifier: 6.4.7
-        version: 6.4.7(pg@8.13.3)
       '@nestjs/cli':
         specifier: ^10.1.16
         version: 10.4.9(@swc/core@1.11.7)

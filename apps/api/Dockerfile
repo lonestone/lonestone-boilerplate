@@ -77,27 +77,14 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Copier les fichiers de configuration
-COPY --from=builder /app/package.json /app/pnpm-workspace.yaml ./
-
-# Créer la structure de répertoires
-RUN mkdir -p packages/validations apps/api
-
-# Copier les fichiers compilés et les package.json
-COPY --from=builder /app/packages/validations/dist ./packages/validations/dist
-COPY --from=builder /app/packages/validations/package.json ./packages/validations/package.json
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+COPY --from=builder /app/apps/api/package.json ./
+COPY --from=builder /app/apps/api/dist ./
 
 # Copier les dépendances de production
 COPY --from=prod-deps /app/node_modules ./node_modules
-
-# Définir le répertoire de travail pour l'API
-WORKDIR /app/apps/api
 
 # Exposer le port
 EXPOSE 3000
 
 # Démarrer l'application
-# Si vous utilisez des migrations, décommentez la ligne suivante et commentez celle d'après
-# CMD ["sh", "-c", "pnpm migration:run && node dist/main.js"]
-CMD ["node", "dist/main.js"] 
+CMD ["sh", "-c", "pnpm db:migrate:up --config=dist/config/mikro-orm.config.js && pnpm start"]
