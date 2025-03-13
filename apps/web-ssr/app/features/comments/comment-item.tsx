@@ -91,7 +91,6 @@ export function CommentItem({
 
   // Calculate indentation based on depth
   const isNested = depth > 0;
-  const maxDepth = 5; // Limit the visual nesting to prevent excessive indentation
 
   return (
     <div

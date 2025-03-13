@@ -31,6 +31,6 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true
   },
-  "include": ["src", "../../apps/api/src/utils/swagger"],
-  "exclude": ["node_modules", "dist", "./build.ts"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }

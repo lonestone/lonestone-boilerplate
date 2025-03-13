@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
   build: {
     outDir: "dist",
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV === "development",
   },
   server: {
     port: 5173,

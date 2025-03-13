@@ -125,7 +125,14 @@ jobs:
         run: pnpm install
 
       - name: Build packages
-        run: pnpm build
+        env:
+          NODE_ENV: production
+          CI: true
+        run: |
+          # Build packages in the correct order (wait on success of @lonestone/validations)
+          pnpm --filter=@lonestone/validations build
+          # Build the rest of the packages
+          pnpm --filter=!@lonestone/validations build
 
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
@@ -136,4 +143,4 @@ jobs:
             apps/web-spa/dist
             apps/web-ssr/dist
             packages/*/dist
-          retention-days: 7 
+          retention-days: 7
