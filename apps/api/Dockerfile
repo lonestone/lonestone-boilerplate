@@ -83,6 +83,10 @@ COPY --from=builder /app/apps/api/dist ./dist
 # Copier les dépendances de production
 COPY --from=prod-deps /app/node_modules ./node_modules
 
+# Copier le package validations compilé dans node_modules
+COPY --from=builder /app/packages/validations/dist ./node_modules/@lonestone/validations/dist
+COPY --from=builder /app/packages/validations/package.json ./node_modules/@lonestone/validations/
+
 # Exposer le port
 EXPOSE 3000
 
