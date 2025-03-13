@@ -87,4 +87,4 @@ COPY --from=prod-deps /app/node_modules ./node_modules
 EXPOSE 3000
 
 # Démarrer l'application
-CMD ["sh", "-c", "pnpm db:migrate:up --config=dist/config/mikro-orm.config.js && pnpm start"]
+CMD ["sh", "-c", "pnpm db:migrate:up --config=dist/config/mikro-orm.config.js && node dist/main.js"]
