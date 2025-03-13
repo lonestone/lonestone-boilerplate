@@ -54,6 +54,9 @@ importers:
       '@mikro-orm/seeder':
         specifier: 6.4.7
         version: 6.4.7(@mikro-orm/core@6.4.7)
+      '@nestjs/cli':
+        specifier: ^10.1.16
+        version: 10.4.9(@swc/core@1.11.7)
       '@nestjs/common':
         specifier: ^10.2.1
         version: 10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -121,9 +124,6 @@ importers:
       '@lonestone/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
-      '@nestjs/cli':
-        specifier: ^10.1.16
-        version: 10.4.9(@swc/core@1.11.7)
       '@nestjs/schematics':
         specifier: ^10.0.0
         version: 10.2.3(chokidar@3.6.0)(typescript@5.4.5)

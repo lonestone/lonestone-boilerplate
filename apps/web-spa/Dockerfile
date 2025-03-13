@@ -63,7 +63,7 @@ FROM nginx:alpine
 COPY apps/web-spa/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copie des fichiers de build dans le répertoire de nginx
-COPY --from=builder /app/apps/web-spa/build /usr/share/nginx/html
+COPY --from=builder /app/apps/web-spa/build/client /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

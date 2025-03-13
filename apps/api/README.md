@@ -16,6 +16,19 @@ Cette API est construite avec NestJS et sert de backend pour les applications fr
 | `TRUSTED_ORIGINS` | Origines approuvées pour les CORS | Non | - |
 | `NODE_ENV` | Environnement (development, production) | Non | `production` |
 
+```env
+DATABASE_PORT=5432
+DATABASE_HOST=localhost
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=postgres
+
+JWT_SECRET=your_secret_key
+API_PORT=3000
+TRUSTED_ORIGINS=http://localhost:80,https://api.example.com
+NODE_ENV=production
+```
+
 ## Construction avec Docker
 
 ### Construction de l'image
