@@ -17,12 +17,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22.14.0'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8'
+          version: '10.6.3'
           run_install: false
 
       - name: Get pnpm store directory
@@ -55,12 +55,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22.14.0'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8'
+          version: '10.6.3'
           run_install: false
 
       - name: Get pnpm store directory
@@ -94,12 +94,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22.14.0'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8'
+          version: '10.6.3'
           run_install: false
 
       - name: Get pnpm store directory
@@ -135,12 +135,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22.14.0'
           
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8'
+          sversion: '10.6.3'
           run_install: false
           
       - name: Get pnpm store directory

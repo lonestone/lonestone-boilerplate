@@ -1,9 +1,11 @@
-# Image de base avec Node.js et pnpm préinstallé
-FROM node:20-alpine AS node-pnpm
-RUN npm install -g pnpm
+FROM node:22.14-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+WORKDIR /app
 
 # 🔹 Étape 1 : Installation des dépendances
-FROM node-pnpm AS deps
+FROM base AS deps
 
 WORKDIR /app
 
@@ -24,7 +26,7 @@ COPY apps/web-spa/package.json ./apps/web-spa/
 RUN pnpm install --frozen-lockfile --shamefully-hoist
 
 # 🔹 Étape 2 : Build
-FROM node-pnpm AS builder
+FROM base AS builder
 
 WORKDIR /app
 

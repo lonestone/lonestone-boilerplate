@@ -1,9 +1,10 @@
-# Image de base avec Node.js et pnpm préinstallé
-FROM node:20-alpine AS node-pnpm
-RUN npm install -g pnpm
-
+FROM node:22.14-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+WORKDIR /app
 # 🔹 Étape 1 : Installation des dépendances
-FROM node-pnpm AS deps
+FROM base AS deps
 
 WORKDIR /app
 
@@ -21,7 +22,7 @@ COPY apps/api/package.json ./apps/api/
 RUN pnpm install --frozen-lockfile --shamefully-hoist
 
 # 🔹 Étape 2 : Installation des dépendances de production uniquement
-FROM node-pnpm AS prod-deps
+FROM base AS prod-deps
 
 WORKDIR /app
 
@@ -39,7 +40,7 @@ COPY apps/api/package.json ./apps/api/
 RUN pnpm install --prod --frozen-lockfile --shamefully-hoist
 
 # 🔹 Étape 3 : Build
-FROM node-pnpm AS builder
+FROM base AS builder
 
 WORKDIR /app
 
@@ -69,7 +70,7 @@ RUN echo "Contenu du package.json de validations:" && cat packages/validations/p
 RUN cd packages/validations && npx tsup && cd ../.. && pnpm --filter="./apps/api" build
 
 # 🔹 Étape 4 : Production (Image finale)
-FROM node-pnpm AS runner
+FROM base AS runner
 
 WORKDIR /app
 
