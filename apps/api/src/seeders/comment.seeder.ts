@@ -3,8 +3,8 @@ import { Dictionary, EntityManager } from "@mikro-orm/core";
 import { faker } from "@faker-js/faker";
 import { Comment } from "../modules/comments/comments.entity";
 import { Post } from "src/modules/posts/posts.entity";
-import { User } from "better-auth";
 import { Seeder } from "@mikro-orm/seeder";
+import { User } from "src/modules/auth/auth.entity";
 
 const generateNumberOfComments = (max: number) => {
   return faker.number.int({ min: 0, max });
@@ -26,8 +26,8 @@ const createComment = async (
   comment.post = post;
   
   // Fix the type issue by ensuring the user object is compatible
-  const randomUser = faker.helpers.arrayElement(users);
-  comment.user = generateBoolean() ? randomUser.id as any : undefined;
+  const randomUser: User = faker.helpers.arrayElement(users as User[]);
+  comment.user = generateBoolean() ? randomUser : undefined;
   
   comment.content = faker.lorem.paragraph();
   

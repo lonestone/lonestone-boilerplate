@@ -156,7 +156,7 @@ export function CommentsList({
   // Load more replies
   const loadMoreReplies = async (commentId: string) => {
     // Use any type to avoid type errors with the API response
-    const currentReplies = queryClient.getQueryData<any>([
+    const currentReplies = queryClient.getQueryData([
       "replies",
       commentId,
     ]);

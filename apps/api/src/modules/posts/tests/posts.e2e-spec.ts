@@ -25,7 +25,6 @@ class MockAuthGuard {
 
 describe('PostsController (e2e)', () => {
   let app: INestApplication;
-  let postService: PostService;
 
   // Mock du service des posts
   const mockPostService = {

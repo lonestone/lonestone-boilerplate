@@ -1,6 +1,5 @@
 import {
   Controller,
-  Param,
   UseGuards,
   Optional,
 } from "@nestjs/common";
