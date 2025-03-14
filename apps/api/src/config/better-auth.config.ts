@@ -17,6 +17,7 @@ type BetterAuthOptionsDynamic = {
 
 export const createAuthConfig = (options?: BetterAuthOptionsDynamic) => {
   return betterAuth({
+    secret: config.betterAuth.secret,
     trustedOrigins: config.betterAuth.trustedOrigins,
     emailAndPassword: {
       enabled: true,

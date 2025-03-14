@@ -8,7 +8,16 @@ import { CommentsModule } from "./modules/comments/comments.module";
 import { ConfigModule as NestConfigModule } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
 import { IncomingMessage, ServerResponse } from "http";
-import { LevelWithSilent } from "pino";
+
+// Interface étendue pour les requêtes Express
+interface ExpressRequest extends IncomingMessage {
+  originalUrl?: string;
+}
+
+// Interface étendue pour les réponses Express
+interface ExpressResponse extends ServerResponse<IncomingMessage> {
+  responseTime?: number;
+}
 
 @Module({
   imports: [
@@ -35,15 +44,15 @@ import { LevelWithSilent } from "pino";
           },
         },
         // Filter out OpenAPI generator spam
-        customReceivedMessage: (req: IncomingMessage) => {
-          const url = (req as any).originalUrl || req.url || '';
+        customReceivedMessage: (req: ExpressRequest) => {
+          const url = req.originalUrl || req.url || '';
           // Skip logging for OpenAPI docs requests
           if (url.includes('/docs-json') || url.includes('/docs')) {
             return ''; // Return false to skip logging this request
           }
           return `request received: ${req.method} ${url}`;
         },
-        customLogLevel: (req: IncomingMessage, res: ServerResponse<IncomingMessage>, error?: Error) => {
+        customLogLevel: (req: ExpressRequest, res: ExpressResponse, error?: Error) => {
           if (res.statusCode >= 500 || error) {
             return 'error';
           } else if (res.statusCode >= 400) {
@@ -51,26 +60,26 @@ import { LevelWithSilent } from "pino";
           }
           return 'info';
         },
-        customSuccessMessage: (req: IncomingMessage, res: ServerResponse<IncomingMessage>) => {
-          const originalUrl = (req as any).originalUrl || req.url || '';
+        customSuccessMessage: (req: ExpressRequest, res: ExpressResponse) => {
+          const originalUrl = req.originalUrl || req.url || '';
           // Skip logging for OpenAPI docs requests
           if (originalUrl.includes('/docs-json') || originalUrl.includes('/docs')) {
             return ''; // Return false to skip logging this response
           }
           const method = req.method || '';
           const statusCode = res.statusCode;
-          const responseTime = (res as any).responseTime || 0;
+          const responseTime = res.responseTime || 0;
           return `${method} ${originalUrl} ${statusCode} - ${responseTime}ms`;
         },
-        customErrorMessage: (req: IncomingMessage, res: ServerResponse<IncomingMessage>, error?: Error) => {
-          const originalUrl = (req as any).originalUrl || req.url || '';
+        customErrorMessage: (req: ExpressRequest, res: ExpressResponse) => {
+          const originalUrl = req.originalUrl || req.url || '';
           // Skip logging for OpenAPI docs requests
           if (originalUrl.includes('/docs-json') || originalUrl.includes('/docs')) {
             return ''; // Return false to skip logging this response
           }
           const method = req.method || '';
           const statusCode = res.statusCode;
-          const responseTime = (res as any).responseTime || 0;
+          const responseTime = res.responseTime || 0;
           return `${method} ${originalUrl} ${statusCode} - ${responseTime}ms`;
         },
       },
