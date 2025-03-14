@@ -1,11 +1,18 @@
 import { z } from "zod";
 import dotenv from "dotenv";
+import { join } from "path";
 
-dotenv.config();
+// Charger le fichier .env approprié en fonction de l'environnement
+const nodeEnv = process.env.NODE_ENV || 'development';
+if (nodeEnv === 'test') {
+  dotenv.config({ path: join(process.cwd(), '.env.test') });
+} else {
+  dotenv.config();
+}
 
 export const configValidationSchema = z.object({
   // Environment
-  NODE_ENV: z.enum(["development", "test", "production"]),
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
   // API
   API_PORT: z.coerce.number(),
@@ -18,6 +25,7 @@ export const configValidationSchema = z.object({
   DATABASE_PORT: z.coerce.number(),
 
   // BetterAuth
+  BETTER_AUTH_SECRET: z.string(),
   TRUSTED_ORIGINS: z.string().transform((val) => val.split(",")),
 });
 
@@ -39,6 +47,7 @@ export const config = {
   env: configParsed.data.NODE_ENV,
   apiPort: configParsed.data.API_PORT,
   betterAuth: {
+    secret: configParsed.data.BETTER_AUTH_SECRET,
     trustedOrigins: configParsed.data.TRUSTED_ORIGINS,
   },
   database: {
