@@ -25,7 +25,6 @@ class MockAuthGuard {
 
 describe('PostsController (e2e)', () => {
   let app: INestApplication;
-
   // Mock du service des posts
   const mockPostService = {
     createPost: jest.fn(),
@@ -52,8 +51,6 @@ describe('PostsController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-
-    postService = moduleFixture.get<PostService>(PostService);
   });
 
   afterAll(async () => {

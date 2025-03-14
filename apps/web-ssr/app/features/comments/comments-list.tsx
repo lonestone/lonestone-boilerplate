@@ -17,6 +17,7 @@ import {
   commentsControllerGetCommentReplies,
   CreateCommentSchema,
   commentsControllerDeleteComment,
+  CommentsControllerGetCommentRepliesResponse,
 } from "@lonestone/openapi-generator";
 import { CommentItem } from "@/features/comments/comment-item";
 import { Loader2, MessageSquare } from "lucide-react";
@@ -156,10 +157,9 @@ export function CommentsList({
   // Load more replies
   const loadMoreReplies = async (commentId: string) => {
     // Use any type to avoid type errors with the API response
-    const currentReplies = queryClient.getQueryData([
-      "replies",
-      commentId,
-    ]);
+    const currentReplies = queryClient.getQueryData<{
+      data: CommentsControllerGetCommentRepliesResponse;
+    }>(["replies", commentId]);
     if (!currentReplies || !currentReplies.data?.meta) return;
 
     try {

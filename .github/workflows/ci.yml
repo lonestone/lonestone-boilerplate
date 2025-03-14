@@ -2,28 +2,26 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
-    branches: [main, master]
+    branches: [main]
 
 jobs:
-  lint:
-    name: Lint
+  setup:
+    name: Setup
     runs-on: ubuntu-latest
+    outputs:
+      node-version: '22.14.0'
+      pnpm-version: '10.6.3'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: '22.14.0'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: '10.6.3'
-          run_install: false
+          pnpm-version: '10.6.3'
 
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -41,127 +39,101 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+
+      - name: Cache workspace
+        uses: actions/cache@v3
+        with:
+          path: .
+          key: workspace-${{ github.sha }}
+
+  lint:
+    name: Lint
+    needs: [setup]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore workspace
+        uses: actions/cache@v3
+        with:
+          path: .
+          key: workspace-${{ github.sha }}
+          
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ needs.setup.outputs.node-version }}
+          pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
 
       - name: Run ESLint
         run: pnpm lint
 
   typecheck:
     name: Type Check
+    needs: [lint, setup]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.14.0'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: '10.6.3'
-          run_install: false
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Setup pnpm cache
+      - name: Restore workspace
         uses: actions/cache@v3
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install
+          path: .
+          key: workspace-${{ github.sha }}
+          
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ needs.setup.outputs.node-version }}
+          pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
 
       - name: Type check
-        run: |
-          pnpm -r run typecheck
+        run: pnpm -r run typecheck
 
   build:
     name: Build
+    needs: [typecheck, setup]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.14.0'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: '10.6.3'
-          run_install: false
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Setup pnpm cache
+      - name: Restore workspace
         uses: actions/cache@v3
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install
+          path: .
+          key: workspace-${{ github.sha }}
+          
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ needs.setup.outputs.node-version }}
+          pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
 
       - name: Build packages
         env:
           NODE_ENV: production
           CI: true
         run: pnpm -r build
-  
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.14.0'
-          
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          sversion: '10.6.3'
-          run_install: false
-          
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-          
-      - name: Setup pnpm cache
+      - name: Cache built workspace
         uses: actions/cache@v3
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          path: .
+          key: workspace-built-${{ github.sha }}
 
-      - name: Install dependencies
-        run: pnpm install
+  test:
+    name: Test
+    needs: [build, setup]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore built workspace
+        uses: actions/cache@v3
+        with:
+          path: .
+          key: workspace-built-${{ github.sha }}
+          
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ needs.setup.outputs.node-version }}
+          pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
 
       - name: Run tests
-        run: pnpm -r test
+        run: pnpm test
         env:
           NODE_ENV: test
 
