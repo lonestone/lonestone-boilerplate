@@ -8,10 +8,7 @@ import {
 import { useInView } from "@lonestone/ui/hooks/use-in-view";
 import { CommentForm } from "./comment-form";
 import {
-  commentsControllerCreateComment,
-  commentsControllerGetComments,
   CreateCommentSchema,
-  commentsControllerDeleteComment,
 } from "@lonestone/openapi-generator";
 import { CommentItem } from "@/features/comments/comment-item";
 import { Loader2, MessageSquare } from "lucide-react";
@@ -19,6 +16,7 @@ import { cn } from "@lonestone/ui/lib/utils";
 import { Card, CardContent } from "@lonestone/ui/components/primitives/card";
 import { Skeleton } from "@lonestone/ui/components/primitives/skeleton";
 import { queryClient } from "@/lib/query-client";
+import { apiClient } from '@/lib/api-client';
 
 type CommentsListProps = {
   postId: string;
@@ -36,7 +34,7 @@ export function CommentsList({
   // Add comment mutation
   const { mutateAsync: addComment, isPending: isAddingComment } = useMutation({
     mutationFn: async (data: CreateCommentSchema & { parentId?: string }) => {
-      return await commentsControllerCreateComment({
+      return apiClient.commentsControllerCreateComment({
         body: data,
         path: {
           postSlug: postId,
@@ -77,7 +75,7 @@ export function CommentsList({
   } = useInfiniteQuery({
     queryKey: ["comments", postId],
     queryFn: async ({ pageParam = 0 }) => {
-      return commentsControllerGetComments({
+      return apiClient.commentsControllerGetComments({
         path: {
           postSlug: postId,
         },
@@ -98,7 +96,7 @@ export function CommentsList({
   // Delete comment mutation
   const deleteCommentMutation = useMutation({
     mutationFn: async (commentId: string) => {
-      return commentsControllerDeleteComment({
+      return apiClient.commentsControllerDeleteComment({
         path: {
           commentId,
         },

@@ -3,7 +3,6 @@ import {
   CommentSchema,
   CommentsControllerGetCommentRepliesResponse,
   CreateCommentSchema,
-  commentsControllerGetCommentReplies,
 } from "@lonestone/openapi-generator";
 import { Button } from "@lonestone/ui/components/primitives/button";
 import {
@@ -25,8 +24,8 @@ import { cn } from "@lonestone/ui/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
+import { apiClient } from "@/lib/api-client";
 
-// Nouveau composant Replies
 function Replies({
   commentId,
   currentUserId,
@@ -49,7 +48,7 @@ function Replies({
   const { data: repliesData, isLoading: isLoadingReplies } = useQuery({
     queryKey: ["replies", commentId],
     queryFn: async () => {
-      return commentsControllerGetCommentReplies({
+      return apiClient.commentsControllerGetCommentReplies({
         path: {
           commentId,
         },
@@ -165,7 +164,7 @@ export function CommentItem({
     try {
       const offset =
         currentReplies.data.meta.offset + currentReplies.data.meta.pageSize;
-      const newReplies = await commentsControllerGetCommentReplies({
+      const newReplies = await apiClient.commentsControllerGetCommentReplies({
         path: {
           commentId,
         },

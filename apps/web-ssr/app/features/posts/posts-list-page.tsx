@@ -1,31 +1,12 @@
 import { Route } from "./+types/posts-list-page";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
-import { publicPostControllerGetPosts } from "@lonestone/openapi-generator";
 import { Input } from "@lonestone/ui/components/primitives/input";
 import { Button } from "@lonestone/ui/components/primitives/button";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 import PostCard from "./post-card";
-import { queryClient } from "@/lib/query-client";
-import { dehydrate, useQuery } from "@tanstack/react-query";
-
-const publicPostPostsQuery = (query: { search?: string; page?: number }) => {
-  const PAGE_SIZE = 12;
-  const page = query.page || 0;
-
-  return {
-    queryKey: ["publicPostPosts", query.search, query.page],
-    queryFn: async () =>
-      await publicPostControllerGetPosts({
-        query: {
-          filter: query.search ? `title:like:${query.search}` : undefined,
-          offset: (page - 1) * PAGE_SIZE,
-          pageSize: PAGE_SIZE,
-        },
-      }),
-  };
-};
+import { apiClient } from "@/lib/api-client";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url);
@@ -33,22 +14,23 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const search = searchParams.get("search") || "";
   const page = parseInt(searchParams.get("page") || "1");
 
-  await queryClient.prefetchQuery(
-    publicPostPostsQuery({
-      search,
-      page,
-    })
-  );
-
+  const posts = await apiClient.publicPostControllerGetPosts({
+    query: {
+      filter: search ? `title:like:${search}` : undefined,
+      offset: (page - 1) * 10,
+      pageSize: 10,
+    },
+  });
+  
   return {
+    posts,
     search,
     page,
-    dehydratedState: dehydrate(queryClient),
   };
 };
 
 export default function PostsListPage({ loaderData }: Route.ComponentProps) {
-  const { search, page } = loaderData;
+  const { posts, search, page } = loaderData;
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchValue, setSearchValue] = useState(search || "");
 
@@ -70,7 +52,6 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
     setSearchParams(newParams);
   };
 
-  const { data: posts } = useQuery(publicPostPostsQuery({ search, page }));
 
   const totalPages = useMemo(() => {
     if (!posts?.data?.meta.itemCount) return 0;

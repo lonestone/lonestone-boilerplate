@@ -50,6 +50,10 @@ FROM base AS builder
 
 WORKDIR /app
 
+ARG API_URL
+
+ENV API_URL=${API_URL}
+
 # Copier uniquement les packages nécessaires
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json tsconfig.base.json ./
 COPY packages/ui ./packages/ui

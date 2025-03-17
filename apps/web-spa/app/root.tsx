@@ -13,12 +13,6 @@ import type { Route } from "./+types/root";
 
 import '@fontsource/source-sans-pro';
 import "@lonestone/ui/globals.css";
-import { client } from "@lonestone/openapi-generator";
-
-client.setConfig({
-  baseUrl: import.meta.env.VITE_API_URL,
-  credentials: 'include',
-});
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -33,7 +27,9 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+
 export function Layout({ children }: { children: React.ReactNode }) {
+
   return (
     <html lang="en">
       <head>
@@ -57,6 +53,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
+   
       </body>
     </html>
   );

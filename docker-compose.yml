@@ -1,19 +1,17 @@
-version: '3.8'
-
 services:
   # Base de données
   db:
-    image: postgres:14-alpine
+    image: postgres:16-alpine
     environment:
-      POSTGRES_USER: lonestone
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: lonestone
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT}:5432"
+      - "${DATABASE_PORT}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lonestone"]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -24,12 +22,17 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     environment:
-      DATABASE_URL: postgres://lonestone:password@db:5432/lonestone
-      JWT_SECRET: your_secret_key_here
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       NODE_ENV: production
-      PORT: 3000
+      API_PORT: ${API_PORT}
+      TRUSTED_ORIGINS: ${TRUSTED_ORIGINS}
     ports:
-      - "${API_PORT}:3000"
+      - "${API_PORT}:${API_PORT}"
     depends_on:
       db:
         condition: service_healthy
@@ -40,9 +43,9 @@ services:
       context: .
       dockerfile: apps/web-spa/Dockerfile
       args:
-        VITE_API_URL: http://localhost:3000
+        VITE_API_URL: ${VITE_API_URL}
     ports:
-      - "80:80"
+      - "5174:80"
     depends_on:
       - api
 
@@ -51,12 +54,15 @@ services:
     build:
       context: .
       dockerfile: apps/web-ssr/Dockerfile
+      args:
+        API_URL: ${API_URL}
+        NODE_ENV: ${NODE_ENV}
     environment:
-      API_URL: http://api:3000
-      NODE_ENV: production
-      PORT: 3001
+      API_URL: ${API_URL}
+      NODE_ENV: ${NODE_ENV}
+      PORT: 5173
     ports:
-      - "3001:3001"
+      - "5173:5173"
     depends_on:
       - api
 

@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { postControllerGetUserPosts } from "@lonestone/openapi-generator";
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router";
 import { Input } from "@lonestone/ui/components/primitives/input";
@@ -12,6 +11,7 @@ import {
 import { Button } from "@lonestone/ui/components/primitives/button";
 import { Link } from "react-router";
 import { UserPostCard } from "@/features/user-posts/user-post-card";
+import { apiClient } from '@/lib/api-client';
 
 const PAGE_SIZE = 12;
 
@@ -45,7 +45,7 @@ export default function PostsListPage() {
   const { data: posts } = useQuery({
     queryKey: ["posts", pageValue, searchValue],
     queryFn: () =>
-      postControllerGetUserPosts({
+      apiClient.postControllerGetUserPosts({
         query: {
           offset: (pageValue - 1) * PAGE_SIZE,
           pageSize: PAGE_SIZE,

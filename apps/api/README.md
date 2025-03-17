@@ -11,9 +11,8 @@ Cette API est construite avec NestJS et sert de backend pour les applications fr
 | `DATABASE_USER` | Utilisateur de connexion à la base de données | Oui | - |
 | `DATABASE_PASSWORD` | Mot de passe de connexion à la base de données | Oui | - |
 | `DATABASE_NAME` | Nom de la base de données | Oui | - |
-| `JWT_SECRET` | Clé secrète pour les JWT | Oui | - |
 | `API_PORT` | Port sur lequel l'API écoute | Non | `3000` |
-| `TRUSTED_ORIGINS` | Origines approuvées pour les CORS | Non | - |
+| `BETTER_AUTH_SECRET` | Clé secrète pour les JWT | Oui | - |
 | `NODE_ENV` | Environnement (development, production) | Non | `production` |
 
 ```env
@@ -23,9 +22,8 @@ DATABASE_USER=postgres
 DATABASE_PASSWORD=postgres
 DATABASE_NAME=postgres
 
-JWT_SECRET=your_secret_key
+BETTER_AUTH_SECRET=your_secret_key
 API_PORT=3000
-TRUSTED_ORIGINS=http://localhost:80,https://api.example.com
 NODE_ENV=production
 ```
 
@@ -42,8 +40,13 @@ docker build -t lonestone/api -f apps/api/Dockerfile .
 
 ```bash
 docker run -p 3000:3000 \
-  -e DATABASE_URL=postgres://user:password@db:5432/dbname \
-  -e JWT_SECRET=your_secret_key \
+  -e DATABASE_PASSWORD=password \
+  -e DATABASE_USER=user \
+  -e DATABASE_NAME=dbname \
+  -e DATABASE_HOST=db \
+  -e DATABASE_PORT=5432 \
+  -e BETTER_AUTH_SECRET=secret \
+  -e API_PORT=3000 \
   lonestone/api
 ```
 
@@ -53,8 +56,13 @@ Si vous utilisez des migrations de base de données, vous pouvez les exécuter a
 
 ```bash
 docker run -p 3000:3000 \
-  -e DATABASE_URL=postgres://user:password@db:5432/dbname \
-  -e JWT_SECRET=your_secret_key \
+  -e DATABASE_PASSWORD=password \
+  -e DATABASE_USER=user \
+  -e DATABASE_NAME=dbname \
+  -e DATABASE_HOST=db \
+  -e DATABASE_PORT=5432 \
+  -e BETTER_AUTH_SECRET=secret \
+  -e API_PORT=3000 \
   lonestone/api sh -c "pnpm migration:run && node dist/main.js"
 ```
 
@@ -71,9 +79,13 @@ pnpm --filter api dev
 Vous pouvez définir les variables d'environnement locales en créant un fichier `.env` dans le répertoire `apps/api` :
 
 ```
-DATABASE_URL=postgres://user:password@localhost:5432/dbname
-JWT_SECRET=dev_secret_key
-PORT=3000
+DATABASE_PASSWORD=password
+DATABASE_USER=user
+DATABASE_NAME=dbname
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+BETTER_AUTH_SECRET=dev_secret_key
+API_PORT=3000
 NODE_ENV=development
 ```
 

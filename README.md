@@ -262,9 +262,13 @@ docker build -t lonestone/api -f apps/api/Dockerfile .
 
 Variables d'environnement pour l'API (à définir dans votre environnement de déploiement) :
 
-- `DATABASE_URL` : URL de connexion à la base de données
-- `JWT_SECRET` : Clé secrète pour les JWT
-- `PORT` : Port sur lequel l'API écoute (par défaut: 3000)
+- `DATABASE_PASSWORD` : Mot de passe pour la base de données
+- `DATABASE_USER` : Utilisateur pour la base de données
+- `DATABASE_NAME` : Nom de la base de données
+- `DATABASE_HOST` : Hôte de la base de données
+- `DATABASE_PORT` : Port de la base de données
+- `BETTER_AUTH_SECRET` : Clé secrète pour les JWT
+- `API_PORT` : Port sur lequel l'API écoute (par défaut: 3000)
 
 #### Application SPA (Single Page Application)
 
@@ -297,8 +301,13 @@ Variables d'environnement pour l'application SSR (à définir dans votre environ
 
 ```bash
 docker run -p 3000:3000 \
-  -e DATABASE_URL=postgres://user:password@db:5432/dbname \
-  -e JWT_SECRET=your_secret_key \
+  -e DATABASE_PASSWORD=password \
+  -e DATABASE_USER=user \
+  -e DATABASE_NAME=dbname \
+  -e DATABASE_HOST=db \
+  -e DATABASE_PORT=5432 \
+  -e BETTER_AUTH_SECRET=secret \
+  -e API_PORT=3000 \
   lonestone/api
 ```
 

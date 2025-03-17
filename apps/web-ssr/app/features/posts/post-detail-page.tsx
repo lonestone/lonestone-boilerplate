@@ -1,14 +1,13 @@
-import { publicPostControllerGetPost } from "@lonestone/openapi-generator";
-
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import { Route } from "./+types/post-detail-page";
 import PostContent from "@lonestone/ui/components/posts/PostContent";
 import { Button } from "@lonestone/ui/components/primitives/button";
 import { Link } from "react-router";
 import { CommentsList } from "../comments/comments-list";
+import { apiClient } from "@/lib/api-client";
 
 export const loader = async ({ params }: { params: { slug: string } }) => {
-  const post = await publicPostControllerGetPost({
+  const post = await apiClient.publicPostControllerGetPost({
     path: {
       slug: params.slug,
     },
