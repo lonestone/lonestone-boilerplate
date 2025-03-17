@@ -19,18 +19,14 @@ export default defineConfig({
   format: ["esm", "cjs"],
   target: "es2022",
   sourcemap: !isProduction,
-  dts: false, // We'll generate declarations with tsc
-  clean: true,
   minify: isProduction,
-  splitting: true,
-  treeshake: true,
-  
-  async onSuccess() {
+  splitting: true,  
+  onSuccess: async () => {
     console.log("✅ Successfully built package");
     
     try {
       console.log("Generating TypeScript declarations...");
-      await exec(`tsc --emitDeclarationOnly --declaration ${!isProduction ? "--declarationMap" : ""}`, { cwd: __dirname });
+      await exec(`tsc --emitDeclarationOnly ${!isProduction ? "--declarationMap" : ""}`, { cwd: __dirname });
       console.log("✅ Successfully emitted type declarations");
     } catch (error) {
       console.error("❌ Error emitting type declarations:", error);

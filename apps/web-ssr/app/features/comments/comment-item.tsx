@@ -1,6 +1,7 @@
 import { CommentForm } from "@/features/comments/comment-form";
 import {
   CommentSchema,
+  CommentsControllerGetCommentRepliesResponse,
   CreateCommentSchema,
   commentsControllerGetCommentReplies,
 } from "@lonestone/openapi-generator";
@@ -21,39 +22,112 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@lonestone/ui/lib/utils";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/query-client";
+
+// Nouveau composant Replies
+function Replies({
+  commentId,
+  currentUserId,
+  postAuthorId,
+  isAddingComment,
+  depth,
+  onDelete,
+  onReplySubmit,
+  onLoadMoreReplies,
+}: {
+  commentId: string;
+  currentUserId?: string;
+  postAuthorId?: string;
+  isAddingComment: boolean;
+  depth: number;
+  onDelete: (commentId: string) => void;
+  onReplySubmit: (data: CreateCommentSchema) => Promise<void>;
+  onLoadMoreReplies: (commentId: string) => void;
+}) {
+  const { data: repliesData, isLoading: isLoadingReplies } = useQuery({
+    queryKey: ["replies", commentId],
+    queryFn: async () => {
+      return commentsControllerGetCommentReplies({
+        path: {
+          commentId,
+        },
+        query: {
+          offset: 0,
+        },
+      });
+    }
+  });
+
+  const replies = repliesData?.data?.data || [];
+  const hasMoreReplies = repliesData?.data?.meta?.hasMore || false;
+
+  if (isLoadingReplies) {
+    return (
+      <div className="flex justify-center py-2">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span>Loading replies...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+      {replies.map((reply) => (
+        <CommentItem
+          key={reply.id}
+          comment={reply}
+          currentUserId={currentUserId}
+          postAuthorId={postAuthorId}
+          isAddingComment={isAddingComment}
+          depth={depth + 1}
+          onDelete={onDelete}
+          onReplySubmit={onReplySubmit}
+        />
+      ))}
+
+      {hasMoreReplies && (
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "mt-2 text-xs",
+            depth > 0 ? "h-6 text-xs ml-8" : "h-8 w-full"
+          )}
+          onClick={() => onLoadMoreReplies(commentId)}
+        >
+          Load more replies
+        </Button>
+      )}
+    </div>
+  );
+}
 
 // Component for rendering a single comment with its replies
 type CommentItemProps = {
   comment: CommentSchema;
-  isReplyingTo: string | undefined;
-  showRepliesFor: Set<string>;
   currentUserId?: string;
   postAuthorId?: string;
   isAddingComment: boolean;
   depth?: number;
-  onReply: (commentId: string) => void;
-  onToggleReplies: (commentId: string) => void;
   onDelete: (commentId: string) => void;
-  onLoadMoreReplies: (commentId: string) => void;
-  onReplySuccess: (data: CreateCommentSchema) => void;
+  onReplySubmit: (data: CreateCommentSchema) => Promise<void>;
 };
 
 export function CommentItem({
   comment,
-  isReplyingTo,
-  showRepliesFor,
   currentUserId,
   postAuthorId,
   isAddingComment,
   depth = 0,
-  onReply,
-  onToggleReplies,
   onDelete,
-  onLoadMoreReplies,
-  onReplySuccess,
+  onReplySubmit,
 }: CommentItemProps) {
+  const [isReplying, setIsReplying] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
   const isAuthor = currentUserId && comment.user?.id === currentUserId;
   const isPostAuthor = currentUserId === postAuthorId;
   const canDelete = isAuthor || isPostAuthor;
@@ -66,44 +140,62 @@ export function CommentItem({
     }
   );
   const [isHovered, setIsHovered] = useState(false);
-  const isReplying = isReplyingTo === comment.id;
-  const showReplies = showRepliesFor.has(comment.id);
-  const hasReplies = comment.replyCount !== undefined && comment.replyCount > 0;
-
-  // Fetch replies for this comment
-  const { data: repliesData, isLoading: isLoadingReplies } = useQuery({
-    queryKey: ["replies", comment.id],
-    queryFn: async () => {
-      return commentsControllerGetCommentReplies({
-        path: {
-          commentId: comment.id,
-        },
-        query: {
-          offset: 0,
-        },
-      });
-    },
-    enabled: showReplies,
-  });
-
-  const replies = repliesData?.data?.data || [];
-  const hasMoreReplies = repliesData?.data?.meta?.hasMore || false;
+  const hasReplies = useMemo(() => comment.replyCount !== undefined && comment.replyCount > 0, [comment.replyCount]);
 
   // Calculate indentation based on depth
   const isNested = depth > 0;
 
+  const toggleReplies = () => {
+    setShowReplies(prev => !prev);
+  };
+
+  const loadMoreReplies = async (commentId: string) => {
+    // Use any type to avoid type errors with the API response
+    const currentReplies = queryClient.getQueryData<{
+      data: CommentsControllerGetCommentRepliesResponse;
+    }>(["replies", commentId]);
+    if (!currentReplies || !currentReplies.data?.meta) return;
+
+    try {
+      const offset =
+        currentReplies.data.meta.offset + currentReplies.data.meta.pageSize;
+      const newReplies = await commentsControllerGetCommentReplies({
+        path: {
+          commentId,
+        },
+        query: {
+          offset,
+        },
+      });
+
+      // Merge the new replies with existing ones
+      if (currentReplies.data && newReplies.data) {
+        queryClient.setQueryData(["replies", commentId], {
+          ...newReplies,
+          data: {
+            ...newReplies.data,
+            data: [...currentReplies.data.data, ...newReplies.data.data],
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error loading more replies:", error);
+    }
+  };
+
   return (
     <div
       className={cn(
-        "relative group/comment-item",
-        isNested && "ml-2 md:ml-4 pl-2 md:pl-4 pt-3"
+        "relative",
+        isNested && "ml-2 md:ml-4 pl-2 md:pl-4 pt-3",
+        "last:[&>.comment-line]:h-28 last:[&>.comment-line-end]:block"
       )}
     >
       {/* Vertical line connecting replies */}
       {isNested && (
         <>
-          <div className="absolute left-0 top-0 bottom-0 w-px bg-border group-last/comment-item:bottom-1/2" />
-          <div className="group-last/comment-item:block absolute left-0 h-28 size-[1rem] border-b border-l rounded-bl-full" />
+          <div className={"comment-line absolute left-0 top-0 h-full w-px bg-border"} />
+          <div className={"comment-line-end absolute left-0 h-28 size-[1rem] border-b border-l rounded-bl-full"} />
         </>
       )}
 
@@ -117,7 +209,7 @@ export function CommentItem({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <CardHeader className={cn("pb-2", isNested && "pt-3 pb-1")}>
+        <CardHeader>
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <div
@@ -164,7 +256,7 @@ export function CommentItem({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onReply(comment.id)}
+              onClick={() => setIsReplying(true)}
               className={cn(
                 "text-xs h-7 px-2 transition-opacity",
                 isHovered || isReplying ? "opacity-100" : "opacity-70",
@@ -181,7 +273,7 @@ export function CommentItem({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onToggleReplies(comment.id)}
+                onClick={toggleReplies}
                 className={cn(
                   "text-xs h-7 px-2",
                   showReplies ? "text-primary" : "",
@@ -232,62 +324,28 @@ export function CommentItem({
                 content: "",
                 parentId: comment.id,
               }}
-              onSubmit={onReplySuccess}
-              onCancel={() => onReply("")}
+              onSubmit={async (data) => {
+                await onReplySubmit(data);
+                console.log("reply submitted");
+                setIsReplying(false);
+                setShowReplies(true);
+              }}
             />
           </div>
         )}
       </Card>
 
-      {/* Render replies recursively */}
       {showReplies && (
-        <div
-          className={cn(
-            "animate-in fade-in slide-in-from-top-1 duration-200",
-            isLoadingReplies ? "opacity-70" : ""
-          )}
-        >
-          {isLoadingReplies && (
-            <div className="flex justify-center py-2">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span>Loading replies...</span>
-              </div>
-            </div>
-          )}
-
-          {replies.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              isReplyingTo={isReplyingTo}
-              showRepliesFor={showRepliesFor}
-              currentUserId={currentUserId}
-              postAuthorId={postAuthorId}
-              isAddingComment={isAddingComment}
-              depth={depth + 1}
-              onReply={onReply}
-              onToggleReplies={onToggleReplies}
-              onDelete={onDelete}
-              onLoadMoreReplies={onLoadMoreReplies}
-              onReplySuccess={onReplySuccess}
-            />
-          ))}
-
-          {hasMoreReplies && (
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn(
-                "mt-2 text-xs",
-                isNested ? "h-6 text-xs ml-8" : "h-8 w-full"
-              )}
-              onClick={() => onLoadMoreReplies(comment.id)}
-            >
-              Load more replies
-            </Button>
-          )}
-        </div>
+        <Replies
+          commentId={comment.id}
+          currentUserId={currentUserId}
+          postAuthorId={postAuthorId}
+          isAddingComment={isAddingComment}
+          depth={depth}
+          onDelete={onDelete}
+          onReplySubmit={onReplySubmit}
+          onLoadMoreReplies={loadMoreReplies}
+        />
       )}
     </div>
   );

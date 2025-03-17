@@ -3,6 +3,8 @@ import { publicPostControllerGetRandomPost } from "@lonestone/openapi-generator"
 import { queryClient } from "@/lib/query-client";
 import { dehydrate, useQuery } from "@tanstack/react-query";
 
+// https://tanstack.com/query/latest/docs/framework/react/guides/ssr
+// Example of use TanStack query with SSR 
 const publicPostRandomQuery = {
   queryKey: ["publicPostRandom"],
   queryFn: async () => await publicPostControllerGetRandomPost(),

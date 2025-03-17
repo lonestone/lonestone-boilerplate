@@ -1,8 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   useInfiniteQuery,
   useMutation,
-  useQueryClient,
 } from "@tanstack/react-query";
 import { Separator } from "@lonestone/ui/components/primitives/separator";
 import {
@@ -14,16 +13,15 @@ import { CommentForm } from "./comment-form";
 import {
   commentsControllerCreateComment,
   commentsControllerGetComments,
-  commentsControllerGetCommentReplies,
   CreateCommentSchema,
   commentsControllerDeleteComment,
-  CommentsControllerGetCommentRepliesResponse,
 } from "@lonestone/openapi-generator";
 import { CommentItem } from "@/features/comments/comment-item";
 import { Loader2, MessageSquare } from "lucide-react";
 import { cn } from "@lonestone/ui/lib/utils";
 import { Card, CardContent } from "@lonestone/ui/components/primitives/card";
 import { Skeleton } from "@lonestone/ui/components/primitives/skeleton";
+import { queryClient } from "@/lib/query-client";
 
 type CommentsListProps = {
   postId: string;
@@ -36,9 +34,6 @@ export function CommentsList({
   postAuthorId,
   currentUserId,
 }: CommentsListProps) {
-  const queryClient = useQueryClient();
-  const [replyingTo, setReplyingTo] = useState<string | undefined>(undefined);
-  const [showRepliesFor, setShowRepliesFor] = useState<Set<string>>(new Set());
   const { ref, inView } = useInView();
 
   // Add comment mutation
@@ -55,7 +50,6 @@ export function CommentsList({
       // Invalidate comments query to refetch
       queryClient.invalidateQueries({ queryKey: ["comments", postId] });
 
-      // If this is a reply, also invalidate the replies query
       if (result.data?.parentId) {
         queryClient.invalidateQueries({
           queryKey: ["replies", result.data.parentId],
@@ -68,6 +62,7 @@ export function CommentsList({
     try {
       await addComment({
         ...data,
+        parentId: data.parentId,
       });
     } catch (error) {
       console.error("Error adding comment:", error);
@@ -114,80 +109,12 @@ export function CommentsList({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", postId] });
-
-      // Also invalidate any replies queries that might be affected
-      Array.from(showRepliesFor).forEach((commentId) => {
-        queryClient.invalidateQueries({ queryKey: ["replies", commentId] });
-      });
     },
     onError: (error) => {
       console.error("Error deleting comment:", error);
     },
   });
 
-  // Toggle showing replies for a comment
-  const toggleReplies = async (commentId: string) => {
-    const newShowRepliesFor = new Set(showRepliesFor);
-
-    if (showRepliesFor.has(commentId)) {
-      newShowRepliesFor.delete(commentId);
-    } else {
-      newShowRepliesFor.add(commentId);
-      // Fetch replies if not already loaded
-      if (!queryClient.getQueryData(["replies", commentId])) {
-        try {
-          const repliesData = await commentsControllerGetCommentReplies({
-            path: {
-              commentId,
-            },
-            query: {
-              offset: 0,
-            },
-          });
-          queryClient.setQueryData(["replies", commentId], repliesData);
-        } catch (error) {
-          console.error("Error fetching replies:", error);
-        }
-      }
-    }
-
-    setShowRepliesFor(newShowRepliesFor);
-  };
-
-  // Load more replies
-  const loadMoreReplies = async (commentId: string) => {
-    // Use any type to avoid type errors with the API response
-    const currentReplies = queryClient.getQueryData<{
-      data: CommentsControllerGetCommentRepliesResponse;
-    }>(["replies", commentId]);
-    if (!currentReplies || !currentReplies.data?.meta) return;
-
-    try {
-      const offset =
-        currentReplies.data.meta.offset + currentReplies.data.meta.pageSize;
-      const newReplies = await commentsControllerGetCommentReplies({
-        path: {
-          commentId,
-        },
-        query: {
-          offset,
-        },
-      });
-
-      // Merge the new replies with existing ones
-      if (currentReplies.data && newReplies.data) {
-        queryClient.setQueryData(["replies", commentId], {
-          ...newReplies,
-          data: {
-            ...newReplies.data,
-            data: [...currentReplies.data.data, ...newReplies.data.data],
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Error loading more replies:", error);
-    }
-  };
 
   const allComments = useMemo(() => {
     return commentsPages?.pages.flatMap((page) => page.data?.data || []) || [];
@@ -240,18 +167,12 @@ export function CommentsList({
             <CommentItem
               key={comment.id}
               comment={comment}
-              isReplyingTo={replyingTo}
-              showRepliesFor={showRepliesFor}
               currentUserId={currentUserId}
               postAuthorId={postAuthorId}
               isAddingComment={isAddingComment}
-              onReply={setReplyingTo}
-              onToggleReplies={toggleReplies}
               onDelete={(commentId) => deleteCommentMutation.mutate(commentId)}
-              onLoadMoreReplies={loadMoreReplies}
-              onReplySuccess={(data) => {
-                setReplyingTo(undefined);
-                onSubmit(data);
+              onReplySubmit={async (data) => {
+                await onSubmit(data);
               }}
             />
           ))}

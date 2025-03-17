@@ -13,6 +13,12 @@ import type { Route } from "./+types/root";
 
 import '@fontsource/source-sans-pro';
 import "@lonestone/ui/globals.css";
+import { client } from "@lonestone/openapi-generator";
+
+client.setConfig({
+  baseUrl: import.meta.env.API_URL,
+  credentials: 'include',
+});
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },

@@ -14,6 +14,12 @@ import { useDehydratedState } from "@/hooks/use-dehydrated-state";
 
 import '@fontsource/source-sans-pro';
 import "@lonestone/ui/globals.css";
+import { client } from "@lonestone/openapi-generator";
+
+client.setConfig({
+  baseUrl: import.meta.env.VITE_API_URL,
+  credentials: 'include',
+});
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },

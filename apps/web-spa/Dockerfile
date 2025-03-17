@@ -32,18 +32,10 @@ WORKDIR /app
 
 # Définir les arguments de build qui peuvent être passés lors de la construction de l'image
 ARG VITE_API_URL
-ARG VITE_APP_ENV=production
-ARG VITE_APP_VERSION
-# Autres variables d'environnement spécifiques à votre application
-# ARG VITE_FEATURE_FLAG_X
-# ARG VITE_ANALYTICS_ID
 
 # Définir les variables d'environnement pour le build
 ENV VITE_API_URL=${VITE_API_URL}
-ENV VITE_APP_ENV=${VITE_APP_ENV}
-ENV VITE_APP_VERSION=${VITE_APP_VERSION}
-# ENV VITE_FEATURE_FLAG_X=${VITE_FEATURE_FLAG_X}
-# ENV VITE_ANALYTICS_ID=${VITE_ANALYTICS_ID}
+
 
 # Copier uniquement les packages nécessaires
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json tsconfig.base.json ./
