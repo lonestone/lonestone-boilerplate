@@ -26,7 +26,7 @@ COPY apps/web-ssr/package.json ./apps/web-ssr/
 RUN pnpm install --frozen-lockfile --shamefully-hoist
 
 # 🔹 Étape 2 : Installation des dépendances de production uniquement
-FROM node-   AS prod-deps
+FROM base AS prod-deps
 
 WORKDIR /app
 

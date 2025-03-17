@@ -80,6 +80,8 @@ docker build -t lonestone/web-ssr -f apps/web-ssr/Dockerfile .
 ```bash
 docker run -p 3000:3000 \
   -e API_URL=https://api.example.com \
+  -e PORT=3000 \
+  -e NODE_ENV=production \
   lonestone/web-ssr
 ```
 
