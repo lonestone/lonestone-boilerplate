@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "wait-on http://localhost:3000/docs && pnpm generate --watch",
+    "dev": "wait-on http://localhost:3000/docs-json && pnpm generate --watch",
     "generate": "openapi-ts -f ./openapi-ts.config.ts"
   },
   "main": "./index.ts",

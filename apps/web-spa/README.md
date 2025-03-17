@@ -13,8 +13,6 @@ Dans une SPA, les variables d'environnement doivent être définies au moment du
 | Variable | Description | Obligatoire | Défaut |
 |----------|-------------|-------------|--------|
 | `VITE_API_URL` | URL de l'API backend | Oui | - |
-| `VITE_APP_ENV` | Environnement (development, staging, production) | Non | `production` |
-| `VITE_APP_VERSION` | Version de l'application | Non | - |
 
 > **Note**: Toutes les variables d'environnement utilisées dans l'application doivent commencer par `VITE_` pour être accessibles dans le code client.
 
@@ -26,8 +24,6 @@ Dans une SPA, les variables d'environnement doivent être définies au moment du
 # À la racine du projet
 docker build -t lonestone/web-spa \
   --build-arg VITE_API_URL=https://api.example.com \
-  --build-arg VITE_APP_ENV=production \
-  --build-arg VITE_APP_VERSION=1.0.0 \
   -f apps/web-spa/Dockerfile .
 ```
 
@@ -73,7 +69,6 @@ Vous pouvez définir les variables d'environnement locales en créant un fichier
 
 ```
 VITE_API_URL=http://localhost:3000
-VITE_APP_ENV=development
 ```
 
 ## Overview

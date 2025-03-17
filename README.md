@@ -98,7 +98,7 @@ cp .env.example .env
 4. Démarrez les services Docker :
 
 ```bash
-pnpm docker:up
+pnpm docker:up postgres
 ```
 
 5. Effectuez les migrations de la base de données :
@@ -272,16 +272,12 @@ Variables d'environnement pour l'API (à définir dans votre environnement de d�
 # À la racine du projet
 docker build -t lonestone/web-spa \
   --build-arg VITE_API_URL=https://api.example.com \
-  --build-arg VITE_APP_ENV=production \
-  --build-arg VITE_APP_VERSION=1.0.0 \
   -f apps/web-spa/Dockerfile .
 ```
 
 Variables d'environnement pour la SPA (à définir au moment du build) :
 
 - `VITE_API_URL` : URL de l'API backend
-- `VITE_APP_ENV` : Environnement (development, staging, production)
-- `VITE_APP_VERSION` : Version de l'application
 
 #### Application SSR (Server-Side Rendering)
 

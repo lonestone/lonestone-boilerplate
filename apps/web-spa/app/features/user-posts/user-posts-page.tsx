@@ -12,7 +12,8 @@ import {
 import { Button } from "@lonestone/ui/components/primitives/button";
 import { Link } from "react-router";
 import { UserPostCard } from "@/features/user-posts/user-post-card";
-const PAGE_SIZE = 10;
+
+const PAGE_SIZE = 12;
 
 export default function PostsListPage() {
   const [searchParams, setSearchParams] = useSearchParams();

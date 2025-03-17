@@ -2,8 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { EntityManager, FilterQuery } from '@mikro-orm/core';
 import { Post, PostVersion } from './posts.entity';
 import { User } from '../auth/auth.entity';
-import { CreatePostInput, PostFiltering, PublicPosts, UpdatePostInput, UserPost, UserPosts } from 'src/modules/posts/contracts/posts.contract';
-import { PostSorting, PostPagination } from 'src/modules/posts/contracts/posts.contract';
+import { CreatePostInput, PostFiltering, PublicPosts, UpdatePostInput, UserPost, UserPosts } from '../posts/contracts/posts.contract';
+import { PostSorting, PostPagination } from '../posts/contracts/posts.contract';
 import { PublicPost } from './contracts/posts.contract';
 import { CommentsService } from '../comments/comments.service';
 
