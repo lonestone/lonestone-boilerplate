@@ -5,21 +5,15 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteLoaderData,
 } from "react-router";
 import { HydrationBoundary, QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
-
 import type { Route } from "./+types/root";
 import { useDehydratedState } from "@/hooks/use-dehydrated-state";
 
 import '@fontsource/source-sans-pro';
 import "@lonestone/ui/globals.css";
-import { client } from "@lonestone/openapi-generator";
-
-client.setConfig({
-  baseUrl: import.meta.env.VITE_API_URL,
-  credentials: 'include',
-});
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -34,7 +28,15 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+export const loader = async () => {
+  return {
+    API_URL: process.env.API_URL as string,
+  };
+};
+
 export function Layout({ children }: { children: React.ReactNode }) {
+  const data = useRouteLoaderData<typeof loader>("root");
+  
   return (
     <html lang="en">
       <head>
@@ -47,6 +49,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
+        {/* Inject the API URL into the window object */}
+        <script dangerouslySetInnerHTML={{
+          __html: `window.ENV = ${JSON.stringify(data)}`,
+        }} />
       </body>
     </html>
   );

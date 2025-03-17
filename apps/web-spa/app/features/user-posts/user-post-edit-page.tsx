@@ -1,16 +1,13 @@
 import UserPostForm, { UserPostFormSkeleton } from "./user-post-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  postControllerGetUserPost,
-  postControllerPublishPost,
-  postControllerUnpublishPost,
-  postControllerUpdatePost,
   UpdatePostSchema,
 } from "@lonestone/openapi-generator";
 import { useNavigate, useParams } from "react-router";
 import { Button } from "@lonestone/ui/components/primitives/button";
 import { SendIcon } from "@lonestone/ui/icons";
 import { queryClient } from "@/lib/query-client";
+import { apiClient } from "@/lib/api-client";
 
 export default function UserPostEditPage() {
   const { userPostId } = useParams();
@@ -18,7 +15,7 @@ export default function UserPostEditPage() {
   const { data: post, isLoading } = useQuery({
     queryKey: ["userPost", userPostId],
     queryFn: () =>
-      postControllerGetUserPost({
+      apiClient.postControllerGetUserPost({
         path: {
           id: userPostId as string,
         },
@@ -27,7 +24,7 @@ export default function UserPostEditPage() {
 
   const { mutate: UpdatePost, isPending } = useMutation({
     mutationFn: (data: UpdatePostSchema) =>
-      postControllerUpdatePost({
+      apiClient.postControllerUpdatePost({
         body: data,
         path: {
           id: userPostId as string,
@@ -40,7 +37,7 @@ export default function UserPostEditPage() {
 
   const { mutate: PublishPost, isPending: isPublishing } = useMutation({
     mutationFn: () =>
-      postControllerPublishPost({
+      apiClient.postControllerPublishPost({
         path: { id: userPostId as string },
       }),
     onSuccess: () => {
@@ -50,7 +47,7 @@ export default function UserPostEditPage() {
 
   const { mutate: UnpublishPost, isPending: isUnpublishing } = useMutation({
     mutationFn: () =>
-      postControllerUnpublishPost({
+      apiClient.postControllerUnpublishPost({
         path: { id: userPostId as string },
       }),
     onSuccess: () => {

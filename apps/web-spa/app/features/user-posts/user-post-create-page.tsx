@@ -1,14 +1,15 @@
 import UserPostForm from "./user-post-form";
 import { useMutation } from "@tanstack/react-query";
 import {
-  postControllerCreatePost,
   CreatePostSchema,
 } from "@lonestone/openapi-generator";
 import { useNavigate } from "react-router";
 import { useState } from "react";
 import { Settings, Check, AlertCircle } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 
 export default function UserPostCreatePage() {
+
   const [status, setStatus] = useState<
     "idle" | "processing" | "success" | "error"
   >("idle");
@@ -17,7 +18,7 @@ export default function UserPostCreatePage() {
 
   const { mutate: createPost, isPending } = useMutation({
     mutationFn: (data: CreatePostSchema) =>
-      postControllerCreatePost({
+      apiClient.postControllerCreatePost({
         body: data,
       }),
     onSuccess: async (result) => {
@@ -30,7 +31,7 @@ export default function UserPostCreatePage() {
       await new Promise((resolve) => setTimeout(resolve, 800));
       navigate(`/dashboard/posts/${result.data.id}/edit`);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       setStatus("error");
       setErrorMessage(
         error?.message || "An error occurred while creating the post"
