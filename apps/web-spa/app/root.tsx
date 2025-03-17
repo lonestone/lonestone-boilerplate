@@ -16,7 +16,7 @@ import "@lonestone/ui/globals.css";
 import { client } from "@lonestone/openapi-generator";
 
 client.setConfig({
-  baseUrl: import.meta.env.API_URL,
+  baseUrl: import.meta.env.VITE_API_URL,
   credentials: 'include',
 });
 

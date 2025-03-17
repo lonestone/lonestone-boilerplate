@@ -22,7 +22,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@lonestone/ui/lib/utils";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 
@@ -128,6 +128,7 @@ export function CommentItem({
 }: CommentItemProps) {
   const [isReplying, setIsReplying] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
+  const [replyCount, setReplyCount] = useState(comment.replyCount || 0);
   const isAuthor = currentUserId && comment.user?.id === currentUserId;
   const isPostAuthor = currentUserId === postAuthorId;
   const canDelete = isAuthor || isPostAuthor;
@@ -140,7 +141,12 @@ export function CommentItem({
     }
   );
   const [isHovered, setIsHovered] = useState(false);
-  const hasReplies = useMemo(() => comment.replyCount !== undefined && comment.replyCount > 0, [comment.replyCount]);
+
+  useEffect(() => {
+    setReplyCount(comment.replyCount || 0);
+  }, [comment.replyCount]);
+
+  const hasReplies = useMemo(() => replyCount !== undefined && replyCount > 0, [replyCount]);
 
   // Calculate indentation based on depth
   const isNested = depth > 0;
@@ -290,8 +296,8 @@ export function CommentItem({
                     className={cn("mr-1", isNested ? "h-2.5 w-2.5" : "h-3 w-3")}
                   />
                 )}
-                {showReplies ? "Hide" : "Show"} {comment.replyCount}{" "}
-                {comment.replyCount === 1 ? "reply" : "replies"}
+                {showReplies ? "Hide" : "Show"} {replyCount}{" "}
+                {replyCount === 1 ? "reply" : "replies"}
               </Button>
             )}
           </div>
@@ -326,7 +332,7 @@ export function CommentItem({
               }}
               onSubmit={async (data) => {
                 await onReplySubmit(data);
-                console.log("reply submitted");
+                setReplyCount((prev) => prev + 1);
                 setIsReplying(false);
                 setShowReplies(true);
               }}

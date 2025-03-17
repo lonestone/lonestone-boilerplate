@@ -11,7 +11,7 @@ import { queryClient } from "@/lib/query-client";
 import { dehydrate, useQuery } from "@tanstack/react-query";
 
 const publicPostPostsQuery = (query: { search?: string; page?: number }) => {
-  const PAGE_SIZE = 10;
+  const PAGE_SIZE = 12;
   const page = query.page || 0;
 
   return {

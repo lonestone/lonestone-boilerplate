@@ -62,15 +62,6 @@ export default function UserPostForm({
 
   return (
     <div className="space-y-8 max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-bold">
-          {initialData ? "Edit Post" : "Create New Post"}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Share your thoughts, images, and videos with the world.
-        </p>
-      </div>
-
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
         {/* Title Input */}
         <div className="space-y-2">

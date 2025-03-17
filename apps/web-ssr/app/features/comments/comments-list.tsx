@@ -1,8 +1,5 @@
-import { useState, useMemo, useCallback } from "react";
-import {
-  useInfiniteQuery,
-  useMutation,
-} from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import { Separator } from "@lonestone/ui/components/primitives/separator";
 import {
   Alert,
@@ -114,7 +111,6 @@ export function CommentsList({
       console.error("Error deleting comment:", error);
     },
   });
-
 
   const allComments = useMemo(() => {
     return commentsPages?.pages.flatMap((page) => page.data?.data || []) || [];
