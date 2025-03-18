@@ -12,7 +12,7 @@ Dans le dossier `src/modules/*/tests/`, vous trouverez les tests pour le module 
 ## Commandes
 
 ```bash
-# Tests unitaires
+# Tests e2e
 pnpm test
 
 # Tests unitaires en mode watch
@@ -21,8 +21,6 @@ pnpm test:watch
 # Tests avec couverture
 pnpm test:cov
 
-# Tests e2e
-pnpm test:e2e
 ```
 
 ## Exemple simple de test unitaire

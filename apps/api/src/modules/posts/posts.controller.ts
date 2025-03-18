@@ -61,7 +61,7 @@ export class PostController {
     );
   }
 
-  @TypedRoute.Post(":id/publish")
+  @TypedRoute.Patch(":id/publish")
   async publishPost(
     @Session() session: { user: { id: string } },
     @Param("id") id: string
@@ -69,7 +69,7 @@ export class PostController {
     return await this.postService.publishPost(session.user.id, id);
   }
 
-  @TypedRoute.Post(":id/unpublish")
+  @TypedRoute.Patch(":id/unpublish")
   async unpublishPost(
     @Session() session: { user: { id: string } },
     @Param("id") id: string

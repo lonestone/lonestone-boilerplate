@@ -3,6 +3,7 @@ import { Seeder } from "@mikro-orm/seeder";
 import { Post, PostVersion } from "../modules/posts/posts.entity";
 import { faker } from "@faker-js/faker";
 import { addDays } from "date-fns";
+import slugify from "slugify";
 
 const generateDatePublished = (post: Post) => {
   if (post.versions.getItems().length === 1) {
@@ -14,6 +15,14 @@ const generateDatePublished = (post: Post) => {
     from: secondToLastVersion.createdAt,
     to: addDays(lastVersion.createdAt, 2),
   });
+}
+
+const computeSlug = (post: Post) => {
+  if (post.versions.length === 0) return;
+
+  const baseSlug = slugify(post.versions.getItems()[0].title, { lower: true, strict: true });
+  const shortId = post.id.substring(0, 8);
+  return `${baseSlug}-${shortId}`;
 }
 
 export class PostSeeder extends Seeder {
@@ -56,7 +65,7 @@ export class PostSeeder extends Seeder {
           ? undefined
           : generateDatePublished(post);
       if (post.publishedAt) {
-        post.computeSlug();
+        post.slug = computeSlug(post);
       }
       await em.persistAndFlush(post);
     }

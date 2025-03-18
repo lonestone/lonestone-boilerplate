@@ -13,10 +13,9 @@
     "db:migrate:down": "npx mikro-orm migration:down",
     "db:migrate:fresh": "npx mikro-orm migration:fresh",
     "db:seed": "npx mikro-orm migration:fresh --seed",
-    "test": "NODE_ENV=test jest",
+    "test": "pnpm run db:migrate:fresh && NODE_ENV=test jest",
     "test:watch": "NODE_ENV=test jest --watch",
-    "test:cov": "NODE_ENV=test jest --coverage",
-    "test:e2e": "NODE_ENV=test jest --config ./src/test/jest-e2e.json"
+    "test:cov": "NODE_ENV=test jest --coverage"
   },
   "dependencies": {
     "@anatine/zod-openapi": "^2.2.7",

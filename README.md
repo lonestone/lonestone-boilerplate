@@ -91,8 +91,12 @@ pnpm install
 
 3. Configurez les variables d'environnement :
 
+On utilise un seul fichier `.env` a la racine du projet pour toutes les applications.
+Cela permet de ne pas avoir à configurer chaque application individuellement.
+
 ```bash
 cp .env.example .env
+cp .env.example .env.test
 ```
 
 4. Démarrez les services Docker :
@@ -104,13 +108,13 @@ pnpm docker:up postgres
 5. Effectuez les migrations de la base de données :
 
 ```bash
-pnpm --filter=api db:migrate:up
+pnpm with-env --filter=api db:migrate:up
 ```
 
 6. Initialisez les données de test :
 
 ```bash
-pnpm --filter=api db:seed
+pnpm with-env --filter=api db:seed
 ```
 
 7. Démarrez les applications en mode développement :
@@ -139,14 +143,18 @@ Le projet utilise Docker Compose pour fournir les services suivants :
 - **Démarrer le développement** : `pnpm dev`
 - **Construire les applications** : `pnpm build`
 - **Linter les applications** : `pnpm lint`
-- **Générer les clients OpenAPI** : `pnpm generate`
+- **Générer les clients OpenAPI** : `pnpm with-env generate`
 
 ### Base de données (API)
 
-- **Créer une migration** : `pnpm --filter=api db:migration:create`
-- **Exécuter les migrations** : `pnpm --filter=api db:migrate:up`
-- **Annuler la dernière migration** : `pnpm --filter=api db:migrate:down`
-- **Initialiser les données** : `pnpm --filter=api db:seed`
+- **Créer une migration** : `pnpm with-env --filter=api db:migration:create`
+- **Exécuter les migrations** : `pnpm with-env --filter=api db:migrate:up`
+- **Annuler la dernière migration** : `pnpm with-env --filter=api db:migrate:down`
+- **Initialiser les données** : `pnpm with-env --filter=api db:seed`
+
+### Tests
+
+- **Exécuter les tests** : `pnpm with-env- test`
 
 ## 💻 Développement
 

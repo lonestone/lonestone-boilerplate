@@ -8,7 +8,6 @@ import {
   Index,
   Unique,
 } from "@mikro-orm/core";
-import slugify from "slugify";
 import { User } from "../auth/auth.entity";
 import { Comment } from "../comments/comments.entity";
 
@@ -46,14 +45,6 @@ export class Post {
   @Property({ fieldName: "slug", nullable: true })
   @Index()
   slug?: string;
-
-  async computeSlug() {
-    if (this.versions.length === 0) return;
-
-    const baseSlug = slugify(this.versions.getItems()[0].title, { lower: true, strict: true });
-    const shortId = this.id.substring(0, 8);
-    this.slug = `${baseSlug}-${shortId}`;
-  }
 
   async currentVersion() {
     if (this.publishedAt) {

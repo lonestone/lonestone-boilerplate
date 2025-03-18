@@ -11,12 +11,11 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
-    "dotenv": "dotenv -e .env -- pnpm",
-    "dotenv:test": "dotenv -e .env.test -- pnpm",
+    "with-env": "dotenv -e .env -- pnpm",
+    "with-env-test": "dotenv -e .env.test -- pnpm",
     "lint": "eslint --flag unstable_config_lookup_from_file .",
-    "generate": "dotenv -e .env -- pnpm --filter=@lonestone/openapi-generator run generate",
-    "test": "dotenv -e .env.test -- pnpm --filter=* run test",
-    "test:e2e": "dotenv -e .env.test -- pnpm --filter=* run test:e2e"
+    "generate": "pnpm --filter=@lonestone/openapi-generator run generate",
+    "test": "pnpm run -r test"
   },
   "keywords": [],
   "author": "",

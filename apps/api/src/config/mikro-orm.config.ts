@@ -6,8 +6,14 @@ import { TsMorphMetadataProvider } from "@mikro-orm/reflection";
 import { Migrator } from "@mikro-orm/migrations";
 import { SeedManager } from "@mikro-orm/seeder";
 
-export const createMikroOrmOptions = () => {
-  const options: Options = defineConfig({
+type CreateMikroOrmOptions = {
+  isTest?: boolean;
+} & Options;
+
+export const createMikroOrmOptions = (options?: CreateMikroOrmOptions) => {
+  const {  ...restOptions } = options ?? {};
+
+  const _options: Options = defineConfig({
     entities: ["./dist/**/*.entity.js"],
     entitiesTs: ["./src/**/*.entity.ts"],
     dbName: config.database.name,
@@ -33,9 +39,12 @@ export const createMikroOrmOptions = () => {
       allOrNothing: true,
       disableForeignKeys: false,
     },
+    ...restOptions,
   });
 
-  return options;
+  return _options;
 };
 
+export const createTestMikroOrmOptions = (options?: Options) =>
+  createMikroOrmOptions({ isTest: true, ...options });
 export default createMikroOrmOptions;

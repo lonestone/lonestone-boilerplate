@@ -1,149 +1,228 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { PostController } from '../posts.controller';
-import { PostService } from '../posts.service';
-import { CreatePostInput } from '../contracts/posts.contract';
-import { AuthGuard } from '../../auth/auth.guard';
+import { PostController } from "../posts.controller";
+import { PostService } from "../posts.service";
+import { CreatePostInput } from "../contracts/posts.contract";
+import { MikroORM } from "@mikro-orm/core";
+import { INestApplication } from "@nestjs/common";
+import supertest from "supertest";
+import { 
+  initializeTestApp, 
+  cleanupTestData, 
+  closeTestApp, 
+  TEST_USER_TOKEN, 
+  TestAppContext 
+} from "../../../test/test-utils";
+import { AllMethods } from "supertest/types";
 
-describe('PostController', () => {
-  let controller: PostController;
-  let service: PostService;
+describe("PostController (e2e)", () => {
+  let testContext: TestAppContext;
+  let app: INestApplication;
+  let orm: MikroORM;
 
-  // Mock du service des posts
-  const mockPostService = {
-    createPost: jest.fn(),
-    publishPost: jest.fn(),
-    unpublishPost: jest.fn(),
-  };
-
-  // Mock de la session utilisateur
-  const mockSession = {
-    user: {
-      id: 'test-user-id',
-    },
-  };
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [PostController],
-      providers: [
-        {
-          provide: PostService,
-          useValue: mockPostService,
-        },
-      ],
-    })
-      .overrideGuard(AuthGuard)
-      .useValue({ canActivate: () => true })
-      .compile();
-
-    controller = module.get<PostController>(PostController);
-    service = module.get<PostService>(PostService);
+  beforeAll(async () => {
+    // Initialiser l'application de test
+    testContext = await initializeTestApp([PostController], [PostService]);
+    app = testContext.app;
+    orm = testContext.orm;
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  afterEach(async () => {
+    // Nettoyer les données de test après chaque test
+    await cleanupTestData(orm);
   });
 
-  describe('createPost', () => {
-    it('should create a post', async () => {
-      // Données de test
+  afterAll(async () => {
+    // Fermer l'application et l'ORM
+    await closeTestApp(testContext);
+  });
+
+  // Test pour vérifier les routes disponibles
+  it('should have the correct routes registered', () => {
+    const server = app.getHttpServer();
+    const router = server._events.request._router;
+    
+    // Vérifier si les routes que nous voulons tester existent
+    const routes = router.stack
+      .filter((layer: {
+        route: {
+          path: string;
+          methods: Record<string, boolean>;
+        };
+      }) => layer.route)
+      .map((layer: {
+        route: {
+          path: string;
+          methods: Record<string, boolean>;
+        };
+      }) => {
+        const path = layer.route.path;
+        const methods = Object.keys(layer.route.methods);
+        return { path, methods };
+      });
+    
+    // Vérifier si nos routes de test existent
+    const hasCreatePostRoute = routes.some((route: {
+      path: string;
+      methods: AllMethods[];
+    }) => 
+      route.path === '/admin/posts' && route.methods.includes('post'));
+    
+    const hasPublishPostRoute = routes.some((route: {
+      path: string;
+      methods: AllMethods[];
+    }) => 
+      route.path.includes('/admin/posts/') && route.path.includes('/publish') && route.methods.includes('patch'));
+    
+    const hasUnpublishPostRoute = routes.some((route: {
+      path: string;
+      methods: AllMethods[];
+    }) => 
+      route.path.includes('/admin/posts/') && route.path.includes('/unpublish') && route.methods.includes('patch'));
+    
+    expect(hasCreatePostRoute).toBeTruthy();
+    expect(hasPublishPostRoute).toBeTruthy();
+    expect(hasUnpublishPostRoute).toBeTruthy();
+  });
+
+  describe("POST /admin/posts", () => {
+    it("should create a post", async () => {
       const createPostDto: CreatePostInput = {
-        title: 'Test Post',
+        title: "Test Post",
         content: [
           {
-            type: 'text',
-            data: 'This is a test post content',
+            type: "text",
+            data: "This is a test post content",
           },
         ],
       };
 
-      // Mock de la réponse du service
-      const expectedResult = {
-        id: 'test-post-id',
-        slug: 'test-post',
-        title: 'Test Post',
-        content: [
-          {
-            type: 'text',
-            data: 'This is a test post content',
-          },
-        ],
-        versions: [],
-        publishedAt: null,
-        type: 'draft',
-      };
+      try {
+        const response = await supertest(app.getHttpServer())
+          .post("/admin/posts")
+          .set("Authorization", `Bearer ${TEST_USER_TOKEN}`)
+          .send(createPostDto)
+          .expect(201);
 
-      mockPostService.createPost.mockResolvedValue(expectedResult);
+        expect(response.body).toMatchObject({
+          id: expect.any(String),
+          title: "Test Post",
+          content: expect.any(Array),
+          type: "draft",
+        });
 
-      // Appel de la méthode du contrôleur
-      const result = await controller.createPost(mockSession, createPostDto);
 
-      // Vérifications
-      expect(service.createPost).toHaveBeenCalledWith(
-        mockSession.user.id,
-        createPostDto,
-      );
-      expect(result).toEqual(expectedResult);
+        return response;
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error('Error creating post:', error.message);
+        } else {
+          console.error('Error creating post:', error);
+        }
+        throw error;
+      }
     });
   });
 
-  describe('publishPost', () => {
-    it('should publish a post', async () => {
-      // ID du post à publier
-      const postId = 'test-post-id';
 
-      // Mock de la réponse du service
-      const expectedResult = {
-        id: postId,
-        slug: 'test-post',
-        title: 'Test Post',
-        content: [],
-        versions: [],
-        publishedAt: new Date(),
-        type: 'published',
-      };
 
-      mockPostService.publishPost.mockResolvedValue(expectedResult);
+  describe("PATCH /admin/posts/:id/publish", () => {
+    it("should publish a post", async () => {
+      try {
+        // First create a post
+        const createResponse = await supertest(app.getHttpServer())
+          .post("/admin/posts")
+          .set("Authorization", `Bearer ${TEST_USER_TOKEN}`)
+          .send({
+            title: "Test Post",
+            content: [
+              {
+                type: "text",
+                data: "This is a test post content",
+              },
+            ],
+          })
+          .expect(201);
 
-      // Appel de la méthode du contrôleur
-      const result = await controller.publishPost(mockSession, postId);
+        const postId = createResponse.body.id;
 
-      // Vérifications
-      expect(service.publishPost).toHaveBeenCalledWith(
-        mockSession.user.id,
-        postId,
-      );
-      expect(result).toEqual(expectedResult);
+        // Then publish it
+        const publishResponse = await supertest(app.getHttpServer())
+          .patch(`/admin/posts/${postId}/publish`)
+          .set("Authorization", `Bearer ${TEST_USER_TOKEN}`)
+          .expect(200);
+
+        expect(publishResponse.body).toMatchObject({
+          id: postId,
+          type: "published",
+          slug: `test-post-${postId.slice(0, 8)}`,
+          publishedAt: expect.any(String),
+        });
+
+        return publishResponse;
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error('Error in publish test:', error.message);
+        } else {
+          console.error('Error in publish test:', error);
+        }
+        throw error;
+      }
     });
   });
 
-  describe('unpublishPost', () => {
-    it('should unpublish a post', async () => {
-      // ID du post à dépublier
-      const postId = 'test-post-id';
+  describe("PATCH /admin/posts/:id/unpublish", () => {
+    it("should unpublish a post", async () => {
+      try {
+        // First create a post
+        const createResponse = await supertest(app.getHttpServer())
+          .post("/admin/posts")
+          .set("Authorization", `Bearer ${TEST_USER_TOKEN}`)
+          .send({
+            title: "Test Post",
+            content: [
+              {
+                type: "text",
+                data: "This is a test post content",
+              },
+            ],
+          })
+          .expect(201);
 
-      // Mock de la réponse du service
-      const expectedResult = {
-        id: postId,
-        slug: 'test-post',
-        title: 'Test Post',
-        content: [],
-        versions: [],
-        publishedAt: null,
-        type: 'draft',
-      };
+        const postId = createResponse.body.id;
 
-      mockPostService.unpublishPost.mockResolvedValue(expectedResult);
+        // Then publish it
+        await supertest(app.getHttpServer())
+          .patch(`/admin/posts/${postId}/publish`)
+          .set("Authorization", `Bearer ${TEST_USER_TOKEN}`)
+          .expect(200);
 
-      // Appel de la méthode du contrôleur
-      const result = await controller.unpublishPost(mockSession, postId);
+        // Finally unpublish it
+        await supertest(app.getHttpServer())
+          .patch(`/admin/posts/${postId}/unpublish`)
+          .set("Authorization", `Bearer ${TEST_USER_TOKEN}`)
+          .expect(200);
+        
+        const unpublishResponse = await supertest(app.getHttpServer())
+          .get(`/admin/posts/${postId}`)
+          .set("Authorization", `Bearer ${TEST_USER_TOKEN}`)
+          .expect(200);
 
-      // Vérifications
-      expect(service.unpublishPost).toHaveBeenCalledWith(
-        mockSession.user.id,
-        postId,
-      );
-      expect(result).toEqual(expectedResult);
+        console.log(unpublishResponse.body);
+
+        expect(unpublishResponse.body).toMatchObject({
+          id: postId,
+          type: "draft",
+          publishedAt: null,
+        });
+
+        return unpublishResponse;
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error('Error in unpublish test:', error.message);
+        } else {
+          console.error('Error in unpublish test:', error);
+        }
+        throw error;
+      }
     });
   });
-}); 
+});

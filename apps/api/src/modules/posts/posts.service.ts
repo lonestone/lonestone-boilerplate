@@ -1,22 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { EntityManager, FilterQuery } from '@mikro-orm/core';
-import { Post, PostVersion } from './posts.entity';
-import { User } from '../auth/auth.entity';
-import { CreatePostInput, PostFiltering, PublicPosts, UpdatePostInput, UserPost, UserPosts } from '../posts/contracts/posts.contract';
-import { PostSorting, PostPagination } from '../posts/contracts/posts.contract';
-import { PublicPost } from './contracts/posts.contract';
-import { CommentsService } from '../comments/comments.service';
-
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { EntityManager, FilterQuery } from "@mikro-orm/core";
+import { Post, PostVersion } from "./posts.entity";
+import { User } from "../auth/auth.entity";
+import { Comment } from "../comments/comments.entity";
+import {
+  CreatePostInput,
+  PostFiltering,
+  PublicPosts,
+  UpdatePostInput,
+  UserPost,
+  UserPosts,
+} from "../posts/contracts/posts.contract";
+import { PostSorting, PostPagination } from "../posts/contracts/posts.contract";
+import { PublicPost } from "./contracts/posts.contract";
+import slugify from "slugify";
 @Injectable()
 export class PostService {
-  constructor(
-    private readonly em: EntityManager,
-    private readonly commentsService: CommentsService
-  ) {}
+  constructor(private readonly em: EntityManager) {}
 
   async createPost(userId: string, data: CreatePostInput): Promise<UserPost> {
     const user = await this.em.findOne(User, { id: userId });
-    if (!user) throw new Error('User not found');
+    if (!user) throw new Error("User not found");
 
     const post = new Post();
     post.user = user;
@@ -43,18 +47,31 @@ export class PostService {
     } satisfies UserPost;
   }
 
-  async updatePost(postId: string, userId: string, data: UpdatePostInput): Promise<UserPost> {
-    const post = await this.em.findOne(Post, { id: postId, user: userId }, { populate: ['versions'] });
-    if (!post) throw new Error('Post not found');
+  async updatePost(
+    postId: string,
+    userId: string,
+    data: UpdatePostInput
+  ): Promise<UserPost> {
+    const post = await this.em.findOne(
+      Post,
+      { id: postId, user: userId },
+      { populate: ["versions"] }
+    );
+    if (!post) throw new Error("Post not found");
 
-    const latestVersion = await this.em.findOne(PostVersion, { post: post.id }, {
-      orderBy: { createdAt: 'DESC' }
-    });
-    if (!latestVersion) throw new Error('No version found');
+    const latestVersion = await this.em.findOne(
+      PostVersion,
+      { post: post.id },
+      {
+        orderBy: { createdAt: "DESC" },
+      }
+    );
+    if (!latestVersion) throw new Error("No version found");
 
     // On crée une nouvelle version seulement si le post est publié et que la dernière version
     // a été créée avant la publication
-    const shouldCreateNewVersion = post.publishedAt && post.publishedAt < latestVersion.createdAt;
+    const shouldCreateNewVersion =
+      post.publishedAt && post.publishedAt < latestVersion.createdAt;
 
     if (shouldCreateNewVersion) {
       const version = new PostVersion();
@@ -73,7 +90,10 @@ export class PostService {
       id: post.id,
       title: latestVersion.title,
       content: latestVersion.content ?? [],
-      type: post.publishedAt && post.publishedAt < latestVersion.createdAt ? "published" : "draft",
+      type:
+        post.publishedAt && post.publishedAt < latestVersion.createdAt
+          ? "published"
+          : "draft",
       publishedAt: post.publishedAt,
       versions: [
         {
@@ -85,29 +105,70 @@ export class PostService {
     } satisfies UserPost;
   }
 
-  async publishPost(userId: string, postId: string) {
-    const post = await this.em.findOne(Post, { id: postId, user: userId });
-    if (!post) throw new Error('Post not found');
+  async computeSlug(post: Post) {
+    if (post.versions.length === 0) return;
 
-    const latestVersion = await this.em.findOne(PostVersion, { post: post.id }, {
-      orderBy: { createdAt: 'DESC' }
+    const baseSlug = slugify(post.versions.getItems()[0].title, {
+      lower: true,
+      strict: true,
     });
-    if (!latestVersion) throw new Error('No version found');
+    const shortId = post.id.substring(0, 8);
+    return `${baseSlug}-${shortId}`;
+  }
+
+  async publishPost(userId: string, postId: string) {
+    const post = await this.em.findOne(
+      Post,
+      { id: postId, user: userId },
+      { populate: ["versions"] }
+    );
+    if (!post) throw new Error("Post not found");
+
+    const latestVersion = await this.em.findOne(
+      PostVersion,
+      { post: post.id },
+      {
+        orderBy: { createdAt: "DESC" },
+      }
+    );
+    if (!latestVersion) throw new Error("No version found");
 
     const now = new Date();
     // On vérifie que la dernière version est antérieure à la date de publication
     if (latestVersion.createdAt > now) {
-      throw new Error('Cannot publish: latest version is newer than publication date');
+      throw new Error(
+        "Cannot publish: latest version is newer than publication date"
+      );
+    }
+
+    if (!post.publishedAt) {
+      post.slug = await this.computeSlug(post);
     }
 
     post.publishedAt = now;
+
     await this.em.flush();
-    return post;
+
+    return {
+      id: post.id,
+      title: latestVersion.title,
+      content: latestVersion.content ?? [],
+      type: "published",
+      publishedAt: post.publishedAt,
+      slug: post.slug,
+      versions: [
+        {
+          id: latestVersion.id,
+          title: latestVersion.title,
+          createdAt: latestVersion.createdAt,
+        },
+      ],
+    };
   }
 
   async unpublishPost(userId: string, postId: string) {
     const post = await this.em.findOne(Post, { id: postId, user: userId });
-    if (!post) throw new Error('Post not found');
+    if (!post) throw new Error("Post not found");
 
     post.publishedAt = undefined;
     await this.em.flush();
@@ -115,18 +176,31 @@ export class PostService {
   }
 
   async getUserPost(postId: string, userId: string): Promise<UserPost> {
-    const post = await this.em.findOne(Post, { id: postId, user: userId }, {
-      populate: ['versions', 'user']
-    });
-    if (!post) throw new Error('Post not found');
+    const post = await this.em.findOne(
+      Post,
+      { id: postId, user: userId },
+      {
+        populate: ["versions", "user"],
+      }
+    );
+    if (!post) throw new Error("Post not found");
 
     return {
       id: post.id,
-      title: post.versions.getItems()[post.versions.getItems().length - 1].title,
-      content: post.versions.getItems()[post.versions.getItems().length - 1].content ?? [],
-      type: post.publishedAt && post.publishedAt < post.versions.getItems()[post.versions.getItems().length - 1].createdAt ? "published" : "draft",
+      title:
+        post.versions.getItems()[post.versions.getItems().length - 1].title,
+      content:
+        post.versions.getItems()[post.versions.getItems().length - 1].content ??
+        [],
+      type:
+        post.publishedAt &&
+        post.publishedAt <
+          post.versions.getItems()[post.versions.getItems().length - 1]
+            .createdAt
+          ? "published"
+          : "draft",
       publishedAt: post.publishedAt,
-      versions: post.versions.getItems().map(version => ({
+      versions: post.versions.getItems().map((version) => ({
         id: version.id,
         title: version.title,
         createdAt: version.createdAt,
@@ -134,68 +208,92 @@ export class PostService {
     } satisfies UserPost;
   }
 
-  async getUserPosts(userId: string, pagination: PostPagination, sort?: PostSorting, filter?: PostFiltering): Promise<UserPosts> {
+  async getUserPosts(
+    userId: string,
+    pagination: PostPagination,
+    sort?: PostSorting,
+    filter?: PostFiltering
+  ): Promise<UserPosts> {
     const where: FilterQuery<Post> = { user: userId };
-    const orderBy: Record<string, 'ASC' | 'DESC'> = { createdAt: 'DESC' };
+    const orderBy: Record<string, "ASC" | "DESC"> = { createdAt: "DESC" };
 
     if (filter?.length) {
       filter.forEach((item) => {
-        if (item.property === 'title') {
-          where['versions'] = { title: { $like: `%${item.value}%` } };
+        if (item.property === "title") {
+          where["versions"] = { title: { $like: `%${item.value}%` } };
         }
       });
     }
 
     if (sort?.length) {
       sort.forEach((sortItem) => {
-        if (sortItem.property !== 'title') {
-          orderBy[sortItem.property] = sortItem.direction.toUpperCase() as 'ASC' | 'DESC';
+        if (sortItem.property !== "title") {
+          orderBy[sortItem.property] = sortItem.direction.toUpperCase() as
+            | "ASC"
+            | "DESC";
         }
       });
     }
 
     const [posts, total] = await this.em.findAndCount(Post, where, {
-      populate: ['versions'],
+      populate: ["versions"],
       orderBy,
       limit: pagination.pageSize,
       offset: pagination.offset,
       fields: [
-        'id', 'slug', 'publishedAt',
-        'versions.id', 'versions.title', 'versions.createdAt'
-      ]
+        "id",
+        "slug",
+        "publishedAt",
+        "versions.id",
+        "versions.title",
+        "versions.createdAt",
+      ],
     });
 
-    const data = await Promise.all(posts.map(async post => {
-      const latestVersionId = post.versions.getItems()[post.versions.getItems().length - 1].id;
-      if (!latestVersionId) throw new Error(`No version found for post ${post.id}`);
+    const data = await Promise.all(
+      posts.map(async (post) => {
+        const latestVersionId =
+          post.versions.getItems()[post.versions.getItems().length - 1].id;
+        if (!latestVersionId)
+          throw new Error(`No version found for post ${post.id}`);
 
-      // Trouver le premier contenu de type text pour l'aperçu
-      const latestVersion = await this.em.findOne(PostVersion, { id: latestVersionId, }, {
-        orderBy: { createdAt: 'ASC' },
-      });
-      
-      if (!latestVersion) throw new Error(`No version found for post ${post.id}`);
+        // Trouver le premier contenu de type text pour l'aperçu
+        const latestVersion = await this.em.findOne(
+          PostVersion,
+          { id: latestVersionId },
+          {
+            orderBy: { createdAt: "ASC" },
+          }
+        );
 
-      const contentPreview = latestVersion.content?.find(c => c.type === 'text') ?? {
-        type: 'text' as const,
-        data: ''
-      };
+        if (!latestVersion)
+          throw new Error(`No version found for post ${post.id}`);
 
+        const contentPreview = latestVersion.content?.find(
+          (c) => c.type === "text"
+        ) ?? {
+          type: "text" as const,
+          data: "",
+        };
 
-      return {
-        publishedAt: post.publishedAt,
-        title: latestVersion.title,
-        slug: post.slug,
-        id: post.id,
-        versions: post.versions.getItems().map(version => ({
-          id: version.id,
-          title: version.title,
-          createdAt: version.createdAt,
-        })),
-        type: post.publishedAt && post.publishedAt < latestVersion.createdAt ? "published" : "draft",
-        contentPreview
-      } satisfies UserPosts['data'][number];
-    }));
+        return {
+          publishedAt: post.publishedAt,
+          title: latestVersion.title,
+          slug: post.slug,
+          id: post.id,
+          versions: post.versions.getItems().map((version) => ({
+            id: version.id,
+            title: version.title,
+            createdAt: version.createdAt,
+          })),
+          type:
+            post.publishedAt && post.publishedAt < latestVersion.createdAt
+              ? "published"
+              : "draft",
+          contentPreview,
+        } satisfies UserPosts["data"][number];
+      })
+    );
 
     return {
       data,
@@ -210,30 +308,34 @@ export class PostService {
 
   async getPublicPost(slug: string): Promise<PublicPost> {
     // Récupérer le post publié avec son auteur
-    const post = await this.em.findOne(Post, 
+    const post = await this.em.findOne(
+      Post,
       { slug, publishedAt: { $ne: null } },
       {
-        populate: ['user'],
+        populate: ["user"],
       }
     );
 
-    if (!post) throw new Error('Post not found');
+    if (!post) throw new Error("Post not found");
 
     // Récupérer la dernière version antérieure à la date de publication
-    const latestVersion = await this.em.findOne(PostVersion, 
-      { 
-        post: post.id,
-        createdAt: { $lte: post.publishedAt! }
-      }, 
+    const latestVersion = await this.em.findOne(
+      PostVersion,
       {
-        orderBy: { createdAt: 'DESC' }
+        post: post.id,
+        createdAt: { $lte: post.publishedAt! },
+      },
+      {
+        orderBy: { createdAt: "DESC" },
       }
     );
 
-    if (!latestVersion) throw new Error('No valid version found');
+    if (!latestVersion) throw new Error("No valid version found");
 
     // Get comment count
-    const commentCount = post.slug ? await this.commentsService.getCommentCount(post.slug) : 0;
+    const commentCount = await this.em.count(Comment, {
+      post: post.id,
+    });
 
     // Retourner le format public
     return {
@@ -249,16 +351,22 @@ export class PostService {
   }
 
   async getRandomPublicPost(): Promise<PublicPost> {
-    const postsCount = await this.em.count(Post, { publishedAt: { $ne: null } });
-    const randomIndex = Math.floor(Math.random() * postsCount);
-    const postSlug = await this.em.find(Post, { publishedAt: { $ne: null } }, {
-      populate: ['user'],
-      orderBy: { createdAt: 'DESC' },
-      offset: randomIndex,
-      limit: 1
+    const postsCount = await this.em.count(Post, {
+      publishedAt: { $ne: null },
     });
+    const randomIndex = Math.floor(Math.random() * postsCount);
+    const postSlug = await this.em.find(
+      Post,
+      { publishedAt: { $ne: null } },
+      {
+        populate: ["user"],
+        orderBy: { createdAt: "DESC" },
+        offset: randomIndex,
+        limit: 1,
+      }
+    );
 
-    if (!postSlug[0].slug) throw new NotFoundException('No post found');
+    if (!postSlug[0].slug) throw new NotFoundException("No post found");
     return this.getPublicPost(postSlug[0].slug);
   }
 
@@ -269,14 +377,14 @@ export class PostService {
   ): Promise<PublicPosts> {
     // Construire la requête de base pour les posts publiés
     const where: FilterQuery<Post> = { publishedAt: { $ne: null } };
-    const orderBy: Record<string, 'ASC' | 'DESC'> = { publishedAt: 'DESC' };
+    const orderBy: Record<string, "ASC" | "DESC"> = { publishedAt: "DESC" };
 
     // Appliquer les filtres si présents
     if (filter?.length) {
       filter.forEach((item) => {
-        if (item.property === 'title') {
+        if (item.property === "title") {
           // Pour le filtre sur le titre, on doit passer par les versions
-          where['versions'] = { title: { $like: `%${item.value}%` } };
+          where["versions"] = { title: { $like: `%${item.value}%` } };
         }
       });
     }
@@ -284,31 +392,37 @@ export class PostService {
     // Appliquer le tri
     if (sort?.length) {
       sort.forEach((sortItem) => {
-        if (sortItem.property !== 'title') {
-          orderBy[sortItem.property] = sortItem.direction.toUpperCase() as 'ASC' | 'DESC';
+        if (sortItem.property !== "title") {
+          orderBy[sortItem.property] = sortItem.direction.toUpperCase() as
+            | "ASC"
+            | "DESC";
         }
       });
     }
 
     // Récupérer les posts avec pagination
     const [posts, total] = await this.em.findAndCount(Post, where, {
-      populate: ['user'],
+      populate: ["user"],
       orderBy,
       limit: pagination.pageSize,
       offset: pagination.offset,
     });
 
     // Récupérer les dernières versions valides pour tous les posts en une seule requête
-    const postIds = posts.map(p => p.id);
-    
+    const postIds = posts.map((p) => p.id);
+
     // D'abord, récupérer toutes les versions pour ces posts
-    const allVersions = await this.em.find(PostVersion, { post: { $in: postIds } }, {
-      orderBy: { createdAt: 'DESC' }
-    });
+    const allVersions = await this.em.find(
+      PostVersion,
+      { post: { $in: postIds } },
+      {
+        orderBy: { createdAt: "DESC" },
+      }
+    );
 
     // Organiser les versions par post
     const versionsByPost = new Map<string, PostVersion[]>();
-    allVersions.forEach(version => {
+    allVersions.forEach((version) => {
       const postId = version.post.id;
       if (!versionsByPost.has(postId)) {
         versionsByPost.set(postId, []);
@@ -317,8 +431,8 @@ export class PostService {
     });
 
     // Get comment counts for all posts
-    const commentCountsPromises = posts.map(post => 
-      post.slug ? this.commentsService.getCommentCount(post.slug) : 0
+    const commentCountsPromises = posts.map((post) =>
+      this.em.count(Comment, { post: post.id })
     );
     const commentCounts = await Promise.all(commentCountsPromises);
     const commentCountByPostId = new Map<string, number>();
@@ -327,20 +441,24 @@ export class PostService {
     });
 
     // Construire la réponse
-    const data = posts.map(post => {
+    const data = posts.map((post) => {
       // Trouver la dernière version valide pour ce post
       const versions = versionsByPost.get(post.id) || [];
-      const validVersions = versions.filter(v => v.createdAt <= post.publishedAt!);
+      const validVersions = versions.filter(
+        (v) => v.createdAt <= post.publishedAt!
+      );
       const latestVersion = validVersions[0]; // Déjà triées par date décroissante
-      
+
       if (!latestVersion) {
         throw new Error(`No valid version found for post ${post.id}`);
       }
 
       // Trouver un aperçu du contenu (premier élément de type texte)
-      const contentPreview = latestVersion.content?.find(c => c.type === 'text') || {
-        type: 'text',
-        data: '',
+      const contentPreview = latestVersion.content?.find(
+        (c) => c.type === "text"
+      ) || {
+        type: "text",
+        data: "",
       };
 
       return {
@@ -365,4 +483,4 @@ export class PostService {
       },
     };
   }
-} 
+}

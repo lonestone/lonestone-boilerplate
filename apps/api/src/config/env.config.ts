@@ -27,7 +27,8 @@ export const configValidationSchema = z.object({
   // BetterAuth
   BETTER_AUTH_SECRET: z.string(),
   TRUSTED_ORIGINS: z.string().transform((val) => val.split(",")),
-});
+  
+})
 
 export type ConfigSchema = z.infer<typeof configValidationSchema>;
 
