@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name of the resource.",
+      "x-prompt": "What name would you like to use for this resource?"
+    },
+    "path": {
+      "type": "string",
+      "format": "path",
+      "description": "The path to create the resource."
+    },
+    "sourceRoot": {
+      "type": "string",
+      "description": "The source root path."
+    },
+    "flat": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flag to indicate if a directory is created."
+    },
+    "spec": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flag to indicate if a spec file is generated."
+    }
+  },
+  "required": ["name"]
+} 

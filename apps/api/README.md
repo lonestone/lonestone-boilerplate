@@ -1,6 +1,7 @@
 # API Backend
 
 Cette API est construite avec NestJS et sert de backend pour les applications frontend.
+[Guidelines API](../docs/api-guidelines.md)
 
 ## Variables d'environnement
 
@@ -143,6 +144,28 @@ pnpm run migration:up
 # Annuler la dernière migration
 pnpm run migration:down
 ```
+
+## Générer un module
+
+```bash
+pnpm generate:module --name=caca
+```
+
+To create a new module, you can use the following command:
+
+```bash
+pnpm generate:module --name=module-name
+
+```
+It's generated with the following files:
+
+- `__name__.controller.ts`
+- `__name__.service.ts`
+- `__name__.entity.ts`
+- `__name__.module.ts`
+- `contracts/__name__.contract.ts`
+- `tests/__name__.controller.spec.ts`
+
 
 ## Stack
 

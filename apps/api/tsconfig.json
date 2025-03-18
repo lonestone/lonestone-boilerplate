@@ -28,5 +28,6 @@
   // For ts-node to resolve the paths correctly (like from root src/...)
   "ts-node": {
     "require": ["tsconfig-paths/register"]
-  }
+  },
+  "exclude": ["**/schematics/**"]
 }

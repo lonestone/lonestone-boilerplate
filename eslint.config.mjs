@@ -9,6 +9,7 @@ export default [
   ...baseConfig,
   { 
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
+    ignores: ["./packages/schematics/**"],
   },
   { languageOptions: { globals: { ...globals.browser, ...globals.node } } },
   pluginJs.configs.recommended,

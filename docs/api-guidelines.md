@@ -42,6 +42,21 @@ modules/feature-name/
 
 ## API Design
 
+To create a new module, you can use the following command:
+
+```bash
+pnpm generate:module --name=module-name
+```
+It's generated with the following files:
+
+- `__name__.controller.ts`
+- `__name__.service.ts`
+- `__name__.entity.ts`
+- `__name__.module.ts`
+- `contracts/__name__.contract.ts`
+- `tests/__name__.controller.spec.ts`
+
+
 ### Controllers
 
 - Use decorators from NestJS for route definition

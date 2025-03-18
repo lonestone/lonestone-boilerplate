@@ -15,7 +15,7 @@
     "db:seed": "npx mikro-orm migration:fresh --seed",
     "test": "pnpm run db:migrate:fresh && NODE_ENV=test jest",
     "test:watch": "NODE_ENV=test jest --watch",
-    "test:cov": "NODE_ENV=test jest --coverage"
+    "generate:module": "nest g -c @lonestone/schematics resource"
   },
   "dependencies": {
     "@anatine/zod-openapi": "^2.2.7",
@@ -52,6 +52,7 @@
     "zod-openapi": "^4.2.3"
   },
   "devDependencies": {
+    "@lonestone/schematics": "workspace:*",
     "@lonestone/eslint-config": "workspace:*",
     "@nestjs/schematics": "^10.2.3",
     "@nestjs/testing": "^10.4.15",

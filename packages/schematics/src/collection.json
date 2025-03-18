@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../node_modules/@angular-devkit/schematics/collection-schema.json",
+  "schematics": {
+    "resource": {
+      "factory": "./resource.factory#main",
+      "description": "Generate a new resource module with entity, service, and controller.",
+      "schema": "./schema.json"
+    }
+  }
+} 

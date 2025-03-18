@@ -124,6 +124,9 @@ importers:
       '@lonestone/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
+      '@lonestone/schematics':
+        specifier: workspace:*
+        version: link:../../packages/schematics
       '@nestjs/schematics':
         specifier: ^10.2.3
         version: 10.2.3(chokidar@3.6.0)(typescript@5.4.5)
@@ -367,6 +370,21 @@ importers:
       wait-on:
         specifier: ^8.0.3
         version: 8.0.3
+
+  packages/schematics:
+    dependencies:
+      '@angular-devkit/core':
+        specifier: ^17.3.2
+        version: 17.3.11(chokidar@3.6.0)
+      '@angular-devkit/schematics':
+        specifier: ^17.3.2
+        version: 17.3.11(chokidar@3.6.0)
+      '@nestjs/mapped-types':
+        specifier: '*'
+        version: 2.0.6(@nestjs/common@10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)
+      '@nestjs/schematics':
+        specifier: ^10.2.3
+        version: 10.2.3(chokidar@3.6.0)(typescript@5.8.2)
 
   packages/ui:
     dependencies:
@@ -7742,6 +7760,17 @@ snapshots:
       jsonc-parser: 3.3.1
       pluralize: 8.0.0
       typescript: 5.7.2
+    transitivePeerDependencies:
+      - chokidar
+
+  '@nestjs/schematics@10.2.3(chokidar@3.6.0)(typescript@5.8.2)':
+    dependencies:
+      '@angular-devkit/core': 17.3.11(chokidar@3.6.0)
+      '@angular-devkit/schematics': 17.3.11(chokidar@3.6.0)
+      comment-json: 4.2.5
+      jsonc-parser: 3.3.1
+      pluralize: 8.0.0
+      typescript: 5.8.2
     transitivePeerDependencies:
       - chokidar
 
