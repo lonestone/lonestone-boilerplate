@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+      "**/schematics/src/files/**/*.ts": "typescript"
+    }
+  }
+  

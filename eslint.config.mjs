@@ -6,10 +6,12 @@ import { config as baseConfig } from "./packages/eslint-config/base.js";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+  {
+    ignores: ["packages/schematics/**"]
+  },
   ...baseConfig,
   { 
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
-    ignores: ["./packages/schematics/**"],
   },
   { languageOptions: { globals: { ...globals.browser, ...globals.node } } },
   pluginJs.configs.recommended,
