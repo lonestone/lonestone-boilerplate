@@ -2,10 +2,10 @@ import { z } from "zod";
 import { extendApi } from "@anatine/zod-openapi";
 import {
   createPaginationQuerySchema,
-  FilterQueryStringSchema,
+  createFilterQueryStringSchema,
   paginatedSchema,
-  SortingQueryStringSchema,
-} from "@lonestone/validations/server";
+  createSortingQueryStringSchema,
+} from "@lonestone/nzoth/server";
 import { Post, PostVersion } from "src/modules/posts/posts.entity";
 
 
@@ -26,7 +26,7 @@ export const enabledPostSortingKey: (keyof Post | keyof PostVersion)[] = [
   "createdAt",
 ] as const;
 
-export const postSortingSchema = SortingQueryStringSchema(
+export const postSortingSchema = createSortingQueryStringSchema(
   enabledPostSortingKey
 );
 
@@ -36,7 +36,7 @@ export const enabledPostFilteringKeys = [
   "title",
 ] as const;
 
-export const postFilteringSchema = FilterQueryStringSchema(
+export const postFilteringSchema = createFilterQueryStringSchema(
   enabledPostFilteringKeys
 );
 
@@ -112,7 +112,7 @@ export const userPostsSchema = extendApi(paginatedSchema(userPostSchema.omit({
 })), {
   title: "UserPostsSchema",
   description: "Schema for a list of user's posts",
-});
+})
 
 export type UserPost = z.infer<typeof userPostSchema>;
 export type UserPosts = z.infer<typeof userPostsSchema>;

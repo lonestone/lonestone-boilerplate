@@ -291,7 +291,7 @@ export type PostControllerPublishPostData = {
 };
 
 export type PostControllerPublishPostResponses = {
-  201: unknown;
+  200: unknown;
 };
 
 export type PostControllerUnpublishPostData = {
@@ -304,7 +304,7 @@ export type PostControllerUnpublishPostData = {
 };
 
 export type PostControllerUnpublishPostResponses = {
-  201: unknown;
+  200: unknown;
 };
 
 export type PublicPostControllerGetRandomPostData = {

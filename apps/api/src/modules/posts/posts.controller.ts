@@ -13,7 +13,7 @@ import {
   TypedRoute,
   TypedParam,
   TypedBody,
-} from "@lonestone/validations/server";
+} from "@lonestone/nzoth/server";
 import {
   CreatePostInput,
   createPostSchema,

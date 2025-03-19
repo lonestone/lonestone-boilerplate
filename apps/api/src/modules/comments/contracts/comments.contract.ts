@@ -2,10 +2,10 @@ import { z } from "zod";
 import { extendApi } from "@anatine/zod-openapi";
 import {
   createPaginationQuerySchema,
-  FilterQueryStringSchema,
+  createFilterQueryStringSchema,
   paginatedSchema,
-  SortingQueryStringSchema,
-} from "@lonestone/validations/server";
+  createSortingQueryStringSchema,
+} from "@lonestone/nzoth/server";
 import { Comment } from "../comments.entity";
 
 // Schema for creating a comment
@@ -64,7 +64,7 @@ export const enabledCommentSortingKey: (keyof Comment)[] = [
   "createdAt",
 ] as const;
 
-export const commentSortingSchema = SortingQueryStringSchema(
+export const commentSortingSchema = createSortingQueryStringSchema(
   enabledCommentSortingKey
 );
 
@@ -74,7 +74,7 @@ export const enabledCommentFilteringKeys = [
   "content",
 ] as const;
 
-export const commentFilteringSchema = FilterQueryStringSchema(
+export const commentFilteringSchema = createFilterQueryStringSchema(
   enabledCommentFilteringKeys
 );
 

@@ -143,12 +143,14 @@ export const postControllerUpdatePost = <ThrowOnError extends boolean = false>(
 export const postControllerPublishPost = <ThrowOnError extends boolean = false>(
   options: Options<PostControllerPublishPostData, ThrowOnError>
 ) => {
-  return (options.client ?? _heyApiClient).post<unknown, unknown, ThrowOnError>(
-    {
-      url: "/api/admin/posts/{id}/publish",
-      ...options,
-    }
-  );
+  return (options.client ?? _heyApiClient).patch<
+    unknown,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/posts/{id}/publish",
+    ...options,
+  });
 };
 
 export const postControllerUnpublishPost = <
@@ -156,12 +158,14 @@ export const postControllerUnpublishPost = <
 >(
   options: Options<PostControllerUnpublishPostData, ThrowOnError>
 ) => {
-  return (options.client ?? _heyApiClient).post<unknown, unknown, ThrowOnError>(
-    {
-      url: "/api/admin/posts/{id}/unpublish",
-      ...options,
-    }
-  );
+  return (options.client ?? _heyApiClient).patch<
+    unknown,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/posts/{id}/unpublish",
+    ...options,
+  });
 };
 
 export const publicPostControllerGetRandomPost = <
