@@ -5,9 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e .env -- pnpm --parallel --filter=* run dev",
-    "build": "dotenv -e .env -- pnpm --parallel --filter=* run build",
-    "typecheck": "dotenv -e .env -- pnpm --filter=* run typecheck",
+    "dev": "dotenv -e .env -- pnpm --parallel dev",
+    "build": "dotenv -e .env -- pnpm -r build",
+    "typecheck": "dotenv -e .env -- pnpm -r typecheck",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
@@ -15,7 +15,7 @@
     "with-env-test": "dotenv -e .env.test -- pnpm",
     "lint": "eslint --flag unstable_config_lookup_from_file .",
     "generate": "pnpm --filter=@lonestone/openapi-generator run generate",
-    "test": "pnpm run -r test"
+    "test": "pnpm -r test"
   },
   "keywords": [],
   "author": "",
