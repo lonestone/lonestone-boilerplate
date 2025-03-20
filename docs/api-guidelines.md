@@ -73,16 +73,15 @@ It's generated with the following files:
 
 - Use Zod schemas for request validation
 - Define schemas in the contracts directory
-- Use `TypedBody`, `TypedParam`, and other typed decorators from `@lonestone/validations/server`
+- Use `TypedBody`, `TypedParam`, and other typed decorators from `@lonestone/nzoth/server`
 - Export types from schemas using `z.infer<typeof schema>`
-- Extend zod schema with `extendApi()` from `@lonestone/validations/server`
 
 Example:
 ```typescript
-export const createUserSchema = extendApi(z.object({
+export const createUserSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-}), {
+}).openapi({
     title: "Create User",
     description: "Create a new user",
 });

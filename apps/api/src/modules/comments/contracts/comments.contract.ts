@@ -1,36 +1,29 @@
-import { z } from "zod";
-import { extendApi } from "@anatine/zod-openapi";
-import {
+import { z } from "zod";import {
   createPaginationQuerySchema,
   createFilterQueryStringSchema,
   paginatedSchema,
   createSortingQueryStringSchema,
 } from "@lonestone/nzoth/server";
-import { Comment } from "../comments.entity";
 
 // Schema for creating a comment
-export const createCommentSchema = extendApi(
-  z.object({
-    content: z.string().min(1).max(1000),
-    parentId: z.string().uuid().optional(),
-  }),
-  {
-    title: "CreateCommentSchema",
-    description: "Schema for creating a comment",
-  }
-);
+export const createCommentSchema = z.object({
+  content: z.string().min(1).max(1000),
+  parentId: z.string().uuid().optional(),
+}).openapi({
+  title: "CreateCommentSchema",
+  description: "Schema for creating a comment",
+});
 
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 
 // Schema for comment response
 // Using a simpler approach to avoid recursive type issues
-export const commentSchema = extendApi(
-  z.object({
-    id: z.string().uuid(),
-    content: z.string(),
-    authorName: z.string().nullable(),
-    createdAt: z.date(),
-    user: z.object({
+export const commentSchema = z.object({
+  id: z.string().uuid(),
+  content: z.string(),
+  authorName: z.string().nullable(),
+  createdAt: z.date(),
+  user: z.object({
       id: z.string().uuid(),
       name: z.string(),
     }).nullable(),
@@ -39,29 +32,25 @@ export const commentSchema = extendApi(
     // and load the full replies separately when needed
     replyIds: z.array(z.string().uuid()).optional(),
     replyCount: z.number().optional(),
-  }),
-  {
-    title: "CommentSchema",
-    description: "Schema for a comment",
-  }
-);
+}).openapi({
+  title: "CommentSchema",
+  description: "Schema for a comment",
+});
 
 export type CommentResponse = z.infer<typeof commentSchema>;
 
 // Schema for comments list
-export const commentsSchema = extendApi(
-  paginatedSchema(commentSchema),
-  {
-    title: "CommentsSchema",
-    description: "Schema for a paginated list of comments",
-  }
-);
+export const commentsSchema = paginatedSchema(commentSchema).openapi({
+  title: "CommentsSchema",
+  description: "Schema for a paginated list of comments",
+});
 
 export type CommentsResponse = z.infer<typeof commentsSchema>;
 
 // Sorting and filtering
-export const enabledCommentSortingKey: (keyof Comment)[] = [
+export const enabledCommentSortingKey = [
   "createdAt",
+  "authorName",
 ] as const;
 
 export const commentSortingSchema = createSortingQueryStringSchema(

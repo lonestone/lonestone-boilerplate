@@ -3,9 +3,10 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as dotenv from "dotenv";
 import { AppModule } from "./app.module";
 import { config } from "./config/env.config";
-import { addSchemasToSwagger } from "@lonestone/nzoth/server";
+// import { addSchemasToSwagger } from "@lonestone/nzoth/server";
 import * as express from "express";
 import { Logger } from "nestjs-pino";
+import { addSchemasToSwagger } from "@lonestone/nzoth/server";
 
 dotenv.config();
 

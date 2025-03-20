@@ -1,27 +1,25 @@
 import { z } from "zod";
-import { extendApi } from "@anatine/zod-openapi";
 import {
   createPaginationQuerySchema,
   createFilterQueryStringSchema,
   paginatedSchema,
   createSortingQueryStringSchema,
 } from "@lonestone/nzoth/server";
-import { Post, PostVersion } from "src/modules/posts/posts.entity";
 
 
 // Schema for content items (text, image, video)
-export const postContentSchema = extendApi(
+export const postContentSchema =
   z.object({
     type: z.enum(["text", "image", "video"]),
     data: z.string(),
-  }),
+  }).openapi(
   {
     title: "PostContentSchema",
     description: "Schema for content items (text, image, video)",
   }
 );
 
-export const enabledPostSortingKey: (keyof Post | keyof PostVersion)[] = [
+export const enabledPostSortingKey = [
   "title",
   "createdAt",
 ] as const;
@@ -46,11 +44,11 @@ export const postPaginationSchema = createPaginationQuerySchema();
 
 export type PostPagination = z.infer<typeof postPaginationSchema>;
 
-export const postVersionSchema = extendApi(z.object({
+export const postVersionSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
   createdAt: z.date(),
-}), {
+}).openapi({
   title: "PostVersionSchema",
   description: "Schema for a post version",
 });
@@ -61,58 +59,50 @@ export const postVersionSchema = extendApi(z.object({
 // ----------------------------
 
 // Schema for creating/updating a post
-export const createPostSchema = extendApi(
-  z.object({
-    title: z.string().min(1),
-    content: z.array(postContentSchema),
-  }),
-  {
-    title: "CreatePostSchema",
-    description: "Schema for creating/updating a post",
-  }
-);
+export const createPostSchema = z.object({
+  title: z.string().min(1),
+  content: z.array(postContentSchema),
+}).openapi({
+  title: "CreatePostSchema",
+  description: "Schema for creating/updating a post",
+});
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;
 
-export const updatePostSchema = extendApi(
-  z.object({
-    title: z.string().min(1).optional(),
-    content: z.array(postContentSchema).optional(),
-  }),
-  {
-    title: "UpdatePostSchema",
-    description: "Schema for updating a post",
-  }
-);
+export const updatePostSchema = z.object({
+  title: z.string().min(1).optional(),
+  content: z.array(postContentSchema).optional(),
+}).openapi({
+  title: "UpdatePostSchema",
+  description: "Schema for updating a post",
+});
+
 
 
 export type UpdatePostInput = z.infer<typeof updatePostSchema>;
 
-export const userPostSchema = extendApi(
-  z.object({
-    id: z.string().uuid(),
-    slug: z.string().nullish(),
-    title: z.string(),
-    content: z.array(postContentSchema),
-    versions: z.array(postVersionSchema),
+export const userPostSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string().nullish(),
+  title: z.string(),
+  content: z.array(postContentSchema),
+  versions: z.array(postVersionSchema),
     publishedAt: z.date().nullish(),
     type: z.enum(["published", "draft"]),
     commentCount: z.number().optional(),
-  }),
-  {
-    title: "UserPostSchema",
-    description: "Schema for a user's post",
-  }
-);
+}).openapi({
+  title: "UserPostSchema",
+  description: "Schema for a user's post",
+});
 
-export const userPostsSchema = extendApi(paginatedSchema(userPostSchema.omit({
+export const userPostsSchema = paginatedSchema(userPostSchema.omit({
   content: true,
 }).extend({
   contentPreview: postContentSchema,
-})), {
+})).openapi({
   title: "UserPostsSchema",
   description: "Schema for a list of user's posts",
-})
+});
 
 export type UserPost = z.infer<typeof userPostSchema>;
 export type UserPosts = z.infer<typeof userPostsSchema>;
@@ -122,30 +112,27 @@ export type UserPosts = z.infer<typeof userPostsSchema>;
 // -------------//
 
 // Schema for the public view of a post
-export const publicPostSchema = extendApi(
-  z.object({
-    title: z.string(),
-    author: z.object({
+export const publicPostSchema = z.object({
+  title: z.string(),
+  author: z.object({
       name: z.string(),
     }),
     content: z.array(postContentSchema),
     publishedAt: z.date(),
     slug: z.string().optional(),
     commentCount: z.number().optional(),
-  }),
-  {
-    title: "PublicPostSchema",
-    description: "A public post",
-  }
-);
+}).openapi({
+  title: "PublicPostSchema",
+  description: "A public post",
+});
 
 // Schema for a list of public posts
-export const publicPostsSchema = extendApi(paginatedSchema(publicPostSchema.omit({
+export const publicPostsSchema = paginatedSchema(publicPostSchema.omit({
   content: true,
 }).extend({
   contentPreview: postContentSchema,
   commentCount: z.number().optional(),
-})), {
+})).openapi({
   title: "PublicPostsSchema",
   description: "A list of public posts",
 });
