@@ -110,7 +110,7 @@ cp .env.test .env
 5. Démarrez les services Docker :
 
 ```bash
-pnpm docker:up postgres
+pnpm docker:up db
 ```
 
 5. Effectuez les migrations de la base de données :
