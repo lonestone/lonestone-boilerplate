@@ -104,8 +104,7 @@ On utilise un seul fichier `.env` a la racine du projet pour toutes les applicat
 Cela permet de ne pas avoir à configurer chaque application individuellement.
 
 ```bash
-cp .env.example .env
-cp .env.example .env.test
+cp .env.test .env
 ```
 
 5. Démarrez les services Docker :
