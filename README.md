@@ -70,8 +70,8 @@ lonestone/
 
 ## 📋 Prérequis
 
-- [Node.js](https://nodejs.org/) (version 18 ou supérieure)
-- [PNPM](https://pnpm.io/) (version 8 ou supérieure)
+- [Node.js](https://nodejs.org/) (version 22.14.0)
+- [PNPM](https://pnpm.io/) (version 10.5.0)
 - [Docker](https://www.docker.com/) et [Docker Compose](https://docs.docker.com/compose/)
 
 ## 🚀 Installation
@@ -83,13 +83,22 @@ git clone https://github.com/lonestone/lonestone.git
 cd lonestone
 ```
 
-2. Installez les dépendances :
+2. Assurez vous de votre version de node et pnpm
+
+Vous pouvez utiliser [fnm](https://github.com/Schniz/fnm) pour la gestion de votre version de node :
+
+```bash
+fnm use 22.14.0
+npm i -g pnpm@10.5.0
+```
+
+3. Installez les dépendances :
 
 ```bash
 pnpm install
 ```
 
-3. Configurez les variables d'environnement :
+4. Configurez les variables d'environnement :
 
 On utilise un seul fichier `.env` a la racine du projet pour toutes les applications.
 Cela permet de ne pas avoir à configurer chaque application individuellement.
@@ -99,7 +108,7 @@ cp .env.example .env
 cp .env.example .env.test
 ```
 
-4. Démarrez les services Docker :
+5. Démarrez les services Docker :
 
 ```bash
 pnpm docker:up postgres
