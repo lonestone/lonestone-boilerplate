@@ -4,7 +4,9 @@
 
 # Boilerplate project
 
-Ce dépôt est configuré comme un monorepo utilisant PNPM Workspaces pour gérer plusieurs packages et applications. Il contient le code source d'un projet typique de Lonestone, une solution complète et moderne.
+Ce repository représente le projet type chez Lonestone, composé d'une API et de plusieurs frontends.
+
+Pour lancer un nouveau projet utilisant ce boilerplate, créez simplement un projet sur Github et sélectionnez le boilerplate dans la liste des templates.
 
 ## 📋 Table des matières
 
@@ -23,7 +25,12 @@ Ce dépôt est configuré comme un monorepo utilisant PNPM Workspaces pour gére
 
 ## 🔍 Vue d'ensemble
 
-Lonestone est une application moderne construite avec une architecture monorepo. Cette approche nous permet de partager du code entre différentes applications tout en maintenant une séparation claire des préoccupations.
+Ce projet utilise une architecture dite "monorepo". Les avantages sont nombreux, mais principalement:
+
+- Pouvoir développer une fonctionnalité fullstack sans changer de contexte, en faisant 1 seule PR
+- Une fois développée, faciliter sa mise en ligne : plus besoin de synchroniser plusieurs déploiements séparés
+- Avoir un typage fort de bout en bout, faciltier le refactoring
+- Simplifier et uniformiser l'outillage (linter, build, etc.)
 
 ## 🛠️ Stack technique
 
@@ -70,39 +77,47 @@ lonestone/
 
 ## 📋 Prérequis
 
-- [Node.js](https://nodejs.org/) (version 18 ou supérieure)
-- [PNPM](https://pnpm.io/) (version 8 ou supérieure)
+- [Node.js](https://nodejs.org/) (version 22.14.0)
+- [PNPM](https://pnpm.io/) (version 10.5.0)
 - [Docker](https://www.docker.com/) et [Docker Compose](https://docs.docker.com/compose/)
 
 ## 🚀 Installation
 
-1. Clonez le dépôt :
+1. Une fois votre projet créé avec ce template, clonez le dépôt :
 
 ```bash
-git clone https://github.com/lonestone/lonestone.git
-cd lonestone
+git clone https://github.com/lonestone/votreprojet.git
+cd votreprojet
 ```
 
-2. Installez les dépendances :
+2. Assurez vous de votre version de node et pnpm
+
+Vous pouvez utiliser [fnm](https://github.com/Schniz/fnm) pour la gestion de votre version de node :
+
+```bash
+fnm use 22.14.0
+npm i -g pnpm@10.5.0
+```
+
+3. Installez les dépendances :
 
 ```bash
 pnpm install
 ```
 
-3. Configurez les variables d'environnement :
+4. Configurez les variables d'environnement :
 
 On utilise un seul fichier `.env` a la racine du projet pour toutes les applications.
 Cela permet de ne pas avoir à configurer chaque application individuellement.
 
 ```bash
-cp .env.example .env
-cp .env.example .env.test
+cp .env.test .env
 ```
 
-4. Démarrez les services Docker :
+5. Démarrez les services Docker :
 
 ```bash
-pnpm docker:up postgres
+pnpm docker:up db
 ```
 
 5. Effectuez les migrations de la base de données :
@@ -227,19 +242,11 @@ Pour plus d'informations, consultez le [README des workflows GitHub](.github/REA
 
 ## 📚 Documentation
 
-La documentation du projet est disponible dans le dossier `docs/`. Elle contient des informations sur l'architecture, les conventions de codage et les guides de développement.
+La documentation du projet est disponible dans le dossier `docs/` et dans `README` des apps. Elle contient des informations sur l'architecture, les conventions de codage et les guides de développement.
 
 - [Guidelines Frontend](docs/frontend-guidelines.md)
 - [Guidelines Backend](docs/backend-guidelines.md)
-
-## 👥 Contribution
-
-Les contributions sont les bienvenues ! Veuillez suivre ces étapes pour contribuer :
-
-1. Créez une branche pour votre fonctionnalité (`git checkout -b feature/amazing-feature`)
-2. Committez vos changements (`git commit -m 'Add some amazing feature'`)
-3. Poussez vers la branche (`git push origin feature/amazing-feature`)
-4. Ouvrez une Pull Request
+- [Readme API](apps/api/README.md)
 
 # Socle Lonestone
 
