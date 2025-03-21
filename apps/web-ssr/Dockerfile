@@ -4,88 +4,55 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 WORKDIR /app
 
-# 🔹 Étape 1 : Installation des dépendances
-FROM base AS deps
-
-WORKDIR /app
-
-# Copier uniquement les fichiers nécessaires pour l'installation des dépendances
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# Créer la structure de répertoires pour les packages nécessaires
-# Ajoutez ou supprimez des packages selon vos besoins
-RUN mkdir -p packages/ui packages/validations packages/openapi-generator apps/web-ssr
-
-# Copier les package.json des packages nécessaires uniquement
-COPY packages/ui/package.json ./packages/ui/
-COPY packages/validations/package.json ./packages/validations/
-COPY packages/openapi-generator/package.json ./packages/openapi-generator/
-COPY apps/web-ssr/package.json ./apps/web-ssr/
-
-# Installer toutes les dépendances (dev + prod) avec hoisting
-RUN pnpm install --frozen-lockfile --shamefully-hoist
-
-# 🔹 Étape 2 : Installation des dépendances de production uniquement
 FROM base AS prod-deps
 
 WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/web-ssr/package.json ./apps/web-ssr/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
+COPY packages/openapi-generator/package.json ./packages/openapi-generator/package.json
 
-# Copier uniquement les fichiers nécessaires pour l'installation des dépendances
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm fetch --prod
 
-# Créer la structure de répertoires pour les packages nécessaires
-RUN mkdir -p packages/ui packages/validations packages/openapi-generator apps/web-ssr
-
-# Copier les package.json des packages nécessaires uniquement
-COPY packages/ui/package.json ./packages/ui/
-COPY packages/validations/package.json ./packages/validations/
-COPY packages/openapi-generator/package.json ./packages/openapi-generator/
-COPY apps/web-ssr/package.json ./apps/web-ssr/
-
-# Installer uniquement les dépendances de production avec hoisting
-RUN pnpm install --prod --frozen-lockfile --shamefully-hoist
-
-# 🔹 Étape 3 : Build
+# 🔹 Stage 2: Build
 FROM base AS builder
 
 WORKDIR /app
 
+# Define build arguments
 ARG API_URL
-
 ENV API_URL=${API_URL}
 
-# Copier uniquement les packages nécessaires
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json tsconfig.base.json ./
+# Copy project files (without node_modules)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.json tsconfig.base.json ./
+COPY apps/web-ssr/package.json ./apps/web-ssr/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
+COPY packages/openapi-generator/package.json ./packages/openapi-generator/package.json
+
+RUN pnpm fetch
+
 COPY packages/ui ./packages/ui
-COPY packages/validations ./packages/validations
 COPY packages/openapi-generator ./packages/openapi-generator
 COPY apps/web-ssr ./apps/web-ssr
 
-# Copier les dépendances de l'étape précédente
-COPY --from=deps /app/node_modules ./node_modules
-
-# Compiler les packages nécessaires et l'application SSR
+# Build packages and SSR application
 RUN pnpm build
+RUN pnpm deploy --filter="./apps/web-ssr" --prod /prop/web-ssr
 
-# 🔹 Étape 4 : Production (Image finale)
+# 🔹 Stage 3: Production (Final image)
 FROM base AS runner
 
 WORKDIR /app
 
-# Définir l'environnement
+# Set environment
 ENV NODE_ENV=production
 
-COPY --from=builder /app/apps/web-ssr/build ./build
-COPY --from=builder /app/apps/web-ssr/package.json ./package.json
+COPY --from=builder /prop/web-ssr/node_modules ./node_modules
+COPY --from=builder /prop/web-ssr/build ./build
+COPY --from=builder /prop/web-ssr/package.json ./package.json
 
-# Copier les dépendances de production
-COPY --from=prod-deps /app/node_modules ./node_modules
-
-# Définir le répertoire de travail pour l'application SSR
-WORKDIR /app
-
-# Exposer le port
+# Expose port
 EXPOSE 3000
 
-# Démarrer l'application
+# Start the application
 CMD ["pnpm", "run", "start"]

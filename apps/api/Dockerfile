@@ -1,95 +1,59 @@
+# Stage 1: base
 FROM node:22.14-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 WORKDIR /app
-# 🔹 Étape 1 : Installation des dépendances
-FROM base AS deps
 
-WORKDIR /app
-
-# Copier uniquement les fichiers nécessaires pour l'installation des dépendances
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# Créer la structure de répertoires pour les packages
-RUN mkdir -p packages/validations apps/api
-
-# Copier les package.json
-COPY packages/validations/package.json ./packages/validations/
-COPY apps/api/package.json ./apps/api/
-
-# Installer toutes les dépendances (dev + prod) avec hoisting
-RUN pnpm install --frozen-lockfile --shamefully-hoist
-
-# 🔹 Étape 2 : Installation des dépendances de production uniquement
 FROM base AS prod-deps
 
 WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/api/package.json ./apps/api/package.json
 
-# Copier uniquement les fichiers nécessaires pour l'installation des dépendances
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm fetch --prod
 
-# Créer la structure de répertoires pour les packages
-RUN mkdir -p packages/validations apps/api
-
-# Copier les package.json
-COPY packages/validations/package.json ./packages/validations/
-COPY apps/api/package.json ./apps/api/
-
-# Installer uniquement les dépendances de production avec hoisting
-RUN pnpm install --prod --frozen-lockfile --shamefully-hoist
-
-# 🔹 Étape 3 : Build
+# 🔹 Stage 2: Build
 FROM base AS builder
 
 WORKDIR /app
 
-# Installation des dépendances système nécessaires
+# Install necessary system dependencies
 RUN apk add --no-cache jq
-RUN npm install -g tsup
 
-# Copier les fichiers du projet d'abord (sans les node_modules)
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/validations ./packages/validations
+# Copy project files (without node_modules)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/api/package.json ./apps/api/package.json
+
+RUN pnpm fetch
+
 COPY apps/api ./apps/api
 
-# Copier les dépendances de l'étape précédente
-COPY --from=deps /app/node_modules ./node_modules
-
-# Si vous utilisez MikroORM, désactiver useTsNode pour la production
+# If using MikroORM, disable useTsNode for production
 RUN if grep -q "mikro-orm" apps/api/package.json; then \
     cd apps/api && \
     jq '.["mikro-orm"].useTsNode = false' package.json > tmp.json && mv tmp.json package.json && \
     cd ../..; \
     fi
 
-# Afficher le contenu du package.json de validations pour débogage
-RUN echo "Contenu du package.json de validations:" && cat packages/validations/package.json
+# Build shared packages and API
+RUN pnpm build
+RUN pnpm deploy --filter="./apps/api" --prod /prop/api
 
-# Compiler les packages partagés et l'API
-RUN cd packages/validations && npx tsup && cd ../.. && pnpm --filter="./apps/api" build
-
-# 🔹 Étape 4 : Production (Image finale)
+# 🔹 Stage 3: Production (Final image)
 FROM base AS runner
 
 WORKDIR /app
 
-# Définir l'environnement
+# Set environment
 ENV NODE_ENV=production
 
-# Copier les fichiers de configuration
-COPY --from=builder /app/apps/api/package.json ./
-COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /prop/api/node_modules ./node_modules
+COPY --from=builder /prop/api/dist ./dist
+COPY --from=builder /prop/api/package.json ./package.json
 
-# Copier les dépendances de production
-COPY --from=prod-deps /app/node_modules ./node_modules
-
-# Copier le package validations compilé dans node_modules
-COPY --from=builder /app/packages/validations/dist ./node_modules/@lonestone/validations/dist
-COPY --from=builder /app/packages/validations/package.json ./node_modules/@lonestone/validations/
-
-# Exposer le port
+# Expose port
 EXPOSE 3000
 
-# Démarrer l'application
-CMD ["sh", "-c", "pnpm db:migrate:up --config=dist/config/mikro-orm.config.js && node dist/main.js"]
+# Start the application
+CMD ["sh", "-c", "pnpm db:migrate:up --config=dist/config/mikro-orm.config.js && pnpm run start"]

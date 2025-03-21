@@ -17,54 +17,54 @@ services:
       retries: 5
 
   # API Backend
-  api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    environment:
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-      DATABASE_USER: ${DATABASE_USER}
-      DATABASE_NAME: ${DATABASE_NAME}
-      DATABASE_HOST: ${DATABASE_HOST}
-      DATABASE_PORT: ${DATABASE_PORT}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
-      NODE_ENV: production
-      API_PORT: ${API_PORT}
-      TRUSTED_ORIGINS: ${TRUSTED_ORIGINS}
-    ports:
-      - "${API_PORT}:${API_PORT}"
-    depends_on:
-      db:
-        condition: service_healthy
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: apps/api/Dockerfile
+  #   environment:
+  #     DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+  #     DATABASE_USER: ${DATABASE_USER}
+  #     DATABASE_NAME: ${DATABASE_NAME}
+  #     DATABASE_HOST: ${DATABASE_HOST}
+  #     DATABASE_PORT: ${DATABASE_PORT}
+  #     BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+  #     NODE_ENV: production
+  #     API_PORT: ${API_PORT}
+  #     TRUSTED_ORIGINS: ${TRUSTED_ORIGINS}
+  #   ports:
+  #     - "${API_PORT}:${API_PORT}"
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
 
-  # Application SPA
-  web-spa:
-    build:
-      context: .
-      dockerfile: apps/web-spa/Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL}
-    ports:
-      - "5174:80"
-    depends_on:
-      - api
+  # # Application SPA
+  # web-spa:
+  #   build:
+  #     context: .
+  #     dockerfile: apps/web-spa/Dockerfile
+  #     args:
+  #       VITE_API_URL: ${VITE_API_URL}
+  #   ports:
+  #     - "5174:80"
+  #   depends_on:
+  #     - api
 
-  # Application SSR
-  web-ssr:
-    build:
-      context: .
-      dockerfile: apps/web-ssr/Dockerfile
-      args:
-        API_URL: ${API_URL}
-        NODE_ENV: ${NODE_ENV}
-    environment:
-      API_URL: ${API_URL}
-      NODE_ENV: ${NODE_ENV}
-      PORT: 5173
-    ports:
-      - "5173:5173"
-    depends_on:
-      - api
+  # # Application SSR
+  # web-ssr:
+  #   build:
+  #     context: .
+  #     dockerfile: apps/web-ssr/Dockerfile
+  #     args:
+  #       API_URL: ${API_URL}
+  #       NODE_ENV: ${NODE_ENV}
+  #   environment:
+  #     API_URL: ${API_URL}
+  #     NODE_ENV: ${NODE_ENV}
+  #     PORT: 5173
+  #   ports:
+  #     - "5173:5173"
+  #   depends_on:
+  #     - api
 
 volumes:
   postgres_data:
