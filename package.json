@@ -15,7 +15,8 @@
     "with-env-test": "dotenv -e .env.test -- pnpm",
     "lint": "eslint --flag unstable_config_lookup_from_file .",
     "generate": "pnpm --filter=@lonestone/openapi-generator run generate",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "schematics:module": "pnpm --filter=@lonestone/schematics run schematics:module"
   },
   "keywords": [],
   "author": "",

@@ -9,7 +9,7 @@ globs: apps/api/*.ts
 - Use Zod for validation
 - Use MikroORM for database operations
 - Structure modules according to NestJS best practices
-- Use TypedRoute, TypedBody, TypedParam decorators from @lonestone/validations/server
+- Use TypedRoute, TypedBody, TypedParam decorators from @lonestone/nzoth/server
 - Use Better Auth for authentication
 - Document API with Swagger/OpenAPI
 - Follow the naming conventions in the guidelines

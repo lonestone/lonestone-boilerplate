@@ -29,5 +29,5 @@
   "ts-node": {
     "require": ["tsconfig-paths/register"]
   },
-  "exclude": ["**/schematics/**"]
+  "exclude": ["**/schematics/**", "**/dist/**"]
 }

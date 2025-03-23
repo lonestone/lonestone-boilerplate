@@ -147,15 +147,10 @@ pnpm run migration:down
 
 ## Générer un module
 
-```bash
-pnpm generate:module --name=caca
-```
-
-To create a new module, you can use the following command:
+To create a new module, you can use the following command at root of monorepo:
 
 ```bash
-pnpm generate:module --name=module-name
-
+pnpm schematics:module --name=module-name
 ```
 It's generated with the following files:
 

@@ -3,16 +3,18 @@
   "version": "0.0.1", 
   "description": "Schematics for NestJS API",
   "schematics": "./src/collection.json",
-  "type": "commonjs",
-  "main": "dist/index.js",
+
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "prepublish": "pnpm run build"
+    "schematics:module": "NODE_OPTIONS=\"--require ts-node/register\" nest g -c ./src/collection.json resource"
   },
   "dependencies": {
     "@angular-devkit/core": "^17.3.2",
     "@angular-devkit/schematics": "^17.3.2",
     "@nestjs/mapped-types": "*",
     "@nestjs/schematics": "^10.2.3"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0"
   }
 } 
