@@ -29,7 +29,7 @@ export class PostSeeder extends Seeder {
   async run(em: EntityManager, context: Dictionary): Promise<void> {
     const posts = [];
     for (const user of context.users) {
-      for (let i = 0; i < faker.number.int({ min: 5, max: 100 }); i++) {
+      for (let i = 0; i < faker.number.int({ min: 1, max: 5 }); i++) {
         const createdAt = faker.date.between({
           from: new Date("2024-01-01"),
           to: new Date("2024-12-31"),
@@ -40,7 +40,7 @@ export class PostSeeder extends Seeder {
         await em.persistAndFlush(post);
 
         // Create post versions
-        for (let i = 0; i < faker.number.int({ min: 5, max: 10 }); i++) {
+        for (let i = 0; i < faker.number.int({ min: 1, max: 3 }); i++) {
           const postVersion = new PostVersion();
           postVersion.post = post;
           postVersion.createdAt =
