@@ -33,7 +33,6 @@ export function main(options: ResourceOptions): Rule {
       options.path = options.path ?? '';
       const location: Location = nameParser.parse(options);
       
-      console.log(`Generating module for ${location.name}`);
       
       // Chemins des répertoires source et cible
       const workDir = process.cwd();
@@ -45,9 +44,7 @@ export function main(options: ResourceOptions): Rule {
       if (!fs.existsSync(targetRoot)) {
         fs.mkdirSync(targetRoot, { recursive: true });
       }
-      
-      console.log(`Target module dir: ${targetModuleDir}`);
-      
+            
       // Utiliser la fonction template des schematics
       const source = apply(url('./files'), [
         template({

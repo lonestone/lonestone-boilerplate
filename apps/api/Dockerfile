@@ -5,42 +5,31 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 WORKDIR /app
 
+# Stage 2: Production dependencies
 FROM base AS prod-deps
-
-WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/api/package.json ./apps/api/package.json
 
+# COPY PACKAGES DEPENDANCIES
+# COPY packages/*/package.json ./packages/*/package.json
+
 RUN pnpm fetch --prod
 
-# 🔹 Stage 2: Build
+# Stage 3: Build
 FROM base AS builder
-
-WORKDIR /app
-
-# Install necessary system dependencies
-RUN apk add --no-cache jq
-
-# Copy project files (without node_modules)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/api/package.json ./apps/api/package.json
 
 RUN pnpm fetch
 
+# COPY PACKAGES DEPENDANCIES
+# COPY packages ./packages
 COPY apps/api ./apps/api
 
-# If using MikroORM, disable useTsNode for production
-RUN if grep -q "mikro-orm" apps/api/package.json; then \
-    cd apps/api && \
-    jq '.["mikro-orm"].useTsNode = false' package.json > tmp.json && mv tmp.json package.json && \
-    cd ../..; \
-    fi
-
-# Build shared packages and API
 RUN pnpm build
-RUN pnpm deploy --filter="./apps/api" --prod /prop/api
+RUN pnpm deploy --filter="./apps/api" --prod /app/api
 
-# 🔹 Stage 3: Production (Final image)
+# Stage 4: Production (Final image)
 FROM base AS runner
 
 WORKDIR /app
@@ -48,12 +37,15 @@ WORKDIR /app
 # Set environment
 ENV NODE_ENV=production
 
-COPY --from=builder /prop/api/node_modules ./node_modules
-COPY --from=builder /prop/api/dist ./dist
-COPY --from=builder /prop/api/package.json ./package.json
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=builder /app/api/dist ./dist
+COPY --from=builder /app/api/package.json ./package.json
 
 # Expose port
 EXPOSE 3000
 
+ENV MIKRO_ORM_CLI_USE_TS_NODE=false
+ENV MIKRO_ORM_CLI_CONFIG=dist/config/mikro-orm.config.js
+
 # Start the application
-CMD ["sh", "-c", "pnpm db:migrate:up --config=dist/config/mikro-orm.config.js && pnpm run start"]
+CMD ["sh", "-c", "pnpm db:migrate:up && pnpm run start"]
