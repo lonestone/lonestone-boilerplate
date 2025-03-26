@@ -1,6 +1,12 @@
 {
-    "files.associations": {
-      "**/schematics/src/files/**/*.ts": "typescript"
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
     }
+  ],
+  // Enable the ESlint flat config support
+  "eslint.useFlatConfig": true,
+  "files.associations": {
+    "**/schematics/src/files/**/*.ts": "typescript"
   }
-  
+}
