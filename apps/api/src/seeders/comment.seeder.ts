@@ -20,7 +20,7 @@ const createComment = async (
   em: EntityManager, 
   parentComment?: Comment, 
   depth: number = 0, 
-  maxDepth: number = 3
+  maxDepth: number = 2
 ): Promise<Comment> => {
   const comment = new Comment();
   comment.post = post;
@@ -39,7 +39,7 @@ const createComment = async (
   
   // Generate child comments with decreasing probability based on depth
   if (depth < maxDepth) {
-    const maxChildComments = Math.max(5 - depth * 2, 0); // Decrease max comments as depth increases
+    const maxChildComments = Math.max(2 - depth, 0); // Decrease max comments as depth increases
     const numberOfChildComments = generateNumberOfComments(maxChildComments);
     
     for (let i = 0; i < numberOfChildComments; i++) {
@@ -56,7 +56,7 @@ export class CommentSeeder extends Seeder {
     const users = context.users;
 
     for (const post of posts) {
-      const numberOfComments = generateNumberOfComments(10);
+      const numberOfComments = generateNumberOfComments(3);
       for (let i = 0; i < numberOfComments; i++) {
         // Create top-level comments only, child comments will be created recursively
         await createComment(post, users, em);
