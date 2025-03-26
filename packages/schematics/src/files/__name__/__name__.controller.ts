@@ -12,7 +12,7 @@ SortingParams,
 TypedRoute,
 TypedParam,
 TypedBody,
-} from "@lonestone/validations/server";
+} from "@lonestone/nzoth/server";
 import { <%= className %>Service } from "./<%= name %>.service";
 import { <%= name %>Schema, <%= name %>sSchema, create<%= className %>Schema, update<%= className %>Schema, <%= name %>PaginationSchema, <%= name %>SortingSchema, <%= name %>FilteringSchema } from "./contracts/<%= name %>.contract";
 import type { <%= className %>Response, <%= className %>sResponse, Create<%= className %>Input, Update<%= className %>Input, <%= className %>Pagination, <%= className %>Sorting, <%= className %>Filtering } from "./contracts/<%= name %>.contract";

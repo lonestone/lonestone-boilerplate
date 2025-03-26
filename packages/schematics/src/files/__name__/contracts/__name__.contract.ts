@@ -1,10 +1,10 @@
 import { z } from "zod";
 import {
   createPaginationQuerySchema,
-  FilterQueryStringSchema,
+  createFilterQueryStringSchema,
+  createSortingQueryStringSchema,
   paginatedSchema,
-  SortingQueryStringSchema,
-} from "@lonestone/validations/server";
+} from "@lonestone/nzoth/server";
 import { <%= classify(name) %> } from "../<%= name %>.entity";
 
 // Schema for creating a <%= classify(name) %>
@@ -56,7 +56,7 @@ export const enabled<%= classify(name) %>SortingKey: (keyof <%= classify(name) %
   "createdAt",
 ] as const;
 
-export const <%= name %>SortingSchema = SortingQueryStringSchema(
+export const <%= name %>SortingSchema = createSortingQueryStringSchema(
   enabled<%= classify(name) %>SortingKey as string[]
 );
 
@@ -66,7 +66,7 @@ export const enabled<%= classify(name) %>FilteringKeys = [
   "createdAt",
 ] as const;
 
-export const <%= name %>FilteringSchema = FilterQueryStringSchema(
+export const <%= name %>FilteringSchema = createFilterQueryStringSchema(
   enabled<%= classify(name) %>FilteringKeys
 );
 

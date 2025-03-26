@@ -4,59 +4,48 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 WORKDIR /app
 
-# 🔹 Étape 1 : Installation des dépendances
-FROM base AS deps
+FROM base AS prod-deps
 
 WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/web-spa/package.json ./apps/web-spa/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
+COPY packages/openapi-generator/package.json ./packages/openapi-generator/package.json
 
-# Copier uniquement les fichiers nécessaires pour l'installation des dépendances
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm fetch --prod
 
-# Créer la structure de répertoires pour les packages nécessaires
-# Ajoutez ou supprimez des packages selon vos besoins
-RUN mkdir -p packages/ui packages/validations packages/openapi-generator apps/web-spa
-
-# Copier les package.json des packages nécessaires uniquement
-COPY packages/ui/package.json ./packages/ui/
-COPY packages/validations/package.json ./packages/validations/
-COPY packages/openapi-generator/package.json ./packages/openapi-generator/
-COPY apps/web-spa/package.json ./apps/web-spa/
-
-# Installer toutes les dépendances (dev + prod) avec hoisting
-RUN pnpm install --frozen-lockfile --shamefully-hoist
-
-# 🔹 Étape 2 : Build
+# 🔹 Stage 2: Build
 FROM base AS builder
 
 WORKDIR /app
 
-# Définir les arguments de build qui peuvent être passés lors de la construction de l'image
+# Define build arguments
 ARG VITE_API_URL
-
-# Définir les variables d'environnement pour le build
 ENV VITE_API_URL=${VITE_API_URL}
 
+# Copy project files (without node_modules)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.json tsconfig.base.json ./
+COPY apps/web-spa/package.json ./apps/web-spa/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
+COPY packages/openapi-generator/package.json ./packages/openapi-generator/package.json
 
-# Copier uniquement les packages nécessaires
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json tsconfig.base.json ./
+RUN pnpm fetch
+
 COPY packages/ui ./packages/ui
-COPY packages/validations ./packages/validations
 COPY packages/openapi-generator ./packages/openapi-generator
 COPY apps/web-spa ./apps/web-spa
 
-# Copier les dépendances de l'étape précédente
-COPY --from=deps /app/node_modules ./node_modules
-
-# Compiler les packages nécessaires et la SPA
+# Build packages and web-spa
 RUN pnpm build
+RUN pnpm deploy --filter="./apps/web-spa" --prod /prop/web-spa
 
-# 🔹 Étape 3 : Production (Image finale avec Nginx)
+# 🔹 Stage 3: Production (Final image with Nginx)
 FROM nginx:alpine
 
-# Copie de la configuration nginx pour les SPA (redirection vers index.html)
+# Copy nginx configuration for SPAs (redirect to index.html)
 COPY apps/web-spa/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copie des fichiers de build dans le répertoire de nginx
+# Copy build files to nginx directory
 COPY --from=builder /app/apps/web-spa/build/client /usr/share/nginx/html
 
 EXPOSE 80
