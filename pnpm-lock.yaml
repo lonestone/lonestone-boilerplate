@@ -3,6 +3,7 @@ lockfileVersion: '9.0'
 settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
+  injectWorkspacePackages: true
 
 importers:
 
@@ -129,7 +130,7 @@ importers:
     devDependencies:
       '@lonestone/schematics':
         specifier: workspace:*
-        version: link:../../packages/schematics
+        version: file:packages/schematics(@nestjs/common@10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2))(chokidar@3.6.0)(reflect-metadata@0.2.2)(typescript@5.4.5)
       '@nestjs/schematics':
         specifier: ^10.2.3
         version: 10.2.3(chokidar@3.6.0)(typescript@5.4.5)
@@ -349,6 +350,13 @@ importers:
       '@nestjs/schematics':
         specifier: ^10.2.3
         version: 10.2.3(chokidar@3.6.0)(typescript@5.8.2)
+    devDependencies:
+      ts-node:
+        specifier: ^10.9.1
+        version: 10.9.2(@types/node@22.13.10)(typescript@5.8.2)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.8.2
 
   packages/ui:
     dependencies:
@@ -1225,6 +1233,9 @@ packages:
   '@lonestone/nzoth@0.1.0':
     resolution: {integrity: sha512-luC7NW9F1ToYrS+qBGJCds333ViOBsPNJPMXzV8a+LGeKT1XJN8hqodjIRDpsbzpFF5wBGQibmvbi4RIUdNNOA==}
     engines: {node: '>=20.0.0'}
+
+  '@lonestone/schematics@file:packages/schematics':
+    resolution: {directory: packages/schematics, type: directory}
 
   '@lukeed/csprng@1.1.0':
     resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
@@ -7725,6 +7736,20 @@ snapshots:
       - openapi3-ts
       - reflect-metadata
 
+  '@lonestone/schematics@file:packages/schematics(@nestjs/common@10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2))(chokidar@3.6.0)(reflect-metadata@0.2.2)(typescript@5.4.5)':
+    dependencies:
+      '@angular-devkit/core': 17.3.11(chokidar@3.6.0)
+      '@angular-devkit/schematics': 17.3.11(chokidar@3.6.0)
+      '@nestjs/mapped-types': 2.1.0(@nestjs/common@10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)
+      '@nestjs/schematics': 10.2.3(chokidar@3.6.0)(typescript@5.4.5)
+    transitivePeerDependencies:
+      - '@nestjs/common'
+      - chokidar
+      - class-transformer
+      - class-validator
+      - reflect-metadata
+      - typescript
+
   '@lukeed/csprng@1.1.0': {}
 
   '@microsoft/tsdoc@0.15.1': {}
@@ -7950,6 +7975,11 @@ snapshots:
   '@nestjs/mapped-types@2.0.6(@nestjs/common@11.0.12(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)':
     dependencies:
       '@nestjs/common': 11.0.12(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      reflect-metadata: 0.2.2
+
+  '@nestjs/mapped-types@2.1.0(@nestjs/common@10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)':
+    dependencies:
+      '@nestjs/common': 10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
 
   '@nestjs/mapped-types@2.1.0(@nestjs/common@11.0.12(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)':
@@ -13458,6 +13488,24 @@ snapshots:
       diff: 4.0.2
       make-error: 1.3.6
       typescript: 5.4.5
+      v8-compile-cache-lib: 3.0.1
+      yn: 3.1.1
+
+  ts-node@10.9.2(@types/node@22.13.10)(typescript@5.8.2):
+    dependencies:
+      '@cspotcode/source-map-support': 0.8.1
+      '@tsconfig/node10': 1.0.11
+      '@tsconfig/node12': 1.0.11
+      '@tsconfig/node14': 1.0.3
+      '@tsconfig/node16': 1.0.4
+      '@types/node': 22.13.10
+      acorn: 8.14.1
+      acorn-walk: 8.3.4
+      arg: 4.1.3
+      create-require: 1.1.1
+      diff: 4.0.2
+      make-error: 1.3.6
+      typescript: 5.8.2
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
 

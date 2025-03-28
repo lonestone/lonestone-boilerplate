@@ -56,7 +56,6 @@ It's generated with the following files:
 - `contracts/__name__.contract.ts`
 - `tests/__name__.controller.spec.ts`
 
-
 ### Controllers
 
 - Use decorators from NestJS for route definition
@@ -82,15 +81,16 @@ export const createUserSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
 }).openapi({
-    title: "Create User",
-    description: "Create a new user",
-});
+  title: 'Create User',
+  description: 'Create a new user',
+})
 
-export type CreateUserInput = z.infer<typeof createUserSchema>;
-
-@TypedRoute.Post("", userSchema)
-async createUser(@TypedBody(createUserSchema) body: CreateUserInput) {
+export type CreateUserInput = z.infer<typeof createUserSchema>
+export class Controller {
+  @TypedRoute.Post('', userSchema)
+  async createUser(@TypedBody(createUserSchema) body: CreateUserInput) {
   // Implementation
+  }
 }
 ```
 
@@ -120,20 +120,20 @@ async createUser(@TypedBody(createUserSchema) body: CreateUserInput) {
 
 Example:
 ```typescript
-@Entity({ tableName: "user" })
+@Entity({ tableName: 'user' })
 export class User {
-  @PrimaryKey({ type: "uuid", defaultRaw: "gen_random_uuid()" })
-  id!: string;
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
 
   @Property()
   @Index()
-  name!: string;
+  name!: string
 
-  @Property({ fieldName: "createdAt" })
-  createdAt: Date = new Date();
+  @Property({ fieldName: 'createdAt' })
+  createdAt: Date = new Date()
 
-  @Property({ fieldName: "updatedAt", onUpdate: () => new Date() })
-  updatedAt: Date = new Date();
+  @Property({ fieldName: 'updatedAt', onUpdate: () => new Date() })
+  updatedAt: Date = new Date()
 }
 ```
 
@@ -153,7 +153,7 @@ export class User {
 
 Example:
 ```typescript
-@Controller("admin/users")
+@Controller('admin/users')
 @UseGuards(AuthGuard)
 export class UserController {
   // Protected endpoints

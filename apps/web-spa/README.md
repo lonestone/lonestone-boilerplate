@@ -49,10 +49,10 @@ Exemple d'utilisation dans le code :
 
 ```typescript
 // Utilisation directe (sera remplacé au runtime)
-const apiUrl = "%VITE_API_URL%";
+const apiUrl = '%VITE_API_URL%'
 
 // Ou avec une valeur par défaut
-const apiUrl = "%VITE_API_URL%" || "https://api.default.com";
+const apiUrl = '%VITE_API_URL%' || 'https://api.default.com'
 ```
 
 ## Développement local

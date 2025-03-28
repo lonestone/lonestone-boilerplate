@@ -1,27 +1,29 @@
+import type { PublicPostsSchema } from '@lonestone/openapi-generator'
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
   CardFooter,
-} from "@lonestone/ui/components/primitives/card";
-import { Link } from "react-router";
-import { ArrowUpRight, User, Calendar, MessageCircle } from "lucide-react";
+  CardHeader,
+  CardTitle,
+} from '@lonestone/ui/components/primitives/card'
+import { ArrowUpRight, Calendar, MessageCircle, User } from 'lucide-react'
 
-import { PublicPostsSchema } from "@lonestone/openapi-generator";
-import { useMemo } from "react";
-type PostCardProps = {
-  post: PublicPostsSchema["data"][number];
-};
+import { useMemo } from 'react'
+import { Link } from 'react-router'
+
+interface PostCardProps {
+  post: PublicPostsSchema['data'][number]
+}
 
 export default function PostCard({ post }: PostCardProps) {
   const getFirstTextContent = useMemo(() => {
-    const textContent = post.contentPreview;
-    if (!textContent) return "";
+    const textContent = post.contentPreview
+    if (!textContent)
+      return ''
     return textContent.data.length > 150
-      ? textContent.data.slice(0, 150) + "..."
-      : textContent.data;
-  }, [post.contentPreview]);
+      ? `${textContent.data.slice(0, 150)}...`
+      : textContent.data
+  }, [post.contentPreview])
 
   return (
     <Card className="group/card-post overflow-hidden transition-all hover:shadow-lg" asChild>
@@ -48,12 +50,16 @@ export default function PostCard({ post }: PostCardProps) {
             {post.commentCount !== undefined && (
               <div className="flex items-center gap-1">
                 <MessageCircle className="h-4 w-4" />
-                <span>{post.commentCount} {post.commentCount === 1 ? 'comment' : 'comments'}</span>
+                <span>
+                  {post.commentCount}
+                  {' '}
+                  {post.commentCount === 1 ? 'comment' : 'comments'}
+                </span>
               </div>
             )}
           </div>
         </CardFooter>
       </Link>
     </Card>
-  );
+  )
 }

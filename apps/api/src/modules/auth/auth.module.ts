@@ -1,24 +1,24 @@
-import { Global, Inject, Module, RequestMethod, OnModuleInit } from "@nestjs/common";
+import type {
+  MiddlewareConsumer,
+  NestModule,
+} from '@nestjs/common'
+import type {
+  AuthContext,
+  MiddlewareContext,
+  MiddlewareOptions,
+} from 'better-auth'
+import { Global, Inject, Module, OnModuleInit, RequestMethod } from '@nestjs/common'
 import {
   DiscoveryModule,
   DiscoveryService,
   MetadataScanner,
-} from "@nestjs/core";
-import type {
-  MiddlewareConsumer,
-  NestModule,
-} from "@nestjs/common";
-import type {
-  MiddlewareOptions,
-  MiddlewareContext,
-  AuthContext,
-} from "better-auth";
-import { createAuthMiddleware } from "better-auth/plugins";
-import { toNodeHandler } from "better-auth/node";
-import { AuthService } from "./auth.service";
-import { BEFORE_HOOK_KEY, AFTER_HOOK_KEY, HOOK_KEY } from "./auth.decorator";
-import { EmailModule } from "../email/email.module";
-import { AuthGuard } from "./auth.guard";
+} from '@nestjs/core'
+import { toNodeHandler } from 'better-auth/node'
+import { createAuthMiddleware } from 'better-auth/plugins'
+import { EmailModule } from '../email/email.module'
+import { AFTER_HOOK_KEY, BEFORE_HOOK_KEY, HOOK_KEY } from './auth.decorator'
+import { AuthGuard } from './auth.guard'
+import { AuthService } from './auth.service'
 
 @Global()
 @Module({
@@ -46,70 +46,71 @@ export class AuthModule implements NestModule, OnModuleInit {
 
   async onModuleInit() {
     // Ensure auth service is initialized
-    await this.authService.onModuleInit();
+    await this.authService.onModuleInit()
   }
 
   async configure(consumer: MiddlewareConsumer) {
     // Wait for auth to be initialized
-    await this.onModuleInit();
+    await this.onModuleInit()
 
-    const auth = this.authService.auth;
+    const auth = this.authService.auth
 
     const providers = this.discoveryService
       .getProviders()
       .filter(
-        ({ metatype }) => metatype && Reflect.getMetadata(HOOK_KEY, metatype)
-      );
+        ({ metatype }) => metatype && Reflect.getMetadata(HOOK_KEY, metatype),
+      )
 
     for (const provider of providers) {
-      const providerPrototype = Object.getPrototypeOf(provider.instance);
-      const methods = this.metadataScanner.getAllMethodNames(providerPrototype);
+      const providerPrototype = Object.getPrototypeOf(provider.instance)
+      const methods = this.metadataScanner.getAllMethodNames(providerPrototype)
 
       for (const method of methods) {
-        const providerMethod = providerPrototype[method];
+        const providerMethod = providerPrototype[method]
 
-        this.setupHook(BEFORE_HOOK_KEY, "before", providerMethod);
-        this.setupHook(AFTER_HOOK_KEY, "after", providerMethod);
+        this.setupHook(BEFORE_HOOK_KEY, 'before', providerMethod)
+        this.setupHook(AFTER_HOOK_KEY, 'after', providerMethod)
       }
     }
 
-    const handler = toNodeHandler(auth);
-    
+    const handler = toNodeHandler(auth)
+
     consumer.apply(handler).forRoutes({
-      path: "/auth/*",
+      path: '/auth/*',
       method: RequestMethod.ALL,
-    });
+    })
   }
 
   private setupHook(
     metadataKey: symbol,
-    hookType: "before" | "after",
+    hookType: 'before' | 'after',
     providerMethod: (
       ctx: MiddlewareContext<
         MiddlewareOptions,
         AuthContext & {
-          returned?: unknown;
-          responseHeaders?: Headers;
+          returned?: unknown
+          responseHeaders?: Headers
         }
       >
-    ) => Promise<void>
+    ) => Promise<void>,
   ) {
-    const auth = this.authService.auth;
-    const hookPath = Reflect.getMetadata(metadataKey, providerMethod);
-    if (!hookPath || !auth?.options.hooks) return;
+    const auth = this.authService.auth
+    const hookPath = Reflect.getMetadata(metadataKey, providerMethod)
+    if (!hookPath || !auth?.options.hooks)
+      return
 
-    const originalHook = auth.options.hooks[hookType];
+    const originalHook = auth.options.hooks[hookType]
     auth.options.hooks[hookType] = createAuthMiddleware(
       async (ctx) => {
         if (originalHook) {
-          await originalHook(ctx);
+          await originalHook(ctx)
         }
 
         if (hookPath === ctx.path) {
-          await providerMethod(ctx);
+          await providerMethod(ctx)
         }
-      }
-    );
+      },
+    )
   }
 
   static forRootAsync() {
@@ -119,11 +120,11 @@ export class AuthModule implements NestModule, OnModuleInit {
       providers: [
         AuthService,
         {
-          provide: "AUTH_OPTIONS",
+          provide: 'AUTH_OPTIONS',
           useClass: AuthService,
-        }
+        },
       ],
-      exports: [AuthService, "AUTH_OPTIONS"],
-    };
+      exports: [AuthService, 'AUTH_OPTIONS'],
+    }
   }
 }

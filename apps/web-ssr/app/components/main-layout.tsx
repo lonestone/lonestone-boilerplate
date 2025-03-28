@@ -1,5 +1,5 @@
-import { Outlet, Link, NavLink } from "react-router";
-import { Header } from "@lonestone/ui/components/layout/Header";
+import { Header } from '@lonestone/ui/components/layout/Header'
+import { Link, NavLink, Outlet } from 'react-router'
 
 export default function MainLayout() {
   return (
@@ -12,7 +12,7 @@ export default function MainLayout() {
           <nav>
             <ul className="flex gap-2 text-sm">
               <li>
-                <NavLink to="/posts" className={({ isActive }) => isActive ? "text-primary" : ""}>Posts</NavLink>
+                <NavLink to="/posts" className={({ isActive }) => isActive ? 'text-primary' : ''}>Posts</NavLink>
               </li>
             </ul>
           </nav>
@@ -22,5 +22,5 @@ export default function MainLayout() {
         <Outlet />
       </main>
     </>
-  );
+  )
 }

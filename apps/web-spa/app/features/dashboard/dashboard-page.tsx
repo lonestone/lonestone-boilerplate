@@ -1,6 +1,6 @@
-import { Header } from "@lonestone/ui/components/layout/Header";
-import { Link, Outlet } from "react-router";
-import { Button } from "@lonestone/ui/components/primitives/button";
+import { authClient } from '@/lib/auth-client'
+import { Header } from '@lonestone/ui/components/layout/Header'
+import { Button } from '@lonestone/ui/components/primitives/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,26 +8,26 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@lonestone/ui/components/primitives/dropdown-menu";
+} from '@lonestone/ui/components/primitives/dropdown-menu'
 import {
+  LayoutDashboard,
+  LogOut,
   PlusCircle,
   Settings,
   User,
-  LogOut,
-  LayoutDashboard,
-} from "lucide-react";
-import { authClient } from "@/lib/auth-client";
-import { useNavigate } from "react-router";
-import { useEffect } from "react";
+} from 'lucide-react'
+import { useEffect } from 'react'
+import { Link, Outlet, useNavigate } from 'react-router'
+
 export default function DashboardPage() {
-  const { data: sessionData, isPending } = authClient.useSession();
-  const navigate = useNavigate(); 
+  const { data: sessionData, isPending } = authClient.useSession()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!isPending && !sessionData) {
-      navigate("/login");
+      navigate('/login')
     }
-  }, [sessionData, navigate, isPending]);
+  }, [sessionData, navigate, isPending])
 
   return (
     <>
@@ -81,8 +81,8 @@ export default function DashboardPage() {
                 <DropdownMenuItem
                   className="flex items-center text-destructive-foreground hover:bg-destructive"
                   onClick={async () => {
-                    await authClient.signOut();
-                    navigate("/login");
+                    await authClient.signOut()
+                    navigate('/login')
                   }}
                 >
                   <LogOut className="h-4 w-4" />
@@ -98,5 +98,5 @@ export default function DashboardPage() {
         <Outlet />
       </main>
     </>
-  );
+  )
 }

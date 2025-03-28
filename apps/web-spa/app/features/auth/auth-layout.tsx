@@ -1,7 +1,8 @@
-import { Outlet } from "react-router";
-import { AnvilIcon } from "lucide-react";
+import ImageAuth from '@/assets/images/image-auth.webp'
+import { AnvilIcon } from 'lucide-react'
 
-import ImageAuth from "@/assets/images/image-auth.webp";
+import { Outlet } from 'react-router'
+
 export default function AuthLayout() {
   return (
     <div className="grid min-h-svh lg:grid-cols-2 md:p-4">
@@ -30,5 +31,5 @@ export default function AuthLayout() {
         />
       </div>
     </div>
-  );
+  )
 }

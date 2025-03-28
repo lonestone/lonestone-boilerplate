@@ -161,7 +161,6 @@ It's generated with the following files:
 - `contracts/__name__.contract.ts`
 - `tests/__name__.controller.spec.ts`
 
-
 ## Stack
 
 Parmis les plus importantes :

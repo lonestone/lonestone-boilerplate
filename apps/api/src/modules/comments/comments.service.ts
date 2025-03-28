@@ -1,84 +1,87 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { EntityManager, FilterQuery, QueryOrderMap } from '@mikro-orm/core';
-import { Comment } from './comments.entity';
-import { Post } from '../posts/posts.entity';
-import { User } from '../auth/auth.entity';
-import { 
-  CommentResponse, 
-  CommentsResponse, 
-  CreateCommentInput, 
-  CommentPagination, 
-  CommentSorting, 
-  CommentFiltering 
-} from './contracts/comments.contract';
+import { EntityManager, FilterQuery, QueryOrderMap } from '@mikro-orm/core'
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { User } from '../auth/auth.entity'
+import { Post } from '../posts/posts.entity'
+import { Comment } from './comments.entity'
+import {
+  CommentFiltering,
+  CommentPagination,
+  CommentResponse,
+  CommentSorting,
+  CommentsResponse,
+  CreateCommentInput,
+} from './contracts/comments.contract'
 
 @Injectable()
 export class CommentsService {
   constructor(private readonly em: EntityManager) {}
 
   async createComment(
-    postSlug: string, 
-    data: CreateCommentInput, 
-    userId?: string
+    postSlug: string,
+    data: CreateCommentInput,
+    userId?: string,
   ): Promise<CommentResponse> {
-    const post = await this.em.findOne(Post, { slug: postSlug });
-    if (!post) throw new NotFoundException('Post not found');
+    const post = await this.em.findOne(Post, { slug: postSlug })
+    if (!post)
+      throw new NotFoundException('Post not found')
 
-    const comment = new Comment();
-    comment.post = post;
-    comment.content = data.content;
-    
+    const comment = new Comment()
+    comment.post = post
+    comment.content = data.content
+
     // Set user if authenticated
     if (userId) {
-      const user = await this.em.findOne(User, { id: userId });
+      const user = await this.em.findOne(User, { id: userId })
       if (user) {
-        comment.user = user;
+        comment.user = user
       }
-    } else {
-      comment.authorName = 'Anonymous';
+    }
+    else {
+      comment.authorName = 'Anonymous'
     }
 
     // Handle reply to another comment
     if (data.parentId) {
-      const parentComment = await this.em.findOne(Comment, { id: data.parentId, post: post.id });
+      const parentComment = await this.em.findOne(Comment, { id: data.parentId, post: post.id })
       if (!parentComment) {
-        throw new NotFoundException('Parent comment not found');
+        throw new NotFoundException('Parent comment not found')
       }
-      comment.parent = parentComment;
+      comment.parent = parentComment
     }
 
-    await this.em.persistAndFlush(comment);
+    await this.em.persistAndFlush(comment)
 
-    return this.mapCommentToResponse(comment);
+    return this.mapCommentToResponse(comment)
   }
 
   async getCommentsByPost(
     postSlug: string,
     pagination: CommentPagination,
     sort?: CommentSorting,
-    filter?: CommentFiltering
+    filter?: CommentFiltering,
   ): Promise<CommentsResponse> {
-    const post = await this.em.findOne(Post, { slug: postSlug });
-    if (!post) throw new NotFoundException('Post not found');
+    const post = await this.em.findOne(Post, { slug: postSlug })
+    if (!post)
+      throw new NotFoundException('Post not found')
 
     // Only get top-level comments (no parent)
-    const whereFilter: FilterQuery<Comment> = { 
+    const whereFilter: FilterQuery<Comment> = {
       post: post.id,
-      parent: null
-    };
+      parent: null,
+    }
 
     // Apply content filter if provided
     if (filter && Array.isArray(filter) && filter.length > 0) {
-      const contentFilter = filter.find(f => f.property === 'content');
+      const contentFilter = filter.find(f => f.property === 'content')
       if (contentFilter && contentFilter.value) {
-        whereFilter.content = { $like: `%${contentFilter.value}%` };
+        whereFilter.content = { $like: `%${contentFilter.value}%` }
       }
     }
 
-    const orderBy: QueryOrderMap<Comment> = { createdAt: 'DESC' };
+    const orderBy: QueryOrderMap<Comment> = { createdAt: 'DESC' }
     if (sort && Array.isArray(sort) && sort.length > 0) {
-      const sortItem = sort[0];
-      orderBy[sortItem.property as keyof Comment] = sortItem.direction;
+      const sortItem = sort[0]
+      orderBy[sortItem.property as keyof Comment] = sortItem.direction
     }
 
     const [comments, itemCount] = await this.em.findAndCount(
@@ -88,12 +91,12 @@ export class CommentsService {
         limit: pagination.pageSize,
         offset: pagination.offset,
         orderBy,
-        populate: ['user', 'replies']
-      }
-    );
+        populate: ['user', 'replies'],
+      },
+    )
 
     // Map comments to response format
-    const mappedComments = comments.map(comment => this.mapCommentToResponse(comment));
+    const mappedComments = comments.map(comment => this.mapCommentToResponse(comment))
 
     return {
       data: mappedComments,
@@ -101,23 +104,24 @@ export class CommentsService {
         itemCount,
         pageSize: pagination.pageSize,
         offset: pagination.offset,
-        hasMore: itemCount > pagination.offset + pagination.pageSize
-      }
-    };
+        hasMore: itemCount > pagination.offset + pagination.pageSize,
+      },
+    }
   }
 
   async getCommentReplies(
     commentId: string,
     pagination: CommentPagination,
-    sort?: CommentSorting
+    sort?: CommentSorting,
   ): Promise<CommentsResponse> {
-    const comment = await this.em.findOne(Comment, { id: commentId });
-    if (!comment) throw new NotFoundException('Comment not found');
+    const comment = await this.em.findOne(Comment, { id: commentId })
+    if (!comment)
+      throw new NotFoundException('Comment not found')
 
-    const orderBy: QueryOrderMap<Comment> = { createdAt: 'DESC' };
+    const orderBy: QueryOrderMap<Comment> = { createdAt: 'DESC' }
     if (sort && Array.isArray(sort) && sort.length > 0) {
-      const sortItem = sort[0];
-      orderBy[sortItem.property as keyof Comment] = sortItem.direction;
+      const sortItem = sort[0]
+      orderBy[sortItem.property as keyof Comment] = sortItem.direction
     }
 
     const [replies, itemCount] = await this.em.findAndCount(
@@ -127,12 +131,12 @@ export class CommentsService {
         limit: pagination.pageSize,
         offset: pagination.offset,
         orderBy,
-        populate: ['user', 'replies']
-      }
-    );
+        populate: ['user', 'replies'],
+      },
+    )
 
     // Map replies to response format
-    const mappedReplies = replies.map(reply => this.mapCommentToResponse(reply));
+    const mappedReplies = replies.map(reply => this.mapCommentToResponse(reply))
 
     return {
       data: mappedReplies,
@@ -140,54 +144,58 @@ export class CommentsService {
         itemCount,
         pageSize: pagination.pageSize,
         offset: pagination.offset,
-        hasMore: itemCount > pagination.offset + pagination.pageSize
-      }
-    };
+        hasMore: itemCount > pagination.offset + pagination.pageSize,
+      },
+    }
   }
 
   async deleteComment(commentId: string, userId: string): Promise<void> {
-    const comment = await this.em.findOne(Comment, { id: commentId }, { populate: ['post', 'post.user'] });
-    if (!comment) throw new NotFoundException('Comment not found');
+    const comment = await this.em.findOne(Comment, { id: commentId }, { populate: ['post', 'post.user'] })
+    if (!comment)
+      throw new NotFoundException('Comment not found')
 
     // Check if user is the post author
     if (comment.post.user.id !== userId) {
-      throw new ForbiddenException('Only the post author can delete comments');
+      throw new ForbiddenException('Only the post author can delete comments')
     }
 
     // Delete all replies first
-    await this.em.nativeDelete(Comment, { parent: commentId });
-    
+    await this.em.nativeDelete(Comment, { parent: commentId })
+
     // Then delete the comment itself
-    await this.em.removeAndFlush(comment);
+    await this.em.removeAndFlush(comment)
   }
 
   async getCommentCount(postSlug: string): Promise<number> {
-    const post = await this.em.findOne(Post, { slug: postSlug });
-    if (!post) throw new NotFoundException('Post not found');
-    return await this.em.count(Comment, { post: post.id });
+    const post = await this.em.findOne(Post, { slug: postSlug })
+    if (!post)
+      throw new NotFoundException('Post not found')
+    return await this.em.count(Comment, { post: post.id })
   }
 
   private mapCommentToResponse(comment: Comment): CommentResponse {
-    const replyIds = comment.replies?.isInitialized() 
+    const replyIds = comment.replies?.isInitialized()
       ? comment.replies.getItems().map(reply => reply.id)
-      : [];
-    
-    const replyCount = comment.replies?.isInitialized() 
+      : []
+
+    const replyCount = comment.replies?.isInitialized()
       ? comment.replies.count()
-      : 0;
+      : 0
 
     return {
       id: comment.id,
       content: comment.content,
       authorName: comment.authorName || null,
       createdAt: comment.createdAt,
-      user: comment.user ? {
-        id: comment.user.id,
-        name: comment.user.name || 'User',
-      } : null,
+      user: comment.user
+        ? {
+            id: comment.user.id,
+            name: comment.user.name || 'User',
+          }
+        : null,
       parentId: comment.parent?.id || null,
       replyIds,
       replyCount,
-    };
+    }
   }
-} 
+}

@@ -1,35 +1,35 @@
-import { useMemo } from "react";
-import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
-import { Separator } from "@lonestone/ui/components/primitives/separator";
+import type {
+  CreateCommentSchema,
+} from '@lonestone/openapi-generator'
+import { CommentItem } from '@/features/comments/comment-item'
+import { apiClient } from '@/lib/api-client'
+import { queryClient } from '@/lib/query-client'
 import {
   Alert,
   AlertDescription,
-} from "@lonestone/ui/components/primitives/alert";
-import { useInView } from "@lonestone/ui/hooks/use-in-view";
-import { CommentForm } from "./comment-form";
-import {
-  CreateCommentSchema,
-} from "@lonestone/openapi-generator";
-import { CommentItem } from "@/features/comments/comment-item";
-import { Loader2, MessageSquare } from "lucide-react";
-import { cn } from "@lonestone/ui/lib/utils";
-import { Card, CardContent } from "@lonestone/ui/components/primitives/card";
-import { Skeleton } from "@lonestone/ui/components/primitives/skeleton";
-import { queryClient } from "@/lib/query-client";
-import { apiClient } from '@/lib/api-client';
+} from '@lonestone/ui/components/primitives/alert'
+import { Card, CardContent } from '@lonestone/ui/components/primitives/card'
+import { Separator } from '@lonestone/ui/components/primitives/separator'
+import { Skeleton } from '@lonestone/ui/components/primitives/skeleton'
+import { useInView } from '@lonestone/ui/hooks/use-in-view'
+import { cn } from '@lonestone/ui/lib/utils'
+import { useInfiniteQuery, useMutation } from '@tanstack/react-query'
+import { Loader2, MessageSquare } from 'lucide-react'
+import { useMemo } from 'react'
+import { CommentForm } from './comment-form'
 
-type CommentsListProps = {
-  postId: string;
-  postAuthorId?: string;
-  currentUserId?: string;
-};
+interface CommentsListProps {
+  postId: string
+  postAuthorId?: string
+  currentUserId?: string
+}
 
 export function CommentsList({
   postId,
   postAuthorId,
   currentUserId,
 }: CommentsListProps) {
-  const { ref, inView } = useInView();
+  const { ref, inView } = useInView()
 
   // Add comment mutation
   const { mutateAsync: addComment, isPending: isAddingComment } = useMutation({
@@ -39,30 +39,31 @@ export function CommentsList({
         path: {
           postSlug: postId,
         },
-      });
+      })
     },
     onSuccess: (result) => {
       // Invalidate comments query to refetch
-      queryClient.invalidateQueries({ queryKey: ["comments", postId] });
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] })
 
       if (result.data?.parentId) {
         queryClient.invalidateQueries({
-          queryKey: ["replies", result.data.parentId],
-        });
+          queryKey: ['replies', result.data.parentId],
+        })
       }
     },
-  });
+  })
 
   const onSubmit = async (data: CreateCommentSchema) => {
     try {
       await addComment({
         ...data,
         parentId: data.parentId,
-      });
-    } catch (error) {
-      console.error("Error adding comment:", error);
+      })
     }
-  };
+    catch (error) {
+      console.error('Error adding comment:', error)
+    }
+  }
 
   // Fetch comments with infinite scroll
   const {
@@ -73,7 +74,7 @@ export function CommentsList({
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["comments", postId],
+    queryKey: ['comments', postId],
     queryFn: async ({ pageParam = 0 }) => {
       return apiClient.commentsControllerGetComments({
         path: {
@@ -82,16 +83,16 @@ export function CommentsList({
         query: {
           offset: pageParam as number,
         },
-      });
+      })
     },
     getNextPageParam: (lastPage) => {
       if (lastPage.data?.meta?.hasMore) {
-        return lastPage.data.meta.offset + lastPage.data.meta.pageSize;
+        return lastPage.data.meta.offset + lastPage.data.meta.pageSize
       }
-      return undefined;
+      return undefined
     },
     initialPageParam: 0,
-  });
+  })
 
   // Delete comment mutation
   const deleteCommentMutation = useMutation({
@@ -100,23 +101,23 @@ export function CommentsList({
         path: {
           commentId,
         },
-      });
+      })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments", postId] });
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] })
     },
     onError: (error) => {
-      console.error("Error deleting comment:", error);
+      console.error('Error deleting comment:', error)
     },
-  });
+  })
 
   const allComments = useMemo(() => {
-    return commentsPages?.pages.flatMap((page) => page.data?.data || []) || [];
-  }, [commentsPages]);
+    return commentsPages?.pages.flatMap(page => page.data?.data || []) || []
+  }, [commentsPages])
 
   // Check if we need to load more comments when scrolling
   if (inView && hasNextPage && !isFetchingNextPage) {
-    fetchNextPage();
+    fetchNextPage()
   }
 
   if (error) {
@@ -124,7 +125,7 @@ export function CommentsList({
       <Alert variant="destructive" className="mb-4">
         <AlertDescription>Failed to load comments</AlertDescription>
       </Alert>
-    );
+    )
   }
 
   return (
@@ -141,7 +142,7 @@ export function CommentsList({
 
       <CommentForm
         initialData={{
-          content: "",
+          content: '',
         }}
         onSubmit={onSubmit}
         isPending={isAddingComment}
@@ -149,61 +150,65 @@ export function CommentsList({
 
       <Separator className="my-6" />
 
-      {isLoading ? (
-        <div className="space-y-4">
-          <CommentSkeleton />
-          <CommentSkeleton />
-          <CommentSkeleton />
-        </div>
-      ) : allComments.length > 0 ? (
-        <div className="space-y-4">
-          {allComments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              currentUserId={currentUserId}
-              postAuthorId={postAuthorId}
-              isAddingComment={isAddingComment}
-              onDelete={(commentId) => deleteCommentMutation.mutate(commentId)}
-              onReplySubmit={async (data) => {
-                await onSubmit(data);
-              }}
-            />
-          ))}
-
-          {/* Intersection observer target for infinite scroll */}
-          {hasNextPage && (
-            <div
-              ref={ref}
-              className={cn(
-                "h-10 flex items-center justify-center",
-                isFetchingNextPage ? "opacity-100" : "opacity-0"
-              )}
-            >
-              {isFetchingNextPage && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Loading more comments...</span>
-                </div>
-              )}
+      {isLoading
+        ? (
+            <div className="space-y-4">
+              <CommentSkeleton />
+              <CommentSkeleton />
+              <CommentSkeleton />
             </div>
-          )}
-        </div>
-      ) : (
-        <Card className="border-dashed border-2 bg-muted/30">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-center text-muted-foreground font-medium mb-1">
-              No comments yet
-            </p>
-            <p className="text-center text-sm text-muted-foreground/70">
-              Be the first to share your thoughts!
-            </p>
-          </CardContent>
-        </Card>
-      )}
+          )
+        : allComments.length > 0
+          ? (
+              <div className="space-y-4">
+                {allComments.map(comment => (
+                  <CommentItem
+                    key={comment.id}
+                    comment={comment}
+                    currentUserId={currentUserId}
+                    postAuthorId={postAuthorId}
+                    isAddingComment={isAddingComment}
+                    onDelete={commentId => deleteCommentMutation.mutate(commentId)}
+                    onReplySubmit={async (data) => {
+                      await onSubmit(data)
+                    }}
+                  />
+                ))}
+
+                {/* Intersection observer target for infinite scroll */}
+                {hasNextPage && (
+                  <div
+                    ref={ref}
+                    className={cn(
+                      'h-10 flex items-center justify-center',
+                      isFetchingNextPage ? 'opacity-100' : 'opacity-0',
+                    )}
+                  >
+                    {isFetchingNextPage && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading more comments...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          : (
+              <Card className="border-dashed border-2 bg-muted/30">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <p className="text-center text-muted-foreground font-medium mb-1">
+                    No comments yet
+                  </p>
+                  <p className="text-center text-sm text-muted-foreground/70">
+                    Be the first to share your thoughts!
+                  </p>
+                </CardContent>
+              </Card>
+            )}
     </div>
-  );
+  )
 }
 
 // Skeleton loader for comments
@@ -229,5 +234,5 @@ function CommentSkeleton() {
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

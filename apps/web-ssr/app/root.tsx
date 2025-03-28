@@ -1,3 +1,8 @@
+import type { Route } from './+types/root'
+import process from 'node:process'
+import { useDehydratedState } from '@/hooks/use-dehydrated-state'
+import { queryClient } from '@/lib/query-client'
+import { HydrationBoundary, QueryClientProvider } from '@tanstack/react-query'
 import {
   isRouteErrorResponse,
   Links,
@@ -6,37 +11,32 @@ import {
   Scripts,
   ScrollRestoration,
   useRouteLoaderData,
-} from "react-router";
-import { HydrationBoundary, QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "@/lib/query-client";
-import type { Route } from "./+types/root";
-import { useDehydratedState } from "@/hooks/use-dehydrated-state";
-
-import '@fontsource/source-sans-pro';
-import "@lonestone/ui/globals.css";
+} from 'react-router'
+import '@fontsource/source-sans-pro'
+import '@lonestone/ui/globals.css'
 
 export const links: Route.LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
+  { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
+    rel: 'preconnect',
+    href: 'https://fonts.gstatic.com',
+    crossOrigin: 'anonymous',
   },
   {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+    rel: 'stylesheet',
+    href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
   },
-];
+]
 
-export const loader = async () => {
+export async function loader() {
   return {
     API_URL: process.env.API_URL as string,
-  };
-};
+  }
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const data = useRouteLoaderData<typeof loader>("root");
-  
+  const data = useRouteLoaderData<typeof loader>('root')
+
   return (
     <html lang="en">
       <head>
@@ -52,10 +52,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Inject the API URL into the window object */}
         <script dangerouslySetInnerHTML={{
           __html: `window.ENV = ${JSON.stringify(data)}`,
-        }} />
+        }}
+        />
       </body>
     </html>
-  );
+  )
 }
 
 export default function App() {
@@ -66,23 +67,24 @@ export default function App() {
         <Outlet />
       </HydrationBoundary>
     </QueryClientProvider>
-  );
+  )
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
-  let details = "An unexpected error occurred.";
-  let stack: string | undefined;
+  let message = 'Oops!'
+  let details = 'An unexpected error occurred.'
+  let stack: string | undefined
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
-    details = error.message;
-    stack = error.stack;
+    message = error.status === 404 ? '404' : 'Error'
+    details
+      = error.status === 404
+        ? 'The requested page could not be found.'
+        : error.statusText || details
+  }
+  else if (import.meta.env.DEV && error && error instanceof Error) {
+    details = error.message
+    stack = error.stack
   }
 
   return (
@@ -95,5 +97,5 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         </pre>
       )}
     </main>
-  );
+  )
 }

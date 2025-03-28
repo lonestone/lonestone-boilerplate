@@ -5,11 +5,11 @@ on:
     inputs:
       node-version:
         required: false
-        default: '22.14.0'
+        default: 22.14.0
         type: string
       pnpm-version:
         required: false
-        default: '10.6.3'
+        default: 10.6.3
         type: string
 
 jobs:
@@ -42,4 +42,4 @@ jobs:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store- 
+            ${{ runner.os }}-pnpm-store-

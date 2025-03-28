@@ -1,27 +1,27 @@
-import { useNavigate, Link } from "react-router";
-import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
-import { authClient } from "@/lib/auth-client";
-import { Input } from "@lonestone/ui/components/primitives/input";
-import { Button } from "@lonestone/ui/components/primitives/button";
-import { Loader2 } from "lucide-react";
+import { authClient } from '@/lib/auth-client'
+import { Button } from '@lonestone/ui/components/primitives/button'
+import { Input } from '@lonestone/ui/components/primitives/input'
+import { useMutation } from '@tanstack/react-query'
+import { Loader2 } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { Link, useNavigate } from 'react-router'
 
-type RegisterFormData = {
-  name: string;
-  email: string;
-  password: string;
-};
+interface RegisterFormData {
+  name: string
+  email: string
+  password: string
+}
 
 export default function Register() {
-  const navigate = useNavigate();
-  const { data: sessionData } = authClient.useSession();
-  
+  const navigate = useNavigate()
+  const { data: sessionData } = authClient.useSession()
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     setError,
-  } = useForm<RegisterFormData>();
+  } = useForm<RegisterFormData>()
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterFormData) => {
@@ -29,33 +29,33 @@ export default function Register() {
         name: data.name,
         email: data.email,
         password: data.password,
-        callbackURL: "/",
-      });
-      
+        callbackURL: '/',
+      })
+
       if (response.error) {
-        throw new Error(response.error.message || "Registration failed. Please try again.");
+        throw new Error(response.error.message || 'Registration failed. Please try again.')
       }
-      
-      return response.data;
+
+      return response.data
     },
     onSuccess: () => {
-      navigate("/");
+      navigate('/')
     },
     onError: (error: Error) => {
-      setError("root", { 
-        message: error.message || "Registration failed. Please try again." 
-      });
-    }
-  });
+      setError('root', {
+        message: error.message || 'Registration failed. Please try again.',
+      })
+    },
+  })
 
   // Redirect if already logged in
   if (sessionData) {
-    navigate("/");
+    navigate('/')
   }
 
   const onSubmit = (data: RegisterFormData) => {
-    registerMutation.mutate(data);
-  };
+    registerMutation.mutate(data)
+  }
 
   return (
     <div className="space-y-6">
@@ -72,7 +72,7 @@ export default function Register() {
             <div className="text-sm text-destructive">{errors.root.message}</div>
           </div>
         )}
-          
+
         <div className="space-y-3">
           <div className="space-y-1">
             <label htmlFor="name" className="block text-sm font-medium text-muted-foreground">
@@ -80,8 +80,8 @@ export default function Register() {
             </label>
             <Input
               id="name"
-              {...register("name", { 
-                required: "Name is required" 
+              {...register('name', {
+                required: 'Name is required',
               })}
               type="text"
               autoComplete="name"
@@ -91,19 +91,19 @@ export default function Register() {
               <p className="text-sm text-destructive">{errors.name.message}</p>
             )}
           </div>
-            
+
           <div className="space-y-1">
             <label htmlFor="email" className="block text-sm font-medium text-muted-foreground">
               Email address
             </label>
             <Input
               id="email"
-              {...register("email", { 
-                required: "Email is required",
+              {...register('email', {
+                required: 'Email is required',
                 pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "Invalid email address"
-                }
+                  value: /^[\w.%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: 'Invalid email address',
+                },
               })}
               type="email"
               autoComplete="email"
@@ -113,19 +113,19 @@ export default function Register() {
               <p className="text-sm text-destructive">{errors.email.message}</p>
             )}
           </div>
-            
+
           <div className="space-y-1">
             <label htmlFor="password" className="block text-sm font-medium text-muted-foreground">
               Password
             </label>
             <Input
               id="password"
-              {...register("password", { 
-                required: "Password is required",
+              {...register('password', {
+                required: 'Password is required',
                 minLength: {
                   value: 6,
-                  message: "Password must be at least 6 characters"
-                }
+                  message: 'Password must be at least 6 characters',
+                },
               })}
               type="password"
               autoComplete="new-password"
@@ -143,14 +143,16 @@ export default function Register() {
           disabled={registerMutation.isPending}
         >
           <span className="relative z-10 flex items-center justify-center">
-            {registerMutation.isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Creating account...
-              </>
-            ) : (
-              "Create account"
-            )}
+            {registerMutation.isPending
+              ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Creating account...
+                  </>
+                )
+              : (
+                  'Create account'
+                )}
           </span>
         </Button>
       </form>
@@ -196,7 +198,8 @@ export default function Register() {
       </div>
 
       <div className="text-sm text-muted-foreground text-center">
-        Already have an account?{" "}
+        Already have an account?
+        {' '}
         <Link
           to="/login"
           className="font-medium text-primary hover:text-primary/80 transition-colors"
@@ -205,5 +208,5 @@ export default function Register() {
         </Link>
       </div>
     </div>
-  );
-} 
+  )
+}

@@ -1,22 +1,22 @@
-import { Module } from "@nestjs/common";
-import { AuthModule } from "./modules/auth/auth.module";
-import { DbModule } from "./modules/db/db.module";
-import { AppController } from "./app.controller";
-import { EmailModule } from "./modules/email/email.module";
-import { PostModule } from "./modules/posts/posts.module";
-import { CommentsModule } from "./modules/comments/comments.module";
-import { ConfigModule as NestConfigModule } from "@nestjs/config";
-import { LoggerModule } from "nestjs-pino";
-import { IncomingMessage, ServerResponse } from "http";
+import { IncomingMessage, ServerResponse } from 'node:http'
+import { Module } from '@nestjs/common'
+import { ConfigModule as NestConfigModule } from '@nestjs/config'
+import { LoggerModule } from 'nestjs-pino'
+import { AppController } from './app.controller'
+import { AuthModule } from './modules/auth/auth.module'
+import { CommentsModule } from './modules/comments/comments.module'
+import { DbModule } from './modules/db/db.module'
+import { EmailModule } from './modules/email/email.module'
+import { PostModule } from './modules/posts/posts.module'
 
 // Interface étendue pour les requêtes Express
 interface ExpressRequest extends IncomingMessage {
-  originalUrl?: string;
+  originalUrl?: string
 }
 
 // Interface étendue pour les réponses Express
 interface ExpressResponse extends ServerResponse<IncomingMessage> {
-  responseTime?: number;
+  responseTime?: number
 }
 
 @Module({
@@ -28,7 +28,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
           options: {
             colorize: true,
             levelFirst: true,
-            translateTime: "yyyy-mm-dd HH:MM:ss",
+            translateTime: 'yyyy-mm-dd HH:MM:ss',
             singleLine: true,
             messageFormat: false,
             ignore: 'pid,hostname,req,res,context,responseTime',
@@ -37,50 +37,51 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
         autoLogging: true,
         serializers: {
           req: () => {
-            return undefined; // Don't log request details
+            return undefined // Don't log request details
           },
           res: () => {
-            return undefined; // Don't log response details
+            return undefined // Don't log response details
           },
         },
         // Filter out OpenAPI generator spam
         customReceivedMessage: (req: ExpressRequest) => {
-          const url = req.originalUrl || req.url || '';
+          const url = req.originalUrl || req.url || ''
           // Skip logging for OpenAPI docs requests
           if (url.includes('/docs-json') || url.includes('/docs')) {
-            return ''; // Return false to skip logging this request
+            return '' // Return false to skip logging this request
           }
-          return `request received: ${req.method} ${url}`;
+          return `request received: ${req.method} ${url}`
         },
         customLogLevel: (req: ExpressRequest, res: ExpressResponse, error?: Error) => {
           if (res.statusCode >= 500 || error) {
-            return 'error';
-          } else if (res.statusCode >= 400) {
-            return 'warn';
+            return 'error'
           }
-          return 'info';
+          else if (res.statusCode >= 400) {
+            return 'warn'
+          }
+          return 'info'
         },
         customSuccessMessage: (req: ExpressRequest, res: ExpressResponse) => {
-          const originalUrl = req.originalUrl || req.url || '';
+          const originalUrl = req.originalUrl || req.url || ''
           // Skip logging for OpenAPI docs requests
           if (originalUrl.includes('/docs-json') || originalUrl.includes('/docs')) {
-            return ''; // Return false to skip logging this response
+            return '' // Return false to skip logging this response
           }
-          const method = req.method || '';
-          const statusCode = res.statusCode;
-          const responseTime = res.responseTime || 0;
-          return `${method} ${originalUrl} ${statusCode} - ${responseTime}ms`;
+          const method = req.method || ''
+          const statusCode = res.statusCode
+          const responseTime = res.responseTime || 0
+          return `${method} ${originalUrl} ${statusCode} - ${responseTime}ms`
         },
         customErrorMessage: (req: ExpressRequest, res: ExpressResponse) => {
-          const originalUrl = req.originalUrl || req.url || '';
+          const originalUrl = req.originalUrl || req.url || ''
           // Skip logging for OpenAPI docs requests
           if (originalUrl.includes('/docs-json') || originalUrl.includes('/docs')) {
-            return ''; // Return false to skip logging this response
+            return '' // Return false to skip logging this response
           }
-          const method = req.method || '';
-          const statusCode = res.statusCode;
-          const responseTime = res.responseTime || 0;
-          return `${method} ${originalUrl} ${statusCode} - ${responseTime}ms`;
+          const method = req.method || ''
+          const statusCode = res.statusCode
+          const responseTime = res.responseTime || 0
+          return `${method} ${originalUrl} ${statusCode} - ${responseTime}ms`
         },
       },
     }),

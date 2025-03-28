@@ -1,21 +1,21 @@
-// This file is used by the mikro-orm CLI for migrations and seeding
-import { config } from "./env.config";
+import { Migrator } from '@mikro-orm/migrations'
 
-import { defineConfig, Options } from "@mikro-orm/postgresql";
-import { TsMorphMetadataProvider } from "@mikro-orm/reflection";
-import { Migrator } from "@mikro-orm/migrations";
-import { SeedManager } from "@mikro-orm/seeder";
+import { defineConfig, Options } from '@mikro-orm/postgresql'
+import { TsMorphMetadataProvider } from '@mikro-orm/reflection'
+import { SeedManager } from '@mikro-orm/seeder'
+// This file is used by the mikro-orm CLI for migrations and seeding
+import { config } from './env.config'
 
 type CreateMikroOrmOptions = {
-  isTest?: boolean;
-} & Options;
+  isTest?: boolean
+} & Options
 
-export const createMikroOrmOptions = (options?: CreateMikroOrmOptions) => {
-  const {  ...restOptions } = options ?? {};
+export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
+  const { ...restOptions } = options ?? {}
 
   const _options: Options = defineConfig({
-    entities: ["./dist/**/*.entity.js"],
-    entitiesTs: ["./src/**/*.entity.ts"],
+    entities: ['./dist/**/*.entity.js'],
+    entitiesTs: ['./src/**/*.entity.ts'],
     dbName: config.database.name,
     host: config.database.host,
     port: config.database.port,
@@ -23,28 +23,29 @@ export const createMikroOrmOptions = (options?: CreateMikroOrmOptions) => {
     password: config.database.password,
     metadataProvider: TsMorphMetadataProvider,
     forceUtcTimezone: true,
-    debug: config.env === "development",
+    debug: config.env === 'development',
     extensions: [SeedManager, Migrator],
     seeder: {
-      path: "./dist/seeders",
-      pathTs: "./src/seeders",
-      defaultSeeder: "DatabaseSeeder",
-      glob: "!(*.d).{js,ts}",
-      emit: "ts",
+      path: './dist/seeders',
+      pathTs: './src/seeders',
+      defaultSeeder: 'DatabaseSeeder',
+      glob: '!(*.d).{js,ts}',
+      emit: 'ts',
       fileName: (className: string) => className,
     },
     migrations: {
-      path: "./dist/modules/db/migrations",
-      pathTs: "./src/modules/db/migrations",
+      path: './dist/modules/db/migrations',
+      pathTs: './src/modules/db/migrations',
       allOrNothing: true,
       disableForeignKeys: false,
     },
     ...restOptions,
-  });
+  })
 
-  return _options;
-};
+  return _options
+}
 
-export const createTestMikroOrmOptions = (options?: Options) =>
-  createMikroOrmOptions({ isTest: true, ...options });
-export default createMikroOrmOptions;
+export function createTestMikroOrmOptions(options?: Options) {
+  return createMikroOrmOptions({ isTest: true, ...options })
+}
+export default createMikroOrmOptions

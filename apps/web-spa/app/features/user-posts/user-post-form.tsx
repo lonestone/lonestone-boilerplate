@@ -1,34 +1,34 @@
-import { useState } from "react";
-import { useForm, Controller, useFieldArray } from "react-hook-form";
-import { Button } from "@lonestone/ui/components/primitives/button";
-import { Input } from "@lonestone/ui/components/primitives/input";
-import { Loader2, Plus, Trash2, Type, Image, Video, X, MoveUp, MoveDown } from "lucide-react";
-import { cn } from "@lonestone/ui/lib/utils";
-import { Skeleton } from "@lonestone/ui/components/primitives/skeleton";
+import { Button } from '@lonestone/ui/components/primitives/button'
+import { Input } from '@lonestone/ui/components/primitives/input'
+import { Skeleton } from '@lonestone/ui/components/primitives/skeleton'
+import { cn } from '@lonestone/ui/lib/utils'
+import { Image, Loader2, MoveDown, MoveUp, Plus, Trash2, Type, Video, X } from 'lucide-react'
+import { useState } from 'react'
+import { Controller, useFieldArray, useForm } from 'react-hook-form'
 
-type PostContentItem = {
-  type: "text" | "image" | "video";
-  data: string;
-};
+interface PostContentItem {
+  type: 'text' | 'image' | 'video'
+  data: string
+}
 
-type PostFormData = {
-  title: string;
-  content: PostContentItem[];
-};
+interface PostFormData {
+  title: string
+  content: PostContentItem[]
+}
 
-type UserPostFormProps = {
-  onSubmit: (data: PostFormData) => Promise<void>;
-  initialData?: PostFormData;
-  isSubmitting?: boolean;
-};
+interface UserPostFormProps {
+  onSubmit: (data: PostFormData) => Promise<void>
+  initialData?: PostFormData
+  isSubmitting?: boolean
+}
 
 export default function UserPostForm({
   onSubmit,
   initialData,
   isSubmitting = false,
 }: UserPostFormProps) {
-  const [activeContentType, setActiveContentType] = useState<"text" | "image" | "video">("text");
-  
+  const [activeContentType, setActiveContentType] = useState<'text' | 'image' | 'video'>('text')
+
   const {
     register,
     handleSubmit,
@@ -36,29 +36,30 @@ export default function UserPostForm({
     formState: { errors },
   } = useForm<PostFormData>({
     defaultValues: initialData || {
-      title: "",
-      content: [{ type: "text", data: "" }],
+      title: '',
+      content: [{ type: 'text', data: '' }],
     },
-  });
-  
+  })
+
   const { fields, append, remove, move } = useFieldArray({
     control,
-    name: "content",
-  });
+    name: 'content',
+  })
 
   const handleFormSubmit = async (data: PostFormData) => {
     try {
-      await onSubmit(data);
+      await onSubmit(data)
       // Optionally reset the form after successful submission
       // reset();
-    } catch (error) {
-      console.error("Error submitting form:", error);
     }
-  };
+    catch (error) {
+      console.error('Error submitting form:', error)
+    }
+  }
 
   const addContentItem = () => {
-    append({ type: activeContentType, data: "" });
-  };
+    append({ type: activeContentType, data: '' })
+  }
 
   return (
     <div className="space-y-8 max-w-3xl">
@@ -72,11 +73,11 @@ export default function UserPostForm({
             id="title"
             placeholder="Enter a captivating title..."
             className="w-full"
-            {...register("title", {
-              required: "Title is required",
+            {...register('title', {
+              required: 'Title is required',
               minLength: {
                 value: 3,
-                message: "Title must be at least 3 characters",
+                message: 'Title must be at least 3 characters',
               },
             })}
           />
@@ -93,30 +94,30 @@ export default function UserPostForm({
               <div className="bg-muted rounded-md p-1 flex">
                 <button
                   type="button"
-                  onClick={() => setActiveContentType("text")}
+                  onClick={() => setActiveContentType('text')}
                   className={cn(
-                    "p-1.5 rounded-md flex items-center justify-center",
-                    activeContentType === "text" ? "bg-background shadow-sm" : "hover:bg-background/50"
+                    'p-1.5 rounded-md flex items-center justify-center',
+                    activeContentType === 'text' ? 'bg-background shadow-sm' : 'hover:bg-background/50',
                   )}
                 >
                   <Type className="size-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveContentType("image")}
+                  onClick={() => setActiveContentType('image')}
                   className={cn(
-                    "p-1.5 rounded-md flex items-center justify-center",
-                    activeContentType === "image" ? "bg-background shadow-sm" : "hover:bg-background/50"
+                    'p-1.5 rounded-md flex items-center justify-center',
+                    activeContentType === 'image' ? 'bg-background shadow-sm' : 'hover:bg-background/50',
                   )}
                 >
                   <Image className="size-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveContentType("video")}
+                  onClick={() => setActiveContentType('video')}
                   className={cn(
-                    "p-1.5 rounded-md flex items-center justify-center",
-                    activeContentType === "video" ? "bg-background shadow-sm" : "hover:bg-background/50"
+                    'p-1.5 rounded-md flex items-center justify-center',
+                    activeContentType === 'video' ? 'bg-background shadow-sm' : 'hover:bg-background/50',
                   )}
                 >
                   <Video className="size-4" />
@@ -130,7 +131,9 @@ export default function UserPostForm({
                 className="flex items-center gap-1"
               >
                 <Plus className="size-3.5" />
-                Add {activeContentType}
+                Add
+                {' '}
+                {activeContentType}
               </Button>
             </div>
           </div>
@@ -184,11 +187,13 @@ export default function UserPostForm({
                 </div>
 
                 <div className="mb-3 flex items-center gap-2">
-                  {field.type === "text" && <Type className="size-4" />}
-                  {field.type === "image" && <Image className="size-4" />}
-                  {field.type === "video" && <Video className="size-4" />}
+                  {field.type === 'text' && <Type className="size-4" />}
+                  {field.type === 'image' && <Image className="size-4" />}
+                  {field.type === 'video' && <Video className="size-4" />}
                   <span className="text-sm font-medium capitalize">
-                    {field.type} Content
+                    {field.type}
+                    {' '}
+                    Content
                   </span>
                 </div>
 
@@ -206,16 +211,16 @@ export default function UserPostForm({
                   rules={{ required: `${field.type} content is required` }}
                   render={({ field: controllerField, fieldState }) => (
                     <div>
-                      {field.type === "text" && (
+                      {field.type === 'text' && (
                         <div className="space-y-1">
                           <textarea
                             {...controllerField}
                             placeholder="Enter your text content here..."
                             className={cn(
-                              "border-input placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground flex w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm min-h-[120px] resize-y",
-                              "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-                              "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-                              fieldState.error && "border-destructive"
+                              'border-input placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground flex w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm min-h-[120px] resize-y',
+                              'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
+                              'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
+                              fieldState.error && 'border-destructive',
                             )}
                           />
                           {fieldState.error && (
@@ -226,13 +231,13 @@ export default function UserPostForm({
                         </div>
                       )}
 
-                      {field.type === "image" && (
+                      {field.type === 'image' && (
                         <div className="space-y-1">
                           <Input
                             {...controllerField}
                             placeholder="Enter image URL or upload..."
                             className={cn(
-                              fieldState.error && "border-destructive"
+                              fieldState.error && 'border-destructive',
                             )}
                           />
                           {fieldState.error && (
@@ -247,7 +252,7 @@ export default function UserPostForm({
                                 alt="Preview"
                                 className="max-h-[200px] w-full object-cover"
                                 onError={(e) => {
-                                  e.currentTarget.src = "https://placehold.co/600x400?text=Invalid+Image+URL";
+                                  e.currentTarget.src = 'https://placehold.co/600x400?text=Invalid+Image+URL'
                                 }}
                               />
                               <Button
@@ -255,7 +260,7 @@ export default function UserPostForm({
                                 variant="destructive"
                                 size="icon"
                                 className="absolute top-2 right-2 size-7 opacity-80 hover:opacity-100"
-                                onClick={() => controllerField.onChange("")}
+                                onClick={() => controllerField.onChange('')}
                               >
                                 <X className="size-3.5" />
                               </Button>
@@ -264,13 +269,13 @@ export default function UserPostForm({
                         </div>
                       )}
 
-                      {field.type === "video" && (
+                      {field.type === 'video' && (
                         <div className="space-y-1">
                           <Input
                             {...controllerField}
                             placeholder="Enter video URL (YouTube, Vimeo, etc.)"
                             className={cn(
-                              fieldState.error && "border-destructive"
+                              fieldState.error && 'border-destructive',
                             )}
                           />
                           {fieldState.error && (
@@ -280,7 +285,10 @@ export default function UserPostForm({
                           )}
                           {controllerField.value && (
                             <div className="mt-2 p-2 bg-muted/50 rounded-md">
-                              <p className="text-sm">Video URL: {controllerField.value}</p>
+                              <p className="text-sm">
+                                Video URL:
+                                {controllerField.value}
+                              </p>
                             </div>
                           )}
                         </div>
@@ -300,29 +308,31 @@ export default function UserPostForm({
             className="w-full"
             disabled={isSubmitting}
           >
-            {isSubmitting ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="size-4 animate-spin" />
-                Saving post...
-              </span>
-            ) : (
-              "Save Post"
-            )}
+            {isSubmitting
+              ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin" />
+                    Saving post...
+                  </span>
+                )
+              : (
+                  'Save Post'
+                )}
           </Button>
         </div>
       </form>
     </div>
-  );
+  )
 }
 
-export const UserPostFormSkeleton = () => {
+export function UserPostFormSkeleton() {
   return (
     <div className="space-y-8 max-w-3xl">
       <div className="space-y-2">
         <Skeleton className="h-6 w-32" />
         <Skeleton className="h-10 w-full" />
       </div>
-      
+
       <div className="space-y-2">
         <Skeleton className="h-6 w-40" />
         <div className="space-y-4">
@@ -337,15 +347,15 @@ export const UserPostFormSkeleton = () => {
             </div>
           ))}
         </div>
-        
+
         {/* Add content button skeleton */}
         <Skeleton className="h-10 w-40 mt-4" />
       </div>
-      
+
       {/* Submit button skeleton */}
       <div className="flex justify-end">
         <Skeleton className="h-10 w-32" />
       </div>
     </div>
-  );
-};
+  )
+}
