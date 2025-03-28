@@ -26,7 +26,6 @@
     "use-dehydrated-state": "^0.1.0"
   },
   "devDependencies": {
-    "@lonestone/eslint-config": "workspace:*",
     "@react-router/dev": "^7.3.0",
     "@tailwindcss/vite": "^4.0.14",
     "@types/node": "^20.17.24",
