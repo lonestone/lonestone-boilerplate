@@ -83,7 +83,7 @@ lonestone/
 
 ## 🚀 Installation
 
-1. Une fois votre projet créé avec ce template, clonez le dépôt :
+1. Une fois votre projet créé avec ce template, clonez le dépôt
 
 ```bash
 git clone https://github.com/lonestone/votreprojet.git
@@ -92,7 +92,7 @@ cd votreprojet
 
 2. Assurez vous de votre version de node et pnpm
 
-Vous pouvez utiliser [fnm](https://github.com/Schniz/fnm) pour la gestion de votre version de node :
+Vous pouvez utiliser [fnm](https://github.com/Schniz/fnm) pour la gestion de votre version de node
 
 ```bash
 fnm use 22.14.0
@@ -105,7 +105,7 @@ npm i -g pnpm@10.5.0
 pnpm install
 ```
 
-4. Configurez les variables d'environnement :
+4. Configurez les variables d'environnement
 
 On utilise un seul fichier `.env` a la racine du projet pour toutes les applications.
 Cela permet de ne pas avoir à configurer chaque application individuellement.
@@ -120,19 +120,35 @@ cp .env.test .env
 pnpm docker:up db
 ```
 
-5. Effectuez les migrations de la base de données :
+6. Si migrations en place 
+
+Drop la DB et effectuer les migrations de la base de données sans seed:
 
 ```bash
-pnpm with-env --filter=api db:migrate:up
+pnpm with-env --filter=api db:migrate:fresh # Drop the database and migrate up to the latest version
 ```
 
-6. Initialisez les données de test :
+Ou migration + seed
 
 ```bash
-pnpm with-env --filter=api db:seed
+pnpm with-env --filter=api db:migrate:seed # Same but run seeders afterwards
 ```
 
-7. Démarrez les applications en mode développement :
+7. Durant le développement, ou si les migrations ne sont pas encore en place
+
+Remettre à 0 votre db
+
+  ```bash
+  pnpm with-env --filter=api db:fresh # Drop the database and re-create from your entity files
+  ```
+
+  Remettre à 0 + seed
+  
+  ```bash
+  pnpm with-env --filter=api db:seed # Same but run seeders afterwards
+  ```
+
+8. Démarrez les applications en mode développement :
 
 ```bash
 pnpm dev

@@ -12,7 +12,9 @@
     "db:migrate:up": "npx mikro-orm migration:up",
     "db:migrate:down": "npx mikro-orm migration:down",
     "db:migrate:fresh": "npx mikro-orm migration:fresh",
-    "db:seed": "npx mikro-orm migration:fresh --seed",
+    "db:migrate:seed": "npx mikro-orm migration:fresh --seed",
+    "db:fresh": "npx mikro-orm schema:fresh --run",
+    "db:seed": "npx mikro-orm schema:fresh --run --seed",
     "test": "pnpm run db:migrate:fresh && NODE_ENV=test jest",
     "test:watch": "NODE_ENV=test jest --watch"
   },
