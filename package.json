@@ -1,9 +1,17 @@
 {
   "name": "lonestone",
-  "version": "1.0.0",
-  "description": "Monorepo for Lonestone project",
-  "private": true,
   "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.5.0",
+  "description": "Monorepo for Lonestone project",
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "engines": {
+    "node": "22.14.0",
+    "pnpm": "10.5.0"
+  },
   "scripts": {
     "dev": "dotenv -e .env -- pnpm --parallel dev",
     "build": "dotenv -e .env -- pnpm -r build",
@@ -19,29 +27,16 @@
     "test": "pnpm -r test",
     "schematics:module": "pnpm --filter=@lonestone/schematics run schematics:module"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "engines": {
-    "node": "22.14.0",
-    "pnpm": "10.5.0"
-  },
-  "packageManager": "pnpm@10.5.0",
   "dependencies": {
     "dotenv-cli": "^8.0.0",
     "typescript": "^5.8.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.22.0",
-    "eslint": "^9.22.0",
-    "eslint-config-prettier": "^10.1.1",
-    "eslint-plugin-n": "^17.17.0",
-    "eslint-plugin-only-warn": "^1.1.0",
-    "eslint-plugin-react": "^7.37.4",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-turbo": "^2.4.4",
-    "globals": "^16.0.0",
-    "typescript": "^5.8.2",
-    "typescript-eslint": "^8.26.1"
+    "@antfu/eslint-config": "3.14.0",
+    "@eslint-react/eslint-plugin": "^1.23.2",
+    "eslint": "^9.10.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.18",
+    "typescript": "^5.8.2"
   }
 }
