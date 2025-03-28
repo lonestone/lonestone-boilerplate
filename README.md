@@ -120,7 +120,7 @@ cp .env.test .env
 pnpm docker:up db
 ```
 
-6. Si migrations en place 
+6. Si migrations en place
 
 Drop la DB et effectuer les migrations de la base de données sans seed:
 
@@ -143,7 +143,7 @@ Remettre à 0 votre db
   ```
 
   Remettre à 0 + seed
-  
+
   ```bash
   pnpm with-env --filter=api db:seed # Same but run seeders afterwards
   ```
