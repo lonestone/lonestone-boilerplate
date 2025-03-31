@@ -1,6 +1,6 @@
 {
   "name": "@lonestone/schematics",
-  "version": "0.0.1", 
+  "version": "0.0.1",
   "description": "Schematics for NestJS API",
   "schematics": "./src/collection.json",
 
@@ -17,4 +17,4 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.0.0"
   }
-} 
+}

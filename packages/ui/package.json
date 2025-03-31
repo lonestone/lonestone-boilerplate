@@ -1,8 +1,8 @@
 {
   "name": "@lonestone/ui",
+  "type": "module",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
   "exports": {
     "./globals.css": "./src/styles/globals.css",
     "./lib/*": "./src/lib/*.ts",
@@ -31,7 +31,6 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@lonestone/eslint-config": "workspace:*",
     "@tailwindcss/typography": "^0.5.16",
     "bun-types": "^1.2.5",
     "typescript": "^5.8.2"

@@ -1,60 +1,59 @@
-import { useNavigate, Link } from "react-router";
-import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
-import { authClient } from "@/lib/auth-client";
-import { Input } from "@lonestone/ui/components/primitives/input";
-import { Button } from "@lonestone/ui/components/primitives/button";
-import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { authClient } from '@/lib/auth-client'
+import { Button } from '@lonestone/ui/components/primitives/button'
+import { Input } from '@lonestone/ui/components/primitives/input'
+import { useMutation } from '@tanstack/react-query'
+import { Loader2 } from 'lucide-react'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { Link, useNavigate } from 'react-router'
 
-type LoginFormData = {
-  email: string;
-  password: string;
-};
+interface LoginFormData {
+  email: string
+  password: string
+}
 
 export default function Login() {
-  const navigate = useNavigate();
-  const { data: sessionData, isPending } = authClient.useSession();
+  const navigate = useNavigate()
+  const { data: sessionData, isPending } = authClient.useSession()
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>();
+  } = useForm<LoginFormData>()
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginFormData) => {
       const response = await authClient.signIn.email({
         email: data.email,
         password: data.password,
-        callbackURL: "/dashboard",
+        callbackURL: '/dashboard',
         rememberMe: true,
-      });
+      })
 
       if (response.error) {
-        throw new Error(response.error.message || "Invalid email or password");
+        throw new Error(response.error.message || 'Invalid email or password')
       }
 
-      return response.data;
+      return response.data
     },
     onSuccess: (data) => {
-      navigate(data.url || "/dashboard");
+      navigate(data.url || '/dashboard')
     },
     onError: (error: Error) => {
-      console.error(error);
+      console.error(error)
     },
-  });
+  })
 
- 
   useEffect(() => {
     if (!isPending && sessionData) {
-      navigate("/dashboard");
+      navigate('/dashboard')
     }
-  }, [sessionData, navigate, isPending]);
+  }, [sessionData, navigate, isPending])
 
   const onSubmit = (data: LoginFormData) => {
-    loginMutation.mutate(data);
-  };
+    loginMutation.mutate(data)
+  }
 
   return (
     <div className="space-y-6">
@@ -84,11 +83,11 @@ export default function Login() {
             </label>
             <Input
               id="email"
-              {...register("email", {
-                required: "Email is required",
+              {...register('email', {
+                required: 'Email is required',
                 pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "Invalid email address",
+                  value: /^[\w.%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: 'Invalid email address',
                 },
               })}
               type="email"
@@ -119,11 +118,11 @@ export default function Login() {
             </div>
             <Input
               id="password"
-              {...register("password", {
-                required: "Password is required",
+              {...register('password', {
+                required: 'Password is required',
                 minLength: {
                   value: 6,
-                  message: "Password must be at least 6 characters",
+                  message: 'Password must be at least 6 characters',
                 },
               })}
               type="password"
@@ -144,14 +143,16 @@ export default function Login() {
           disabled={loginMutation.isPending}
         >
           <span className="relative z-10 flex items-center justify-center">
-            {loginMutation.isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin mr-1" />
-                Signing in...
-              </>
-            ) : (
-              "Sign in"
-            )}
+            {loginMutation.isPending
+              ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin mr-1" />
+                    Signing in...
+                  </>
+                )
+              : (
+                  'Sign in'
+                )}
           </span>
         </Button>
       </form>
@@ -195,7 +196,8 @@ export default function Login() {
         </Button>
       </div>
       <div className="text-sm text-muted-foreground text-center">
-        Don&apos;t have an account ?{" "}
+        Don&apos;t have an account ?
+        {' '}
         <Link
           to="/register"
           className="font-medium text-primary hover:text-primary/80 transition-colors"
@@ -204,5 +206,5 @@ export default function Login() {
         </Link>
       </div>
     </div>
-  );
+  )
 }

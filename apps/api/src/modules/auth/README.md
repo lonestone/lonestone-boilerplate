@@ -22,4 +22,4 @@ Ce module gère l'authentification et l'autorisation des utilisateurs dans l'app
 - `User` - Informations de l'utilisateur
 - `Session` - Sessions actives
 - `Account` - Comptes liés aux utilisateurs
-- `Verification` - Vérifications (email, etc.) 
+- `Verification` - Vérifications (email, etc.)

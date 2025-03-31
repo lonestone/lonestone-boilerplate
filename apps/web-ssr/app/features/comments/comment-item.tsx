@@ -1,30 +1,30 @@
-import { CommentForm } from "@/features/comments/comment-form";
-import {
+import type {
   CommentSchema,
   CommentsControllerGetCommentRepliesResponse,
   CreateCommentSchema,
-} from "@lonestone/openapi-generator";
-import { Button } from "@lonestone/ui/components/primitives/button";
+} from '@lonestone/openapi-generator'
+import { CommentForm } from '@/features/comments/comment-form'
+import { apiClient } from '@/lib/api-client'
+import { queryClient } from '@/lib/query-client'
+import { Button } from '@lonestone/ui/components/primitives/button'
 import {
   Card,
-  CardHeader,
   CardContent,
   CardFooter,
-} from "@lonestone/ui/components/primitives/card";
-import { Separator } from "@lonestone/ui/components/primitives/separator";
+  CardHeader,
+} from '@lonestone/ui/components/primitives/card'
+import { Separator } from '@lonestone/ui/components/primitives/separator'
+import { cn } from '@lonestone/ui/lib/utils'
+import { useQuery } from '@tanstack/react-query'
 import {
-  User,
-  Reply,
-  Trash2,
   ChevronDown,
   ChevronUp,
   Loader2,
-} from "lucide-react";
-import { cn } from "@lonestone/ui/lib/utils";
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/query-client";
-import { apiClient } from "@/lib/api-client";
+  Reply,
+  Trash2,
+  User,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 function Replies({
   commentId,
@@ -36,17 +36,17 @@ function Replies({
   onReplySubmit,
   onLoadMoreReplies,
 }: {
-  commentId: string;
-  currentUserId?: string;
-  postAuthorId?: string;
-  isAddingComment: boolean;
-  depth: number;
-  onDelete: (commentId: string) => void;
-  onReplySubmit: (data: CreateCommentSchema) => Promise<void>;
-  onLoadMoreReplies: (commentId: string) => void;
+  commentId: string
+  currentUserId?: string
+  postAuthorId?: string
+  isAddingComment: boolean
+  depth: number
+  onDelete: (commentId: string) => void
+  onReplySubmit: (data: CreateCommentSchema) => Promise<void>
+  onLoadMoreReplies: (commentId: string) => void
 }) {
   const { data: repliesData, isLoading: isLoadingReplies } = useQuery({
-    queryKey: ["replies", commentId],
+    queryKey: ['replies', commentId],
     queryFn: async () => {
       return apiClient.commentsControllerGetCommentReplies({
         path: {
@@ -55,12 +55,12 @@ function Replies({
         query: {
           offset: 0,
         },
-      });
-    }
-  });
+      })
+    },
+  })
 
-  const replies = repliesData?.data?.data || [];
-  const hasMoreReplies = repliesData?.data?.meta?.hasMore || false;
+  const replies = repliesData?.data?.data || []
+  const hasMoreReplies = repliesData?.data?.meta?.hasMore || false
 
   if (isLoadingReplies) {
     return (
@@ -70,12 +70,12 @@ function Replies({
           <span>Loading replies...</span>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-      {replies.map((reply) => (
+      {replies.map(reply => (
         <CommentItem
           key={reply.id}
           comment={reply}
@@ -93,8 +93,8 @@ function Replies({
           variant="outline"
           size="sm"
           className={cn(
-            "mt-2 text-xs",
-            depth > 0 ? "h-6 text-xs ml-8" : "h-8 w-full"
+            'mt-2 text-xs',
+            depth > 0 ? 'h-6 text-xs ml-8' : 'h-8 w-full',
           )}
           onClick={() => onLoadMoreReplies(commentId)}
         >
@@ -102,19 +102,19 @@ function Replies({
         </Button>
       )}
     </div>
-  );
+  )
 }
 
 // Component for rendering a single comment with its replies
-type CommentItemProps = {
-  comment: CommentSchema;
-  currentUserId?: string;
-  postAuthorId?: string;
-  isAddingComment: boolean;
-  depth?: number;
-  onDelete: (commentId: string) => void;
-  onReplySubmit: (data: CreateCommentSchema) => Promise<void>;
-};
+interface CommentItemProps {
+  comment: CommentSchema
+  currentUserId?: string
+  postAuthorId?: string
+  isAddingComment: boolean
+  depth?: number
+  onDelete: (commentId: string) => void
+  onReplySubmit: (data: CreateCommentSchema) => Promise<void>
+}
 
 export function CommentItem({
   comment,
@@ -125,45 +125,46 @@ export function CommentItem({
   onDelete,
   onReplySubmit,
 }: CommentItemProps) {
-  const [isReplying, setIsReplying] = useState(false);
-  const [showReplies, setShowReplies] = useState(false);
-  const [replyCount, setReplyCount] = useState(comment.replyCount || 0);
-  const isAuthor = currentUserId && comment.user?.id === currentUserId;
-  const isPostAuthor = currentUserId === postAuthorId;
-  const canDelete = isAuthor || isPostAuthor;
+  const [isReplying, setIsReplying] = useState(false)
+  const [showReplies, setShowReplies] = useState(false)
+  const [replyCount, setReplyCount] = useState(comment.replyCount || 0)
+  const isAuthor = currentUserId && comment.user?.id === currentUserId
+  const isPostAuthor = currentUserId === postAuthorId
+  const canDelete = isAuthor || isPostAuthor
   const formattedDate = new Date(comment.createdAt).toLocaleDateString(
     undefined,
     {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }
-  );
-  const [isHovered, setIsHovered] = useState(false);
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    },
+  )
+  const [isHovered, setIsHovered] = useState(false)
 
   useEffect(() => {
-    setReplyCount(comment.replyCount || 0);
-  }, [comment.replyCount]);
+    setReplyCount(comment.replyCount || 0)
+  }, [comment.replyCount])
 
-  const hasReplies = useMemo(() => replyCount !== undefined && replyCount > 0, [replyCount]);
+  const hasReplies = useMemo(() => replyCount !== undefined && replyCount > 0, [replyCount])
 
   // Calculate indentation based on depth
-  const isNested = depth > 0;
+  const isNested = depth > 0
 
   const toggleReplies = () => {
-    setShowReplies(prev => !prev);
-  };
+    setShowReplies(prev => !prev)
+  }
 
   const loadMoreReplies = async (commentId: string) => {
     // Use any type to avoid type errors with the API response
     const currentReplies = queryClient.getQueryData<{
-      data: CommentsControllerGetCommentRepliesResponse;
-    }>(["replies", commentId]);
-    if (!currentReplies || !currentReplies.data?.meta) return;
+      data: CommentsControllerGetCommentRepliesResponse
+    }>(['replies', commentId])
+    if (!currentReplies || !currentReplies.data?.meta)
+      return
 
     try {
-      const offset =
-        currentReplies.data.meta.offset + currentReplies.data.meta.pageSize;
+      const offset
+        = currentReplies.data.meta.offset + currentReplies.data.meta.pageSize
       const newReplies = await apiClient.commentsControllerGetCommentReplies({
         path: {
           commentId,
@@ -171,45 +172,46 @@ export function CommentItem({
         query: {
           offset,
         },
-      });
+      })
 
       // Merge the new replies with existing ones
       if (currentReplies.data && newReplies.data) {
-        queryClient.setQueryData(["replies", commentId], {
+        queryClient.setQueryData(['replies', commentId], {
           ...newReplies,
           data: {
             ...newReplies.data,
             data: [...currentReplies.data.data, ...newReplies.data.data],
           },
-        });
+        })
       }
-    } catch (error) {
-      console.error("Error loading more replies:", error);
     }
-  };
+    catch (error) {
+      console.error('Error loading more replies:', error)
+    }
+  }
 
   return (
     <div
       className={cn(
-        "relative",
-        isNested && "ml-2 md:ml-4 pl-2 md:pl-4 pt-3",
-        "last:[&>.comment-line]:h-28 last:[&>.comment-line-end]:block"
+        'relative',
+        isNested && 'ml-2 md:ml-4 pl-2 md:pl-4 pt-3',
+        'last:[&>.comment-line]:h-28 last:[&>.comment-line-end]:block',
       )}
     >
       {/* Vertical line connecting replies */}
       {isNested && (
         <>
-          <div className={"comment-line absolute left-0 top-0 h-full w-px bg-border"} />
-          <div className={"comment-line-end absolute left-0 h-28 size-[1rem] border-b border-l rounded-bl-full"} />
+          <div className="comment-line absolute left-0 top-0 h-full w-px bg-border" />
+          <div className="comment-line-end absolute left-0 h-28 size-[1rem] border-b border-l rounded-bl-full" />
         </>
       )}
 
       <Card
         key={comment.id}
         className={cn(
-          "border transition-all duration-200 hover:border-primary/20",
-          isReplying ? "border-primary/30 shadow-sm" : "shadow-none",
-          isNested && "border-l-2"
+          'border transition-all duration-200 hover:border-primary/20',
+          isReplying ? 'border-primary/30 shadow-sm' : 'shadow-none',
+          isNested && 'border-l-2',
         )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -219,20 +221,20 @@ export function CommentItem({
             <div className="flex items-center gap-2">
               <div
                 className={cn(
-                  "flex-shrink-0 flex items-center justify-center rounded-full bg-primary/10",
-                  isNested ? "h-6 w-6" : "h-8 w-8"
+                  'flex-shrink-0 flex items-center justify-center rounded-full bg-primary/10',
+                  isNested ? 'h-6 w-6' : 'h-8 w-8',
                 )}
               >
                 <User
                   className={cn(
-                    "text-primary",
-                    isNested ? "h-3 w-3" : "h-4 w-4"
+                    'text-primary',
+                    isNested ? 'h-3 w-3' : 'h-4 w-4',
                   )}
                 />
               </div>
               <div>
                 <span className="font-semibold text-sm">
-                  {comment.user?.name || "Anonymous"}
+                  {comment.user?.name || 'Anonymous'}
                 </span>
                 {isPostAuthor && comment.user?.id === postAuthorId && (
                   <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
@@ -246,30 +248,30 @@ export function CommentItem({
             </div>
           </div>
         </CardHeader>
-        <CardContent className={cn("py-2", isNested && "py-1")}>
+        <CardContent className={cn('py-2', isNested && 'py-1')}>
           <p
             className={cn(
-              "whitespace-pre-line",
-              isNested ? "text-xs" : "text-sm"
+              'whitespace-pre-line',
+              isNested ? 'text-xs' : 'text-sm',
             )}
           >
             {comment.content}
           </p>
         </CardContent>
-        <CardFooter className={cn(isNested && "pt-0 pb-2")}>
+        <CardFooter className={cn(isNested && 'pt-0 pb-2')}>
           <div className="flex gap-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsReplying(true)}
               className={cn(
-                "text-xs h-7 px-2 transition-opacity",
-                isHovered || isReplying ? "opacity-100" : "opacity-70",
-                isNested && "h-6 px-1.5"
+                'text-xs h-7 px-2 transition-opacity',
+                isHovered || isReplying ? 'opacity-100' : 'opacity-70',
+                isNested && 'h-6 px-1.5',
               )}
             >
               <Reply
-                className={cn("mr-1", isNested ? "h-2.5 w-2.5" : "h-3 w-3")}
+                className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')}
               />
               Reply
             </Button>
@@ -280,23 +282,28 @@ export function CommentItem({
                 size="sm"
                 onClick={toggleReplies}
                 className={cn(
-                  "text-xs h-7 px-2",
-                  showReplies ? "text-primary" : "",
-                  isHovered ? "opacity-100" : "opacity-80",
-                  isNested && "h-6 px-1.5"
+                  'text-xs h-7 px-2',
+                  showReplies ? 'text-primary' : '',
+                  isHovered ? 'opacity-100' : 'opacity-80',
+                  isNested && 'h-6 px-1.5',
                 )}
               >
-                {showReplies ? (
-                  <ChevronUp
-                    className={cn("mr-1", isNested ? "h-2.5 w-2.5" : "h-3 w-3")}
-                  />
-                ) : (
-                  <ChevronDown
-                    className={cn("mr-1", isNested ? "h-2.5 w-2.5" : "h-3 w-3")}
-                  />
-                )}
-                {showReplies ? "Hide" : "Show"} {replyCount}{" "}
-                {replyCount === 1 ? "reply" : "replies"}
+                {showReplies
+                  ? (
+                      <ChevronUp
+                        className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')}
+                      />
+                    )
+                  : (
+                      <ChevronDown
+                        className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')}
+                      />
+                    )}
+                {showReplies ? 'Hide' : 'Show'}
+                {' '}
+                {replyCount}
+                {' '}
+                {replyCount === 1 ? 'reply' : 'replies'}
               </Button>
             )}
           </div>
@@ -307,13 +314,13 @@ export function CommentItem({
               size="sm"
               onClick={() => onDelete(comment.id)}
               className={cn(
-                "text-xs h-7 px-2 text-destructive transition-opacity",
-                isHovered ? "opacity-100" : "opacity-0",
-                isNested && "h-6 px-1.5"
+                'text-xs h-7 px-2 text-destructive transition-opacity',
+                isHovered ? 'opacity-100' : 'opacity-0',
+                isNested && 'h-6 px-1.5',
               )}
             >
               <Trash2
-                className={cn("mr-1", isNested ? "h-2.5 w-2.5" : "h-3 w-3")}
+                className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')}
               />
               Delete
             </Button>
@@ -326,14 +333,14 @@ export function CommentItem({
             <CommentForm
               isPending={isAddingComment}
               initialData={{
-                content: "",
+                content: '',
                 parentId: comment.id,
               }}
               onSubmit={async (data) => {
-                await onReplySubmit(data);
-                setReplyCount((prev) => prev + 1);
-                setIsReplying(false);
-                setShowReplies(true);
+                await onReplySubmit(data)
+                setReplyCount(prev => prev + 1)
+                setIsReplying(false)
+                setShowReplies(true)
               }}
             />
           </div>
@@ -353,5 +360,5 @@ export function CommentItem({
         />
       )}
     </div>
-  );
+  )
 }

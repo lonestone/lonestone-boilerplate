@@ -33,4 +33,4 @@ Titre de la règle
 - Point 1
 - Point 2
 - Référence à la documentation: [nom](mdc:chemin/vers/fichier.md)
-``` 
+```

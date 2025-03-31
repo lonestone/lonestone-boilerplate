@@ -1,1 +1,1 @@
-export * from './useInView'; 
+export * from './useInView'

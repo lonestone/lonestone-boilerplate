@@ -1,27 +1,27 @@
-import { ArrowLeft, Calendar, User } from "lucide-react";
-import { Route } from "./+types/post-detail-page";
-import PostContent from "@lonestone/ui/components/posts/PostContent";
-import { Button } from "@lonestone/ui/components/primitives/button";
-import { Link } from "react-router";
-import { CommentsList } from "../comments/comments-list";
-import { apiClient } from "@/lib/api-client";
+import type { Route } from './+types/post-detail-page'
+import { apiClient } from '@/lib/api-client'
+import PostContent from '@lonestone/ui/components/posts/PostContent'
+import { Button } from '@lonestone/ui/components/primitives/button'
+import { ArrowLeft, Calendar, User } from 'lucide-react'
+import { Link } from 'react-router'
+import { CommentsList } from '../comments/comments-list'
 
-export const loader = async ({ params }: { params: { slug: string } }) => {
+export async function loader({ params }: { params: { slug: string } }) {
   const post = await apiClient.publicPostControllerGetPost({
     path: {
       slug: params.slug,
     },
-  });
+  })
 
   return {
     post: post.data,
-  };
-};
+  }
+}
 
 export default function PostPage({ loaderData }: Route.ComponentProps) {
   // Get the post slug to use as a unique identifier for comments
-  const postSlug = loaderData.post?.slug || '';
-  
+  const postSlug = loaderData.post?.slug || ''
+
   return (
     <div className="container mx-auto py-8 px-4 space-y-6">
       <Button variant="outline" asChild>
@@ -41,7 +41,7 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
           <span>
             {loaderData.post?.publishedAt
               ? new Date(loaderData.post.publishedAt).toLocaleDateString()
-              : "Date inconnue"}
+              : 'Date inconnue'}
           </span>
         </div>
       </div>
@@ -49,29 +49,29 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
       {loaderData.post?.content && (
         <PostContent content={loaderData.post?.content} />
       )}
-      
+
       {loaderData.post && (
-        <CommentsList 
-          postId={postSlug} 
+        <CommentsList
+          postId={postSlug}
           postAuthorId={loaderData.post.author.name}
         />
       )}
     </div>
-  );
+  )
 }
 
-export const meta = ({ data }: Route.MetaArgs) => {
+export function meta({ data }: Route.MetaArgs) {
   return [
     {
       title: data.post?.title,
     },
     {
-      property: "og:title",
+      property: 'og:title',
       content: data.post?.title,
     },
     {
-      name: "description",
+      name: 'description',
       content: data.post?.title,
     },
-  ];
-};
+  ]
+}

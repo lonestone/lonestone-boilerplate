@@ -1,20 +1,32 @@
-import globals from "globals";
-import pluginJs from "@eslint/js";
-import tseslint from "typescript-eslint";
-import pluginReact from "eslint-plugin-react";
-import { config as baseConfig } from "./packages/eslint-config/base.js";
+// eslint.config.js
+import antfu from '@antfu/eslint-config'
 
-/** @type {import('eslint').Linter.Config[]} */
-export default [
+export default antfu(
+  // Configures for antfu's config and global rules
   {
-    ignores: ["packages/schematics/**"]
+    react: true,
+    css: true,
+    html: true,
+    ignores: [
+      '**/.react-router/**',
+      '**/*.gen.ts',
+      '**/dist/',
+      '**/temp/',
+      '**/build/',
+      'packages/schematics/src/files/',
+      'packages/openapi-generator/client/',
+    ],
+    rules: {
+      'ts/no-explicit-any': 'error',
+    },
   },
-  ...baseConfig,
-  { 
-    files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
+  // Starting from the second arguments they are ESLint Flat Configs
+  // Careful, antfu renames some plugins for consistency https://github.com/antfu/eslint-config?tab=readme-ov-file#plugins-renaming
+  {
+    files: ['apps/api/**/*.ts', 'apps/api/**/*.json'],
+    rules: {
+      'ts/consistent-type-imports': 'off',
+      'node/prefer-global/process': ['error', 'always'],
+    },
   },
-  { languageOptions: { globals: { ...globals.browser, ...globals.node } } },
-  pluginJs.configs.recommended,
-  ...tseslint.configs.recommended,
-  pluginReact.configs.flat.recommended,
-];
+)

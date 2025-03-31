@@ -1,6 +1,6 @@
-import { Module, Global } from "@nestjs/common";
-import { MikroOrmModule } from "@mikro-orm/nestjs";
-import { DbService } from "./db.service";
+import { MikroOrmModule } from '@mikro-orm/nestjs'
+import { Global, Module } from '@nestjs/common'
+import { DbService } from './db.service'
 
 @Global()
 @Module({

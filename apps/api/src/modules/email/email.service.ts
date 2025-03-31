@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common'
 
 @Injectable()
 export class EmailService {
@@ -7,15 +7,16 @@ export class EmailService {
     subject,
     content,
   }: {
-    to: string;
-    subject: string;
-    content: string;
+    to: string
+    subject: string
+    content: string
   }): Promise<void> {
     // Pour l'instant, on va juste logger les emails
+    // eslint-disable-next-line no-console
     console.log('Email envoyé :', {
       to,
       subject,
       content,
-    });
+    })
   }
-} 
+}

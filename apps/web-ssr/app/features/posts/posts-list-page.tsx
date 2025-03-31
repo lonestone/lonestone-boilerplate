@@ -1,18 +1,18 @@
-import { Route } from "./+types/posts-list-page";
-import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
-import { Input } from "@lonestone/ui/components/primitives/input";
-import { Button } from "@lonestone/ui/components/primitives/button";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import type { Route } from './+types/posts-list-page'
+import { apiClient } from '@/lib/api-client'
+import { Button } from '@lonestone/ui/components/primitives/button'
+import { Input } from '@lonestone/ui/components/primitives/input'
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
-import PostCard from "./post-card";
-import { apiClient } from "@/lib/api-client";
+import { useSearchParams } from 'react-router'
+import PostCard from './post-card'
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-  const url = new URL(request.url);
-  const searchParams = new URLSearchParams(url.search);
-  const search = searchParams.get("search") || "";
-  const page = parseInt(searchParams.get("page") || "1");
+export async function loader({ request }: Route.LoaderArgs) {
+  const url = new URL(request.url)
+  const searchParams = new URLSearchParams(url.search)
+  const search = searchParams.get('search') || ''
+  const page = Number.parseInt(searchParams.get('page') || '1')
 
   const posts = await apiClient.publicPostControllerGetPosts({
     query: {
@@ -20,43 +20,44 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       offset: (page - 1) * 10,
       pageSize: 10,
     },
-  });
-  
+  })
+
   return {
     posts,
     search,
     page,
-  };
-};
+  }
+}
 
 export default function PostsListPage({ loaderData }: Route.ComponentProps) {
-  const { posts, search, page } = loaderData;
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [searchValue, setSearchValue] = useState(search || "");
+  const { posts, search, page } = loaderData
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchValue, setSearchValue] = useState(search || '')
 
   const handleSearch = (value: string) => {
-    setSearchValue(value);
-    const newParams = new URLSearchParams(searchParams);
+    setSearchValue(value)
+    const newParams = new URLSearchParams(searchParams)
     if (value) {
-      newParams.set("search", value);
-    } else {
-      newParams.delete("search");
+      newParams.set('search', value)
     }
-    newParams.set("page", "1");
-    setSearchParams(newParams);
-  };
+    else {
+      newParams.delete('search')
+    }
+    newParams.set('page', '1')
+    setSearchParams(newParams)
+  }
 
   const handlePageChange = (newPage: number) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("page", newPage.toString());
-    setSearchParams(newParams);
-  };
-
+    const newParams = new URLSearchParams(searchParams)
+    newParams.set('page', newPage.toString())
+    setSearchParams(newParams)
+  }
 
   const totalPages = useMemo(() => {
-    if (!posts?.data?.meta.itemCount) return 0;
-    return Math.ceil(posts.data.meta.itemCount / 10);
-  }, [posts]);
+    if (!posts?.data?.meta.itemCount)
+      return 0
+    return Math.ceil(posts.data.meta.itemCount / 10)
+  }, [posts])
 
   return (
     <div className="container mx-auto py-8 px-4 space-y-6">
@@ -74,24 +75,33 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
             placeholder="Search posts..."
             value={searchValue}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              handleSearch(e.target.value)
-            }
+              handleSearch(e.target.value)}
             className="pl-9"
           />
         </div>
       </div>
 
       <div className="grid gap-4">
-        {posts?.data?.data.map((post) => (
+        {posts?.data?.data.map(post => (
           <PostCard key={post.slug} post={post} />
         ))}
       </div>
 
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          Showing {(page - 1) * 10 + 1} to{" "}
-          {Math.min(page * 10, posts?.data?.meta.itemCount || 0)} of{" "}
-          {posts?.data?.meta.itemCount} posts
+          Showing
+          {' '}
+          {(page - 1) * 10 + 1}
+          {' '}
+          to
+          {' '}
+          {Math.min(page * 10, posts?.data?.meta.itemCount || 0)}
+          {' '}
+          of
+          {' '}
+          {posts?.data?.meta.itemCount}
+          {' '}
+          posts
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -104,7 +114,13 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
             Previous
           </Button>
           <div className="text-sm text-muted-foreground">
-            Page {page} of {totalPages}
+            Page
+            {' '}
+            {page}
+            {' '}
+            of
+            {' '}
+            {totalPages}
           </div>
           <Button
             variant="outline"
@@ -118,21 +134,21 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 export function meta() {
   return [
     {
-      title: "Posts",
+      title: 'Posts',
     },
     {
-      property: "og:title",
-      content: "Posts",
+      property: 'og:title',
+      content: 'Posts',
     },
     {
-      name: "description",
-      content: "Posts page",
+      name: 'description',
+      content: 'Posts page',
     },
-  ];
+  ]
 }

@@ -20,7 +20,7 @@ Actuellement, le module est configuré pour logger les emails plutôt que de les
 
 ```typescript
 interface EmailOptions {
-  to: string;
-  subject: string;
-  content: string;
-} 
+  to: string
+  subject: string
+  content: string
+}

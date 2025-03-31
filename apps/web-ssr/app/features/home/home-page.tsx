@@ -4,21 +4,21 @@ export default function HomePage() {
       <h1 className="text-4xl font-bold">Home</h1>
       <p>This is the home page. It is pre-rendered.</p>
     </div>
-  );
+  )
 }
 
 export function meta() {
   return [
     {
-      title: "Home",
+      title: 'Home',
     },
     {
-      property: "og:title",
-      content: "Home",
+      property: 'og:title',
+      content: 'Home',
     },
     {
-      name: "description",
-      content: "Home page",
+      name: 'description',
+      content: 'Home page',
     },
-  ];
+  ]
 }

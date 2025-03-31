@@ -1,18 +1,19 @@
-import { z } from "zod";
-import dotenv from "dotenv";
-import { join } from "path";
+import { join } from 'node:path'
+import dotenv from 'dotenv'
+import { z } from 'zod'
 
 // Charger le fichier .env approprié en fonction de l'environnement
-const nodeEnv = process.env.NODE_ENV || 'development';
+const nodeEnv = process.env.NODE_ENV || 'development'
 if (nodeEnv === 'test') {
-  dotenv.config({ path: join(process.cwd(), '.env.test') });
-} else {
-  dotenv.config();
+  dotenv.config({ path: join(process.cwd(), '.env.test') })
+}
+else {
+  dotenv.config()
 }
 
 export const configValidationSchema = z.object({
   // Environment
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
   // API
   API_PORT: z.coerce.number(),
@@ -26,22 +27,22 @@ export const configValidationSchema = z.object({
 
   // BetterAuth
   BETTER_AUTH_SECRET: z.string(),
-  TRUSTED_ORIGINS: z.string().transform((val) => val.split(",")),
-  
+  TRUSTED_ORIGINS: z.string().transform(val => val.split(',')),
+
 })
 
-export type ConfigSchema = z.infer<typeof configValidationSchema>;
+export type ConfigSchema = z.infer<typeof configValidationSchema>
 
-const configParsed = configValidationSchema.safeParse(process.env);
+const configParsed = configValidationSchema.safeParse(process.env)
 
 if (!configParsed.success) {
   throw new Error(
     `Invalid environment variables: ${JSON.stringify(
       configParsed.error.format(),
       null,
-      4
-    )}`
-  );
+      4,
+    )}`,
+  )
 }
 
 export const config = {
@@ -59,4 +60,4 @@ export const config = {
     port: configParsed.data.DATABASE_PORT,
     connectionStringUrl: `postgresql://${configParsed.data.DATABASE_USER}:${configParsed.data.DATABASE_PASSWORD}@${configParsed.data.DATABASE_HOST}:${configParsed.data.DATABASE_PORT}/${configParsed.data.DATABASE_NAME}`,
   },
-} as const;
+} as const

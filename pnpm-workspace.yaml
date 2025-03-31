@@ -2,4 +2,4 @@ packages:
   # Tous les packages dans le dossier 'packages'
   - 'packages/*'
   # Tous les packages dans le dossier 'apps'
-  - 'apps/*' 
+  - 'apps/*'

@@ -48,4 +48,4 @@ Pour ajouter un nouveau workflow:
 ## Ressources
 
 - [Documentation GitHub Actions](https://docs.github.com/en/actions)
-- [Marketplace GitHub Actions](https://github.com/marketplace?type=actions) 
+- [Marketplace GitHub Actions](https://github.com/marketplace?type=actions)

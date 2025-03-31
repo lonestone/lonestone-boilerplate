@@ -1,75 +1,75 @@
 import {
+  Collection,
   Entity,
+  Index,
+  ManyToOne,
+  OneToMany,
   PrimaryKey,
   Property,
-  OneToMany,
-  Collection,
-  ManyToOne,
-  Index,
   Unique,
-} from "@mikro-orm/core";
-import { User } from "../auth/auth.entity";
-import { Comment } from "../comments/comments.entity";
+} from '@mikro-orm/core'
+import { User } from '../auth/auth.entity'
+import { Comment } from '../comments/comments.entity'
 
-export type Content = {
-  type: "text" | "image" | "video";
-  data: string;
-};
+export interface Content {
+  type: 'text' | 'image' | 'video'
+  data: string
+}
 
-@Entity({ tableName: "post" })
+@Entity({ tableName: 'post' })
 export class Post {
-  @PrimaryKey({ type: "uuid", defaultRaw: "gen_random_uuid()" })
-  id!: string;
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
 
-  @ManyToOne(() => User, { fieldName: "userId" })
+  @ManyToOne(() => User, { fieldName: 'userId' })
   @Index()
-  user!: User;
+  user!: User
 
-  @Property({ fieldName: "createdAt" })
-  createdAt: Date = new Date();
+  @Property({ fieldName: 'createdAt' })
+  createdAt: Date = new Date()
 
-  @Property({ fieldName: "updatedAt", onUpdate: () => new Date() })
-  updatedAt: Date = new Date();
+  @Property({ fieldName: 'updatedAt', onUpdate: () => new Date() })
+  updatedAt: Date = new Date()
 
-  @Property({ fieldName: "publishedAt", nullable: true })
+  @Property({ fieldName: 'publishedAt', nullable: true })
   @Index()
-  publishedAt?: Date;
+  publishedAt?: Date
 
   @OneToMany(() => PostVersion, version => version.post)
-  versions = new Collection<PostVersion>(this);
+  versions = new Collection<PostVersion>(this)
 
   @OneToMany(() => Comment, comment => comment.post)
-  comments = new Collection<Comment>(this);
+  comments = new Collection<Comment>(this)
 
   @Unique()
-  @Property({ fieldName: "slug", nullable: true })
+  @Property({ fieldName: 'slug', nullable: true })
   @Index()
-  slug?: string;
+  slug?: string
 
   async currentVersion() {
     if (this.publishedAt) {
-      return this.versions.getItems()[this.versions.getItems().length - 1];
+      return this.versions.getItems()[this.versions.getItems().length - 1]
     }
 
-    return null;
+    return null
   }
 }
 
-@Entity({ tableName: "postVersion" })
+@Entity({ tableName: 'postVersion' })
 export class PostVersion {
-  @PrimaryKey({ type: "uuid", defaultRaw: "gen_random_uuid()" })
-  id!: string;
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
 
-  @ManyToOne(() => Post, { fieldName: "postId" })
-  post!: Post;
+  @ManyToOne(() => Post, { fieldName: 'postId' })
+  post!: Post
 
   @Property()
   @Index()
-  title!: string;
+  title!: string
 
-  @Property({ type: "json" })
-  content?: Content[];
+  @Property({ type: 'json' })
+  content?: Content[]
 
-  @Property({ fieldName: "createdAt" })
-  createdAt: Date = new Date();
+  @Property({ fieldName: 'createdAt' })
+  createdAt: Date = new Date()
 }
