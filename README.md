@@ -4,331 +4,331 @@
 
 # Boilerplate project
 
-Ce repository représente le projet type chez Lonestone, composé d'une API et de plusieurs frontends.
+This repository represents the typical project structure at Lonestone, consisting of an API and multiple frontends.
 
-Pour lancer un nouveau projet utilisant ce boilerplate, créez simplement un projet sur Github et sélectionnez le boilerplate dans la liste des templates.
+To start a new project using this boilerplate, simply create a project on Github and select the boilerplate from the template list.
 
-## 📋 Table des matières
+## 📋 Table of Contents
 
-- [Vue d'ensemble](#vue-densemble)
-- [Stack technique](#stack-technique)
-- [Structure du projet](#structure-du-projet)
-- [Prérequis](#prérequis)
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
 - [Installation](#installation)
-- [Services Docker](#services-docker)
-- [Commandes utiles](#commandes-utiles)
-- [Développement](#développement)
-- [Intégration Continue (CI)](#intégration-continue-ci)
+- [Docker Services](#docker-services)
+- [Useful Commands](#useful-commands)
+- [Development](#development)
+- [Continuous Integration (CI)](#continuous-integration-ci)
 - [Documentation](#documentation)
-- [Contribution](#contribution)
-- [Licence](#licence)
+- [Contributing](#contributing)
+- [License](#license)
 
-## 🔍 Vue d'ensemble
+## 🔍 Overview
 
-Ce projet utilise une architecture dite "monorepo". Les avantages sont nombreux, mais principalement:
+This project uses a "monorepo" architecture. The advantages are numerous, but primarily:
 
-- Pouvoir développer une fonctionnalité fullstack sans changer de contexte, en faisant 1 seule PR
-- Une fois développée, faciliter sa mise en ligne : plus besoin de synchroniser plusieurs déploiements séparés
-- Avoir un typage fort de bout en bout, faciltier le refactoring
-- Simplifier et uniformiser l'outillage (linter, build, etc.)
+- Ability to develop full-stack features without context switching, making a single PR for a complete feature;
+- Easier deployment: no need to synchronize multiple separate deployments;
+- Strong end-to-end typing, easier refactoring;
+- Simplified and unified tooling (linter, build, etc.)
 
-## 🛠️ Stack technique
+## 🛠️ Tech Stack
 
 ### Frontend
 
-- [React 19](https://react.dev/) - Bibliothèque JavaScript pour construire des interfaces utilisateur
-- [TypeScript](https://www.typescriptlang.org/) - JavaScript avec une syntaxe pour les types
-- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS utilitaire
-- [Shadcn UI](https://ui.shadcn.com/) - Composants réutilisables construits avec Radix UI et Tailwind CSS
-- [React Router v7](https://reactrouter.com/) - Routage déclaratif pour React
-- [TanStack Query](https://tanstack.com/query/latest) - Gestion d'état asynchrone puissante
-- [React Hook Form](https://react-hook-form.com/) - Gestion de formulaires React
+- [React 19](https://react.dev/) - JavaScript library for building user interfaces
+- [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+- [Shadcn UI](https://ui.shadcn.com/) - Reusable components built with Radix UI and Tailwind CSS
+- [React Router v7](https://reactrouter.com/) - Declarative routing for React
+- [TanStack Query](https://tanstack.com/query/latest) - Powerful asynchronous state management
+- [React Hook Form](https://react-hook-form.com/) - React form management
 
 ### Backend
 
-- [NestJS](https://nestjs.com/) - Framework Node.js progressif
-- [TypeScript](https://www.typescriptlang.org/) - JavaScript avec une syntaxe pour les types
-- [MikroORM](https://mikro-orm.io/) - ORM TypeScript pour Node.js
-- [Zod](https://zod.dev/) - Validation de schéma TypeScript-first
-- [Better Auth](https://www.better-auth.com/docs) - Solution d'authentification et d'autorisation
+- [NestJS](https://nestjs.com/) - Progressive Node.js framework
+- [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
+- [MikroORM](https://mikro-orm.io/) - TypeScript ORM for Node.js
+- [Zod](https://zod.dev/) - TypeScript-first schema validation
+- [Better Auth](https://www.better-auth.com/docs) - Authentication and authorization solution
 
 ### Infrastructure
 
-- [Docker](https://www.docker.com/) - Plateforme de conteneurisation
-- [PostgreSQL](https://www.postgresql.org/) - Système de gestion de base de données relationnelle
-- [MinIO](https://min.io/) - Stockage d'objets compatible S3
+- [Docker](https://www.docker.com/) - Containerization platform
+- [PostgreSQL](https://www.postgresql.org/) - Relational database management system
+- [MinIO](https://min.io/) - S3-compatible object storage
 
-## 📁 Structure du projet
+## 📁 Project Structure
 
 ```
 lonestone/
-├── apps/                  # Applications principales
-│   ├── api/               # API backend (NestJS)
-│   ├── web-spa/           # Application web SPA (React)
-│   └── web-ssr/           # Application web SSR (React)
-├── packages/              # Packages partagés
-│   ├── ui/                # Composants UI réutilisables (shadcn/ui)
-│   ├── validations/       # Schémas de validation partagés
-│   ├── openapi-generator/ # Générateur de clients OpenAPI
-│   └── eslint-config/     # Configuration ESLint partagée
-├── docs/                  # Documentation du projet
-└── .github/               # Workflows GitHub Actions
+├── apps/                  # Main applications
+│   ├── api/               # Backend API (NestJS)
+│   ├── web-spa/           # Web SPA application (React)
+│   └── web-ssr/           # Web SSR application (React)
+├── packages/              # Shared packages
+│   ├── ui/                # Reusable UI components (shadcn/ui)
+│   ├── validations/       # Shared validation schemas
+│   ├── openapi-generator/ # OpenAPI client generator
+│   └── eslint-config/    # Shared ESLint configuration
+├── docs/                  # Project documentation
+└── .github/              # GitHub Actions workflows
 ```
 
-## 📋 Prérequis
+## 📋 Prerequisites
 
 - [Node.js](https://nodejs.org/) (version 22.14.0)
 - [PNPM](https://pnpm.io/) (version 10.5.0)
-- [Docker](https://www.docker.com/) et [Docker Compose](https://docs.docker.com/compose/)
+- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
 
 ## 🚀 Installation
 
-1. Une fois votre projet créé avec ce template, clonez le dépôt
+1. Once your project is created with this template, clone the repository
 
 ```bash
-git clone https://github.com/lonestone/votreprojet.git
-cd votreprojet
+git clone https://github.com/lonestone/yourproject.git
+cd yourproject
 ```
 
-2. Assurez vous de votre version de node et pnpm
+2. Ensure you have the correct node and pnpm versions (see root `package.json` file's  `engine` property).
 
-Vous pouvez utiliser [fnm](https://github.com/Schniz/fnm) pour la gestion de votre version de node
+You can use [fnm](https://github.com/Schniz/fnm) for managing your node version
 
 ```bash
 fnm use 22.14.0
 npm i -g pnpm@10.5.0
 ```
 
-3. Installez les dépendances :
+3. Install dependencies:
 
 ```bash
 pnpm install
 ```
 
-4. Configurez les variables d'environnement
+4. Configure environment variables
 
-On utilise un seul fichier `.env` a la racine du projet pour toutes les applications.
-Cela permet de ne pas avoir à configurer chaque application individuellement.
+We use a single `.env` file at the project root for all applications.
+This eliminates the need to configure each application individually.
 
 ```bash
 cp .env.test .env
 ```
 
-5. Démarrez les services Docker :
+5. Start Docker services:
 
 ```bash
 pnpm docker:up db
 ```
 
-6. Si migrations en place
+6. If migrations are in place
 
-Drop la DB et effectuer les migrations de la base de données sans seed:
+Drop the DB and perform database migrations without seeding:
 
 ```bash
 pnpm with-env --filter=api db:migrate:fresh # Drop the database and migrate up to the latest version
 ```
 
-Ou migration + seed
+Or migration + seed
 
 ```bash
 pnpm with-env --filter=api db:migrate:seed # Same but run seeders afterwards
 ```
 
-7. Durant le développement, ou si les migrations ne sont pas encore en place
+7. During development, or if migrations are not yet in place
 
-Remettre à 0 votre db
+Reset your db
 
-  ```bash
-  pnpm with-env --filter=api db:fresh # Drop the database and re-create from your entity files
-  ```
+```bash
+pnpm with-env --filter=api db:fresh # Drop the database and re-create from your entity files
+```
 
-  Remettre à 0 + seed
+Reset + seed
 
-  ```bash
-  pnpm with-env --filter=api db:seed # Same but run seeders afterwards
-  ```
+```bash
+pnpm with-env --filter=api db:seed # Same but run seeders afterwards
+```
 
-8. Démarrez les applications en mode développement :
+8. Start applications in development mode:
 
 ```bash
 pnpm dev
 ```
 
-## 🐳 Services Docker
+## 🐳 Docker Services
 
-Le projet utilise Docker Compose pour fournir les services suivants :
+The project uses Docker Compose to provide the following services:
 
 - PostgreSQL
-- MinIO
+- MinIO, a S3 compatible storage solution (not to be used in production!)
 
-## ⌨️ Commandes utiles
+## ⌨️ Useful Commands
 
 ### Docker
 
-- **Démarrer les services Docker** : `pnpm docker:up`
-- **Arrêter les services Docker** : `pnpm docker:down`
-- **Voir les logs Docker** : `pnpm docker:logs`
+- **Start Docker services**: `pnpm docker:up`
+- **Stop Docker services**: `pnpm docker:down`
+- **View Docker logs**: `pnpm docker:logs`
 
-### Développement
+### Development
 
-- **Démarrer le développement** : `pnpm dev`
-- **Construire les applications** : `pnpm build`
-- **Linter les applications** : `pnpm lint`
-- **Générer les clients OpenAPI** : `pnpm with-env generate`
+- **Start development**: `pnpm dev`
+- **Build applications**: `pnpm build`
+- **Lint applications**: `pnpm lint`
+- **Generate OpenAPI clients**: `pnpm with-env generate`
 
-### Base de données (API)
+### Database (API)
 
-- **Créer une migration** : `pnpm with-env --filter=api db:migration:create`
-- **Exécuter les migrations** : `pnpm with-env --filter=api db:migrate:up`
-- **Annuler la dernière migration** : `pnpm with-env --filter=api db:migrate:down`
-- **Initialiser les données** : `pnpm with-env --filter=api db:seed`
+- **Create migration**: `pnpm with-env --filter=api db:migration:create`
+- **Run migrations**: `pnpm with-env --filter=api db:migrate:up`
+- **Rollback last migration**: `pnpm with-env --filter=api db:migrate:down`
+- **Initialize data**: `pnpm with-env --filter=api db:seed`
 
 ### Tests
 
-- **Exécuter les tests** : `pnpm with-env- test`
+- **Run tests**: `pnpm with-env test`
 
-## 💻 Développement
+## 💻 Development
 
 ### Applications
 
 #### API (NestJS)
 
-L'API backend est construite avec NestJS et fournit les fonctionnalités serveur pour l'application Lonestone.
+The backend API is built with NestJS and provides server functionality for the Lonestone application.
 
 ```bash
-# Démarrer l'API en mode développement
+# Start API in development mode
 pnpm --filter=api dev
 ```
 
-Pour plus d'informations, consultez le [README de l'API](apps/api/README.md).
+For more information, see the [API README](apps/api/README.md).
 
 #### Web SPA (React)
 
-L'application web SPA est construite avec React et fournit l'interface utilisateur pour l'application Lonestone.
+The SPA web application is built with React and provides the user interface for the Lonestone application.
 
 ```bash
-# Démarrer l'application web en mode développement
+# Start web application in development mode
 pnpm --filter=web-spa dev
 ```
 
 #### Web SSR (React)
 
-L'application web SSR est construite avec React et fournit une version rendue côté serveur de l'interface utilisateur.
+The SSR web application is built with React and provides a server-side rendered version of the user interface.
 
 ```bash
-# Démarrer l'application web SSR en mode développement
+# Start SSR web application in development mode
 pnpm --filter=web-ssr dev
 ```
 
-Pour plus d'informations, consultez le [README de l'application web](apps/web-ssr/README.md).
+For more information, see the [Web Application README](apps/web-ssr/README.md).
 
-### Packages partagés
+### Shared Packages
 
 #### UI
 
-Composants UI réutilisables construits avec shadcn/ui.
+Reusable UI components built with shadcn/ui.
 
 #### Validations
 
-Schémas de validation partagés entre le frontend et le backend.
+Validation schemas shared between frontend and backend.
 
 #### OpenAPI Generator
 
-Générateur de clients OpenAPI pour la communication entre le frontend et le backend.
+OpenAPI client generator for frontend-backend communication.
 
 #### ESLint Config
 
-Configuration ESLint partagée pour maintenir la cohérence du code dans tout le monorepo.
+Shared ESLint configuration to maintain code consistency across the monorepo.
 
-## 🔄 Intégration Continue (CI)
+## 🔄 Continuous Integration (CI)
 
-Le projet utilise GitHub Actions pour l'intégration continue. Les workflows sont définis dans le dossier `.github/workflows/`.
+The project uses GitHub Actions for continuous integration. Workflows are defined in the `.github/workflows/` folder.
 
-### Workflow CI
+### CI Workflow
 
-Le workflow CI (`ci.yml`) est exécuté à chaque push sur les branches `main` et `master`, ainsi que sur les pull requests vers ces branches.
+The CI workflow (`ci.yml`) runs on every push to the `main` and `master` branches, as well as on pull requests to these branches.
 
-Il comprend les jobs suivants:
+It includes the following jobs:
 
-- **Lint** : Vérifie le code avec ESLint
-- **Type Check** : Vérifie les types TypeScript pour tous les packages et applications
-- **Build** : Construit tous les packages et applications
+- **Lint**: Checks code with ESLint
+- **Type Check**: Checks TypeScript types for all packages and applications
+- **Build**: Builds all packages and applications
 
-Pour plus d'informations, consultez le [README des workflows GitHub](.github/README.md).
+For more information, see the [GitHub Workflows README](.github/README.md).
 
 ## 📚 Documentation
 
-La documentation du projet est disponible dans le dossier `docs/` et dans `README` des apps. Elle contient des informations sur l'architecture, les conventions de codage et les guides de développement.
+Project documentation is available in the `docs/` folder and in app `README`s. It contains information about architecture, coding conventions, and development guides.
 
-- [Guidelines Frontend](docs/frontend-guidelines.md)
-- [Guidelines Backend](docs/backend-guidelines.md)
-- [Readme API](apps/api/README.md)
+- [Frontend Guidelines](docs/frontend-guidelines.md)
+- [Backend Guidelines](docs/backend-guidelines.md)
+- [API Readme](apps/api/README.md)
 
-# Socle Lonestone
+# Lonestone Foundation
 
-Ce monorepo contient plusieurs applications qui peuvent être construites et déployées indépendamment avec Docker.
+This monorepo contains several applications that can be built and deployed independently with Docker.
 
-## Structure du projet
+## Project Structure
 
-- `apps/api` : API backend (NestJS)
-- `apps/web-spa` : Application frontend SPA (React/Vite)
-- `apps/web-ssr` : Application frontend SSR
-- `packages/` : Packages partagés entre les applications
+- `apps/api`: Backend API (NestJS)
+- `apps/web-spa`: Frontend SPA application (React/Vite)
+- `apps/web-ssr`: Frontend SSR application
+- `packages/`: Packages shared between applications
 
-## Construction avec Docker
+## Building with Docker
 
-### Prérequis
+### Prerequisites
 
-- Docker installé sur votre machine
-- Node.js et pnpm pour le développement local
+- Docker installed on your machine
+- Node.js and pnpm for local development
 
-### Construction des images Docker
+### Building Docker Images
 
-#### API Backend
+#### Backend API
 
 ```bash
-# À la racine du projet
+# At project root
 docker build -t lonestone/api -f apps/api/Dockerfile .
 ```
 
-Variables d'environnement pour l'API (à définir dans votre environnement de déploiement) :
+Environment variables for API (to be defined in your deployment environment):
 
-- `DATABASE_PASSWORD` : Mot de passe pour la base de données
-- `DATABASE_USER` : Utilisateur pour la base de données
-- `DATABASE_NAME` : Nom de la base de données
-- `DATABASE_HOST` : Hôte de la base de données
-- `DATABASE_PORT` : Port de la base de données
-- `BETTER_AUTH_SECRET` : Clé secrète pour les JWT
-- `API_PORT` : Port sur lequel l'API écoute (par défaut: 3000)
+- `DATABASE_PASSWORD`: Database password
+- `DATABASE_USER`: Database user
+- `DATABASE_NAME`: Database name
+- `DATABASE_HOST`: Database host
+- `DATABASE_PORT`: Database port
+- `BETTER_AUTH_SECRET`: Secret key for JWTs
+- `API_PORT`: Port the API listens on (default: 3000)
 
-#### Application SPA (Single Page Application)
+#### SPA (Single Page Application)
 
 ```bash
-# À la racine du projet
+# At project root
 docker build -t lonestone/web-spa \
   --build-arg VITE_API_URL=https://api.example.com \
   -f apps/web-spa/Dockerfile .
 ```
 
-Variables d'environnement pour la SPA (à définir au moment du build) :
+Environment variables for SPA (to be defined at build time):
 
-- `VITE_API_URL` : URL de l'API backend
+- `VITE_API_URL`: Backend API URL
 
-#### Application SSR (Server-Side Rendering)
+#### SSR (Server-Side Rendering) Application
 
 ```bash
-# À la racine du projet
+# At project root
 docker build -t lonestone/web-ssr -f apps/web-ssr/Dockerfile .
 ```
 
-Variables d'environnement pour l'application SSR (à définir dans votre environnement de déploiement) :
+Environment variables for SSR application (to be defined in your deployment environment):
 
-- `API_URL` : URL de l'API backend
-- `PORT` : Port sur lequel l'application SSR écoute (par défaut: 3000)
+- `API_URL`: Backend API URL
+- `PORT`: Port the SSR application listens on (default: 3000)
 
-### Exécution des conteneurs
+### Running Containers
 
-#### API Backend
+#### Backend API
 
 ```bash
 docker run -p 3000:3000 \
@@ -342,13 +342,13 @@ docker run -p 3000:3000 \
   lonestone/api
 ```
 
-#### Application SPA
+#### SPA Application
 
 ```bash
 docker run -p 80:80 lonestone/web-spa
 ```
 
-Pour remplacer des variables d'environnement au runtime (si nécessaire) :
+To override environment variables at runtime (if needed):
 
 ```bash
 docker run -p 80:80 \
@@ -356,7 +356,7 @@ docker run -p 80:80 \
   lonestone/web-spa
 ```
 
-#### Application SSR
+#### SSR Application
 
 ```bash
 docker run -p 3000:3000 \
@@ -364,24 +364,24 @@ docker run -p 3000:3000 \
   lonestone/web-ssr
 ```
 
-## Développement local
+## Local Development
 
-Pour le développement local, utilisez pnpm :
+For local development, use pnpm:
 
 ```bash
-# Installation des dépendances
+# Install dependencies
 pnpm install
 
-# Démarrage de l'API en mode développement
+# Start API in development mode
 pnpm --filter api dev
 
-# Démarrage de la SPA en mode développement
+# Start SPA in development mode
 pnpm --filter web-spa dev
 
-# Démarrage de l'application SSR en mode développement
+# Start SSR application in development mode
 pnpm --filter web-ssr dev
 ```
 
-## Déploiement avec Docker Compose
+## Deployment with Docker Compose
 
-Un exemple de configuration Docker Compose est disponible dans le fichier `docker-compose.yml` à la racine du projet.
+An example Docker Compose configuration is available in the `docker-compose.yml` file at the project root.
