@@ -52,7 +52,6 @@
     "zod-openapi": "^4.2.3"
   },
   "devDependencies": {
-    "@lonestone/schematics": "workspace:*",
     "@nestjs/schematics": "^10.2.3",
     "@nestjs/testing": "^10.4.15",
     "@types/express": "^4.17.21",

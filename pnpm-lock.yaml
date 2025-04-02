@@ -128,9 +128,6 @@ importers:
         specifier: ^4.2.3
         version: 4.2.3(zod@3.24.2)
     devDependencies:
-      '@lonestone/schematics':
-        specifier: workspace:*
-        version: file:packages/schematics(@nestjs/common@10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2))(chokidar@3.6.0)(reflect-metadata@0.2.2)(typescript@5.4.5)
       '@nestjs/schematics':
         specifier: ^10.2.3
         version: 10.2.3(chokidar@3.6.0)(typescript@5.4.5)
@@ -1233,9 +1230,6 @@ packages:
   '@lonestone/nzoth@0.1.0':
     resolution: {integrity: sha512-luC7NW9F1ToYrS+qBGJCds333ViOBsPNJPMXzV8a+LGeKT1XJN8hqodjIRDpsbzpFF5wBGQibmvbi4RIUdNNOA==}
     engines: {node: '>=20.0.0'}
-
-  '@lonestone/schematics@file:packages/schematics':
-    resolution: {directory: packages/schematics, type: directory}
 
   '@lukeed/csprng@1.1.0':
     resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
@@ -7736,20 +7730,6 @@ snapshots:
       - openapi3-ts
       - reflect-metadata
 
-  '@lonestone/schematics@file:packages/schematics(@nestjs/common@10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2))(chokidar@3.6.0)(reflect-metadata@0.2.2)(typescript@5.4.5)':
-    dependencies:
-      '@angular-devkit/core': 17.3.11(chokidar@3.6.0)
-      '@angular-devkit/schematics': 17.3.11(chokidar@3.6.0)
-      '@nestjs/mapped-types': 2.1.0(@nestjs/common@10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)
-      '@nestjs/schematics': 10.2.3(chokidar@3.6.0)(typescript@5.4.5)
-    transitivePeerDependencies:
-      - '@nestjs/common'
-      - chokidar
-      - class-transformer
-      - class-validator
-      - reflect-metadata
-      - typescript
-
   '@lukeed/csprng@1.1.0': {}
 
   '@microsoft/tsdoc@0.15.1': {}
@@ -7975,11 +7955,6 @@ snapshots:
   '@nestjs/mapped-types@2.0.6(@nestjs/common@11.0.12(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)':
     dependencies:
       '@nestjs/common': 11.0.12(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      reflect-metadata: 0.2.2
-
-  '@nestjs/mapped-types@2.1.0(@nestjs/common@10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)':
-    dependencies:
-      '@nestjs/common': 10.4.15(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
 
   '@nestjs/mapped-types@2.1.0(@nestjs/common@11.0.12(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)':
