@@ -2,31 +2,30 @@
 FROM node:22.14-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+# Use pnpm version according to our package.json, if not the pnpm store will not be in synced later on, resulting in errors
+RUN corepack enable && corepack prepare pnpm@10.5.0 --activate
 WORKDIR /app
 
 # Stage 2: Production dependencies
 FROM base AS prod-deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-COPY apps/api/package.json ./apps/api/package.json
-
-# COPY PACKAGES DEPENDANCIES
-# COPY packages/*/package.json ./packages/*/package.json
-
+# pnpm fetch does require only lockfile
+COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 RUN pnpm fetch --prod
 
 # Stage 3: Build
 FROM base AS builder
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-COPY apps/api/package.json ./apps/api/package.json
-
+# pnpm fetch does require only lockfile
+COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 RUN pnpm fetch
 
-# COPY PACKAGES DEPENDANCIES
-# COPY packages ./packages
-COPY apps/api ./apps/api
+# Copy source after fetch
+COPY . .
+RUN pnpm install -r --offline --prefer-offline
 
-RUN pnpm build
+RUN pnpm --filter {apps/api}... build
+
+# Create a deploy folder with only the required deps
+# This respects gitignore in /apps/api, so remember to include your dist folder in the "files" section of your package.json
 RUN pnpm deploy --filter="./apps/api" --prod /app/api
 
 # Stage 4: Production (Final image)

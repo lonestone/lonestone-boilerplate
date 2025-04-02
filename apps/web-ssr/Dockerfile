@@ -1,45 +1,40 @@
+# Stage 1: base
 FROM node:22.14-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+# Use pnpm version according to our package.json, if not the pnpm store will not be in synced later on, resulting in errors
+RUN corepack enable && corepack prepare pnpm@10.5.0 --activate
 WORKDIR /app
 
+# Stage 2: Production dependencies
 FROM base AS prod-deps
-
-WORKDIR /app
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-COPY apps/web-ssr/package.json ./apps/web-ssr/package.json
-COPY packages/ui/package.json ./packages/ui/package.json
-COPY packages/openapi-generator/package.json ./packages/openapi-generator/package.json
-
+# pnpm fetch does require only lockfile
+COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 RUN pnpm fetch --prod
 
-# 🔹 Stage 2: Build
+# Stage 3: Build
 FROM base AS builder
-
-WORKDIR /app
 
 # Define build arguments
 ARG API_URL
 ENV API_URL=${API_URL}
 
-# Copy project files (without node_modules)
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.json tsconfig.base.json ./
-COPY apps/web-ssr/package.json ./apps/web-ssr/package.json
-COPY packages/ui/package.json ./packages/ui/package.json
-COPY packages/openapi-generator/package.json ./packages/openapi-generator/package.json
-
+# pnpm fetch does require only lockfile
+COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 RUN pnpm fetch
 
-COPY packages/ui ./packages/ui
-COPY packages/openapi-generator ./packages/openapi-generator
-COPY apps/web-ssr ./apps/web-ssr
+# Copy source after fetch
+COPY . .
+RUN pnpm install -r --offline --prefer-offline
 
-# Build packages and SSR application
-RUN pnpm build
+# Build web-ssr and its dependencies
+RUN pnpm --filter {apps/web-ssr}... build
+
+# Create a deploy folder with only the required deps
+# This respects gitignore in /apps/web-ssr, so remember to include your dist folder in the "files" section of your package.json
 RUN pnpm deploy --filter="./apps/web-ssr" --prod /prop/web-ssr
 
-# 🔹 Stage 3: Production (Final image)
+# Stage 4: Production (Final image)
 FROM base AS runner
 
 WORKDIR /app
