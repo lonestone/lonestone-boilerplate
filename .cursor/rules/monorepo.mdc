@@ -1,7 +1,7 @@
 ---
-description: global rules for manage monorepo, dependancies, etc
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Rules
 - use pnpm
@@ -11,3 +11,6 @@ alwaysApply: false
 - `apps/web-spa` : frontend SPA (React/Vite)
 - `apps/web-ssr` : frontend SSR
 - `packages/` : Shared packages
+- `packages/ui` : UI library package (using shadcn and Tailwind)
+- `packages/openapi-generator` : generated client library, containing types, schemas, sdks
+
