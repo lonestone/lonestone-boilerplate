@@ -3,6 +3,9 @@
     "dbaeumer.vscode-eslint",
     "lokalise.i18n-ally",
     "bierner.markdown-mermaid",
-    "bradlc.vscode-tailwindcss"
+    "bradlc.vscode-tailwindcss",
+    "nize.oklch-preview",
+    "bierner.color-info",
+    "phoenisx.cssvar"
   ]
 }
