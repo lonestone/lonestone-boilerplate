@@ -1,20 +1,20 @@
 # API Backend
 
-Cette API est construite avec NestJS et sert de backend pour les applications frontend.
-[Guidelines API](../docs/api-guidelines.md)
+This API is built with NestJS and serves as the backend for frontend applications.
+[API Guidelines](../docs/api-guidelines.md)
 
-## Variables d'environnement
+## Environment Variables
 
-| Variable | Description | Obligatoire | Défaut |
-|----------|-------------|-------------|--------|
-| `DATABASE_PORT` | Port de connexion à la base de données | Oui | - |
-| `DATABASE_HOST` | Host de connexion à la base de données | Oui | - |
-| `DATABASE_USER` | Utilisateur de connexion à la base de données | Oui | - |
-| `DATABASE_PASSWORD` | Mot de passe de connexion à la base de données | Oui | - |
-| `DATABASE_NAME` | Nom de la base de données | Oui | - |
-| `API_PORT` | Port sur lequel l'API écoute | Non | `3000` |
-| `BETTER_AUTH_SECRET` | Clé secrète pour les JWT | Oui | - |
-| `NODE_ENV` | Environnement (development, production) | Non | `production` |
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `DATABASE_PORT` | Database connection port | Yes | - |
+| `DATABASE_HOST` | Database connection host | Yes | - |
+| `DATABASE_USER` | Database connection user | Yes | - |
+| `DATABASE_PASSWORD` | Database connection password | Yes | - |
+| `DATABASE_NAME` | Database name | Yes | - |
+| `API_PORT` | Port on which the API listens | No | `3000` |
+| `BETTER_AUTH_SECRET` | Secret key for JWTs | Yes | - |
+| `NODE_ENV` | Environment (development, production) | No | `production` |
 
 ```env
 DATABASE_PORT=5432
@@ -28,16 +28,16 @@ API_PORT=3000
 NODE_ENV=production
 ```
 
-## Construction avec Docker
+## Building with Docker
 
-### Construction de l'image
+### Building the Image
 
 ```bash
-# À la racine du projet
+# At the project root
 docker build -t lonestone/api -f apps/api/Dockerfile .
 ```
 
-### Exécution du conteneur
+### Running the Container
 
 ```bash
 docker run -p 3000:3000 \
@@ -51,9 +51,9 @@ docker run -p 3000:3000 \
   lonestone/api
 ```
 
-### Exécution avec migrations (si applicable)
+### Running with Migrations (if applicable)
 
-Si vous utilisez des migrations de base de données, vous pouvez les exécuter au démarrage du conteneur en décommentant la ligne appropriée dans le Dockerfile ou en utilisant une commande personnalisée :
+If you use database migrations, you can run them when starting the container by uncommenting the appropriate line in the Dockerfile or using a custom command:
 
 ```bash
 docker run -p 3000:3000 \
@@ -67,17 +67,17 @@ docker run -p 3000:3000 \
   lonestone/api sh -c "pnpm migration:run && node dist/main.js"
 ```
 
-## Développement local
+## Local Development
 
-Pour le développement local :
+For local development:
 
 ```bash
-# À la racine du projet
+# At the project root
 pnpm install
 pnpm --filter api dev
 ```
 
-Vous pouvez définir les variables d'environnement locales en créant un fichier `.env` dans le répertoire `apps/api` :
+You can set local environment variables by creating a `.env` file in the `apps/api` directory:
 
 ```
 DATABASE_PASSWORD=password
@@ -92,7 +92,7 @@ NODE_ENV=development
 
 ## Architecture
 
-L'API est organisée en modules suivant l'architecture modulaire de NestJS :
+The API is organized into modules following NestJS's modular architecture:
 
 ### Modules
 - [Auth](./src/modules/auth/README.md)
@@ -108,7 +108,7 @@ pnpm install
 
 ## Configuration
 
-Créez un fichier `.env` à la racine du projet avec les variables suivantes :
+Create a `.env` file at the project root with the following variables:
 
 ```env
 NODE_ENV=development
@@ -121,10 +121,10 @@ DATABASE_HOST=localhost
 DATABASE_PORT=5432
 ```
 
-## Démarrage
+## Getting Started
 
 ```bash
-# Développement
+# Development
 pnpm run dev
 
 # Production
@@ -132,20 +132,20 @@ pnpm run build
 node dist/main.js
 ```
 
-## Base de données
+## Database
 
 ```bash
-# Générer une migration
+# Generate a migration
 pnpm run migration:create
 
-# Exécuter les migrations
+# Run migrations
 pnpm run migration:up
 
-# Annuler la dernière migration
+# Rollback last migration
 pnpm run migration:down
 ```
 
-## Générer un module
+## Generate a Module
 
 To create a new module, you can use the following command at root of monorepo:
 
@@ -163,11 +163,11 @@ It's generated with the following files:
 
 ## Stack
 
-Parmis les plus importantes :
-- [NestJS](https://github.com/nestjs/nest) en tant que framework backend ;
-- [MikroORM](https://mikro-orm.io/) en tant qu'ORM ;
-- [better-auth](https://www.better-auth.com/docs) en tant que module d'authentification ;
-- [Zod](https://zod.dev/) pour la validation des données en entrée et en sortie de l'API ;
-- [ESLint](https://eslint.org/) pour formater le code et mettre en place différentes règles de syntaxes
-- La configuration ESLint de [Antfu](https://github.com/antfu/eslint-config) comme base
-- [DotEnv](https://github.com/motdotla/dotenv) pour gérer les fichiers de configuration (.env) quel que soit l'OS
+Among the most important:
+- [NestJS](https://github.com/nestjs/nest) as the backend framework
+- [MikroORM](https://mikro-orm.io/) as the ORM
+- [better-auth](https://www.better-auth.com/docs) as the authentication module
+- [Zod](https://zod.dev/) for input and output API data validation
+- [ESLint](https://eslint.org/) for code formatting and implementing various syntax rules
+- [Antfu](https://github.com/antfu/eslint-config)'s ESLint configuration as a base
+- [DotEnv](https://github.com/motdotla/dotenv) to manage configuration files (.env) regardless of OS

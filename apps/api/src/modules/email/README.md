@@ -1,22 +1,22 @@
-# Module d'email
+# Email Module
 
-Ce module gère l'envoi d'emails dans l'application.
+This module handles email sending in the application.
 
-## Technologies utilisées
+## Technologies Used
 
-- [nodemailer](https://nodemailer.com/about/) - Service d'envoi d'emails
+- [nodemailer](https://nodemailer.com/about/) - Email sending service
 
-## Fonctionnalités
+## Features
 
-- Service d'envoi d'emails
-- Support pour les emails transactionnels
-- Logging des emails envoyés
+- Email sending service
+- Support for transactional emails
+- Email logging
 
 ## Configuration
 
-Actuellement, le module est configuré pour logger les emails plutôt que de les envoyer réellement. Ceci est utile pour le développement et les tests.
+Currently, the module is configured to log emails rather than actually sending them. This is useful for development and testing.
 
-## Interface d'envoi
+## Sending Interface
 
 ```typescript
 interface EmailOptions {

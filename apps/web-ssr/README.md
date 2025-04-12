@@ -52,30 +52,30 @@ src/
 ├── lib/           # Utility functions and configurations
 ```
 
-# Application SSR (Server-Side Rendering)
+# SSR (Server-Side Rendering) Application
 
-Cette application utilise le rendu côté serveur (SSR) pour améliorer les performances et le SEO.
+This application uses server-side rendering (SSR) to improve performance and SEO.
 
-## Variables d'environnement
+## Environment Variables
 
-Contrairement à une SPA, une application SSR peut utiliser des variables d'environnement au runtime, car le rendu se fait côté serveur.
+Unlike a SPA, an SSR application can use environment variables at runtime because rendering is done on the server side.
 
-| Variable | Description | Obligatoire | Défaut |
-|----------|-------------|-------------|--------|
-| `API_URL` | URL de l'API backend | Oui | - |
-| `PORT` | Port sur lequel l'application SSR écoute | Non | `3000` |
-| `NODE_ENV` | Environnement (development, production) | Non | `production` |
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `API_URL` | Backend API URL | Yes | - |
+| `PORT` | Port on which the SSR application listens | No | `3000` |
+| `NODE_ENV` | Environment (development, production) | No | `production` |
 
-## Construction avec Docker
+## Building with Docker
 
-### Construction de l'image
+### Building the Image
 
 ```bash
-# À la racine du projet
+# At the project root
 docker build -t lonestone/web-ssr -f apps/web-ssr/Dockerfile .
 ```
 
-### Exécution du conteneur
+### Running the Container
 
 ```bash
 docker run -p 3000:3000 \
@@ -85,17 +85,17 @@ docker run -p 3000:3000 \
   lonestone/web-ssr
 ```
 
-## Développement local
+## Local Development
 
-Pour le développement local :
+For local development:
 
 ```bash
-# À la racine du projet
+# At the project root
 pnpm install
 pnpm --filter web-ssr dev
 ```
 
-Vous pouvez définir les variables d'environnement locales en créant un fichier `.env` dans le répertoire `apps/web-ssr` :
+You can set local environment variables by creating a `.env` file in the `apps/web-ssr` directory:
 
 ```
 API_URL=http://localhost:3000
@@ -103,14 +103,14 @@ PORT=3001
 NODE_ENV=development
 ```
 
-## Différences entre SSR et SPA
+## Differences between SSR and SPA
 
-### Avantages du SSR
+### Advantages of SSR
 
-- Meilleur SEO car les moteurs de recherche voient le contenu complet
-- Temps de chargement initial plus rapide
-- Meilleure performance sur les appareils à faible puissance
+- Better SEO as search engines see the complete content
+- Faster initial loading time
+- Better performance on low-power devices
 
-### Gestion des variables d'environnement
+### Environment Variables Management
 
-Contrairement à une SPA où les variables d'environnement doivent être définies au moment du build, une application SSR peut utiliser des variables d'environnement au runtime, ce qui facilite le déploiement dans différents environnements sans reconstruire l'image.
+Unlike a SPA where environment variables must be defined at build time, an SSR application can use environment variables at runtime, which makes it easier to deploy in different environments without rebuilding the image.

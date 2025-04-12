@@ -1,17 +1,17 @@
-# Module de base de données
+# Database Module
 
-Ce module gère la connexion et les interactions avec la base de données PostgreSQL.
+This module handles the connection and interactions with the PostgreSQL database.
 
-## Technologies utilisées
+## Technologies Used
 
-- **MikroORM** - ORM pour PostgreSQL
-- **PostgreSQL** - Base de données relationnelle
+- **MikroORM** - ORM for PostgreSQL
+- **PostgreSQL** - Relational database
 
-## Fonctionnalités
+## Features
 
-- Configuration de la connexion à la base de données
-- Gestion des migrations
-- Gestion des seeds
-- Gestion des entités et relations
-- Support des transactions
-- Logging en mode développement
+- Database connection configuration
+- Migration management
+- Seed management
+- Entity and relationship management
+- Transaction support
+- Development mode logging

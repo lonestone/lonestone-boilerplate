@@ -1,41 +1,41 @@
-# Application SPA (Single Page Application)
+# SPA (Single Page Application)
 
-Cette application est une SPA (Single Page Application) construite avec React et Vite.
+This application is a SPA (Single Page Application) built with React and Vite.
 
-## Variables d'environnement
+## Environment Variables
 
-### Gestion des variables d'environnement dans une SPA
+### Environment Variables Management in a SPA
 
-Dans une SPA, les variables d'environnement doivent être définies au moment du build car elles sont intégrées dans le bundle JavaScript. Cela signifie que vous ne pouvez pas simplement changer ces variables après le build sans reconstruire l'application.
+In a SPA, environment variables must be defined at build time as they are integrated into the JavaScript bundle. This means you cannot simply change these variables after the build without rebuilding the application.
 
-### Variables d'environnement disponibles
+### Available Environment Variables
 
-| Variable | Description | Obligatoire | Défaut |
-|----------|-------------|-------------|--------|
-| `VITE_API_URL` | URL de l'API backend | Oui | - |
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `VITE_API_URL` | Backend API URL | Yes | - |
 
-> **Note**: Toutes les variables d'environnement utilisées dans l'application doivent commencer par `VITE_` pour être accessibles dans le code client.
+> **Note**: All environment variables used in the application must start with `VITE_` to be accessible in the client code.
 
-## Construction avec Docker
+## Building with Docker
 
-### Construction de l'image
+### Building the Image
 
 ```bash
-# À la racine du projet
+# At the project root
 docker build -t lonestone/web-spa \
   --build-arg VITE_API_URL=https://api.example.com \
   -f apps/web-spa/Dockerfile .
 ```
 
-### Exécution du conteneur
+### Running the Container
 
 ```bash
 docker run -p 80:80 lonestone/web-spa
 ```
 
-### Remplacement des variables au runtime
+### Runtime Variable Replacement
 
-Si vous avez besoin de remplacer certaines variables d'environnement sans reconstruire l'image, vous pouvez utiliser le mécanisme de remplacement au runtime :
+If you need to replace certain environment variables without rebuilding the image, you can use the runtime replacement mechanism:
 
 ```bash
 docker run -p 80:80 \
@@ -43,29 +43,29 @@ docker run -p 80:80 \
   lonestone/web-spa
 ```
 
-> **Important**: Ce mécanisme fonctionne en recherchant des placeholders comme `%VITE_API_URL%` dans les fichiers JavaScript et en les remplaçant par les valeurs fournies. Pour que cela fonctionne, votre code doit utiliser ces placeholders.
+> **Important**: This mechanism works by searching for placeholders like `%VITE_API_URL%` in JavaScript files and replacing them with the provided values. For this to work, your code must use these placeholders.
 
-Exemple d'utilisation dans le code :
+Example usage in code:
 
 ```typescript
-// Utilisation directe (sera remplacé au runtime)
+// Direct usage (will be replaced at runtime)
 const apiUrl = '%VITE_API_URL%'
 
-// Ou avec une valeur par défaut
+// Or with a default value
 const apiUrl = '%VITE_API_URL%' || 'https://api.default.com'
 ```
 
-## Développement local
+## Local Development
 
-Pour le développement local :
+For local development:
 
 ```bash
-# À la racine du projet
+# At the project root
 pnpm install
 pnpm --filter web-spa dev
 ```
 
-Vous pouvez définir les variables d'environnement locales en créant un fichier `.env.local` dans le répertoire `apps/web-spa` :
+You can set local environment variables by creating a `.env.local` file in the `apps/web-spa` directory:
 
 ```
 VITE_API_URL=http://localhost:3000
