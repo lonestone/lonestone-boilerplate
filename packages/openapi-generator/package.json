@@ -4,7 +4,7 @@
   "private": true,
   "main": "./index.ts",
   "scripts": {
-    "dev": "wait-on http://localhost:3000/docs-json && pnpm generate --watch",
+    "dev": "wait-on http://localhost:${API_PORT}/docs-json && pnpm generate --watch",
     "generate": "openapi-ts -f ./openapi-ts.config.ts"
   },
   "dependencies": {
