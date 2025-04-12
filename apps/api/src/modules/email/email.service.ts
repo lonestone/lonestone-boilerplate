@@ -11,9 +11,9 @@ export class EmailService {
     subject: string
     content: string
   }): Promise<void> {
-    // Pour l'instant, on va juste logger les emails
+    // For now we are just logging the emails
     // eslint-disable-next-line no-console
-    console.log('Email envoyé :', {
+    console.log('Email sent:', {
       to,
       subject,
       content,

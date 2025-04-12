@@ -1,25 +1,25 @@
-# Module d'authentification
+# Authentication Module
 
-Ce module gère l'authentification et l'autorisation des utilisateurs dans l'application.
+This module handles user authentication and authorization in the application.
 
-/!\ Warning : Le middleware est configuré pour les routes commençant par `/auth/*`
+/!\ Warning: The middleware is configured for routes starting with `/auth/*`
 
-## Technologies utilisées
+## Technologies Used
 
-- [better-auth](https://www.better-auth.com/docs) - Bibliothèque d'authentification
+- [better-auth](https://www.better-auth.com/docs) - Authentication library
 
-## Fonctionnalités
+## Features
 
-- Gestion des sessions utilisateurs
-- Gestion des comptes utilisateurs
-- Système de vérification d'email
-- Middleware d'authentification
-- Guards pour la protection des routes
-- Hooks pour les événements d'authentification
+- User session management
+- User account management
+- Email verification system
+- Authentication middleware
+- Route protection guards
+- Authentication event hooks
 
-## Entités
+## Entities
 
-- `User` - Informations de l'utilisateur
-- `Session` - Sessions actives
-- `Account` - Comptes liés aux utilisateurs
-- `Verification` - Vérifications (email, etc.)
+- `User` - User information
+- `Session` - Active sessions
+- `Account` - User-linked accounts
+- `Verification` - Verifications (email, etc.)

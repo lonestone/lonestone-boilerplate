@@ -73,8 +73,8 @@ export class PostService {
     if (!latestVersion)
       throw new Error('No version found')
 
-    // On crée une nouvelle version seulement si le post est publié et que la dernière version
-    // a été créée avant la publication
+    // We create a new version only if the post is published and the last version
+    // was created before the publication
     const shouldCreateNewVersion
       = post.publishedAt && post.publishedAt < latestVersion.createdAt
 
@@ -86,7 +86,7 @@ export class PostService {
       await this.em.persistAndFlush(version)
     }
     else {
-      // Sinon on met à jour la dernière version
+      // Otherwise we update the last version
       if (data.title)
         latestVersion.title = data.title
       if (data.content)
@@ -145,7 +145,7 @@ export class PostService {
       throw new Error('No version found')
 
     const now = new Date()
-    // On vérifie que la dernière version est antérieure à la date de publication
+    // We check that the last version is older than the publication date
     if (latestVersion.createdAt > now) {
       throw new Error(
         'Cannot publish: latest version is newer than publication date',
@@ -320,7 +320,7 @@ export class PostService {
   }
 
   async getPublicPost(slug: string): Promise<PublicPost> {
-    // Récupérer le post publié avec son auteur
+    // Get the published post with its author
     const post = await this.em.findOne(
       Post,
       { slug, publishedAt: { $ne: null } },
@@ -332,7 +332,7 @@ export class PostService {
     if (!post)
       throw new Error('Post not found')
 
-    // Récupérer la dernière version antérieure à la date de publication
+    // Get the last version before the publication date
     const latestVersion = await this.em.findOne(
       PostVersion,
       {
@@ -352,7 +352,7 @@ export class PostService {
       post: post.id,
     })
 
-    // Retourner le format public
+    // Return the public format
     return {
       publishedAt: post.publishedAt!,
       title: latestVersion.title,
@@ -391,21 +391,21 @@ export class PostService {
     sort?: PostSorting,
     filter?: PostFiltering,
   ): Promise<PublicPosts> {
-    // Construire la requête de base pour les posts publiés
+    // Build the base query for published posts
     const where: FilterQuery<Post> = { publishedAt: { $ne: null } }
     const orderBy: Record<string, 'ASC' | 'DESC'> = { publishedAt: 'DESC' }
 
-    // Appliquer les filtres si présents
+    // Apply the filters if present
     if (filter?.length) {
       filter.forEach((item) => {
         if (item.property === 'title') {
-          // Pour le filtre sur le titre, on doit passer par les versions
+          // For the title filter, we must pass through the versions
           where.versions = { title: { $like: `%${item.value}%` } }
         }
       })
     }
 
-    // Appliquer le tri
+    // Apply the sorting if present
     if (sort?.length) {
       sort.forEach((sortItem) => {
         if (sortItem.property !== 'title') {
@@ -416,7 +416,7 @@ export class PostService {
       })
     }
 
-    // Récupérer les posts avec pagination
+    // Get the posts with pagination
     const [posts, total] = await this.em.findAndCount(Post, where, {
       populate: ['user'],
       orderBy,
@@ -424,10 +424,10 @@ export class PostService {
       offset: pagination.offset,
     })
 
-    // Récupérer les dernières versions valides pour tous les posts en une seule requête
+    // Get the last valid versions for all posts in a single query
     const postIds = posts.map(p => p.id)
 
-    // D'abord, récupérer toutes les versions pour ces posts
+    // First, get all versions for these posts
     const allVersions = await this.em.find(
       PostVersion,
       { post: { $in: postIds } },
@@ -436,7 +436,7 @@ export class PostService {
       },
     )
 
-    // Organiser les versions par post
+    // Organize the versions by post
     const versionsByPost = new Map<string, PostVersion[]>()
     allVersions.forEach((version) => {
       const postId = version.post.id
@@ -456,20 +456,20 @@ export class PostService {
       commentCountByPostId.set(post.id, commentCounts[index])
     })
 
-    // Construire la réponse
+    // Build the response
     const data = posts.map((post) => {
-      // Trouver la dernière version valide pour ce post
+      // Find the last valid version for this post
       const versions = versionsByPost.get(post.id) || []
       const validVersions = versions.filter(
         v => v.createdAt <= post.publishedAt!,
       )
-      const latestVersion = validVersions[0] // Déjà triées par date décroissante
+      const latestVersion = validVersions[0] // Already sorted by date descending
 
       if (!latestVersion) {
         throw new Error(`No valid version found for post ${post.id}`)
       }
 
-      // Trouver un aperçu du contenu (premier élément de type texte)
+      // Find a content preview (first text element)
       const contentPreview = latestVersion.content?.find(
         c => c.type === 'text',
       ) || {
