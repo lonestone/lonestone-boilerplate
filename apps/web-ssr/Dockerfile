@@ -6,13 +6,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@10.5.0 --activate
 WORKDIR /app
 
-# Stage 2: Production dependencies
-FROM base AS prod-deps
-# pnpm fetch does require only lockfile
-COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-RUN pnpm fetch --prod
-
-# Stage 3: Build
+# Stage 2: Installing deps, building and deploying
 FROM base AS builder
 
 # Define build arguments
@@ -34,7 +28,7 @@ RUN pnpm --filter {apps/web-ssr}... build
 # This respects gitignore in /apps/web-ssr, so remember to include your dist folder in the "files" section of your package.json
 RUN pnpm deploy --filter="./apps/web-ssr" --prod /prop/web-ssr
 
-# Stage 4: Production (Final image)
+# Stage 3: Production (Final image)
 FROM base AS runner
 
 WORKDIR /app

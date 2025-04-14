@@ -6,13 +6,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@10.5.0 --activate
 WORKDIR /app
 
-# Stage 2: Production dependencies
-FROM base AS prod-deps
-# pnpm fetch does require only lockfile
-COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-RUN pnpm fetch --prod
-
-# Stage 3: Build
+# Stage 2: Installing deps, building and deploying
 FROM base AS builder
 # pnpm fetch does require only lockfile
 COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
@@ -36,7 +30,7 @@ WORKDIR /app
 # Set environment
 ENV NODE_ENV=production
 
-COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=builder /app/api/node_modules ./node_modules
 COPY --from=builder /app/api/dist ./dist
 COPY --from=builder /app/api/package.json ./package.json
 
