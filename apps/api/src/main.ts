@@ -1,10 +1,10 @@
-import { addSchemasToSwagger } from '@lonestone/nzoth/server'
+import { addSchemasToSwagger, ZodSerializationExceptionFilter, ZodValidationExceptionFilter } from '@lonestone/nzoth/server'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import * as dotenv from 'dotenv'
 // import { addSchemasToSwagger } from "@lonestone/nzoth/server";
 import * as express from 'express'
-import { Logger } from 'nestjs-pino'
+import { Logger, LoggerErrorInterceptor } from 'nestjs-pino'
 import { AppModule } from './app.module'
 import { config } from './config/env.config'
 
@@ -21,6 +21,16 @@ async function bootstrap() {
 
   // Use Pino logger
   app.useLogger(app.get(Logger))
+
+  // Adding error details to the logs
+  // https://github.com/iamolegga/nestjs-pino?tab=readme-ov-file#expose-stack-trace-and-error-class-in-err-property
+  app.useGlobalInterceptors(new LoggerErrorInterceptor())
+
+  // Registering custom exception filter for the Nzoth package
+  app.useGlobalFilters(
+    new ZodValidationExceptionFilter(),
+    new ZodSerializationExceptionFilter(),
+  )
 
   // Conditional middleware for better auth
   app.use(
