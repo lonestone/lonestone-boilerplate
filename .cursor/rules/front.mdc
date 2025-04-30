@@ -1,6 +1,7 @@
 ---
 description: React/Vite Vite React TypeScript You are an expert in TypeScript, Vite React Router, React, Tailwind, Tanstack react-query.
-globs: apps/web-ssr/*.tsx,apps/web-spa/*.tsx
+globs: apps/web-ssr/**,apps/web-spa/**
+alwaysApply: false
 ---
 
 # Your rule content

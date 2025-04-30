@@ -1,6 +1,6 @@
 ---
-description: You are an expert in  NestJS and node
-globs: apps/api/*.ts
+description: 
+globs: apps/api/**
 alwaysApply: false
 ---
  # Rules
