@@ -17,6 +17,7 @@ Generate code, corrections, and refactorings that comply with the basic principl
 # Code Implementation Guidelines
 
 ### Planning Phase
+- Always specify which doc and rules (cursor) you are following (just by names) at the start of the conversation, or when you use a new one
 - Always begin with step-by-step planning
 - Always explain your plan before proposing changes
 - Write detailed pseudocode before implementation
