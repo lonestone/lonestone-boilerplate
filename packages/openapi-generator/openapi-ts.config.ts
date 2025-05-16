@@ -3,7 +3,7 @@ import { defineConfig } from '@hey-api/openapi-ts'
 
 export default defineConfig({
   input:
-    `http://localhost:${process.env.API_PORT}/docs-json`,
+    `${process.env.API_URL}/docs-json`,
   output: {
     format: 'prettier',
     lint: 'eslint',

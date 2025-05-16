@@ -1,17 +1,12 @@
 import { addSchemasToSwagger, ZodSerializationExceptionFilter, ZodValidationExceptionFilter } from '@lonestone/nzoth/server'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
-import * as dotenv from 'dotenv'
-// import { addSchemasToSwagger } from "@lonestone/nzoth/server";
 import * as express from 'express'
 import { Logger, LoggerErrorInterceptor } from 'nestjs-pino'
 import { AppModule } from './app.module'
 import { config } from './config/env.config'
 
-dotenv.config()
-
 const PREFIX = '/api'
-const PORT = process.env.API_PORT || 3000
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -92,7 +87,7 @@ async function bootstrap() {
   })
 
   app.enableShutdownHooks()
-  await app.listen(PORT)
+  await app.listen(config.apiPort)
 }
 
 bootstrap()

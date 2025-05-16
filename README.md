@@ -57,6 +57,7 @@ This project uses a "monorepo" architecture. The advantages are numerous, but pr
 - [Docker](https://www.docker.com/) - Containerization platform
 - [PostgreSQL](https://www.postgresql.org/) - Relational database management system
 - [MinIO](https://min.io/) - S3-compatible object storage
+- [DotenvX](https://dotenvx.com/) - Environment variables management
 
 ## 📁 Project Structure
 
@@ -68,11 +69,10 @@ lonestone/
 │   └── web-ssr/           # Web SSR application (React)
 ├── packages/              # Shared packages
 │   ├── ui/                # Reusable UI components (shadcn/ui)
-│   ├── validations/       # Shared validation schemas
 │   ├── openapi-generator/ # OpenAPI client generator
-│   └── eslint-config/    # Shared ESLint configuration
+│   └── schematics/        # Schematics used to generate code in API
 ├── docs/                  # Project documentation
-└── .github/              # GitHub Actions workflows
+└── .github/               # GitHub Actions workflows
 ```
 
 ## 📋 Prerequisites
@@ -107,12 +107,19 @@ pnpm install
 
 4. Configure environment variables
 
-We use a single `.env` file at the project root for all applications.
-This eliminates the need to configure each application individually.
+The `.env` file at the project's root is used by docker (docker compose).
+
+Each app then has its own `.env` file in its corresponding subfolder.
 
 ```bash
-cp .env.test .env
+cp .env.example .env
+cp apps/api/.env.example apps/api/.env
+cp apps/web-spa/.env.example apps/web-spa/.env
+cp apps/web-ssr/.env.example apps/web-ssr/.env
+cp packages/openapi-generator/.env.example packages/openapi-generator/.env
 ```
+
+⚠️ In most of those `.env` files, the API url and port are used. Remember to update all the files to match your API url and port.
 
 5. Start Docker services:
 
@@ -120,35 +127,9 @@ cp .env.test .env
 pnpm docker:up db
 ```
 
-6. If migrations are in place
+6. Run migrations or set up your schema by following the instructions in the [API README](apps/api/README.md).
 
-Drop the DB and perform database migrations without seeding:
-
-```bash
-pnpm with-env --filter=api db:migrate:fresh # Drop the database and migrate up to the latest version
-```
-
-Or migration + seed
-
-```bash
-pnpm with-env --filter=api db:migrate:seed # Same but run seeders afterwards
-```
-
-7. During development, or if migrations are not yet in place
-
-Reset your db
-
-```bash
-pnpm with-env --filter=api db:fresh # Drop the database and re-create from your entity files
-```
-
-Reset + seed
-
-```bash
-pnpm with-env --filter=api db:seed # Same but run seeders afterwards
-```
-
-8. Start applications in development mode:
+7. Start applications in development mode:
 
 ```bash
 pnpm dev
@@ -174,71 +155,43 @@ The project uses Docker Compose to provide the following services:
 - **Start development**: `pnpm dev`
 - **Build applications**: `pnpm build`
 - **Lint applications**: `pnpm lint`
-- **Generate OpenAPI clients**: `pnpm with-env generate`
+- **Generate OpenAPI clients**: `pnpm generate`
 
 ### Database (API)
 
-- **Create migration**: `pnpm with-env --filter=api db:migration:create`
-- **Run migrations**: `pnpm with-env --filter=api db:migrate:up`
-- **Rollback last migration**: `pnpm with-env --filter=api db:migrate:down`
-- **Initialize data**: `pnpm with-env --filter=api db:seed`
+- **Create migration**: `pnpm db:migrate:create`
+- **Run migrations**: `pnpm db:migrate:up`
+- **Rollback last migration**: `pnpm db:migrate:down`
+- **Initialize data**: `pnpm db:seed`
 
 ### Tests
 
-- **Run tests**: `pnpm with-env test`
+- **Run tests**: `pnpm test`
 
 ## 💻 Development
 
 ### Applications
 
-#### API (NestJS)
+- The API is built with NestJS and provides a REST API. See the [API README](apps/api/README.md) for more information.
+- The web-spa is built with React and provides a single-page application. See the [Web SPA README](apps/web-spa/README.md) for more information.
+- The web-ssr is built with React and provides a server-side rendered application. See the [Web SSR README](apps/web-ssr/README.md) for more information.
 
-The backend API is built with NestJS and provides server functionality for the Lonestone application.
+You can start each application in development mode with the following commands:
 
 ```bash
-# Start API in development mode
+# Start API in development mode from root folder
 pnpm --filter=api dev
 ```
 
-For more information, see the [API README](apps/api/README.md).
-
-#### Web SPA (React)
-
-The SPA web application is built with React and provides the user interface for the Lonestone application.
-
 ```bash
-# Start web application in development mode
-pnpm --filter=web-spa dev
+# Start API from its own folder
+cd apps/api && pnpm dev
 ```
-
-#### Web SSR (React)
-
-The SSR web application is built with React and provides a server-side rendered version of the user interface.
-
-```bash
-# Start SSR web application in development mode
-pnpm --filter=web-ssr dev
-```
-
-For more information, see the [Web Application README](apps/web-ssr/README.md).
 
 ### Shared Packages
 
-#### UI
-
-Reusable UI components built with shadcn/ui.
-
-#### Validations
-
-Validation schemas shared between frontend and backend.
-
-#### OpenAPI Generator
-
-OpenAPI client generator for frontend-backend communication.
-
-#### ESLint Config
-
-Shared ESLint configuration to maintain code consistency across the monorepo.
+- UI -> Reusable UI components built with shadcn/ui.
+- OpenAPI Generator -> contains the generator plus the generated types, validators and sdk for frontend-backend communication. Imported by the frontend apps.
 
 ## 🔄 Continuous Integration (CI)
 
@@ -260,127 +213,28 @@ For more information, see the [GitHub Workflows README](.github/README.md).
 
 Project documentation is available in the `docs/` folder and in app `README`s. It contains information about architecture, coding conventions, and development guides.
 
+This documentation is also used by our custom cursor rules.
+
 - [Frontend Guidelines](docs/frontend-guidelines.md)
 - [Backend Guidelines](docs/backend-guidelines.md)
 - [API Readme](apps/api/README.md)
 
-# Lonestone Foundation
+## 🚀 Deployment
 
-This monorepo contains several applications that can be built and deployed independently with Docker.
+It's your choice to decide how you want to deploy the applications, your main options being:
 
-## Project Structure
+- Use a PaaS cloud service like Render or Dokploy which will build and host your services
+- Build the applications, via Docker, and publish their image on a registry to be used by Render or other PaaS
+- Use docker-compose (not recommended).
 
-- `apps/api`: Backend API (NestJS)
-- `apps/web-spa`: Frontend SPA application (React/Vite)
-- `apps/web-ssr`: Frontend SSR application
-- `packages/`: Packages shared between applications
+### Building with Docker
 
-## Building with Docker
-
-### Prerequisites
+#### Prerequisites
 
 - Docker installed on your machine
 - Node.js and pnpm for local development
 
-### Building Docker Images
-
-#### Backend API
-
-```bash
-# At project root
-docker build -t lonestone/api -f apps/api/Dockerfile .
-```
-
-Environment variables for API (to be defined in your deployment environment):
-
-- `DATABASE_PASSWORD`: Database password
-- `DATABASE_USER`: Database user
-- `DATABASE_NAME`: Database name
-- `DATABASE_HOST`: Database host
-- `DATABASE_PORT`: Database port
-- `BETTER_AUTH_SECRET`: Secret key for JWTs
-- `API_PORT`: Port the API listens on (default: 3000)
-
-#### SPA (Single Page Application)
-
-```bash
-# At project root
-docker build -t lonestone/web-spa \
-  --build-arg VITE_API_URL=https://api.example.com \
-  -f apps/web-spa/Dockerfile .
-```
-
-Environment variables for SPA (to be defined at build time):
-
-- `VITE_API_URL`: Backend API URL
-
-#### SSR (Server-Side Rendering) Application
-
-```bash
-# At project root
-docker build -t lonestone/web-ssr -f apps/web-ssr/Dockerfile .
-```
-
-Environment variables for SSR application (to be defined in your deployment environment):
-
-- `API_URL`: Backend API URL
-- `PORT`: Port the SSR application listens on (default: 3000)
-
-### Running Containers
-
-#### Backend API
-
-```bash
-docker run -p 3000:3000 \
-  -e DATABASE_PASSWORD=password \
-  -e DATABASE_USER=user \
-  -e DATABASE_NAME=dbname \
-  -e DATABASE_HOST=db \
-  -e DATABASE_PORT=5432 \
-  -e BETTER_AUTH_SECRET=secret \
-  -e API_PORT=3000 \
-  lonestone/api
-```
-
-#### SPA Application
-
-```bash
-docker run -p 80:80 lonestone/web-spa
-```
-
-To override environment variables at runtime (if needed):
-
-```bash
-docker run -p 80:80 \
-  -e VITE_API_URL=https://api-staging.example.com \
-  lonestone/web-spa
-```
-
-#### SSR Application
-
-```bash
-docker run -p 3000:3000 \
-  -e API_URL=https://api.example.com \
-  lonestone/web-ssr
-```
-
-## Local Development
-
-For local development, use pnpm:
-
-```bash
-# Install dependencies
-pnpm install
-
-# Start API in development mode
-pnpm --filter api dev
-
-# Start SPA in development mode
-pnpm --filter web-spa dev
-
-# Start SSR application in development mode
-pnpm --filter web-ssr dev
-```
+See the dedicated README files for more details on how to build and run Docker images.
 
 ## Deployment with Docker Compose
 

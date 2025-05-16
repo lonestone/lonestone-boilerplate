@@ -19,6 +19,7 @@
     "test:watch": "NODE_ENV=test jest --watch"
   },
   "dependencies": {
+    "@dotenvx/dotenvx": "^1.44.0",
     "@faker-js/faker": "^9.6.0",
     "@lonestone/nzoth": "^0.1.0",
     "@mikro-orm/cli": "6.4.7",
@@ -38,7 +39,6 @@
     "better-auth": "^1.2.3",
     "better-auth-mikro-orm": "^0.2.0",
     "date-fns": "^4.1.0",
-    "dotenv": "^16.4.7",
     "nestjs-pino": "^4.3.1",
     "openapi3-ts": "^4.4.0",
     "pg": "^8.14.0",
