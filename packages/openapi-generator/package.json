@@ -4,14 +4,16 @@
   "private": true,
   "main": "./index.ts",
   "scripts": {
-    "dev": "wait-on http://localhost:${API_PORT}/docs-json && pnpm generate --watch",
-    "generate": "openapi-ts -f ./openapi-ts.config.ts"
+    "dev": "dotenvx run -- wait-on ${API_URL}/docs-json && pnpm generate --watch",
+    "generate": "dotenvx run -- openapi-ts -f ./openapi-ts.config.ts"
   },
   "dependencies": {
     "@hey-api/client-fetch": "^0.8.3"
   },
   "devDependencies": {
+    "@dotenvx/dotenvx": "^1.44.0",
     "@hey-api/openapi-ts": "^0.64.11",
     "wait-on": "^8.0.3"
+
   }
 }

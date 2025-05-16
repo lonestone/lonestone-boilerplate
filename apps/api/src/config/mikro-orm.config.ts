@@ -3,6 +3,7 @@ import { Migrator } from '@mikro-orm/migrations'
 import { defineConfig, Options } from '@mikro-orm/postgresql'
 import { TsMorphMetadataProvider } from '@mikro-orm/reflection'
 import { SeedManager } from '@mikro-orm/seeder'
+
 // This file is used by the mikro-orm CLI for migrations and seeding
 import { config } from './env.config'
 

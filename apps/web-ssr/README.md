@@ -29,7 +29,13 @@ Before you begin, ensure you have installed:
 pnpm install
 ```
 
-2. Start the development server:
+2. Setup env variables
+
+```bash
+cp .env.example .env
+```
+
+3. Start the development server:
 ```bash
 pnpm dev
 ```
@@ -63,8 +69,9 @@ Unlike a SPA, an SSR application can use environment variables at runtime becaus
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
 | `API_URL` | Backend API URL | Yes | - |
-| `PORT` | Port on which the SSR application listens | No | `3000` |
-| `NODE_ENV` | Environment (development, production) | No | `production` |
+| `NODE_ENV` | Environment (development, production) | No | `development` |
+
+See [.env.example](/apps/web-ssr/.env.example) as a reference.
 
 ## Building with Docker
 
@@ -80,37 +87,6 @@ docker build -t lonestone/web-ssr -f apps/web-ssr/Dockerfile .
 ```bash
 docker run -p 3000:3000 \
   -e API_URL=https://api.example.com \
-  -e PORT=3000 \
   -e NODE_ENV=production \
   lonestone/web-ssr
 ```
-
-## Local Development
-
-For local development:
-
-```bash
-# At the project root
-pnpm install
-pnpm --filter web-ssr dev
-```
-
-You can set local environment variables by creating a `.env` file in the `apps/web-ssr` directory:
-
-```
-API_URL=http://localhost:3000
-PORT=3001
-NODE_ENV=development
-```
-
-## Differences between SSR and SPA
-
-### Advantages of SSR
-
-- Better SEO as search engines see the complete content
-- Faster initial loading time
-- Better performance on low-power devices
-
-### Environment Variables Management
-
-Unlike a SPA where environment variables must be defined at build time, an SSR application can use environment variables at runtime, which makes it easier to deploy in different environments without rebuilding the image.
