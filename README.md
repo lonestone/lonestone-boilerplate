@@ -10,18 +10,17 @@ To start a new project using this boilerplate, simply create a project on Github
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Docker Services](#docker-services)
-- [Useful Commands](#useful-commands)
-- [Development](#development)
-- [Continuous Integration (CI)](#continuous-integration-ci)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [License](#license)
+- [Overview](#-overview)
+- [Tech Stack](#️-tech-stack)
+- [Project Structure](#-project-structure)
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+- [Docker Services](#-docker-services)
+- [Useful Commands](#️-useful-commands)
+- [Development](#-development)
+- [Continuous Integration (CI)](#-continuous-integration-ci)
+- [Documentation](#-documentation)
+- [Deployment](#-deployment)
 
 ## 🔍 Overview
 
@@ -236,6 +235,6 @@ It's your choice to decide how you want to deploy the applications, your main op
 
 See the dedicated README files for more details on how to build and run Docker images.
 
-## Deployment with Docker Compose
+### Deployment with Docker Compose
 
 An example Docker Compose configuration is available in the `docker-compose.yml` file at the project root.
