@@ -60,7 +60,15 @@ pnpm run build
 node dist/main.js
 ```
 
-## Database
+## OpenAPI documentation
+
+The API is automatically documented with OpenAPI (if you use the correct decorators and add `openapi()` to your zod schemas).
+
+By default you can access the documentation at `http://localhost:3000/api/docs`.
+
+Better-auth also has a plugin to generate the documentation for you. You can find its specific documentation at `http://localhost:3000/api/auth/reference` by default.
+
+## Database management
 
 ### Migrations flow
 
@@ -113,7 +121,7 @@ pnpm db:migrate:up
 pnpm db:migrate:down
 ```
 
-## Generate a Module
+## Generating a new Module
 
 To create a new module, you can use the following command at root of monorepo:
 

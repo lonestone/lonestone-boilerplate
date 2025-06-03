@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common'
 import { Auth, betterAuth } from 'better-auth'
+import { openAPI } from 'better-auth/plugins'
 import { Pool } from 'pg'
 import { config } from 'src/config/env.config'
 import { EmailService } from '../email/email.service'
@@ -55,6 +56,9 @@ export class AuthService implements OnModuleInit {
         window: 50,
         max: 100,
       },
+      plugins: [
+        openAPI(),
+      ],
     }) as unknown as Auth
   }
 
