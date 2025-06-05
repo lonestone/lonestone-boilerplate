@@ -4,4 +4,34 @@ globs: apps/api/**
 alwaysApply: false
 ---
 
-The most important document you need to follow is the [API Guidelines](../../docs/api-guidelines.md). Always read this file.
+The most important document you need is [backend.mdx](mdc:apps/documentation/src/content/docs/guidelines/backend.mdx). Always read this file.
+
+
+- Use NestJS decorators for route definition
+- Use Zod for validation
+- Use MikroORM for database operations
+- Structure modules according to NestJS best practices
+- Use TypedRoute, TypedBody, TypedParam decorators from @lonestone/nzoth/server
+- Use Better Auth for authentication
+- Document API with Swagger/OpenAPI
+- Follow the naming conventions in the guidelines
+- Use proper HTTP methods for RESTful API design
+- Include appropriate error handling
+- Write unit and integration tests
+
+# Creating a module / entity
+If asked to create a module, remember to check if it exists and try the following command to create it:
+```bash
+pnpm generate:module --name=module-name
+```
+
+Then follow theses steps:
+
+1. Create an entity, using @posts.entity.ts (or another existing entity file if not found) as reference;
+2. Create a contract, using @posts.contract.ts (or another existing contract file if not found) as reference.
+    a. The contract file should contain the schema for all CRUD actions (GET/POST/PUT/DELETE);
+    b. If related contracts are needed (relations), create the related contract files first;
+    c. When creating a contract, always start from the GET contract (nameOfEntitySchema) and then create the create and update contracts by extending the initial schema (you can use zod pick);
+3. Create a service, using @posts.service.ts (or another existing service file if not found) as reference;
+4. Create a controller, using @posts.controller.ts (or another existing controller file if not found) as reference;
+5. Create a module, using @posts.module.ts (or another existing module file if not found) as reference;
