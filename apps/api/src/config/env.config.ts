@@ -22,6 +22,10 @@ export const configValidationSchema = z.object({
   BETTER_AUTH_SECRET: z.string(),
   TRUSTED_ORIGINS: z.string().transform(val => val.split(',')),
 
+  // AI
+  LANGFUSE_PUBLIC_KEY: z.string(),
+  LANGFUSE_SECRET_KEY: z.string(),
+  OPEN_AI_API_KEY: z.string(),
 })
 
 export type ConfigSchema = z.infer<typeof configValidationSchema>
@@ -52,5 +56,10 @@ export const config = {
     host: configParsed.data.DATABASE_HOST,
     port: configParsed.data.DATABASE_PORT,
     connectionStringUrl: `postgresql://${configParsed.data.DATABASE_USER}:${configParsed.data.DATABASE_PASSWORD}@${configParsed.data.DATABASE_HOST}:${configParsed.data.DATABASE_PORT}/${configParsed.data.DATABASE_NAME}`,
+  },
+  ai: {
+    langfusePublicKey: configParsed.data.LANGFUSE_PUBLIC_KEY,
+    langfuseSecretKey: configParsed.data.LANGFUSE_SECRET_KEY,
+    openAiApiKey: configParsed.data.OPEN_AI_API_KEY,
   },
 } as const
