@@ -3,8 +3,49 @@ title: AI
 description: AI explanation
 ---
 
-# AI
+# ❓ How it works
 
-## Langfuse
+This brick is heavily opinionated. It combines Langfuse for prompts management (storage, versionning, combining, etc) and Vercel AI SDK for the LLms calls.
 
-## Vercel AI SDK
+## Prompt management - Langfuse
+
+Langfuse uses OpenTelemetry to trace the calls to the LLMs (it plays well with Vercel SDK). You can see how OPT is setup in the [AI service file](../../../../../api/src/modules/ai/ai.service.ts).
+
+Langfuse can be self hosted, and is entirely open source. See [their docs](https://langfuse.com/docs) for more advanced usage.
+
+## LLM calls - Vercel AI SDK
+
+The Vercel SDK allows us to easily call the LLMs, and to use Langfuse for tracing. It is also quite easy to switch from one model to another.
+
+## Orchestration - TBD
+
+XState ? Mastra ?
+
+# 📝 How to use
+
+- Create the Langfuse project in the Langfuse dashboard
+- Setup the necessary env variables (LANGFUSE_API_KEY, LANGFUSE_SECRET_KEY, OPENAI_API_KEY, etc) in the `api/.env` file.
+- You are good to go!
+
+# 🧹 How to remove
+
+1. Delete the `ai` module from the `api/src/modules` folder
+2. Remove the following dependencies from the `api/package.json` file:
+
+```json
+"@ai-sdk/openai",
+"@opentelemetry/api",
+"@opentelemetry/auto-instrumentations-node",
+"@opentelemetry/sdk-node",
+"ai",
+"langfuse",
+"langfuse-vercel",
+```
+
+3. Remove the following env variables from the `api/.env` file:
+
+```
+LANGFUSE_API_KEY=
+LANGFUSE_SECRET_KEY=
+OPENAI_API_KEY=
+```
