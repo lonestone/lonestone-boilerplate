@@ -1,0 +1,47 @@
+---
+title: Tech Stack
+description: Why we chose some tools, why we chose the "removal" path, etc.
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+
+- [React 19](https://react.dev/) - JavaScript library for building user interfaces
+- [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+- [Shadcn UI](https://ui.shadcn.com/) - Reusable components built with Radix UI and Tailwind CSS
+- [React Router v7](https://reactrouter.com/) - Declarative routing for React
+- [TanStack Query](https://tanstack.com/query/latest) - Powerful asynchronous state management
+- [React Hook Form](https://react-hook-form.com/) - React form management
+
+### Backend
+
+- [NestJS](https://nestjs.com/) - Progressive Node.js framework
+- [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
+- [MikroORM](https://mikro-orm.io/) - TypeScript ORM for Node.js
+- [Zod](https://zod.dev/) - TypeScript-first schema validation
+- [Better Auth](https://www.better-auth.com/docs) - Authentication and authorization solution
+
+### Infrastructure
+
+- [Docker](https://www.docker.com/) - Containerization platform
+- [PostgreSQL](https://www.postgresql.org/) - Relational database management system
+- [MinIO](https://min.io/) - S3-compatible object storage
+- [DotenvX](https://dotenvx.com/) - Environment variables management
+
+## 📁 Project Structure
+
+```
+lonestone/
+├── apps/                  # Main applications
+│   ├── api/               # Backend API (NestJS)
+│   ├── web-spa/           # Web SPA application (React)
+│   └── web-ssr/           # Web SSR application (React)
+├── packages/              # Shared packages
+│   ├── ui/                # Reusable UI components (shadcn/ui)
+│   ├── openapi-generator/ # OpenAPI client generator
+│   └── schematics/        # Schematics used to generate code in API
+├── docs/                  # Project documentation
+└── .github/               # GitHub Actions workflows
+```

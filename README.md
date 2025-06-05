@@ -8,6 +8,8 @@ This repository represents the typical project structure at Lonestone, consistin
 
 To start a new project using this boilerplate, simply create a project on Github and select the boilerplate from the template list.
 
+For more details, see the [documentation](https://lonestone.github.io/lonestone-boilerplate/).
+
 ## 📋 Table of Contents
 
 - [Overview](#-overview)

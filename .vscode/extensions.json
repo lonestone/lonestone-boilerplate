@@ -6,6 +6,7 @@
     "bradlc.vscode-tailwindcss",
     "nize.oklch-preview",
     "bierner.color-info",
-    "phoenisx.cssvar"
+    "phoenisx.cssvar",
+    "astro-build.astro-vscode"
   ]
 }
