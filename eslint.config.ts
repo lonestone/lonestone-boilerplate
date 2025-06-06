@@ -13,6 +13,7 @@ export default antfu(
       '**/build/',
       'packages/schematics/src/files/',
       'packages/openapi-generator/client/',
+      '**/.astro/**',
       'node_modules/',
     ],
     rules: {
