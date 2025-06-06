@@ -1,8 +1,15 @@
+import { join } from 'node:path'
 import dotenvx from '@dotenvx/dotenvx'
 import { z } from 'zod'
 
 // Load environment variables
-dotenvx.config()
+const nodeEnv = process.env.NODE_ENV || 'development'
+if (nodeEnv === 'test') {
+  dotenvx.config({ path: join(process.cwd(), '.env.example') })
+}
+else {
+  dotenvx.config()
+}
 
 export const configValidationSchema = z.object({
   // Environment
