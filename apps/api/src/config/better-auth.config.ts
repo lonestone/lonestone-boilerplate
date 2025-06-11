@@ -1,9 +1,11 @@
 import { betterAuth, BetterAuthOptions, MiddlewareInputContext, MiddlewareOptions, User } from 'better-auth'
 import { customSession, openAPI } from 'better-auth/plugins'
 import { Pool } from 'pg'
-import { config } from './env.config'
 
 interface BetterAuthOptionsDynamic {
+  secret: string
+  trustedOrigins: string[]
+  connectionStringUrl: string
   sendResetPassword?: (
     data: { user: User, url: string, token: string },
     request: Request | undefined
@@ -24,10 +26,12 @@ interface BetterAuthOptionsDynamic {
 export type BetterAuthSession = Awaited<ReturnType<ReturnType<typeof createBetterAuth>['api']['getSession']>>
 export type LoggedInBetterAuthSession = NonNullable<BetterAuthSession>
 
-export function createBetterAuth(options?: BetterAuthOptionsDynamic) {
+export type BetterAuthType = ReturnType<typeof createBetterAuth>
+
+export function createBetterAuth(options: BetterAuthOptionsDynamic) {
   const authOptions = {
-    secret: config.betterAuth.secret,
-    trustedOrigins: config.betterAuth.trustedOrigins,
+    secret: options.secret,
+    trustedOrigins: options.trustedOrigins,
     emailAndPassword: {
       enabled: true,
       sendResetPassword: async (data, request) => {
@@ -46,7 +50,7 @@ export function createBetterAuth(options?: BetterAuthOptionsDynamic) {
       },
     },
     database: new Pool({
-      connectionString: config.database.connectionStringUrl,
+      connectionString: options.connectionStringUrl,
     }),
     advanced: {
       generateId: false,
@@ -100,5 +104,3 @@ export function createBetterAuth(options?: BetterAuthOptionsDynamic) {
     ],
   })
 }
-
-export const auth = createBetterAuth()
