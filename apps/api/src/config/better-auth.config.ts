@@ -1,6 +1,5 @@
-import { betterAuth, User } from 'better-auth'
-import { createAuthMiddleware } from 'better-auth/api'
-import { openAPI } from 'better-auth/plugins'
+import { betterAuth, BetterAuthOptions, MiddlewareInputContext, MiddlewareOptions, User } from 'better-auth'
+import { customSession, openAPI } from 'better-auth/plugins'
 import { Pool } from 'pg'
 import { config } from './env.config'
 
@@ -13,10 +12,20 @@ interface BetterAuthOptionsDynamic {
     data: { user: User, url: string, token: string },
     request: Request | undefined
   ) => Promise<void>
+  beforeHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
+  afterHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
 }
 
-export function createAuthConfig(options?: BetterAuthOptionsDynamic) {
-  return betterAuth({
+// We should use this, but sadly we do not have our custom fields in the session object (only the plugin added fields)
+// https://github.com/better-auth/better-auth/issues/2818
+// export type BetterAuthSession = ReturnType<typeof createAuth>['$Infer']['Session']
+
+// My workaround to get the session type
+export type BetterAuthSession = Awaited<ReturnType<ReturnType<typeof createBetterAuth>['api']['getSession']>>
+export type LoggedInBetterAuthSession = NonNullable<BetterAuthSession>
+
+export function createBetterAuth(options?: BetterAuthOptionsDynamic) {
+  const authOptions = {
     secret: config.betterAuth.secret,
     trustedOrigins: config.betterAuth.trustedOrigins,
     emailAndPassword: {
@@ -47,14 +56,49 @@ export function createAuthConfig(options?: BetterAuthOptionsDynamic) {
       max: 100,
     },
     hooks: {
-      before: createAuthMiddleware(async (ctx) => {
-        if (ctx.path === '/auth/login') {
-          console.info('before')
-        }
-      }),
+      before: options?.beforeHook,
+      after: options?.afterHook,
     },
-    plugins: [openAPI()],
+    plugins: [
+      /* Add plugins here, for example :
+      organization({
+        allowUserToCreateOrganization: async (_) => {
+          return false
+        },
+      }),
+      */
+      openAPI(),
+    ],
+  } satisfies BetterAuthOptions
+
+  // We need to pass the options to the customSession plugin to infer the type correctly
+  // If you don't do this, you will not have the properties added by plugins (ex. session.activeOrganizationId for the organization plugin)
+  // See https://www.better-auth.com/docs/concepts/session-management#customizing-session-response
+  return betterAuth({
+    ...authOptions,
+    plugins: [
+      ...(authOptions.plugins ?? []),
+      customSession(async ({ user, session }) => {
+        /* Here you can add more custom logic to customise the session response */
+
+        /* Example :
+        // const organizationInfo = await options?.getOrganizationInfo?.(user.id)
+        // return {
+        //   user: { ...user, test: true },
+        //   session: {
+        //     ...session,
+        //     activeOrganizationId: organizationInfo?.organizationId,
+        //     isHubspotAuthActive: organizationInfo?.isHubspotAuthActive,
+        //   },
+        // } */
+
+        return {
+          user,
+          session,
+        }
+      }, authOptions),
+    ],
   })
 }
 
-export const auth = createAuthConfig()
+export const auth = createBetterAuth()

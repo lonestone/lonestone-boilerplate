@@ -2,7 +2,12 @@ import type { CanActivate, ExecutionContext } from '@nestjs/common'
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { fromNodeHeaders } from 'better-auth/node'
+import { LoggedInBetterAuthSession } from 'src/config/better-auth.config'
 import { AuthService } from 'src/modules/auth/auth.service'
+
+export interface AuthenticatedRequest extends Request {
+  session: LoggedInBetterAuthSession
+}
 
 @Injectable()
 export class AuthGuard implements CanActivate {
