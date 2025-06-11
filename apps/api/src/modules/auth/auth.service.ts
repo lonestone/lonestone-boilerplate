@@ -1,13 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common'
-import { Auth, betterAuth } from 'better-auth'
-import { openAPI } from 'better-auth/plugins'
-import { Pool } from 'pg'
+import { BetterAuthType, createBetterAuth } from 'src/config/better-auth.config'
 import { config } from 'src/config/env.config'
 import { EmailService } from '../email/email.service'
 
 @Injectable()
 export class AuthService implements OnModuleInit {
-  private _auth: Auth | null = null
+  private _auth: BetterAuthType | null = null
   private static initPromise: Promise<void> | null = null
 
   constructor(private emailService: EmailService) {}
@@ -23,43 +21,25 @@ export class AuthService implements OnModuleInit {
     if (this._auth)
       return
 
-    this._auth = betterAuth({
+    this._auth = createBetterAuth({
+      secret: config.betterAuth.secret,
       trustedOrigins: config.betterAuth.trustedOrigins,
-      emailAndPassword: {
-        enabled: true,
-        sendResetPassword: async (data) => {
-          return this.emailService.sendEmail({
-            to: data.user.email,
-            subject: 'Reset your password',
-            content: `Hello ${data.user.name}, please reset your password by clicking on the link below: ${data.url}`,
-          })
-        },
+      connectionStringUrl: config.database.connectionStringUrl,
+      sendResetPassword: async (data) => {
+        return this.emailService.sendEmail({
+          to: data.user.email,
+          subject: 'Reset your password',
+          content: `Hello ${data.user.name}, please reset your password by clicking on the link below: ${data.url}`,
+        })
       },
-      emailVerification: {
-        sendOnSignUp: true,
-        expiresIn: 60 * 60 * 24 * 10, // 10 days
-        sendVerificationEmail: async (data) => {
-          return this.emailService.sendEmail({
-            to: data.user.email,
-            subject: 'Verify your email',
-            content: `Hello ${data.user.name}, please verify your email by clicking on the link below: ${data.url}`,
-          })
-        },
+      sendVerificationEmail: async (data) => {
+        return this.emailService.sendEmail({
+          to: data.user.email,
+          subject: 'Verify your email',
+          content: `Hello ${data.user.name}, please verify your email by clicking on the link below: ${data.url}`,
+        })
       },
-      database: new Pool({
-        connectionString: config.database.connectionStringUrl,
-      }),
-      advanced: {
-        generateId: false,
-      },
-      rateLimit: {
-        window: 50,
-        max: 100,
-      },
-      plugins: [
-        openAPI(),
-      ],
-    }) as unknown as Auth
+    })
   }
 
   get auth() {

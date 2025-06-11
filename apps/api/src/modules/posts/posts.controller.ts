@@ -11,6 +11,7 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common'
+import { LoggedInBetterAuthSession } from 'src/config/better-auth.config'
 import {
   CreatePostInput,
   createPostSchema,
@@ -39,7 +40,7 @@ export class PostController {
 
   @TypedRoute.Post('', userPostSchema)
   async createPost(
-    @Session() session: { user: { id: string } },
+    @Session() session: LoggedInBetterAuthSession,
     @TypedBody(createPostSchema) body: CreatePostInput,
   ): Promise<UserPost> {
     return await this.postService.createPost(
@@ -50,7 +51,7 @@ export class PostController {
 
   @TypedRoute.Put(':id', userPostSchema)
   async updatePost(
-    @Session() session: { user: { id: string } },
+    @Session() session: LoggedInBetterAuthSession,
     @TypedParam('id') id: string,
     @TypedBody(updatePostSchema) body: UpdatePostInput,
   ) {
@@ -63,7 +64,7 @@ export class PostController {
 
   @TypedRoute.Patch(':id/publish')
   async publishPost(
-    @Session() session: { user: { id: string } },
+    @Session() session: LoggedInBetterAuthSession,
     @Param('id') id: string,
   ) {
     return await this.postService.publishPost(session.user.id, id)
@@ -71,7 +72,7 @@ export class PostController {
 
   @TypedRoute.Patch(':id/unpublish')
   async unpublishPost(
-    @Session() session: { user: { id: string } },
+    @Session() session: LoggedInBetterAuthSession,
     @Param('id') id: string,
   ) {
     return await this.postService.unpublishPost(session.user.id, id)
@@ -79,7 +80,7 @@ export class PostController {
 
   @TypedRoute.Get('', userPostsSchema)
   async getUserPosts(
-    @Session() session: { user: { id: string } },
+    @Session() session: LoggedInBetterAuthSession,
     @PaginationParams(postPaginationSchema) pagination: PostPagination,
     @SortingParams(postSortingSchema) sort?: PostSorting,
     @FilteringParams(postFilteringSchema) filter?: PostFiltering,
@@ -89,7 +90,7 @@ export class PostController {
 
   @TypedRoute.Get(':id', userPostSchema)
   async getUserPost(
-    @Session() session: { user: { id: string } },
+    @Session() session: LoggedInBetterAuthSession,
     @Param('id') id: string,
   ) {
     return await this.postService.getUserPost(id, session.user.id)
