@@ -11,7 +11,6 @@ const PREFIX = '/api'
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
-    logger: false, // Disable default logger as we'll use Pino
   })
 
   // Use Pino logger
