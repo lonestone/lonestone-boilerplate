@@ -23,7 +23,7 @@ The most important document you nee guidelines from @api-guidelines.md. Always r
 # Creating a module / entity
 If asked to create a module, remember to check if it exists and try the following command to create it:
 ```bash
-pnpm generate:module --name=module-name
+pnpm schematics:module module-name
 ```
 
 Then follow theses steps:
@@ -36,3 +36,15 @@ Then follow theses steps:
 3. Create a service, using @posts.service.ts (or another existing service file if not found) as reference;
 4. Create a controller, using @posts.controller.ts (or another existing controller file if not found) as reference;
 5. Create a module, using @posts.module.ts (or another existing module file if not found) as reference;
+
+## File structure
+
+Only create entities, contracts, services and controllers folders if there is more than one file in the folder.
+
+Else, create the files directly in the module folder (this is often the case for a module linked to only one entity).
+
+- `src/modules/module-name[/entities]/entity-name.entity.ts`
+- `src/modules/module-name[/contracts]/entity-name.contract.ts`
+- `src/modules/module-name[/services]/entity-name.service.ts`
+- `src/modules/module-name[/controllers]/entity-name.controller.ts`
+- `src/modules/module-name/module.ts`

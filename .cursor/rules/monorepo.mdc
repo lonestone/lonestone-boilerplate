@@ -14,3 +14,6 @@ alwaysApply: true
 - `packages/ui` : UI library package (using shadcn and Tailwind)
 - `packages/openapi-generator` : generated client library, containing types, schemas, sdks
 
+# Rules
+
+- Always switch to the correct node version when running commands. Use `fnm use` to switch to the correct node version. Try `nvm use` if fnm is not available.
