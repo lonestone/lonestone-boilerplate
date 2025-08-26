@@ -61,8 +61,8 @@ async function bootstrap() {
 
   addSchemasToSwagger(document)
 
-  SwaggerModule.setup('docs', app, document, {
-    jsonDocumentUrl: '/docs-json',
+  SwaggerModule.setup(`${PREFIX}/docs`, app, document, {
+    jsonDocumentUrl: `${PREFIX}/docs-json`,
     customSiteTitle: 'Lonestone API Documentation',
     customfavIcon: '/favicon.ico',
     customJs: [
