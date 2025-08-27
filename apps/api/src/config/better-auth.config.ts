@@ -1,5 +1,5 @@
 import { betterAuth, BetterAuthOptions, MiddlewareInputContext, MiddlewareOptions, User } from 'better-auth'
-import { customSession, openAPI } from 'better-auth/plugins'
+import { openAPI } from 'better-auth/plugins'
 import { Pool } from 'pg'
 
 interface BetterAuthOptionsDynamic {
@@ -16,6 +16,7 @@ interface BetterAuthOptionsDynamic {
   ) => Promise<void>
   beforeHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
   afterHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
+  databaseHooks?: BetterAuthOptions['databaseHooks']
 }
 
 // We should use this, but sadly we do not have our custom fields in the session object (only the plugin added fields)
@@ -24,9 +25,18 @@ interface BetterAuthOptionsDynamic {
 
 // My workaround to get the session type
 export type BetterAuthSession = Awaited<ReturnType<ReturnType<typeof createBetterAuth>['api']['getSession']>>
-export type LoggedInBetterAuthSession = NonNullable<BetterAuthSession>
+export type LoggedInBetterAuthSession = NonNullable<BetterAuthSession> & {
+  session: NonNullable<BetterAuthSession>['session'] & {
+    activeOrganizationId: string
+  }
+}
 
 export type BetterAuthType = ReturnType<typeof createBetterAuth>
+/**
+ * The context type for BetterAuth middleware.
+ * This type is derived from the first parameter of the $context method of BetterAuthType.
+ */
+export type BetterAuthContext = ReturnType<typeof createBetterAuth>['$context']
 
 export function createBetterAuth(options: BetterAuthOptionsDynamic) {
   const authOptions = {
@@ -34,6 +44,7 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
     trustedOrigins: options.trustedOrigins,
     emailAndPassword: {
       enabled: true,
+      autoSignIn: false,
       sendResetPassword: async (data, request) => {
         if (!options?.sendResetPassword)
           return
@@ -52,8 +63,11 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
     database: new Pool({
       connectionString: options.connectionStringUrl,
     }),
+    databaseHooks: options.databaseHooks,
     advanced: {
-      generateId: false,
+      database: {
+        generateId: false, // Fix pour Better Auth 1.2.7 - nouvelle syntaxe
+      },
     },
     rateLimit: {
       window: 50,
@@ -64,13 +78,6 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
       after: options?.afterHook,
     },
     plugins: [
-      /* Add plugins here, for example :
-      organization({
-        allowUserToCreateOrganization: async (_) => {
-          return false
-        },
-      }),
-      */
       openAPI(),
     ],
   } satisfies BetterAuthOptions
@@ -82,25 +89,6 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
     ...authOptions,
     plugins: [
       ...(authOptions.plugins ?? []),
-      customSession(async ({ user, session }) => {
-        /* Here you can add more custom logic to customise the session response */
-
-        /* Example :
-        // const organizationInfo = await options?.getOrganizationInfo?.(user.id)
-        // return {
-        //   user: { ...user, test: true },
-        //   session: {
-        //     ...session,
-        //     activeOrganizationId: organizationInfo?.organizationId,
-        //     isHubspotAuthActive: organizationInfo?.isHubspotAuthActive,
-        //   },
-        // } */
-
-        return {
-          user,
-          session,
-        }
-      }, authOptions),
     ],
   })
 }

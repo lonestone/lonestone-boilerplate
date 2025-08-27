@@ -15,6 +15,7 @@ import {
   PlusCircle,
   Settings,
   User,
+  UserIcon,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router'
@@ -66,8 +67,10 @@ export default function DashboardPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="flex items-center gap-2">
+                  <UserIcon className="h-4 w-4" />
+                  My Account
+                </DropdownMenuLabel>
                 <DropdownMenuItem asChild>
                   <Link
                     to="/dashboard/settings"

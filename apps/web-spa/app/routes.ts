@@ -7,8 +7,11 @@ export default [
     route('posts/new', 'features/user-posts/user-post-create-page.tsx'),
     route('posts/:userPostId/edit', 'features/user-posts/user-post-edit-page.tsx'),
   ]),
-  layout('features/auth/auth-layout.tsx', [
-    route('login', 'features/auth/auth-login-page.tsx'),
-    route('register', 'features/auth/auth-register-page.tsx'),
+  layout('features/auth/components/auth-layout.tsx', [
+    route('login', 'features/auth/pages/auth-login-page.tsx'),
+    route('register', 'features/auth/pages/auth-register-page.tsx'),
+    route('verify-email', 'features/auth/pages/auth-verify-email-page.tsx'),
+    route('forgot-password', 'features/auth/pages/auth-forgot-password-page.tsx'),
+    route('reset-password', 'features/auth/pages/auth-reset-password-page.tsx'),
   ]),
 ] satisfies RouteConfig

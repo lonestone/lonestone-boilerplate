@@ -4,6 +4,14 @@ import { Seeder } from '@mikro-orm/seeder'
 import { hashPassword } from 'better-auth/crypto'
 import { Account, User } from '../modules/auth/auth.entity'
 
+const password = 'Password123!'
+
+const defaultUser = {
+  name: 'John Doe',
+  email: 'user@lonestone.com',
+  password,
+}
+
 const users = Array.from({ length: faker.number.int({ min: 5, max: 10 }) }, () => ({
   name: faker.person.fullName(),
   email: faker.internet.email(),
@@ -13,7 +21,7 @@ const users = Array.from({ length: faker.number.int({ min: 5, max: 10 }) }, () =
 export class AuthSeeder extends Seeder {
   async run(em: EntityManager, context: Dictionary): Promise<void> {
     context.users = []
-    for (const userData of users) {
+    for (const userData of [defaultUser, ...users]) {
       // Create user
       const user = new User()
       user.name = userData.name
