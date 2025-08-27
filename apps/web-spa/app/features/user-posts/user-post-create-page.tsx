@@ -1,11 +1,11 @@
 import type {
   CreatePostSchema,
 } from '@lonestone/openapi-generator'
+import { postControllerCreatePost } from '@lonestone/openapi-generator/client/sdk.gen'
 import { useMutation } from '@tanstack/react-query'
 import { AlertCircle, Check, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { apiClient } from '@/lib/api-client'
 import UserPostForm from './user-post-form'
 
 export default function UserPostCreatePage() {
@@ -17,11 +17,11 @@ export default function UserPostCreatePage() {
 
   const { mutate: createPost, isPending } = useMutation({
     mutationFn: (data: CreatePostSchema) =>
-      apiClient.postControllerCreatePost({
+      postControllerCreatePost({
         body: data,
       }),
     onSuccess: async (result) => {
-      if (!result.data?.id) {
+      if (!result.data) {
         setStatus('error')
         setErrorMessage('Post created but no ID returned')
         return

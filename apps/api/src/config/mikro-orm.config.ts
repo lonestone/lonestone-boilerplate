@@ -4,15 +4,11 @@ import { defineConfig, Options } from '@mikro-orm/postgresql'
 import { TsMorphMetadataProvider } from '@mikro-orm/reflection'
 import { SeedManager } from '@mikro-orm/seeder'
 
-import { z } from 'zod'
-import { extendZodWithOpenApi } from 'zod-openapi'
-
 // This file is used by the mikro-orm CLI for migrations and seeding
 import { config } from './env.config'
 
 // Add openapi method to ZodType prototype to avoid errors while running migrations
 // https://github.com/lonestone/lonestone-boilerplate/issues/33
-extendZodWithOpenApi(z)
 
 type CreateMikroOrmOptions = {
   isTest?: boolean

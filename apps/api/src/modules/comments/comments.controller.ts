@@ -3,14 +3,15 @@ import {
   PaginationParams,
   SortingParams,
   TypedBody,
+  TypedController,
   TypedParam,
   TypedRoute,
 } from '@lonestone/nzoth/server'
 import {
-  Controller,
   Optional,
   UseGuards,
 } from '@nestjs/common'
+import { z } from 'zod'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { CommentsService } from './comments.service'
@@ -27,13 +28,15 @@ import {
   createCommentSchema,
 } from './contracts/comments.contract'
 
-@Controller('posts/:postSlug/comments')
+@TypedController('posts/:postSlug/comments', z.object({
+  postSlug: z.string(),
+}))
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @TypedRoute.Post('', commentSchema)
   async createComment(
-    @TypedParam('postSlug') postSlug: string,
+    @TypedParam('postSlug', z.string()) postSlug: string,
     @TypedBody(createCommentSchema) body: CreateCommentInput,
     @Optional() @Session() session?: { user: { id: string } },
   ) {
@@ -43,7 +46,7 @@ export class CommentsController {
 
   @TypedRoute.Get('', commentsSchema)
   async getComments(
-    @TypedParam('postSlug') postSlug: string,
+    @TypedParam('postSlug', z.string()) postSlug: string,
     @PaginationParams(commentPaginationSchema) pagination: CommentPagination,
     @SortingParams(commentSortingSchema) sort?: CommentSorting,
     @FilteringParams(commentFilteringSchema) filter?: CommentFiltering,
@@ -57,14 +60,14 @@ export class CommentsController {
   }
 
   @TypedRoute.Get('count')
-  async getCommentCount(@TypedParam('postSlug') postSlug: string) {
+  async getCommentCount(@TypedParam('postSlug', z.string()) postSlug: string) {
     const count = await this.commentsService.getCommentCount(postSlug)
     return { count }
   }
 
   @TypedRoute.Get(':commentId/replies', commentsSchema)
   async getCommentReplies(
-    @TypedParam('commentId') commentId: string,
+    @TypedParam('commentId', z.string()) commentId: string,
     @PaginationParams(commentPaginationSchema) pagination: CommentPagination,
     @SortingParams(commentSortingSchema) sort?: CommentSorting,
   ) {
@@ -78,7 +81,7 @@ export class CommentsController {
   @TypedRoute.Delete(':commentId')
   @UseGuards(AuthGuard)
   async deleteComment(
-    @TypedParam('commentId') commentId: string,
+    @TypedParam('commentId', z.string()) commentId: string,
     @Session() session: { user: { id: string } },
   ) {
     await this.commentsService.deleteComment(commentId, session.user.id)

@@ -6,7 +6,7 @@ import {
   type ClientOptions as DefaultClientOptions,
   createClient,
   createConfig,
-} from "@hey-api/client-fetch";
+} from "./client";
 
 /**
  * The `createClientConfig()` function will be called on client initialization
@@ -18,7 +18,7 @@ import {
  */
 export type CreateClientConfig<T extends DefaultClientOptions = ClientOptions> =
   (
-    override?: Config<DefaultClientOptions & T>
+    override?: Config<DefaultClientOptions & T>,
   ) => Config<Required<DefaultClientOptions> & T>;
 
 export const client = createClient(createConfig<ClientOptions>());

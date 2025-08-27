@@ -3,6 +3,7 @@ import type {
   CommentsControllerGetCommentRepliesResponse,
   CreateCommentSchema,
 } from '@lonestone/openapi-generator'
+import { commentsControllerGetCommentReplies } from '@lonestone/openapi-generator/client/sdk.gen'
 import { Button } from '@lonestone/ui/components/primitives/button'
 import {
   Card,
@@ -23,7 +24,6 @@ import {
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CommentForm } from '@/features/comments/comment-form'
-import { apiClient } from '@/lib/api-client'
 import { queryClient } from '@/lib/query-client'
 
 function Replies({
@@ -45,22 +45,29 @@ function Replies({
   onReplySubmit: (data: CreateCommentSchema) => Promise<void>
   onLoadMoreReplies: (commentId: string) => void
 }) {
-  const { data: repliesData, isLoading: isLoadingReplies } = useQuery({
+  const { data: replies, isLoading: isLoadingReplies } = useQuery({
     queryKey: ['replies', commentId],
     queryFn: async () => {
-      return apiClient.commentsControllerGetCommentReplies({
+      const res = await commentsControllerGetCommentReplies({
         path: {
           commentId,
+          postSlug: 'test',
         },
         query: {
           offset: 0,
+          pageSize: 10,
         },
       })
+
+      if (res.error) {
+        throw res.error
+      }
+
+      return res.data
     },
   })
 
-  const replies = repliesData?.data?.data || []
-  const hasMoreReplies = repliesData?.data?.meta?.hasMore || false
+  const hasMoreReplies = false
 
   if (isLoadingReplies) {
     return (
@@ -75,7 +82,7 @@ function Replies({
 
   return (
     <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-      {replies.map(reply => (
+      {replies?.data.map(reply => (
         <CommentItem
           key={reply.id}
           comment={reply}
@@ -161,12 +168,14 @@ export function CommentItem({
     try {
       const offset
         = currentReplies.data.meta.offset + currentReplies.data.meta.pageSize
-      const newReplies = await apiClient.commentsControllerGetCommentReplies({
+      const newReplies = await commentsControllerGetCommentReplies({
         path: {
           commentId,
+          postSlug: 'test',
         },
         query: {
           offset,
+          pageSize: 10,
         },
       })
 

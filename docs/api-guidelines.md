@@ -74,24 +74,91 @@ It's generated with the following files:
 - Define schemas in the contracts directory
 - Use `TypedBody`, `TypedParam`, and other typed decorators from `@lonestone/nzoth/server`
 - Export types from schemas using `z.infer<typeof schema>`
+- Use `.meta()` to add OpenAPI documentation metadata to schemas
+
+#### Schema Definition Best Practices
+
+**Why use `.meta()`?**
+- `.meta()` adds OpenAPI/Swagger documentation metadata to your Zod schemas
+- This metadata is automatically used by `@lonestone/nzoth/server` to generate API documentation
+- It provides better developer experience with auto-generated OpenAPI specs
+- The metadata includes title, description, examples, and other OpenAPI-specific information
+
+**Schema Structure:**
+- Start with basic validation rules (type, length, format, etc.)
+- Add `.meta()` for documentation purposes
+- Export the inferred type for TypeScript usage
+- Use descriptive names that indicate the purpose (e.g., `createUserSchema`, `updateUserSchema`)
 
 Example:
 ```typescript
+import { z } from 'zod'
+
+// Basic schema with validation rules
 export const createUserSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-}).openapi({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email format'),
+  age: z.number().min(18, 'User must be at least 18 years old').optional(),
+}).meta({
   title: 'Create User',
-  description: 'Create a new user',
+  description: 'Schema for creating a new user account',
+  examples: [
+    {
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      age: 25
+    }
+  ]
 })
 
+// Export the inferred type for TypeScript usage
 export type CreateUserInput = z.infer<typeof createUserSchema>
-export class Controller {
-  @TypedRoute.Post('', userSchema)
+
+// Controller usage
+@TypedController('user')
+export class UserController {
+  @TypedRoute.Post('', createUserSchema)
   async createUser(@TypedBody(createUserSchema) body: CreateUserInput) {
-  // Implementation
+    // Implementation
   }
 }
+```
+
+#### Common Schema Patterns
+
+**Create vs Update Schemas:**
+```typescript
+// Base schema for common fields
+const userBaseSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+})
+
+// Create schema (all fields required)
+export const createUserSchema = userBaseSchema.meta({
+  title: 'Create User',
+  description: 'Create a new user account'
+})
+
+// Update schema (all fields optional)
+export const updateUserSchema = userBaseSchema.partial().meta({
+  title: 'Update User',
+  description: 'Update an existing user account'
+})
+```
+
+**Response Schemas:**
+```typescript
+export const userResponseSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  email: z.string().email(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+}).meta({
+  title: 'User Response',
+  description: 'User data returned by the API'
+})
 ```
 
 ### Response Formatting

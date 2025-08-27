@@ -7,12 +7,9 @@
     "dev": "dotenvx run -- wait-on ${API_URL}/docs-json && pnpm generate --watch",
     "generate": "dotenvx run -- openapi-ts -f ./openapi-ts.config.ts"
   },
-  "dependencies": {
-    "@hey-api/client-fetch": "^0.8.4"
-  },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.49.0",
-    "@hey-api/openapi-ts": "^0.64.15",
+    "@hey-api/openapi-ts": "^0.81.1",
     "wait-on": "^8.0.4"
   }
 }

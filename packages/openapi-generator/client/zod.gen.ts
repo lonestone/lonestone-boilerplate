@@ -2,142 +2,106 @@
 
 import { z } from "zod";
 
-export const zCreatePostSchema = z.object({
-  title: z.string().min(1),
-  content: z.array(
-    z.object({
-      type: z.enum(["text", "image", "video"]),
-      data: z.string(),
-    })
-  ),
-});
-
-export const zPostContentSchema = z.object({
-  type: z.enum(["text", "image", "video"]),
-  data: z.string(),
-});
-
-export const zUpdatePostSchema = z.object({
-  title: z.string().min(1).optional(),
-  content: z.array(zPostContentSchema).optional(),
-});
-
+/**
+ * CreateCommentSchema
+ * Schema for creating a comment
+ */
 export const zCreateCommentSchema = z.object({
   content: z.string().min(1).max(1000),
-  parentId: z.string().uuid().optional(),
+  parentId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
 });
 
-export const zPaginationQuerySchema = z.object({
-  offset: z.number().int().gte(0).optional().default(0),
-  pageSize: z.number().int().gte(1).lte(100).optional().default(20),
-});
+/**
+ * PostContentSchema
+ * Schema for content items (text, image, video)
+ */
+export const zPostContentSchema = z.union([
+  z.object({
+    type: z.literal("text"),
+    data: z.string(),
+  }),
+  z.object({
+    type: z.literal("image"),
+    data: z.string(),
+  }),
+  z.object({
+    type: z.literal("video"),
+    data: z.string(),
+  }),
+]);
 
-export const zPaginationQuerySchemaOffset = z.number().int().gte(0).default(0);
-
-export const zPaginationQuerySchemaPageSize = z
-  .number()
-  .int()
-  .gte(1)
-  .lte(100)
-  .default(20);
-
-export const zSortingQueryStringSchema = z.string();
-
-export const zFilterQueryStringSchema = z.string();
-
-export const zUserPostSchema = z.object({
-  id: z.string().uuid(),
-  slug: z.union([z.string(), z.null()]).optional(),
-  title: z.string(),
+/**
+ * CreatePostSchema
+ * Schema for creating/updating a post
+ */
+export const zCreatePostSchema = z.object({
+  title: z.string().min(1),
   content: z.array(zPostContentSchema),
-  versions: z.array(
-    z.object({
-      id: z.string().uuid(),
-      title: z.string(),
-      createdAt: z.string().datetime(),
-    })
-  ),
-  publishedAt: z.union([z.string().datetime(), z.null()]).optional(),
-  type: z.enum(["published", "draft"]),
-  commentCount: z.number().optional(),
 });
 
-export const zPostVersionSchema = z.object({
-  id: z.string().uuid(),
-  title: z.string(),
-  createdAt: z.string().datetime(),
+/**
+ * UpdatePostSchema
+ * Schema for updating a post
+ */
+export const zUpdatePostSchema = z.object({
+  title: z.optional(z.string().min(1)),
+  content: z.optional(z.array(zPostContentSchema)),
 });
 
-export const zUserPostsSchema = z.object({
-  data: z.array(
-    z.object({
-      id: z.string().uuid(),
-      slug: z.union([z.string(), z.null()]).optional(),
-      title: z.string(),
-      versions: z.array(zPostVersionSchema),
-      publishedAt: z.union([z.string().datetime(), z.null()]).optional(),
-      type: z.enum(["published", "draft"]),
-      commentCount: z.number().optional(),
-      contentPreview: zPostContentSchema,
-    })
-  ),
-  meta: z.object({
-    offset: z.number(),
-    pageSize: z.number(),
-    itemCount: z.number(),
-    hasMore: z.boolean(),
-  }),
-});
-
-export const zPublicPostSchema = z.object({
-  title: z.string(),
-  author: z.object({
-    name: z.string(),
-  }),
-  content: z.array(zPostContentSchema),
-  publishedAt: z.string().datetime(),
-  slug: z.string().optional(),
-  commentCount: z.number().optional(),
-});
-
-export const zPublicPostsSchema = z.object({
-  data: z.array(
-    z.object({
-      title: z.string(),
-      author: z.object({
-        name: z.string(),
-      }),
-      publishedAt: z.string().datetime(),
-      slug: z.string().optional(),
-      commentCount: z.number().optional(),
-      contentPreview: zPostContentSchema,
-    })
-  ),
-  meta: z.object({
-    offset: z.number(),
-    pageSize: z.number(),
-    itemCount: z.number(),
-    hasMore: z.boolean(),
-  }),
-});
-
+/**
+ * CommentSchema
+ * Schema for a comment
+ */
 export const zCommentSchema = z.object({
-  id: z.string().uuid(),
+  id: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
   content: z.string(),
   authorName: z.union([z.string(), z.null()]),
-  createdAt: z.string().datetime(),
+  createdAt: z.string(),
   user: z.union([
     z.object({
-      id: z.string().uuid(),
+      id: z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
       name: z.string(),
     }),
     z.null(),
   ]),
-  parentId: z.union([z.string().uuid(), z.null()]),
-  replyIds: z.array(z.string().uuid()).optional(),
-  replyCount: z.number().optional(),
+  parentId: z.union([
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    z.null(),
+  ]),
+  replyIds: z.optional(
+    z.array(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+  ),
+  replyCount: z.optional(z.number()),
 });
 
+/**
+ * CommentsSchema
+ * Schema for a paginated list of comments
+ */
 export const zCommentsSchema = z.object({
   data: z.array(zCommentSchema),
   meta: z.object({
@@ -148,22 +112,472 @@ export const zCommentsSchema = z.object({
   }),
 });
 
+/**
+ * PostVersionSchema
+ * Schema for a post version
+ */
+export const zPostVersionSchema = z.object({
+  id: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  title: z.string(),
+  createdAt: z.string(),
+});
+
+/**
+ * UserPostSchema
+ * Schema for a user's post
+ */
+export const zUserPostSchema = z.object({
+  id: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  slug: z.optional(z.union([z.string(), z.null()])),
+  title: z.string(),
+  content: z.array(zPostContentSchema),
+  versions: z.array(zPostVersionSchema),
+  publishedAt: z.optional(z.union([z.string(), z.null()])),
+  type: z.enum(["published", "draft"]),
+  commentCount: z.optional(z.number()),
+});
+
+/**
+ * UserPostsSchema
+ * Schema for a list of user's posts
+ */
+export const zUserPostsSchema = z.object({
+  data: z.array(
+    z.object({
+      id: z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+      slug: z.optional(z.union([z.string(), z.null()])),
+      title: z.string(),
+      versions: z.array(zPostVersionSchema),
+      publishedAt: z.optional(z.union([z.string(), z.null()])),
+      type: z.enum(["published", "draft"]),
+      commentCount: z.optional(z.number()),
+      contentPreview: zPostContentSchema,
+    }),
+  ),
+  meta: z.object({
+    offset: z.number(),
+    pageSize: z.number(),
+    itemCount: z.number(),
+    hasMore: z.boolean(),
+  }),
+});
+
+/**
+ * PublicPostSchema
+ * A public post
+ */
+export const zPublicPostSchema = z.object({
+  title: z.string(),
+  author: z.object({
+    name: z.string(),
+  }),
+  content: z.array(zPostContentSchema),
+  publishedAt: z.string(),
+  slug: z.optional(z.string()),
+  commentCount: z.optional(z.number()),
+});
+
+/**
+ * PublicPostsSchema
+ * A list of public posts
+ */
+export const zPublicPostsSchema = z.object({
+  data: z.array(
+    z.object({
+      title: z.string(),
+      author: z.object({
+        name: z.string(),
+      }),
+      publishedAt: z.string(),
+      slug: z.optional(z.string()),
+      commentCount: z.optional(z.number()),
+      contentPreview: zPostContentSchema,
+    }),
+  ),
+  meta: z.object({
+    offset: z.number(),
+    pageSize: z.number(),
+    itemCount: z.number(),
+    hasMore: z.boolean(),
+  }),
+});
+
+/**
+ * PaginationQuerySchema
+ * Schema for pagination query
+ */
+export const zPaginationQuerySchema = z.object({
+  offset: z.int().gte(0).lte(9007199254740991).default(0),
+  pageSize: z.int().gte(1).lte(100).default(20),
+});
+
+/**
+ * SortingQueryStringSchema
+ * Schema for sorting items
+ */
+export const zSortingQueryStringSchema = z.array(
+  z.object({
+    property: z.union([z.literal("title"), z.literal("createdAt")]),
+    direction: z.enum(["asc", "desc"]),
+  }),
+);
+
+/**
+ * FilterQueryStringSchema
+ * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
+ * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
+ * <br> Available properties: title
+ */
+export const zFilterQueryStringSchema = z.array(
+  z.object({
+    property: z.literal("title"),
+    rule: z.enum([
+      "eq",
+      "neq",
+      "gt",
+      "gte",
+      "lt",
+      "lte",
+      "like",
+      "nlike",
+      "in",
+      "nin",
+      "isnull",
+      "isnotnull",
+    ]),
+    value: z.optional(z.string()),
+  }),
+);
+
+export const zCommentsControllerPostSlug = z.string();
+
+export const zAppControllerGetHelloData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zPostControllerGetUserPostsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    filter: z.optional(
+      z.array(
+        z.object({
+          property: z.literal("title"),
+          rule: z.enum([
+            "eq",
+            "neq",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "like",
+            "nlike",
+            "in",
+            "nin",
+            "isnull",
+            "isnotnull",
+          ]),
+          value: z.optional(z.string()),
+        }),
+      ),
+    ),
+    sort: z.optional(
+      z.array(
+        z.object({
+          property: z.union([z.literal("title"), z.literal("createdAt")]),
+          direction: z.enum(["asc", "desc"]),
+        }),
+      ),
+    ),
+    offset: z.int().gte(0).lte(9007199254740991).default(0),
+    pageSize: z.int().gte(1).lte(100).default(20),
+  }),
+});
+
+/**
+ * Schema for a list of user's posts
+ */
 export const zPostControllerGetUserPostsResponse = zUserPostsSchema;
 
+export const zPostControllerCreatePostData = z.object({
+  body: z.object({
+    title: z.string().min(1),
+    content: z.array(
+      z.union([
+        z.object({
+          type: z.literal("text"),
+          data: z.string(),
+        }),
+        z.object({
+          type: z.literal("image"),
+          data: z.string(),
+        }),
+        z.object({
+          type: z.literal("video"),
+          data: z.string(),
+        }),
+      ]),
+    ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Schema for a user's post
+ */
 export const zPostControllerCreatePostResponse = zUserPostSchema;
 
+export const zPostControllerGetUserPostData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Schema for a user's post
+ */
 export const zPostControllerGetUserPostResponse = zUserPostSchema;
 
+export const zPostControllerUpdatePostData = z.object({
+  body: z.object({
+    title: z.optional(z.string().min(1)),
+    content: z.optional(
+      z.array(
+        z.union([
+          z.object({
+            type: z.literal("text"),
+            data: z.string(),
+          }),
+          z.object({
+            type: z.literal("image"),
+            data: z.string(),
+          }),
+          z.object({
+            type: z.literal("video"),
+            data: z.string(),
+          }),
+        ]),
+      ),
+    ),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Schema for a user's post
+ */
 export const zPostControllerUpdatePostResponse = zUserPostSchema;
 
+export const zPostControllerPublishPostData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zPostControllerUnpublishPostData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zPublicPostControllerGetRandomPostData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * A public post
+ */
 export const zPublicPostControllerGetRandomPostResponse = zPublicPostSchema;
 
+export const zPublicPostControllerGetPostData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    slug: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * A public post
+ */
 export const zPublicPostControllerGetPostResponse = zPublicPostSchema;
 
+export const zPublicPostControllerGetPostsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    filter: z.optional(
+      z.array(
+        z.object({
+          property: z.literal("title"),
+          rule: z.enum([
+            "eq",
+            "neq",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "like",
+            "nlike",
+            "in",
+            "nin",
+            "isnull",
+            "isnotnull",
+          ]),
+          value: z.optional(z.string()),
+        }),
+      ),
+    ),
+    sort: z.optional(
+      z.array(
+        z.object({
+          property: z.union([z.literal("title"), z.literal("createdAt")]),
+          direction: z.enum(["asc", "desc"]),
+        }),
+      ),
+    ),
+    offset: z.int().gte(0).lte(9007199254740991).default(0),
+    pageSize: z.int().gte(1).lte(100).default(20),
+  }),
+});
+
+/**
+ * A list of public posts
+ */
 export const zPublicPostControllerGetPostsResponse = zPublicPostsSchema;
 
+export const zCommentsControllerGetCommentsData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    postSlug: z.string(),
+  }),
+  query: z.object({
+    filter: z.optional(
+      z.array(
+        z.object({
+          property: z.literal("content"),
+          rule: z.enum([
+            "eq",
+            "neq",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "like",
+            "nlike",
+            "in",
+            "nin",
+            "isnull",
+            "isnotnull",
+          ]),
+          value: z.optional(z.string()),
+        }),
+      ),
+    ),
+    sort: z.optional(
+      z.array(
+        z.object({
+          property: z.union([z.literal("createdAt"), z.literal("authorName")]),
+          direction: z.enum(["asc", "desc"]),
+        }),
+      ),
+    ),
+    offset: z.int().gte(0).lte(9007199254740991).default(0),
+    pageSize: z.int().gte(1).lte(100).default(20),
+  }),
+});
+
+/**
+ * Schema for a paginated list of comments
+ */
 export const zCommentsControllerGetCommentsResponse = zCommentsSchema;
 
+export const zCommentsControllerCreateCommentData = z.object({
+  body: z.object({
+    content: z.string().min(1).max(1000),
+    parentId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+  }),
+  path: z.object({
+    postSlug: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Schema for a comment
+ */
 export const zCommentsControllerCreateCommentResponse = zCommentSchema;
 
+export const zCommentsControllerGetCommentCountData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    postSlug: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCommentsControllerGetCommentRepliesData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    commentId: z.string(),
+    postSlug: z.string(),
+  }),
+  query: z.object({
+    sort: z.optional(
+      z.array(
+        z.object({
+          property: z.union([z.literal("createdAt"), z.literal("authorName")]),
+          direction: z.enum(["asc", "desc"]),
+        }),
+      ),
+    ),
+    offset: z.int().gte(0).lte(9007199254740991).default(0),
+    pageSize: z.int().gte(1).lte(100).default(20),
+  }),
+});
+
+/**
+ * Schema for a paginated list of comments
+ */
 export const zCommentsControllerGetCommentRepliesResponse = zCommentsSchema;
+
+export const zCommentsControllerDeleteCommentData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    commentId: z.string(),
+    postSlug: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
