@@ -19,6 +19,7 @@
     "test:watch": "NODE_ENV=test jest --watch"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.2.1",
     "@dotenvx/dotenvx": "^1.44.0",
     "@faker-js/faker": "^9.6.0",
     "@lonestone/nzoth": "^0.1.0",
@@ -36,9 +37,15 @@
     "@nestjs/platform-express": "^10.4.15",
     "@nestjs/schedule": "^4.1.2",
     "@nestjs/swagger": "8.1.1",
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "0.56.1",
+    "@opentelemetry/sdk-node": "0.57.2",
+    "ai": "^4.1.54",
     "better-auth": "^1.2.3",
     "better-auth-mikro-orm": "^0.2.0",
     "date-fns": "^4.1.0",
+    "langfuse": "^3.37.0",
+    "langfuse-vercel": "^3.37.0",
     "nestjs-pino": "^4.3.1",
     "openapi3-ts": "^4.4.0",
     "pg": "^8.14.0",
