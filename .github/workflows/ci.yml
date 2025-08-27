@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       node-version: 22.14.0
-      pnpm-version: 10.6.3
+      pnpm-version: 10.5.0
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: 22.14.0
-          pnpm-version: 10.6.3
+          pnpm-version: 10.5.0
 
       - name: 📁 Get pnpm store directory
         id: pnpm-cache
@@ -66,29 +66,9 @@ jobs:
       - name: 🔍 Run ESLint
         run: pnpm lint
 
-  typecheck:
-    name: 🔎 Type Check
-    needs: [lint, setup]
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📂 Restore workspace
-        uses: actions/cache@v3
-        with:
-          path: .
-          key: workspace-${{ github.sha }}
-
-      - name: 🔧 Setup Node.js and pnpm
-        uses: ./.github/actions/setup-node-pnpm
-        with:
-          node-version: ${{ needs.setup.outputs.node-version }}
-          pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
-
-      - name: 📋 Type check
-        run: pnpm -r run typecheck
-
   build:
     name: 🏗️ Build
-    needs: [typecheck, setup]
+    needs: [lint, setup]
     runs-on: ubuntu-latest
     steps:
       - name: 📂 Restore workspace
@@ -115,6 +95,26 @@ jobs:
           path: .
           key: workspace-built-${{ github.sha }}
 
+  typecheck:
+    name: 🔎 Type Check
+    needs: [build, setup]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📂 Restore built workspace
+        uses: actions/cache@v3
+        with:
+          path: .
+          key: workspace-built-${{ github.sha }}
+
+      - name: 🔧 Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ needs.setup.outputs.node-version }}
+          pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
+
+      - name: 📋 Type check
+        run: pnpm -r run typecheck
+
   test:
     name: 🧪 Test
     needs: [build, setup]
@@ -133,6 +133,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     steps:
       - name: 📂 Restore built workspace
         uses: actions/cache@v3
@@ -156,6 +157,7 @@ jobs:
           DATABASE_USER: test_user
           DATABASE_PASSWORD: test_password
           DATABASE_NAME: test_db
+
           BETTER_AUTH_SECRET: test_secret
           TRUSTED_ORIGINS: '*'
           NODE_ENV: test
