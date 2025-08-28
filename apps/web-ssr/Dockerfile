@@ -26,7 +26,7 @@ RUN pnpm --filter {apps/web-ssr}... build
 
 # Create a deploy folder with only the required deps
 # This respects gitignore in /apps/web-ssr, so remember to include your dist folder in the "files" section of your package.json
-RUN pnpm deploy --filter="./apps/web-ssr" --prod /prop/web-ssr
+RUN pnpm deploy --legacy --filter="./apps/web-ssr" --prod /prop/web-ssr
 
 # Stage 3: Production (Final image)
 FROM base AS runner

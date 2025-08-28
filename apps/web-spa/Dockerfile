@@ -26,7 +26,7 @@ RUN pnpm --filter {apps/web-spa}... build
 
 # Create a deploy folder with only the required deps
 # This respects gitignore in /apps/web-spa, so remember to include your dist folder in the "files" section of your package.json
-RUN pnpm deploy --filter="./apps/web-spa" --prod /prop/web-spa
+RUN pnpm deploy --legacy --filter="./apps/web-spa" --prod /prop/web-spa
 
 # Stage 3: Production (Final image with Nginx)
 FROM nginx:alpine
