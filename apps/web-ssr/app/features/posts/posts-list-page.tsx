@@ -1,11 +1,11 @@
 import type { Route } from './+types/posts-list-page'
-import { apiClient } from '@/lib/api-client'
 import { Button } from '@lonestone/ui/components/primitives/button'
 import { Input } from '@lonestone/ui/components/primitives/input'
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-
 import { useSearchParams } from 'react-router'
+
+import { apiClient } from '@/lib/api-client'
 import PostCard from './post-card'
 
 export async function loader({ request }: Route.LoaderArgs) {

@@ -1,5 +1,6 @@
+import type { Config } from '@hey-api/client-fetch'
 import {
-  type Config,
+
   createClient as createFetchClient,
 } from '@hey-api/client-fetch'
 import * as sdk from './client/sdk.gen'

@@ -1,7 +1,5 @@
 import type { Route } from './+types/root'
-import { queryClient } from '@/lib/query-client'
 import { QueryClientProvider } from '@tanstack/react-query'
-
 import {
   isRouteErrorResponse,
   Links,
@@ -10,6 +8,8 @@ import {
   Scripts,
   ScrollRestoration,
 } from 'react-router'
+
+import { queryClient } from '@/lib/query-client'
 
 import '@fontsource/source-sans-pro'
 import '@lonestone/ui/globals.css'

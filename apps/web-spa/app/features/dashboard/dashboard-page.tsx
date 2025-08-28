@@ -1,4 +1,3 @@
-import { authClient } from '@/lib/auth-client'
 import { Header } from '@lonestone/ui/components/layout/Header'
 import { Button } from '@lonestone/ui/components/primitives/button'
 import {
@@ -15,9 +14,11 @@ import {
   PlusCircle,
   Settings,
   User,
+  UserIcon,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router'
+import { authClient } from '@/lib/auth-client'
 
 export default function DashboardPage() {
   const { data: sessionData, isPending } = authClient.useSession()
@@ -66,8 +67,10 @@ export default function DashboardPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="flex items-center gap-2">
+                  <UserIcon className="h-4 w-4" />
+                  My Account
+                </DropdownMenuLabel>
                 <DropdownMenuItem asChild>
                   <Link
                     to="/dashboard/settings"

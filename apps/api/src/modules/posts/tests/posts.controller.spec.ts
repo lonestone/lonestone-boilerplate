@@ -207,9 +207,6 @@ describe('postController (e2e)', () => {
           .set('Authorization', `Bearer ${TEST_USER_TOKEN}`)
           .expect(200)
 
-        // eslint-disable-next-line no-console
-        console.log(unpublishResponse.body)
-
         expect(unpublishResponse.body).toMatchObject({
           id: postId,
           type: 'draft',

@@ -12,14 +12,14 @@ export class DatabaseSeeder extends Seeder {
 
     // Run AuthSeeder first to create users
     await new AuthSeeder().run(em, context)
-    console.log('AuthSeeder done')
+    console.info('AuthSeeder done')
 
     // Run PostSeeder to create posts
     await new PostSeeder().run(em, context)
-    console.log('PostSeeder done')
+    console.info('PostSeeder done')
 
     // Run CommentSeeder to create comments
     await new CommentSeeder().run(em, context)
-    console.log('CommentSeeder done')
+    console.info('CommentSeeder done')
   }
 }

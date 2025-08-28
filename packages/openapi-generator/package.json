@@ -8,12 +8,11 @@
     "generate": "dotenvx run -- openapi-ts -f ./openapi-ts.config.ts"
   },
   "dependencies": {
-    "@hey-api/client-fetch": "^0.8.3"
+    "@hey-api/client-fetch": "^0.8.4"
   },
   "devDependencies": {
-    "@dotenvx/dotenvx": "^1.44.0",
-    "@hey-api/openapi-ts": "^0.64.11",
-    "wait-on": "^8.0.3"
-
+    "@dotenvx/dotenvx": "^1.49.0",
+    "@hey-api/openapi-ts": "^0.64.15",
+    "wait-on": "^8.0.4"
   }
 }

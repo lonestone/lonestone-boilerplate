@@ -1,7 +1,5 @@
 import type { Route } from './+types/root'
 import process from 'node:process'
-import { useDehydratedState } from '@/hooks/use-dehydrated-state'
-import { queryClient } from '@/lib/query-client'
 import { HydrationBoundary, QueryClientProvider } from '@tanstack/react-query'
 import {
   isRouteErrorResponse,
@@ -12,6 +10,8 @@ import {
   ScrollRestoration,
   useRouteLoaderData,
 } from 'react-router'
+import { useDehydratedState } from '@/hooks/use-dehydrated-state'
+import { queryClient } from '@/lib/query-client'
 import '@fontsource/source-sans-pro'
 import '@lonestone/ui/globals.css'
 
@@ -50,6 +50,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <ScrollRestoration />
         <Scripts />
         {/* Inject the API URL into the window object */}
+        {/* eslint-disable-next-line react-dom/no-dangerously-set-innerhtml -- ignore */}
         <script dangerouslySetInnerHTML={{
           __html: `window.ENV = ${JSON.stringify(data)}`,
         }}

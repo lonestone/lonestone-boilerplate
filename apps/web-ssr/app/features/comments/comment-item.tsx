@@ -3,9 +3,6 @@ import type {
   CommentsControllerGetCommentRepliesResponse,
   CreateCommentSchema,
 } from '@lonestone/openapi-generator'
-import { CommentForm } from '@/features/comments/comment-form'
-import { apiClient } from '@/lib/api-client'
-import { queryClient } from '@/lib/query-client'
 import { Button } from '@lonestone/ui/components/primitives/button'
 import {
   Card,
@@ -24,7 +21,10 @@ import {
   Trash2,
   User,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { CommentForm } from '@/features/comments/comment-form'
+import { apiClient } from '@/lib/api-client'
+import { queryClient } from '@/lib/query-client'
 
 function Replies({
   commentId,
@@ -127,7 +127,7 @@ export function CommentItem({
 }: CommentItemProps) {
   const [isReplying, setIsReplying] = useState(false)
   const [showReplies, setShowReplies] = useState(false)
-  const [replyCount, setReplyCount] = useState(comment.replyCount || 0)
+  const replyCount = comment.replyCount ?? 0
   const isAuthor = currentUserId && comment.user?.id === currentUserId
   const isPostAuthor = currentUserId === postAuthorId
   const canDelete = isAuthor || isPostAuthor
@@ -140,10 +140,6 @@ export function CommentItem({
     },
   )
   const [isHovered, setIsHovered] = useState(false)
-
-  useEffect(() => {
-    setReplyCount(comment.replyCount || 0)
-  }, [comment.replyCount])
 
   const hasReplies = useMemo(() => replyCount !== undefined && replyCount > 0, [replyCount])
 
@@ -338,7 +334,6 @@ export function CommentItem({
               }}
               onSubmit={async (data) => {
                 await onReplySubmit(data)
-                setReplyCount(prev => prev + 1)
                 setIsReplying(false)
                 setShowReplies(true)
               }}

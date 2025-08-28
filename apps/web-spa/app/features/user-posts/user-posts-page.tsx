@@ -1,5 +1,3 @@
-import { UserPostCard } from '@/features/user-posts/user-post-card'
-import { apiClient } from '@/lib/api-client'
 import { Button } from '@lonestone/ui/components/primitives/button'
 import { Input } from '@lonestone/ui/components/primitives/input'
 import { useQuery } from '@tanstack/react-query'
@@ -11,6 +9,8 @@ import {
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { UserPostCard } from '@/features/user-posts/user-post-card'
+import { apiClient } from '@/lib/api-client'
 
 const PAGE_SIZE = 12
 

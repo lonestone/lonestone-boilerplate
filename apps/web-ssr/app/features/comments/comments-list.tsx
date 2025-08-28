@@ -1,9 +1,6 @@
 import type {
   CreateCommentSchema,
 } from '@lonestone/openapi-generator'
-import { CommentItem } from '@/features/comments/comment-item'
-import { apiClient } from '@/lib/api-client'
-import { queryClient } from '@/lib/query-client'
 import {
   Alert,
   AlertDescription,
@@ -16,6 +13,9 @@ import { cn } from '@lonestone/ui/lib/utils'
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query'
 import { Loader2, MessageSquare } from 'lucide-react'
 import { useMemo } from 'react'
+import { CommentItem } from '@/features/comments/comment-item'
+import { apiClient } from '@/lib/api-client'
+import { queryClient } from '@/lib/query-client'
 import { CommentForm } from './comment-form'
 
 interface CommentsListProps {

@@ -1,7 +1,7 @@
-import ImageAuth from '@/assets/images/image-auth.webp'
 import { AnvilIcon } from 'lucide-react'
-
 import { Outlet } from 'react-router'
+
+import ImageAuth from '@/assets/images/image-auth.webp'
 
 export default function AuthLayout() {
   return (

@@ -7,6 +7,7 @@ import type {
   MiddlewareContext,
   MiddlewareOptions,
 } from 'better-auth'
+import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Global, Inject, Module, OnModuleInit, RequestMethod } from '@nestjs/common'
 import {
   DiscoveryModule,
@@ -17,6 +18,7 @@ import { toNodeHandler } from 'better-auth/node'
 import { createAuthMiddleware } from 'better-auth/plugins'
 import { EmailModule } from '../email/email.module'
 import { AFTER_HOOK_KEY, BEFORE_HOOK_KEY, HOOK_KEY } from './auth.decorator'
+import { Account, Session, User, Verification } from './auth.entity'
 import { AuthGuard } from './auth.guard'
 import { AuthService } from './auth.service'
 
@@ -25,6 +27,7 @@ import { AuthService } from './auth.service'
   imports: [
     DiscoveryModule,
     EmailModule,
+    MikroOrmModule.forFeature([User, Session, Account, Verification]),
   ],
   providers: [
     AuthService,
@@ -38,10 +41,10 @@ import { AuthService } from './auth.service'
 export class AuthModule implements NestModule, OnModuleInit {
   constructor(
     private readonly authService: AuthService,
-    @Inject(DiscoveryService)
-    private discoveryService: DiscoveryService,
-    @Inject(MetadataScanner)
-    private metadataScanner: MetadataScanner,
+      @Inject(DiscoveryService)
+      private discoveryService: DiscoveryService,
+      @Inject(MetadataScanner)
+      private metadataScanner: MetadataScanner,
   ) {}
 
   async onModuleInit() {
@@ -68,8 +71,8 @@ export class AuthModule implements NestModule, OnModuleInit {
       for (const method of methods) {
         const providerMethod = providerPrototype[method]
 
-        this.setupHook(BEFORE_HOOK_KEY, 'before', providerMethod)
-        this.setupHook(AFTER_HOOK_KEY, 'after', providerMethod)
+        this.setupHook(BEFORE_HOOK_KEY, 'before', providerMethod, provider.instance)
+        this.setupHook(AFTER_HOOK_KEY, 'after', providerMethod, provider.instance)
       }
     }
 
@@ -93,6 +96,7 @@ export class AuthModule implements NestModule, OnModuleInit {
         }
       >
     ) => Promise<void>,
+    providerInstance: unknown,
   ) {
     const auth = this.authService.auth
     const hookPath = Reflect.getMetadata(metadataKey, providerMethod)
@@ -107,7 +111,7 @@ export class AuthModule implements NestModule, OnModuleInit {
         }
 
         if (hookPath === ctx.path) {
-          await providerMethod(ctx)
+          await providerMethod.call(providerInstance, ctx)
         }
       },
     )
@@ -116,7 +120,7 @@ export class AuthModule implements NestModule, OnModuleInit {
   static forRootAsync() {
     return {
       module: AuthModule,
-      imports: [],
+      imports: [EmailModule],
       providers: [
         AuthService,
         {
