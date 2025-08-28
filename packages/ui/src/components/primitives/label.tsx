@@ -1,5 +1,3 @@
-'use client'
-
 import { cn } from '@lonestone/ui/lib/utils'
 import * as LabelPrimitive from '@radix-ui/react-label'
 

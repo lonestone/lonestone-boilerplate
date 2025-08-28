@@ -25,11 +25,7 @@ interface BetterAuthOptionsDynamic {
 
 // My workaround to get the session type
 export type BetterAuthSession = Awaited<ReturnType<ReturnType<typeof createBetterAuth>['api']['getSession']>>
-export type LoggedInBetterAuthSession = NonNullable<BetterAuthSession> & {
-  session: NonNullable<BetterAuthSession>['session'] & {
-    activeOrganizationId: string
-  }
-}
+export type LoggedInBetterAuthSession = NonNullable<BetterAuthSession>
 
 export type BetterAuthType = ReturnType<typeof createBetterAuth>
 /**

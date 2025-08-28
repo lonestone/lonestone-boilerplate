@@ -1,6 +1,7 @@
-import { ZodSerializationExceptionFilter, ZodValidationExceptionFilter } from '@lonestone/nzoth/server'
+import { createOpenApiDocument, ZodSerializationExceptionFilter, ZodValidationExceptionFilter } from '@lonestone/nzoth/server'
 import { NestFactory } from '@nestjs/core'
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import { DocumentBuilder } from '@nestjs/swagger'
+import { apiReference } from '@scalar/nestjs-api-reference'
 import * as express from 'express'
 import { Logger, LoggerErrorInterceptor } from 'nestjs-pino'
 import { AppModule } from './app.module'
@@ -61,31 +62,21 @@ async function bootstrap() {
       .addTag('@lonestone')
       .build()
 
-    const document = SwaggerModule.createDocument(app, swaggerConfig)
+    const document = createOpenApiDocument(app, swaggerConfig)
 
-    SwaggerModule.setup(`${PREFIX}/docs`, app, document, {
-      jsonDocumentUrl: `${PREFIX}/docs-json`,
-      customSiteTitle: 'Lonestone API Documentation',
-      customfavIcon: '/favicon.ico',
-      customJs: [
-        'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.8/swagger-ui-bundle.min.js',
-      ],
-      customCssUrl: [
-        'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.8/swagger-ui.min.css',
-      ],
-      swaggerOptions: {
-        docExpansion: 'list',
-        filter: true,
-        showRequestDuration: true,
-        persistAuthorization: true,
-        displayOperationId: false,
-        defaultModelsExpandDepth: 3,
-        defaultModelExpandDepth: 3,
-        defaultModelRendering: 'model',
-        tagsSorter: 'alpha',
-        operationsSorter: 'alpha',
+    app.use(
+      `${PREFIX}/docs.json`,
+      (_: express.Request, res: express.Response) => {
+        res.json(document)
       },
-    })
+    )
+
+    app.use(
+      `${PREFIX}/docs`,
+      apiReference({
+        url: `${PREFIX}/docs.json`,
+      }),
+    )
   }
 
   app.enableShutdownHooks()

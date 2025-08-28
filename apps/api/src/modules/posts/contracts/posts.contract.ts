@@ -6,12 +6,25 @@ import {
 } from '@lonestone/nzoth/server'
 import { z } from 'zod'
 
+// 📖 See API Guidelines: Schema Definition Best Practices
+// https://github.com/lonestone/lonestone-boilerplate/blob/main/docs/api-guidelines.md#schema-definition-best-practices
+
 // Schema for content items (text, image, video)
 export const postContentSchema
-  = z.object({
-    type: z.enum(['text', 'image', 'video']),
-    data: z.string(),
-  }).openapi(
+  = z.discriminatedUnion('type', [
+    z.object({
+      type: z.literal('text'),
+      data: z.string(),
+    }),
+    z.object({
+      type: z.literal('image'),
+      data: z.string(),
+    }),
+    z.object({
+      type: z.literal('video'),
+      data: z.string(),
+    }),
+  ]).meta(
     {
       title: 'PostContentSchema',
       description: 'Schema for content items (text, image, video)',
@@ -47,7 +60,7 @@ export const postVersionSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
   createdAt: z.date(),
-}).openapi({
+}).meta({
   title: 'PostVersionSchema',
   description: 'Schema for a post version',
 })
@@ -60,7 +73,7 @@ export const postVersionSchema = z.object({
 export const createPostSchema = z.object({
   title: z.string().min(1),
   content: z.array(postContentSchema),
-}).openapi({
+}).meta({
   title: 'CreatePostSchema',
   description: 'Schema for creating/updating a post',
 })
@@ -70,7 +83,7 @@ export type CreatePostInput = z.infer<typeof createPostSchema>
 export const updatePostSchema = z.object({
   title: z.string().min(1).optional(),
   content: z.array(postContentSchema).optional(),
-}).openapi({
+}).meta({
   title: 'UpdatePostSchema',
   description: 'Schema for updating a post',
 })
@@ -86,7 +99,7 @@ export const userPostSchema = z.object({
   publishedAt: z.date().nullish(),
   type: z.enum(['published', 'draft']),
   commentCount: z.number().optional(),
-}).openapi({
+}).meta({
   title: 'UserPostSchema',
   description: 'Schema for a user\'s post',
 })
@@ -95,7 +108,7 @@ export const userPostsSchema = paginatedSchema(userPostSchema.omit({
   content: true,
 }).extend({
   contentPreview: postContentSchema,
-})).openapi({
+})).meta({
   title: 'UserPostsSchema',
   description: 'Schema for a list of user\'s posts',
 })
@@ -117,7 +130,7 @@ export const publicPostSchema = z.object({
   publishedAt: z.date(),
   slug: z.string().optional(),
   commentCount: z.number().optional(),
-}).openapi({
+}).meta({
   title: 'PublicPostSchema',
   description: 'A public post',
 })
@@ -128,7 +141,7 @@ export const publicPostsSchema = paginatedSchema(publicPostSchema.omit({
 }).extend({
   contentPreview: postContentSchema,
   commentCount: z.number().optional(),
-})).openapi({
+})).meta({
   title: 'PublicPostsSchema',
   description: 'A list of public posts',
 })

@@ -1,11 +1,11 @@
 import type {
   UpdatePostSchema,
 } from '@lonestone/openapi-generator'
+import { postControllerGetUserPost, postControllerPublishPost, postControllerUnpublishPost, postControllerUpdatePost } from '@lonestone/openapi-generator/client/sdk.gen'
 import { Button } from '@lonestone/ui/components/primitives/button'
 import { SendIcon } from '@lonestone/ui/icons'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router'
-import { apiClient } from '@/lib/api-client'
 import { queryClient } from '@/lib/query-client'
 import UserPostForm, { UserPostFormSkeleton } from './user-post-form'
 
@@ -15,17 +15,24 @@ export default function UserPostEditPage() {
 
   const { data: post, isLoading } = useQuery({
     queryKey: ['userPost', userPostId],
-    queryFn: () =>
-      apiClient.postControllerGetUserPost({
+    queryFn: async () => {
+      const response = await postControllerGetUserPost({
         path: {
           id: userPostId as string,
         },
-      }),
+      })
+
+      if (response.error) {
+        throw response.error
+      }
+
+      return response.data
+    },
   })
 
   const { mutate: UpdatePost, isPending } = useMutation({
     mutationFn: (data: UpdatePostSchema) =>
-      apiClient.postControllerUpdatePost({
+      postControllerUpdatePost({
         body: data,
         path: {
           id: userPostId as string,
@@ -38,7 +45,7 @@ export default function UserPostEditPage() {
 
   const { mutate: PublishPost, isPending: isPublishing } = useMutation({
     mutationFn: () =>
-      apiClient.postControllerPublishPost({
+      postControllerPublishPost({
         path: { id: userPostId as string },
       }),
     onSuccess: () => {
@@ -48,7 +55,7 @@ export default function UserPostEditPage() {
 
   const { mutate: UnpublishPost, isPending: isUnpublishing } = useMutation({
     mutationFn: () =>
-      apiClient.postControllerUnpublishPost({
+      postControllerUnpublishPost({
         path: { id: userPostId as string },
       }),
     onSuccess: () => {
@@ -67,7 +74,7 @@ export default function UserPostEditPage() {
 
   const onPublish = async () => {
     try {
-      if (post?.data?.publishedAt) {
+      if (post?.publishedAt) {
         await UnpublishPost()
       }
       else {
@@ -95,7 +102,7 @@ export default function UserPostEditPage() {
         </div>
         <div>
           <Button size="sm" onClick={onPublish} disabled={isPublishing || isUnpublishing || isPending}>
-            {post?.data?.publishedAt
+            {post?.publishedAt
               ? (
                   <>
                     <SendIcon className="size-4" />
@@ -114,8 +121,8 @@ export default function UserPostEditPage() {
       <UserPostForm
         onSubmit={onSubmit}
         initialData={{
-          title: post?.data?.title ?? '',
-          content: post?.data?.content ?? [],
+          title: post?.title ?? '',
+          content: post?.content ?? [],
         }}
         isSubmitting={isPending}
       />

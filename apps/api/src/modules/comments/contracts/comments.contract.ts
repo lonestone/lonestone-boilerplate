@@ -10,7 +10,7 @@ import { z } from 'zod'
 export const createCommentSchema = z.object({
   content: z.string().min(1).max(1000),
   parentId: z.string().uuid().optional(),
-}).openapi({
+}).meta({
   title: 'CreateCommentSchema',
   description: 'Schema for creating a comment',
 })
@@ -33,7 +33,7 @@ export const commentSchema = z.object({
   // and load the full replies separately when needed
   replyIds: z.array(z.string().uuid()).optional(),
   replyCount: z.number().optional(),
-}).openapi({
+}).meta({
   title: 'CommentSchema',
   description: 'Schema for a comment',
 })
@@ -41,7 +41,7 @@ export const commentSchema = z.object({
 export type CommentResponse = z.infer<typeof commentSchema>
 
 // Schema for comments list
-export const commentsSchema = paginatedSchema(commentSchema).openapi({
+export const commentsSchema = paginatedSchema(commentSchema).meta({
   title: 'CommentsSchema',
   description: 'Schema for a paginated list of comments',
 })

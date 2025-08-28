@@ -1,4 +1,5 @@
 import type { Route } from './+types/root'
+import { client } from '@lonestone/openapi-generator'
 import { QueryClientProvider } from '@tanstack/react-query'
 import {
   isRouteErrorResponse,
@@ -8,11 +9,14 @@ import {
   Scripts,
   ScrollRestoration,
 } from 'react-router'
-
 import { queryClient } from '@/lib/query-client'
-
 import '@fontsource/source-sans-pro'
 import '@lonestone/ui/globals.css'
+
+client.setConfig({
+  baseUrl: import.meta.env.VITE_API_URL,
+  credentials: 'include',
+})
 
 export const links: Route.LinksFunction = () => [
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },

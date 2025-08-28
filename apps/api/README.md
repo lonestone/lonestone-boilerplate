@@ -121,22 +121,6 @@ pnpm db:migrate:up
 pnpm db:migrate:down
 ```
 
-## Generating a new Module
-
-To create a new module, you can use the following command at root of monorepo:
-
-```bash
-pnpm schematics:module --name=module-name
-```
-It's generated with the following files:
-
-- `__name__.controller.ts`
-- `__name__.service.ts`
-- `__name__.entity.ts`
-- `__name__.module.ts`
-- `contracts/__name__.contract.ts`
-- `tests/__name__.controller.spec.ts`
-
 ## Building with Docker
 
 ### Building the Image

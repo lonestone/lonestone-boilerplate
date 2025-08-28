@@ -24,14 +24,14 @@ export function UserPostCard({ post }: { post: Omit<UserPostSchema, 'content'> }
             <span className="text-sm text-muted-foreground">
               Created at
               {' '}
-              {post.versions[0].createdAt.toLocaleDateString()}
+              {new Date(post.versions[0].createdAt).toLocaleDateString()}
             </span>
             <span className="text-sm text-muted-foreground">
               Updated at
               {' '}
-              {post.versions[
+              {new Date(post.versions[
                 post.versions.length - 1
-              ].createdAt.toLocaleDateString()}
+              ].createdAt).toLocaleDateString()}
             </span>
           </div>
         </CardFooter>

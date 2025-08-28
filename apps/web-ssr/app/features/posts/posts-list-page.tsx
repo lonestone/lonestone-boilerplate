@@ -1,11 +1,12 @@
 import type { Route } from './+types/posts-list-page'
+import { publicPostControllerGetPosts } from '@lonestone/openapi-generator/client/sdk.gen'
 import { Button } from '@lonestone/ui/components/primitives/button'
 import { Input } from '@lonestone/ui/components/primitives/input'
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
+
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 
-import { apiClient } from '@/lib/api-client'
 import PostCard from './post-card'
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -14,13 +15,17 @@ export async function loader({ request }: Route.LoaderArgs) {
   const search = searchParams.get('search') || ''
   const page = Number.parseInt(searchParams.get('page') || '1')
 
-  const posts = await apiClient.publicPostControllerGetPosts({
+  const posts = await publicPostControllerGetPosts({
     query: {
-      filter: search ? `title:like:${search}` : undefined,
+      filter: search ? [{ property: 'title', rule: 'like', value: search }] : [],
       offset: (page - 1) * 10,
       pageSize: 10,
     },
   })
+
+  if (posts.error) {
+    throw posts.error
+  }
 
   return {
     posts,

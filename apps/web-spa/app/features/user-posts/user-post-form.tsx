@@ -307,6 +307,7 @@ export default function UserPostForm({
             type="submit"
             className="w-full"
             disabled={isSubmitting}
+            id="button"
           >
             {isSubmitting
               ? (

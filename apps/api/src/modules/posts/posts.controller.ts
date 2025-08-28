@@ -3,11 +3,11 @@ import {
   PaginationParams,
   SortingParams,
   TypedBody,
+  TypedController,
   TypedParam,
   TypedRoute,
 } from '@lonestone/nzoth/server'
 import {
-  Controller,
   Param,
   UseGuards,
 } from '@nestjs/common'
@@ -29,11 +29,14 @@ import {
   userPostSchema,
   userPostsSchema,
 } from 'src/modules/posts/contracts/posts.contract'
+import { z } from 'zod'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { PostService } from './posts.service'
 
-@Controller('admin/posts')
+@TypedController('admin/posts', undefined, {
+  tags: ['Admin Posts'],
+})
 @UseGuards(AuthGuard)
 export class PostController {
   constructor(private readonly postService: PostService) {}
@@ -52,7 +55,7 @@ export class PostController {
   @TypedRoute.Put(':id', userPostSchema)
   async updatePost(
     @Session() session: LoggedInBetterAuthSession,
-    @TypedParam('id') id: string,
+    @TypedParam('id', z.string()) id: string,
     @TypedBody(updatePostSchema) body: UpdatePostInput,
   ) {
     return await this.postService.updatePost(
@@ -97,7 +100,9 @@ export class PostController {
   }
 }
 
-@Controller('public/posts')
+@TypedController('public/posts', undefined, {
+  tags: ['Public Posts'],
+})
 export class PublicPostController {
   constructor(private readonly postService: PostService) {}
 
@@ -107,7 +112,7 @@ export class PublicPostController {
   }
 
   @TypedRoute.Get(':slug', publicPostSchema)
-  async getPost(@TypedParam('slug') slug: string) {
+  async getPost(@TypedParam('slug', z.string()) slug: string) {
     return await this.postService.getPublicPost(slug)
   }
 

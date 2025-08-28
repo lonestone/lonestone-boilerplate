@@ -3,15 +3,16 @@ import { defineConfig } from '@hey-api/openapi-ts'
 
 export default defineConfig({
   input:
-    `${process.env.API_URL}/api/docs-json`,
+    `${process.env.API_URL}/api/docs.json`,
   output: {
     format: 'prettier',
     lint: 'eslint',
     path: './client',
   },
   plugins: [
-    '@hey-api/client-fetch',
-    '@hey-api/schemas',
+    {
+      name: '@hey-api/client-fetch',
+    },
     {
       dates: true,
       name: '@hey-api/transformers',

@@ -1,3 +1,4 @@
+import { postControllerGetUserPosts } from '@lonestone/openapi-generator/client/sdk.gen'
 import { Button } from '@lonestone/ui/components/primitives/button'
 import { Input } from '@lonestone/ui/components/primitives/input'
 import { useQuery } from '@tanstack/react-query'
@@ -10,7 +11,6 @@ import {
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { UserPostCard } from '@/features/user-posts/user-post-card'
-import { apiClient } from '@/lib/api-client'
 
 const PAGE_SIZE = 12
 
@@ -44,20 +44,27 @@ export default function PostsListPage() {
 
   const { data: posts } = useQuery({
     queryKey: ['posts', pageValue, searchValue],
-    queryFn: () =>
-      apiClient.postControllerGetUserPosts({
+    queryFn: async () => {
+      const response = await postControllerGetUserPosts({
         query: {
           offset: (pageValue - 1) * PAGE_SIZE,
           pageSize: PAGE_SIZE,
-          filter: searchValue ? `title:like:${searchValue}` : undefined,
+          filter: searchValue ? [{ property: 'title', rule: 'like', value: searchValue }] : [],
         },
-      }),
+      })
+
+      if (response.error) {
+        throw response.error
+      }
+
+      return response.data
+    },
   })
 
   const totalPages = useMemo(() => {
-    if (!posts?.data?.meta)
+    if (!posts?.meta)
       return 0
-    return Math.ceil(posts.data.meta.itemCount / PAGE_SIZE)
+    return Math.ceil(posts.meta.itemCount / PAGE_SIZE)
   }, [posts])
 
   return (
@@ -79,11 +86,11 @@ export default function PostsListPage() {
           />
         </div>
       </div>
-      {posts?.data && posts?.data?.data.length > 0
+      {posts && posts.data.length > 0
         ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {posts?.data?.data.map(post => (
+                {posts.data.map(post => (
                   <UserPostCard key={post.id} post={post} />
                 ))}
               </div>
@@ -97,12 +104,12 @@ export default function PostsListPage() {
                   {' '}
                   {Math.min(
                     pageValue * PAGE_SIZE,
-                    posts?.data?.meta.itemCount || 0,
+                    posts.meta.itemCount || 0,
                   )}
                   {' '}
                   of
                   {' '}
-                  {posts?.data?.meta.itemCount}
+                  {posts.meta.itemCount}
                   {' '}
                   posts
                 </div>

@@ -1,6 +1,7 @@
 import type {
   CreateCommentSchema,
 } from '@lonestone/openapi-generator'
+import { commentsControllerCreateComment, commentsControllerDeleteComment, commentsControllerGetComments } from '@lonestone/openapi-generator/client/sdk.gen'
 import {
   Alert,
   AlertDescription,
@@ -14,7 +15,6 @@ import { useInfiniteQuery, useMutation } from '@tanstack/react-query'
 import { Loader2, MessageSquare } from 'lucide-react'
 import { useMemo } from 'react'
 import { CommentItem } from '@/features/comments/comment-item'
-import { apiClient } from '@/lib/api-client'
 import { queryClient } from '@/lib/query-client'
 import { CommentForm } from './comment-form'
 
@@ -34,7 +34,7 @@ export function CommentsList({
   // Add comment mutation
   const { mutateAsync: addComment, isPending: isAddingComment } = useMutation({
     mutationFn: async (data: CreateCommentSchema & { parentId?: string }) => {
-      return apiClient.commentsControllerCreateComment({
+      return commentsControllerCreateComment({
         body: data,
         path: {
           postSlug: postId,
@@ -76,18 +76,25 @@ export function CommentsList({
   } = useInfiniteQuery({
     queryKey: ['comments', postId],
     queryFn: async ({ pageParam = 0 }) => {
-      return apiClient.commentsControllerGetComments({
+      const res = await commentsControllerGetComments({
         path: {
           postSlug: postId,
         },
         query: {
           offset: pageParam as number,
+          pageSize: 10,
         },
       })
+
+      if (res.error) {
+        throw res.error
+      }
+
+      return res.data
     },
     getNextPageParam: (lastPage) => {
-      if (lastPage.data?.meta?.hasMore) {
-        return lastPage.data.meta.offset + lastPage.data.meta.pageSize
+      if (lastPage?.meta?.hasMore && lastPage.meta.offset + lastPage.meta.pageSize < lastPage.meta.itemCount) {
+        return lastPage.meta.offset + lastPage.meta.pageSize
       }
       return undefined
     },
@@ -97,9 +104,10 @@ export function CommentsList({
   // Delete comment mutation
   const deleteCommentMutation = useMutation({
     mutationFn: async (commentId: string) => {
-      return apiClient.commentsControllerDeleteComment({
+      return commentsControllerDeleteComment({
         path: {
           commentId,
+          postSlug: postId,
         },
       })
     },
@@ -112,7 +120,7 @@ export function CommentsList({
   })
 
   const allComments = useMemo(() => {
-    return commentsPages?.pages.flatMap(page => page.data?.data || []) || []
+    return commentsPages?.pages.flatMap(page => page?.data || []) || []
   }, [commentsPages])
 
   // Check if we need to load more comments when scrolling
