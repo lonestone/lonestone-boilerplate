@@ -104,7 +104,8 @@ await this.emailService.sendEmail({
 const isConnected = await this.emailService.verifyConnection()
 if (isConnected) {
   console.log('Email service is ready')
-} else {
+}
+else {
   console.log('Email service connection failed')
 }
 ```

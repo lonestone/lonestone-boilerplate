@@ -1,5 +1,4 @@
-// We need to import the createAuth function from the api package to infer the type correctly
-// eslint-disable-next-line ts/ban-ts-comment
+// eslint-disable-next-line ts/ban-ts-comment -- ignore
 // @ts-ignore
 import type { BetterAuthType } from '../../../api/src/config/better-auth.config'
 import { customSessionClient, inferAdditionalFields } from 'better-auth/client/plugins'

@@ -23,7 +23,6 @@ services:
       - '${SMTP_PORT_WEB}:1080'
       - '${SMTP_PORT}:1025'
 
-  
   # API Backend
   # api:
   #   build:
@@ -70,8 +69,6 @@ services:
   #     - "5173:5173"
   #   depends_on:
   #     - api
-
-  
 
 volumes:
   postgres_data:

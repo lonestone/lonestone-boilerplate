@@ -158,6 +158,11 @@ jobs:
           DATABASE_PASSWORD: test_password
           DATABASE_NAME: test_db
 
+          EMAIL_HOST: localhost
+          EMAIL_PORT: 1025
+          EMAIL_SECURE: false
+          EMAIL_FROM: test@example.com
+
           BETTER_AUTH_SECRET: test_secret
           TRUSTED_ORIGINS: '*'
           NODE_ENV: test

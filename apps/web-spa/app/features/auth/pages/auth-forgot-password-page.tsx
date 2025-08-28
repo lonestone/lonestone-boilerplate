@@ -1,8 +1,8 @@
 import type { AuthForgotPasswordFormData } from '../forms/auth-forgot-password-form'
-import { authClient } from '@/lib/auth-client'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { authClient } from '@/lib/auth-client'
 import { AuthPageHeader } from '../components/auth-page-header'
 import { AuthForgotPasswordForm } from '../forms/auth-forgot-password-form'
 

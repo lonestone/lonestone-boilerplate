@@ -1,7 +1,7 @@
 import type { AuthResetPasswordFormData } from '../forms/auth-reset-password-form'
-import { authClient } from '@/lib/auth-client'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router'
+import { authClient } from '@/lib/auth-client'
 import { AuthPageHeader } from '../components/auth-page-header'
 import { AuthResetPasswordForm } from '../forms/auth-reset-password-form'
 

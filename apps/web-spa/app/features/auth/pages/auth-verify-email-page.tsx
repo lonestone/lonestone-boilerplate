@@ -1,8 +1,8 @@
-import { authClient } from '@/lib/auth-client'
 import { useMutation } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
+import { authClient } from '@/lib/auth-client'
 import { AuthPageHeader } from '../components/auth-page-header'
 
 export default function AuthVerifyEmailPage() {
@@ -34,6 +34,7 @@ export default function AuthVerifyEmailPage() {
     if (token) {
       verifyEmailMutation(token)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
   if (isPending) {

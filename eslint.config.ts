@@ -5,8 +5,6 @@ export default antfu(
   // Configures for antfu's config and global rules
   {
     react: true,
-    css: true,
-    html: true,
     ignores: [
       '**/.react-router/**',
       '**/*.gen.ts',
@@ -15,11 +13,14 @@ export default antfu(
       '**/build/',
       'packages/schematics/src/files/',
       'packages/openapi-generator/client/',
+      'node_modules/',
     ],
     rules: {
       'ts/no-explicit-any': 'error',
+      'react-refresh/only-export-components': 'off',
     },
   },
+
   // Starting from the second arguments they are ESLint Flat Configs
   // Careful, antfu renames some plugins for consistency https://github.com/antfu/eslint-config?tab=readme-ov-file#plugins-renaming
   {

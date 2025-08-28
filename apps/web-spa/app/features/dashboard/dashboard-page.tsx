@@ -1,4 +1,3 @@
-import { authClient } from '@/lib/auth-client'
 import { Header } from '@lonestone/ui/components/layout/Header'
 import { Button } from '@lonestone/ui/components/primitives/button'
 import {
@@ -19,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router'
+import { authClient } from '@/lib/auth-client'
 
 export default function DashboardPage() {
   const { data: sessionData, isPending } = authClient.useSession()
