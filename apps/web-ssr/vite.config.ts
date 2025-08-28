@@ -13,4 +13,9 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  optimizeDeps: {
+    // Preload tanstack react query to avoid hydration error
+    // See: https://react-query.tanstack.com/guides/window-undefined
+    include: ['@tanstack/react-query'],
+  },
 })
