@@ -16,7 +16,7 @@ function subscribe(callback: () => void): (() => void) {
 };
 
 function useTheme(): [Theme, (newTheme: Theme) => void] {
-  const theme = useSyncExternalStore(subscribe, getThemeFromLocalStorage)
+  const theme = useSyncExternalStore(subscribe, getThemeFromLocalStorage, () => 'dark' as Theme)
 
   const setTheme = (newTheme: Theme) => {
     localStorage.setItem(THEME_STORAGE_KEY, newTheme)
