@@ -36,10 +36,6 @@ export default function DashboardPage() {
     }
   }, [sessionData, navigate, isPending])
 
-  useEffect(() => {
-    document.body.classList.toggle('dark', theme === 'dark')
-  }, [theme])
-
   const handleThemeChange = (checked: boolean) => {
     setTheme(checked ? 'dark' : 'light')
   }
