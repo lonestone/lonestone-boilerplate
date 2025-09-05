@@ -57,13 +57,17 @@ La configuration se trouve dans le fichier `openapi-ts.config.ts`. Elle définit
 Pour utiliser le client API généré dans une application :
 
 ```typescript
-import { createApiClient } from '@lonestone/openapi-generator'
+import { createClient } from '@lonestone/openapi-generator/client/client'
 
-const apiClient = createApiClient({
+const apiClient = createClient({
   baseURL: 'http://localhost:3000',
   // autres options...
 })
+```
 
+```typescript
 // Exemple d'utilisation
-const posts = await apiClient.getPosts()
+import { postControllerCreatePost } from '@lonestone/openapi-generator'
+
+const posts = await postControllerCreatePost({ client: apiClient })
 ```
