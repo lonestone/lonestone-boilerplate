@@ -1,6 +1,7 @@
 import type { Route } from './+types/root'
 import { client } from '@lonestone/openapi-generator'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import {
   isRouteErrorResponse,
   Links,
@@ -10,6 +11,7 @@ import {
   ScrollRestoration,
 } from 'react-router'
 import { queryClient } from '@/lib/query-client'
+import useTheme from './hooks/useTheme'
 import '@fontsource/source-sans-pro'
 import '@lonestone/ui/globals.css'
 
@@ -32,6 +34,12 @@ export const links: Route.LinksFunction = () => [
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const [theme] = useTheme()
+
+  useEffect(() => {
+    document.body.classList.toggle('dark', theme === 'dark')
+  }, [theme])
+
   return (
     <html lang="en">
       <head>

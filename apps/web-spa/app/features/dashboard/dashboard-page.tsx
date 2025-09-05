@@ -8,27 +8,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@lonestone/ui/components/primitives/dropdown-menu'
+import { Switch } from '@lonestone/ui/components/primitives/switch'
 import {
   LayoutDashboard,
   LogOut,
+  MoonStar,
   PlusCircle,
   Settings,
+  Sun,
   User,
   UserIcon,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router'
+import useTheme from '@/hooks/useTheme'
 import { authClient } from '@/lib/auth-client'
 
 export default function DashboardPage() {
   const { data: sessionData, isPending } = authClient.useSession()
   const navigate = useNavigate()
 
+  const [theme, setTheme] = useTheme()
+
   useEffect(() => {
     if (!isPending && !sessionData) {
       navigate('/login')
     }
   }, [sessionData, navigate, isPending])
+
+  const handleThemeChange = (checked: boolean) => {
+    setTheme(checked ? 'dark' : 'light')
+  }
 
   return (
     <>
@@ -79,6 +89,16 @@ export default function DashboardPage() {
                     <Settings className="h-4 w-4" />
                     <span>Settings</span>
                   </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild onSelect={e => e.preventDefault()}>
+                  <div className="flex items-center gap-2">
+                    <Sun className={theme === 'dark' ? 'text-foreground/50' : 'text-foreground'} />
+                    <Switch
+                      checked={theme === 'dark'}
+                      onCheckedChange={handleThemeChange}
+                    />
+                    <MoonStar className={theme === 'light' ? 'text-foreground/50' : 'text-foreground'} />
+                  </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
