@@ -21,14 +21,14 @@ import {
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router'
-import useLocalStorage from '@/hooks/useLocalStorage'
+import useTheme from '@/hooks/useTheme'
 import { authClient } from '@/lib/auth-client'
 
 export default function DashboardPage() {
   const { data: sessionData, isPending } = authClient.useSession()
   const navigate = useNavigate()
 
-  const [theme, setTheme] = useLocalStorage('theme', 'light')
+  const [theme, setTheme] = useTheme()
 
   useEffect(() => {
     if (!isPending && !sessionData) {
