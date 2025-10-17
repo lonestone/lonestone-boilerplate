@@ -9,7 +9,7 @@
   "license": "ISC",
   "keywords": [],
   "engines": {
-    "node": "22.14.0",
+    "node": "24.10.0",
     "pnpm": "10.5.0"
   },
   "scripts": {
