@@ -7,16 +7,13 @@ Globs: apps/web-ssr/* & apps/web-spa/*
 
 ## Stack
 
-- React
-- TypeScript
-- Tailwind CSS
-- Shadcn UI
-- React Router v7
-- Tanstack Query
-- React Hook Form
-- Zod
+See [README.md](../README.md) for the full tech stack.
 
 ## General Instructions
+In general, respect the current project structure and file names.
+
+If not specified otherwise, follow the following guidelines:
+
 - Use kebab-case for file names.
 - Use features folder to add route components or scoped components. Look at other features in the repo. It shoud look like this:
     - features/

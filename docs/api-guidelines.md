@@ -25,9 +25,12 @@ modules/feature-name/
 ├── feature-name.module.ts     # Module definition
 ├── feature-name.controller.ts # HTTP endpoints
 ├── feature-name.service.ts    # Business logic
-├── feature-name.entity.ts     # Database entities
+├── feature-name.entity.ts     # If there is a single entity, a single entity file is fine
+├── feature-name.contract.ts   # If there is a single entity, a single contract is fine
 └── contracts/                 # DTOs and validation schemas
-    └── feature-name.contract.ts
+    └── feature-name.contract.ts # If multiple contracts are needed, create a subfolder to store them together
+└── entities/                 # Database entities
+    └── feature-name.entity.ts    # If multiple entities are needed, create a subfolder to store them together
 ```
 
 ### Naming Conventions
@@ -55,6 +58,17 @@ It's generated with the following files:
 - `__name__.module.ts`
 - `contracts/__name__.contract.ts`
 - `tests/__name__.controller.spec.ts`
+
+If you want to create a new module from scratch without the generator, you should follow the following steps (posts module is provided as an example because it's present in the boilerplate, adapt as needed)
+
+1. Create an entity, using posts.entity.ts (or another existing entity file if not found) as reference;
+2. Create a contract, using posts.contract.ts (or another existing contract file if not found) as reference.
+    a. The contract file should contain the schema for all CRUD actions (GET/POST/PUT/DELETE);
+    b. If related contracts are needed (relations), create the related contract files first;
+    c. When creating a contract, always start from the GET contract (nameOfEntitySchema) and then create the create and update contracts by extending the initial schema (you can use zod pick);
+3. Create a service, using posts.service.ts (or another existing service file if not found) as reference;
+4. Create a controller, using posts.controller.ts (or another existing controller file if not found) as reference;
+5. Create a module, using posts.module.ts (or another existing module file if not found) as reference;
 
 ### Controllers
 
