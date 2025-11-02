@@ -36,7 +36,7 @@ export const configValidationSchema = z.object({
   // Email
   EMAIL_HOST: z.string().default('localhost'),
   EMAIL_PORT: z.coerce.number().default(1025),
-  EMAIL_SECURE: z.coerce.boolean().default(false),
+  EMAIL_SECURE: z.stringbool().default(false),
   EMAIL_USER: z.string().optional(),
   EMAIL_PASSWORD: z.string().optional(),
   EMAIL_FROM: z.string().email().default('noreply@lonestone.io'),
