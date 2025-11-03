@@ -1,5 +1,10 @@
 packages:
-  # Tous les packages dans le dossier 'packages'
-  - 'packages/*'
-  # Tous les packages dans le dossier 'apps'
-  - 'apps/*'
+  - packages/*
+  - apps/*
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - '@scarf/scarf'
+  - '@tailwindcss/oxide'
+  - esbuild
+  - nestjs-pino
+  - unrs-resolver
