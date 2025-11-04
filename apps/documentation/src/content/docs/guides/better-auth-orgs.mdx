@@ -11,22 +11,14 @@ This guide helps you quickly configure the Organizations plugin in the boilerpla
 
 ## File Structure
 
-We will create an `/organization` folder to group all organization-related elements. This is a recommended organization, but you are free to organize your files as you prefer based on your needs.
+Since the Organizations plugin is part of Better Auth and works as an integrated system, we will add all organization-related files in the existing `/auth` folder.
 
-Here is the file structure we will create and modify:
+Here is the file structure we will modify:
 
 ```
 apps/api/src/
-├── organization/
-│   ├── organization.entity.ts      (to create)
-│   ├── organization.module.ts      (to create)
-│   ├── organization.controller.ts  (optional)
-│   ├── organization.service.ts     (optional)
-│   ├── organization.guard.ts       (optional)
-│   └── organization.decorator.ts   (optional)
 ├── auth/
-│   └── session.entity.ts           (to update)
-├── app.module.ts                   (to update)
+│   └── auth.entity.ts              (to update)
 └── better-auth.config.ts           (to update)
 ```
 
@@ -55,17 +47,16 @@ import { Steps } from '@astrojs/starlight/components';
 
    <br/>
 
-2. ### Create MikroORM entities
+2. ### Add organization entities
 
    The Organizations plugin requires 3 mandatory tables: **Organization**, **Member**, and **Invitation**. There are also optional tables depending on your needs.
 
    The [official Better Auth schema](https://www.better-auth.com/docs/plugins/organization#schema) details all tables and their fields.
 
-   Create a file `organization.entity.ts` in the `/src/organization` folder containing the 3 entities:
+   Add the 3 organization entities to your existing `auth.entity.ts` file:
 
-   ```typescript title="src/organization/organization.entity.ts"
-   import { Entity, PrimaryKey, Property, OneToMany, Collection, ManyToOne } from "@mikro-orm/core";
-   import { User } from "../auth/user.entity";
+   ```typescript title="src/auth/auth.entity.ts"
+   // ... your existing entities (User, Session, etc.)
 
    /**
     * Store organization information
@@ -146,93 +137,47 @@ import { Steps } from '@astrojs/starlight/components';
    }
    ```
 
+   :::tip[Customizing entities]
+   You can customize the database table names using the `@Entity({ tableName: '...' })` decorator. For example, you might want to prefix all auth-related tables with `auth_` (like `auth_organization`, `auth_member`, etc.) to keep them organized. You can also add custom fields to your organization entities - see [Extending the schema](#extending-the-schema) below.
+   :::
+
    #### Update the Session entity
 
    The Better Auth Organizations plugin automatically adds the `activeOrganizationId` field to the session when a user logs in or switches their active organization. You need to add this field to your MikroORM Session entity to match the database schema:
 
-   ```typescript title="src/auth/session.entity.ts"
-   // ... your existing properties
-
-   @Property({ fieldName: 'activeOrganizationId', nullable: true })
-   activeOrganizationId?: string;
+   ```typescript title="src/auth/auth.entity.ts"
+   // ... your existing entities
+   @Entity(tableName: 'session')
+   export class Session {
+     // ... your existing properties
+     @Property({ fieldName: 'activeOrganizationId', nullable: true })
+     activeOrganizationId?: string;
+   }
    ```
 
-   #### Create the NestJS module
+   :::note[About Active Organization]
+   The `activeOrganizationId` field stores which organization the user is currently working in. Users can switch between organizations using `authClient.organization.setActive()`. You can also automatically set the active organization when a session is created using database hooks in `better-auth.config.ts`.
 
-   Create the `organization.module.ts` file to declare the module:
-
-   ```typescript title="src/organization/organization.module.ts"
-   import { MikroOrmModule } from '@mikro-orm/nestjs'
-   import { Module } from '@nestjs/common'
-   import { Invitation, Member, Organization } from './organization.entity'
-
-   @Module({
-     imports: [MikroOrmModule.forFeature([Organization, Member, Invitation])],
-     exports: [],
-   })
-   export class OrganizationModule {}
-   ```
-
-   <br/>
-
-3. ### Import the module in AppModule
-
-   Add the Organizations module to your main module:
-
-   ```typescript title="src/app.module.ts"
-   import { OrganizationModule } from './organization/organization.module'
-
-   @Module({
-     imports: [
-       // ... your other imports
-       OrganizationModule,
-     ],
-   })
-   export class AppModule {}
-   ```
-
-   <br/>
-
-4. ### Create the database tables
-
-   Now that you have created the entities, you need to create the corresponding tables in the database.
-
-   **Option 1: Development project without important data**
-
-   If you are in the development phase and can recreate your database:
-
-   ```bash
-   # In the apps/api folder
-   pnpm db:fresh
-   ```
-
-   This command completely recreates the database schema from your entities.
-
-   **Option 2: Existing project with data to preserve**
-
-   If you already have data in the database that you want to keep, use the migration system:
-
-   ```bash
-   # Generate a new migration
-   pnpm db:migrate:create
-
-   # Apply the migration
-   pnpm db:migrate:up
-   ```
-
-   :::note[Need help with MikroORM?]
-   For more details on migrations and MikroORM, check out the [MikroORM guide](/guides/mikro-orm) (coming soon) or the [official MikroORM documentation](https://mikro-orm.io/docs/migrations).
+   For detailed information on managing active organizations, see the [Better Auth Active Organization documentation](https://www.better-auth.com/docs/plugins/organization#active-organization).
    :::
 
    <br/>
 
-5. ### Use the client on the frontend
+3. ### Update the database
 
-   If you are already using the Better Auth client in the boilerplate, nothing changes! You now automatically have access to organization-related methods thanks to the plugin you activated.
+   Now that you have added the entities, you need to update your database to create the corresponding tables.
 
-   :::note[Automatic typing]
-   The boilerplate already exports the necessary types in `better-auth.config.ts` (version 1.0.0+). You automatically benefit from TypeScript typing for all Organizations plugin methods!
+   Depending on your project stage, you can either recreate your database from scratch if you're in development without important data, or use the migration system to preserve existing data.
+
+   :::note[Need help with database updates?]
+   For detailed instructions on database migrations and schema updates, check out the [Migrations guide](/guides/migrations) (coming soon).
    :::
+
+   <br/>
+
+4. ### Use the client on the frontend
+
+   Now that everything is configured on the API side, you can use organization-related methods from your frontend client.
 
    **Usage examples:**
 
@@ -255,14 +200,151 @@ import { Steps } from '@astrojs/starlight/components';
 
 The Organizations plugin is now configured and operational. You can create organizations, invite members, and manage roles via the Better Auth client.
 
-## Additional examples and recommendations
+## Going further
 
-- **Controller & Service**: examples of `OrganizationController` and `OrganizationService` to manage organizations
-- **Session**: inject the `orgId` in the session for quick access
-- **NestJS Decorators**: create decorators to inject the current organization
-- **Guards**: manage permissions and organization metadata
-- **Advanced configuration**: rename entities, customize the schema
+### Custom business logic
 
-## Troubleshooting
+Better Auth provides a complete set of [methods](https://www.better-auth.com/docs/plugins/organization#api-reference) to interact with organization entities (create, update, delete, invite members, etc.).
 
-Common issues
+However, you may need to implement custom business logic specific to your application. In this case, you can create your own methods in `auth.service.ts` to handle organization-related operations that go beyond what Better Auth provides out of the box.
+
+**Example:**
+
+```typescript title="src/auth/auth.service.ts"
+//... your existing imports
+import { Organization, Member } from './auth.entity'
+
+@Injectable()
+export class AuthService {
+  constructor(private readonly em: EntityManager) {}
+  // ... your existing methods
+
+  async validateOrganizationLimit(userId: string) {
+    // Custom business logic: check if user can create more organizations
+    // based on their subscription plan
+    const memberCount = await this.em.count(Member, { user: userId })
+
+    const userSubscription = await this.getUserSubscription(userId)
+    const limit = userSubscription.plan === 'pro' ? 10 : 1
+
+    if (memberCount >= limit) {
+      throw new Error(`Organization limit reached for ${userSubscription.plan} plan`)
+    }
+
+    return true
+  }
+}
+```
+
+### NestJS Decorators & Guards
+
+The boilerplate already provides authentication decorators and guards. You can extend them to handle organization-specific logic.
+
+**Add organization-related decorators:**
+
+```typescript title="src/auth/auth.decorator.ts"
+// ... your existing decorators (@Session, @Public, etc.)
+
+export const RequireOrganization = () => SetMetadata('REQUIRE_ORGANIZATION', true)
+
+export const CurrentOrganization = createParamDecorator(
+  (_data: unknown, context: ExecutionContext) => {
+    const request = context.switchToHttp().getRequest()
+    const session = request.session
+    return session?.activeOrganizationId
+  },
+)
+```
+
+**Extend the AuthGuard to check organization permissions:**
+
+```typescript title="src/auth/auth.guard.ts"
+// In your existing AuthGuard canActivate method, after session validation:
+
+const requireOrganization = this.reflector.get('REQUIRE_ORGANIZATION', context.getHandler())
+if (requireOrganization && !session.activeOrganizationId) {
+  throw new UnauthorizedException('Active organization required')
+}
+```
+
+**Usage in your controllers:**
+
+```typescript
+@Controller('projects')
+export class ProjectController {
+  @Post()
+  @RequireOrganization()
+  async createProject(
+    @CurrentOrganization() orgId: string,
+    @Body() dto: CreateProjectDto
+  ) {
+    // Create project for the active organization
+    return this.projectService.create(orgId, dto)
+  }
+}
+```
+
+### Extending the schema
+
+You can add custom fields to the organization entities to match your business needs. Since Better Auth v1.3, custom fields added via `additionalFields` will automatically be available in the API endpoints.
+
+**1. Configure the schema in Better Auth:**
+
+```typescript title="better-auth.config.ts"
+export const auth = betterAuth({
+  plugins: [
+    organization({
+      schema: {
+        organization: {
+          additionalFields: {
+            industry: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+            employeeCount: {
+              type: "number",
+              input: true,
+              required: false,
+            }
+          }
+        }
+      }
+    })
+  ]
+})
+```
+
+**2. Add the fields to your MikroORM entity:**
+
+```typescript title="src/auth/auth.entity.ts"
+@Entity({ tableName: 'organization' })
+export class Organization {
+  // ... existing fields
+
+  @Property({ nullable: true })
+  industry?: string
+
+  @Property({ type: 'int', nullable: true })
+  employeeCount?: number
+}
+```
+
+**3. Configure the client for type inference (optional but recommended):**
+
+```typescript title="auth-client.ts"
+import { inferOrgAdditionalFields, organizationClient } from "better-auth/client/plugins"
+import type { auth } from "@/auth" // import type only
+
+const client = createAuthClient({
+  plugins: [
+    organizationClient({
+      schema: inferOrgAdditionalFields<typeof auth>(),
+    }),
+  ],
+})
+```
+
+:::tip
+For complete documentation on customizing organization schemas, roles, permissions, and other advanced features, see the [Better Auth Organizations Schema Customization](https://www.better-auth.com/docs/plugins/organization#customizing-the-schema).
+:::
