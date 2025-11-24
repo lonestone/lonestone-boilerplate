@@ -2,7 +2,7 @@ name: Deploy documentation to GitHub Pages
 
 on:
   push:
-    branches: [main, pierrick/doc]
+    branches: [main]
     paths:
       - 'apps/documentation/**'
       - .github/workflows/deploy-docs.yml
