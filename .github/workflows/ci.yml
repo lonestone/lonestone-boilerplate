@@ -11,7 +11,7 @@ jobs:
     name: 🛠️ Setup
     runs-on: ubuntu-latest
     outputs:
-      node-version: 22.14.0
+      node-version: 24.10.0
       pnpm-version: 10.5.2
     steps:
       - name: 📥 Checkout repository
@@ -20,7 +20,7 @@ jobs:
       - name: 🔧 Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 22.14.0
+          node-version: 24.10.0
           pnpm-version: 10.5.2
 
       - name: 📁 Get pnpm store directory

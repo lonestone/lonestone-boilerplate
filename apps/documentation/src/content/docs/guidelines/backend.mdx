@@ -1,6 +1,6 @@
 ---
-Description: This document contains guidelines for the API of the Lonestone project.
-Globs: apps/api/*
+title: Backend Guidelines
+description: Guidelines for the backend of the Lonestone project.
 ---
 
 # API Guidelines
@@ -221,7 +221,8 @@ export class User {
 ### Queries
 
 - Use the EntityManager for database operations
-- Use transactions for operations that modify multiple entities
+- Use transactions for operations that modify multiple entities. MikroORM wraps each operation in a transaction by default, if they come from a controller.
+- Ensure you have a MikroORM Context. Mikro provides one for each request by default, but if you call a method from a CRON you'll need to create one or use the EnsureRequestContext decorator.
 - Optimize queries for performance
 - Use pagination for large result sets
 

@@ -1,0 +1,35 @@
+---
+title: Managing .env files
+description: Guide to manage .env files
+---
+
+## ❓ How it works
+
+The project uses the [dotenvx](https://dotenvx.com/) library to manage the .env files.
+
+A successor to dotenv, that is more secure and easier to use, there is not much to say about its basic features (loading env variables, etc).
+
+However, dotenvx allows you to store secrets within the codebase, which:
+
+- Allows versionning of the secrets
+- Centralizes the secrets management in the repo (instead of syncing 1password / vault / etc)
+- Allows using the secrets in production directly (instead of copying the values in Dokploy, Render, etc.). This also leads to easier switch between providers.
+
+## 📝 How to use
+
+### Loading .env files
+Vite automatically loads the .env files when you run `pnpm dev` or `pnpm build`.
+
+For the API, we use the `dotenvx/dotenvx` library to load the .env files.
+
+```typescript
+import dotenvx from '@dotenvx/dotenvx'
+
+dotenvx.config()
+```
+
+The .env files are managed automatically when you run `pnpm dev` or `pnpm build`.
+
+You can also use the `dotenvx` command to manage your .env files.
+
+To use dotenvx encryption, see the guide [here](/guides/encrypt-env).

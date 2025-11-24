@@ -4,9 +4,14 @@
 
 # Boilerplate project
 
-This repository represents the typical project structure at Lonestone, consisting of an API and multiple frontends.
+This repository represents the typical project structure at Lonestone, consisting of an API and one to several frontends.
 
 To start a new project using this boilerplate, simply create a project on Github and select the boilerplate from the template list.
+
+For more details, see the [documentation](https://lonestone.github.io/lonestone-boilerplate/) or check out the local documentation in the `apps/documentation` folder.
+
+[![CI ✨](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/ci.yml/badge.svg)](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/ci.yml)
+[![Deploy documentation to GitHub Pages](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/deploy-docs.yml)
 
 ## 📋 Table of Contents
 
@@ -33,46 +38,11 @@ This project uses a "monorepo" architecture. The advantages are numerous, but pr
 
 ## 🛠️ Tech Stack
 
-### Frontend
-
-- [React 19](https://react.dev/) - JavaScript library for building user interfaces
-- [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
-- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
-- [Shadcn UI](https://ui.shadcn.com/) - Reusable components built with Radix UI and Tailwind CSS
-- [React Router v7](https://reactrouter.com/) - Declarative routing for React
-- [TanStack Query](https://tanstack.com/query/latest) - Powerful asynchronous state management
-- [React Hook Form](https://react-hook-form.com/) - React form management
-
-### Backend
-
-- [NestJS](https://nestjs.com/) - Progressive Node.js framework
-- [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
-- [MikroORM](https://mikro-orm.io/) - TypeScript ORM for Node.js
-- [Zod](https://zod.dev/) - TypeScript-first schema validation
-- [Better Auth](https://www.better-auth.com/docs) - Authentication and authorization solution
-
-### Infrastructure
-
-- [Docker](https://www.docker.com/) - Containerization platform
-- [PostgreSQL](https://www.postgresql.org/) - Relational database management system
-- [MinIO](https://min.io/) - S3-compatible object storage
-- [DotenvX](https://dotenvx.com/) - Environment variables management
+See the [Architecture](apps/documentation/src/content/docs/explanations/architecture.mdx) page for more details.
 
 ## 📁 Project Structure
 
-```
-lonestone/
-├── apps/                  # Main applications
-│   ├── api/               # Backend API (NestJS)
-│   ├── web-spa/           # Web SPA application (React)
-│   └── web-ssr/           # Web SSR application (React)
-├── packages/              # Shared packages
-│   ├── ui/                # Reusable UI components (shadcn/ui)
-│   ├── openapi-generator/ # OpenAPI client generator
-│   └── schematics/        # Schematics used to generate code in API
-├── docs/                  # Project documentation
-└── .github/               # GitHub Actions workflows
-```
+See the [Project Structure](apps/documentation/src/content/docs/explanations/architecture.mdx) page for more details.
 
 ## 📋 Prerequisites
 

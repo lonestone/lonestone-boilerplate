@@ -1,0 +1,74 @@
+---
+title: Database Management
+description: Guide to manage the database
+---
+The project can be in two different states:
+
+1. You do not care about migrations yet, because there is no production data yet (or expensive data to seed).
+2. Or you need to manage migrations.
+
+## No migrations needed
+
+#### Starting fresh
+This command will drop the database and re-create it based on your entity files.
+```bash
+pnpm db:fresh
+```
+
+If you want also want to seed the database with data, you can use the following command:
+```bash
+pnpm db:fresh:seed
+```
+
+#### Syncing changes without dropping the database
+This command will sync the changes to the database based on your entity files. Note that this can lead to some errors.
+```bash
+pnpm db:sync
+```
+
+## Migrations needed
+
+### The switch to production: setting up migrations
+
+You were happily using `sync`, but it's time to launch the project and you need to setup migrations.
+
+1. Ensure you don't have any migrations, check the `apps/api/src/modules/db/migrations` folder. ⚠️ Some are shipped with the boilerplate!
+2. Create the initial migration file
+  ```bash
+  pnpm db:migration:init
+  ```
+3. Clean your production database: MikroORM will need an empty database to apply the initial migration. You may also want to do that for you pre-production environment.
+4. Set up your infrastructure to run `pnpm db:migrate:up` on startup (instead of `pnpm db:sync` or other)
+
+And... that's it! You can deploy this version.
+
+:::note[What about the snapshot file?]
+MikroORM will create a snapshot file when you run the initial migration. This file is used to track the state of the database, and needs to be committed to Git.
+
+See the [Database Migrations](/explanations/3_database_migrations) page for more details.
+:::
+
+### Working with migrations
+
+When you make any changes to your entities, you need to create a new migration file.
+
+With other ORMs, you would need to reset your database to the previous state, but MikroORM uses the snapshot file to track the state of the database, so no need to checkout `main`.
+
+#### Creating a new migration
+```bash
+pnpm db:migrate:create
+```
+
+Then, you can run the migration to test it:
+```bash
+pnpm db:migrate:up
+```
+
+#### Deploying a new migration
+Migrations are tricky because they order of execution matters. If another developer made some changes to the database, remember to pull their changes and **apply their migrations first**.
+
+When several PRs are opened and are making changes to the database, it's a good practise to synchronize between developers to ensure migrations are runned in a correct order.
+
+When you are ready to deploy your changes, just push your changes and your container / launch command should run the migrations via `pnpm db:migrate:up`.
+
+Remember to respect the production safety rules described in the [Database Migrations](/explanations/3_database_migrations) page.

@@ -18,6 +18,9 @@ Generate code, corrections, and refactorings that comply with the basic principl
 - Prefer functional and declarative programming patterns over imperative
 - Emphasize type safety and static analysis
 - Practice component-driven development
+- Never remove user code comments. You can remove your own only
+- While moving code around, respect comments, TODOs, and syntax (line breaks)
+- When refactoring, do not delete the code before moving it (as you will lose the code this way)
 
 # Code Implementation Guidelines
 

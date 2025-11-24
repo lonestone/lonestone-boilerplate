@@ -1,0 +1,325 @@
+---
+title: Adding Admin feature
+description: Guide to integrate the Better Auth Admin plugin into the project
+---
+
+Better Auth, which we already use for authentication in this boilerplate, offers a complete plugin system to extend its features.
+
+The library provides a specific plugin for managing admin users with features like role-based access control, user impersonation, and ban management. The [official Better Auth documentation](https://www.better-auth.com/docs/plugins/admin) covers this plugin and all its options in depth.
+
+This guide will help you quickly configure the Admin plugin in the boilerplate with NestJS and MikroORM.
+
+## File Structure
+
+Since the Admin plugin is part of Better Auth and works as an integrated system, we will add all admin-related fields to existing files in the `/auth` folder.
+
+Here is the file structure we will modify:
+
+```
+apps/api/src/
+├── auth/
+│   ├── auth.entity.ts              (to update)
+│   ├── auth.guard.ts               (to update)
+│   └── auth.decorator.ts           (to update)
+└── better-auth.config.ts           (to update)
+```
+
+### Installation
+
+<br/>
+
+import { Steps } from '@astrojs/starlight/components';
+
+<Steps>
+
+1. ### Add the plugin to Better Auth configuration
+
+   In your Better Auth configuration file `better-auth.config.ts` on the API side, add the `admin` plugin:
+
+   ```typescript
+   import { admin } from "better-auth/plugins"
+
+   export const auth = betterAuth({
+     // ... your existing config
+     plugins: [
+       admin({
+         defaultRole: 'user',
+         adminRoles: ['admin'],
+       })
+     ]
+   })
+   ```
+
+   :::tip[Configuration options]
+   - `defaultRole`: The default role assigned to new users (e.g., 'user')
+   - `adminRoles`: Array of role names that should have admin privileges (e.g., ['admin', 'superadmin'])
+   :::
+
+   <br/>
+
+2. ### Update the User entity
+
+   The Admin plugin adds several fields to the user table. Update your `User` entity in `auth.entity.ts`:
+
+   ```typescript title="src/auth/auth.entity.ts"
+   @Entity({ tableName: 'auth_user' })
+   export class User {
+     // ... your existing properties (id, name, email, etc.)
+
+     @Property()
+     role!: string
+
+     @Property({ type: 'boolean', default: false })
+     banned!: boolean
+
+     @Property({ fieldName: 'banReason', nullable: true })
+     banReason: string | null = null
+
+     @Property({ fieldName: 'banExpires', nullable: true })
+     banExpires: Date | null = null
+
+     // ... your existing timestamps and relations
+   }
+   ```
+
+   :::note[About admin fields]
+   - `role`: Stores the user's role (e.g., 'user', 'admin'). The plugin automatically assigns the `defaultRole` on user creation.
+   - `banned`: Boolean flag indicating if the user is banned from the application.
+   - `banReason`: Optional text explaining why the user was banned.
+   - `banExpires`: Optional date when the ban will be automatically lifted.
+   :::
+
+   #### Update the Session entity for impersonation
+
+   The Admin plugin also adds an `impersonatedBy` field to track when an admin is impersonating another user:
+
+   ```typescript title="src/auth/auth.entity.ts"
+   @Entity({ tableName: 'auth_session' })
+   export class Session {
+     // ... your existing properties
+
+     @Property({ nullable: true })
+     impersonatedBy!: string | null
+
+     // ... your existing properties
+   }
+   ```
+
+   :::note[About impersonation]
+   The `impersonatedBy` field stores the admin user ID when an admin is impersonating another user. This enables audit trails and helps distinguish between genuine user actions and admin actions performed on behalf of users.
+   :::
+
+   <br/>
+
+3. ### Update the database
+
+   Now that you have updated the entities, you need to update your database to add the new columns.
+
+   Depending on your project stage, you can either recreate your database from scratch if you're in development without important data, or use the migration system to preserve existing data.
+
+   :::note[Need help with database updates?]
+   For detailed instructions on database migrations and schema updates, check out the [Database Migrations guide](/explanations/3_database_migrations).
+   :::
+
+   <br/>
+
+4. ### Use admin features
+
+   Now that everything is configured on the API side, you can use admin-related methods from your services.
+
+   **Usage examples:**
+
+    ```typescript
+    import { Injectable } from '@nestjs/common'
+    import { EntityManager } from '@mikro-orm/postgresql'
+    import { User } from './auth.entity'
+
+    @Injectable()
+    export class UsersService {
+    constructor(private readonly em: EntityManager) {}
+
+    async ban(id: string, data: BanUserDto): Promise<void> {
+        const user = await this.em.findOne(User, { id })
+
+        if (!user) {
+        throw new NotFoundException('User not found')
+        }
+
+        this.em.assign(user, {
+        banned: true,
+        banReason: data.banReason,
+        banExpires: data.banExpires,
+        })
+
+        await this.em.flush()
+    }
+
+    async unban(id: string): Promise<void> {
+        const user = await this.em.findOne(User, { id })
+
+        if (!user) {
+        throw new NotFoundException('User not found')
+        }
+
+        this.em.assign(user, {
+        banned: false,
+        banReason: null,
+        banExpires: null,
+        })
+
+        await this.em.flush()
+    }
+    }
+    ```
+
+   :::tip
+   All available routes and methods are documented in the [official Better Auth - Admin documentation](https://www.better-auth.com/docs/plugins/admin#api-reference).
+   :::
+
+   <br/>
+
+</Steps>
+
+The Admin plugin is now configured and operational. You can manage user roles, ban/unban users, and impersonate users via the Better Auth client.
+
+## Going further
+
+### NestJS Decorators & Guards
+
+The boilerplate already provides authentication decorators and guards. You can extend them to handle admin-specific logic.
+
+**Add admin-related decorators:**
+
+```typescript title="src/auth/auth.decorator.ts"
+import { SetMetadata } from '@nestjs/common'
+
+// ... your existing decorators (@Session, @Public, etc.)
+
+/**
+ * Decorator to mark routes that require super admin access
+ */
+export const SuperAdmin = () => SetMetadata('SUPER_ADMIN', true)
+```
+
+**Extend the AuthGuard to check admin permissions:**
+
+```typescript title="src/auth/auth.guard.ts"
+import type { CanActivate, ExecutionContext } from '@nestjs/common'
+import { EntityManager } from '@mikro-orm/postgresql'
+import { Injectable, UnauthorizedException } from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
+import { fromNodeHeaders } from 'better-auth/node'
+import { BetterAuthSession } from 'src/config/better-auth.config'
+import { AuthService } from 'src/modules/auth/auth.service'
+
+export interface AuthenticatedRequest extends Request {
+  session: NonNullable<BetterAuthSession>
+}
+
+@Injectable()
+export class AuthGuard implements CanActivate {
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly authService: AuthService,
+    private readonly em: EntityManager,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    try {
+      const request = context.switchToHttp().getRequest()
+      const session = await this.authService.api.getSession({
+        headers: fromNodeHeaders(request.headers),
+      })
+
+      request.session = session
+      request.user = session?.user ?? null
+
+      // If user is super admin, skip all guards
+      const isAdmin = session?.user?.role === 'admin'
+      if (isAdmin) {
+        return true
+      }
+
+      // Public routes guard
+      const isPublic = this.reflector.get('PUBLIC', context.getHandler())
+      if (isPublic) {
+        return true
+      }
+
+      // Super admin guard
+      const superAdminGuard = this.reflector.get('SUPER_ADMIN', context.getHandler())
+      if (superAdminGuard) {
+        if (!session) {
+          throw new UnauthorizedException('Authentication required')
+        }
+        if (!isAdmin) {
+          throw new UnauthorizedException('Admin access required')
+        }
+      }
+
+      // Default: require authentication
+      if (!session) {
+        throw new UnauthorizedException()
+      }
+
+      return true
+    }
+    catch (error) {
+      console.error(error)
+      throw new UnauthorizedException()
+    }
+  }
+}
+```
+
+**Usage in your controllers:**
+
+```typescript
+import { Controller, Get, Post, Body, Param } from '@nestjs/common'
+import { SuperAdmin } from './auth/auth.decorator'
+
+@Controller('admin')
+export class AdminController {
+  @Get('users')
+  @SuperAdmin()
+  async listUsers() {
+    // Only admins can access this endpoint
+    return this.userService.findAll()
+  }
+
+  @Post('users/:id/ban')
+  @SuperAdmin()
+  async banUser(
+    @Param('id') userId: string,
+    @Body() dto: BanUserDto
+  ) {
+    // Only admins can ban users
+    return this.userService.ban(userId, dto)
+  }
+}
+```
+
+### Frontend admin UI examples
+
+Here are some common patterns for building admin interfaces:
+
+**Admin check:**
+
+```typescript
+import { useAuth } from '@/lib/auth'
+
+export function AdminPanel() {
+  const { user } = useAuth()
+  
+  if (user?.role !== 'admin') {
+    return <div>Access denied</div>
+  }
+
+  return (
+    <div>
+      <h1>Admin Panel</h1>
+      {/* Admin features */}
+    </div>
+  )
+}
+```

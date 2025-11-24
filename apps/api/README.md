@@ -70,15 +70,9 @@ Better-auth also has a plugin to generate the documentation for you. You can fin
 
 ## Database management
 
-### Migrations flow
+Ensure you have read the [Database Migrations](../documentation/src/content/docs/explanations/database.mdx) page to know which flow to use (development vs migrations).
 
-There are 2 cases:
-
-1. You are still in development, and no data exists in production. At this point, you do not need to handle migrations yet (but you can if you want).
-
-2. Some data exists in production (or staging), that you need to keep between deployments. At this point, you need to handle migrations.
-
-1. No data exists in production
+### Resetting the database
 
 Reset your db
 
@@ -92,9 +86,7 @@ Reset + seed
 pnpm db:seed # Same but run seeders afterwards
 ```
 
-2. Some data exists in production
-
-Drop the DB and perform database migrations without seeding:
+Drop the DB and perform all database migrations without seeding:
 
 ```bash
 pnpm db:migrate:fresh # Drop the database and migrate up to the latest version
@@ -107,8 +99,6 @@ pnpm db:migrate:seed # Same but run seeders afterwards
 ```
 
 After making changes to your entities, you will need to create and commit a new migration.
-
-⚠️ Remember to reset your db state before creating a migration.
 
 ```bash
 # Generate a migration
@@ -157,5 +147,5 @@ docker run -p 3000:3000 \
   -e DATABASE_PORT=5432 \
   -e BETTER_AUTH_SECRET=secret \
   -e API_PORT=3000 \
-  lonestone/api sh -c "pnpm migration:run && node dist/main.js"
+  lonestone/api sh -c "pnpm db:migrate:up && node dist/main.js"
 ```

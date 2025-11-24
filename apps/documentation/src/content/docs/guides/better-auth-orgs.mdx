@@ -1,0 +1,317 @@
+---
+title: Adding Organizations feature
+description: Guide to integrate the Better Auth Organizations plugin into the project
+---
+
+Better Auth, which we already use for authentication in this boilerplate, offers a complete plugin system to extend its features.
+
+The library provides a specific plugin for managing organizations. The [official Better Auth documentation](https://www.better-auth.com/docs/plugins/organization) covers this plugin and all its options in depth.
+
+This guide will walk you through the process of quickly configuring the Organizations plugin in the boilerplate with NestJS and MikroORM.
+
+## File Structure
+
+Since the Organizations plugin is part of Better Auth and works as an integrated system, we will add all organization-related files in the existing `/auth` folder.
+
+Here is the file structure we will modify:
+
+```
+apps/api/src/
+├── auth/
+│   └── auth.entity.ts              (to update)
+└── better-auth.config.ts           (to update)
+```
+
+### Installation
+
+<br/>
+
+import { Steps } from '@astrojs/starlight/components';
+
+<Steps>
+
+1. ### Add the plugin to Better Auth configuration
+
+   In your Better Auth configuration file `better-auth.config.ts` on the API side, add the `organization` plugin:
+
+   ```typescript
+   import { organization } from "better-auth/plugins"
+
+   export const auth = betterAuth({
+     // ... your existing config
+     plugins: [
+       organization() // Minimal configuration
+     ]
+   })
+   ```
+
+   <br/>
+
+2. ### Update auth entities
+
+   The Organizations plugin requires 3 mandatory tables: **Organization**, **Member**, and **Invitation**. There are also optional tables depending on your needs.
+
+   The [official Better Auth schema](https://www.better-auth.com/docs/plugins/organization#schema) details all tables and their fields.
+
+   Add the 3 organization entities to your existing `auth.entity.ts` file:
+
+   ```typescript title="src/auth/auth.entity.ts"
+   // ... your existing entities (User, Session, etc.)
+
+   /**
+    * Store organization information
+    */
+   @Entity({ tableName: 'organization' })
+   export class Organization {
+     @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+     id!: string;
+
+     @Property()
+     name!: string;
+
+     @Property({ nullable: true })
+     slug?: string;
+
+     @Property({ nullable: true })
+     logo?: string;
+
+     @Property({ nullable: true })
+     metadata?: string;
+
+     @Property({ fieldName: 'createdAt' })
+     createdAt: Date = new Date();
+
+     @OneToMany(() => Member, (member) => member.organization)
+     members = new Collection<Member>(this);
+
+     @OneToMany(() => Invitation, (invitation) => invitation.organization)
+     invitations = new Collection<Invitation>(this);
+   }
+
+   /**
+    * Store members of an organization
+    */
+   @Entity({ tableName: 'member' })
+   export class Member {
+     @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+     id!: string;
+
+     @ManyToOne(() => User, { fieldName: 'userId', deleteRule: 'cascade' })
+     user!: User;
+
+     @ManyToOne(() => Organization, { fieldName: 'organizationId' })
+     organization!: Organization;
+
+     @Property({ default: 'member' })
+     role = 'member';
+
+     @Property({ fieldName: 'createdAt' })
+     createdAt: Date = new Date();
+   }
+
+   /**
+    * Store invitations to join an organization
+    */
+   @Entity({ tableName: 'invitation' })
+   export class Invitation {
+     @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+     id!: string;
+
+     @Property()
+     email!: string;
+
+     @ManyToOne(() => User, { fieldName: 'inviterId' })
+     inviter!: User;
+
+     @ManyToOne(() => Organization, { fieldName: 'organizationId' })
+     organization!: Organization;
+
+     @Property()
+     role!: string;
+
+     @Property()
+     status!: string;
+
+     @Property({ fieldName: 'expiresAt' })
+     expiresAt!: Date;
+   }
+   ```
+
+   :::tip[Customizing entities]
+   You can customize the database table names using the `@Entity({ tableName: '...' })` decorator. For example, you might want to prefix all auth-related tables with `auth_` (like `auth_organization`, `auth_member`, etc.) to keep them organized. You can also add custom fields to your organization entities - see [Extending the schema](#extending-the-schema) below.
+   :::
+
+   #### Update the User entity
+
+   ```typescript title="src/auth/auth.entity.ts"
+   // ... your existing entities
+   @Entity(tableName: 'user')
+   export class User {
+     // ... your existing properties
+
+      @OneToMany(() => Member, member => member.user)
+      members = new Collection<Member>(this)
+   }
+   ```
+
+   #### Update the Session entity
+
+   The Better Auth Organizations plugin automatically adds the `activeOrganizationId` field to the session when a user logs in or switches their active organization. You need to add this field to your MikroORM Session entity to match the database schema:
+
+   ```typescript title="src/auth/auth.entity.ts"
+   // ... your existing entities
+   @Entity(tableName: 'session')
+   export class Session {
+     // ... your existing properties
+     @Property({ fieldName: 'activeOrganizationId', nullable: true })
+     activeOrganizationId?: string;
+   }
+   ```
+
+   :::note[About Active Organization]
+   The `activeOrganizationId` field stores which organization the user is currently working in. Users can switch between organizations using `authClient.organization.setActive()`. You can also automatically set the active organization when a session is created using database hooks in `better-auth.config.ts`.
+
+   For detailed information on managing active organizations, see the [Better Auth Active Organization documentation](https://www.better-auth.com/docs/plugins/organization#active-organization).
+   :::
+
+   <br/>
+
+3. ### Update the database
+
+   Now that you have added the entities, you need to update your database to create the corresponding tables.
+
+   Depending on your project stage, you can either recreate your database from scratch if you're in development without important data, or use the migration system to preserve existing data.
+
+   :::note[Need help with database updates?]
+   For detailed instructions on database migrations and schema updates, check out the [Migrations guide](/guides/migrations) (coming soon).
+   :::
+
+   <br/>
+
+4. ### Use the client on the frontend
+
+   Now that everything is configured on the API side, you can use organization-related methods from your frontend client.
+
+   **Usage examples:**
+
+   ```typescript
+   // Create an organization
+   const { data, error } = await authClient.organization.create({
+     name: "My Organization",
+     slug: "my-org",
+     logo: "https://example.com/logo.png",
+   })
+   ```
+
+   :::tip
+   All available routes and methods are documented in the [official Better Auth - Organizations documentation](https://www.better-auth.com/docs/plugins/organization#create-an-organization).
+   :::
+
+    <br/>
+
+</Steps>
+
+The Organizations plugin is now configured and operational. You can create organizations, invite members, and manage roles via the Better Auth client.
+
+## Going further
+
+### Common use cases organization logic
+
+Better Auth provides a complete set of [methods](https://www.better-auth.com/docs/plugins/organization#api-reference) to interact with organization entities (create, update, delete, invite members, etc.).
+
+However, you may need to implement custom business logic specific to your application. In this case, you can create your own methods in `auth.service.ts` to handle organization-related operations that go beyond what Better Auth provides out of the box.
+
+**Example:**
+
+```typescript title="src/auth/organization.service.ts"
+import { Property } from '@hubspot/api-client/lib/codegen/crm/properties'
+import { EnsureRequestContext, EntityManager, wrap } from '@mikro-orm/core'
+import { Injectable } from '@nestjs/common'
+import { Crm } from '../crm/crm.contract'
+import { Member, Organization, User } from './auth.entity'
+
+@Injectable()
+export class OrganizationService {
+  constructor(private readonly em: EntityManager) {}
+
+  @EnsureRequestContext()
+  async getOrganizationById(organizationId: string): Promise<Organization | null> {
+    return this.em.findOne(Organization, { id: organizationId })
+  }
+
+  @EnsureRequestContext()
+  async getOrganizationUsers(organizationId: string): Promise<User[]> {
+    return this.em.find(User, { members: { organization: { id: organizationId } } })
+  }
+
+  @EnsureRequestContext()
+  async getUserActiveOrganization(userId: string): Promise<Organization | null> {
+    const member = await this.em.findOne(Member, {
+      user: {
+        id: userId,
+      },
+    }, { populate: ['organization'] })
+
+    if (!member || !member.organization)
+      return null
+
+    return member.organization
+  }
+}
+```
+
+### NestJS Decorators & Guards
+
+The boilerplate already provides authentication decorators and guards. You can extend them to handle organization-specific logic.
+
+**Add organization-related decorators:**
+
+For example, if you have a resource linked to an organization, and want to create a `myResource.guard` to check if the user is a member of the organization, you can do the following:
+
+```typescript title="src/auth/myResource.guard.ts"
+import { EntityManager } from '@mikro-orm/postgresql'
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common'
+import { LoggedInBetterAuthSession } from '../../../config/better-auth.config'
+import { ErrorCode } from '../../../utils/error-handling'
+import { Client } from '../../client/client.entity'
+import { Proposal } from '../entities/proposal.entity'
+
+// Guard to check if the client exists and belongs to the organization
+@Injectable()
+export class MyResourceGuard implements CanActivate {
+  constructor(private readonly em: EntityManager) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest()
+    const clientSlug: string = request.params.clientSlug
+    const session = request.session as LoggedInBetterAuthSession
+    const organizationId = session.session.activeOrganizationId
+
+    if (!organizationId) {
+      throw new UnauthorizedException(ErrorCode.UNAUTHORIZED)
+    }
+
+    const resourceId = request.params.resourceId
+
+    if (resourceId) {
+      const resource = await this.em.findOne(Resource, { id: resourceId, organization: { id: organizationId } })
+      if (!resource) {
+        throw new NotFoundException(ErrorCode.NOT_FOUND)
+      }
+    }
+    return true
+  }
+}
+```
+
+### Extending the schema
+
+You can add custom fields to the organization entities to match your business needs. Since Better Auth v1.3, custom fields added via `additionalFields` will automatically be available in the API endpoints.
+
+See the [official Better Auth documentation](https://www.better-auth.com/docs/plugins/organization#customizing-the-schema) for more details, don't forget to update your entities to match the new schema.

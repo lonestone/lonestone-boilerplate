@@ -1,0 +1,45 @@
+---
+title: Linter
+description: Linter explanation
+---
+
+
+## ❓ How it works
+The project uses ESLint for linting the code. It uses ESlint "flat config", and is based on the [Antfu ESLint config](https://github.com/antfu/eslint-config).
+
+Antfu rules are solid, and this allows us to pretty much ignore the linting rules for the moment, and focus on the code.
+
+:::caution
+This eslint config uses eslint stylistic, which means **you dot not need** prettier in your project.
+:::
+
+## 📝 How to use
+
+The linting is done automatically when you run `pnpm lint`. You can also run `pnpm lint:fix` to fix the linting errors automatically.
+
+## 🔧 How to customize rules
+
+Flat config allows us to centralize all the rules in a single file, and to override them for specific files or directories.
+
+For example, here is how we disable some rules for the API module:
+
+```js
+export default antfu(
+  // Previous global rules...
+  // Only override rules for the API module
+  {
+    files: ['apps/api/**/*.ts', 'apps/api/**/*.json'],
+    rules: {
+      'ts/consistent-type-imports': 'off',
+      'node/prefer-global/process': ['error', 'always'],
+    },
+  }
+)
+```
+
+Check out the [Antfu ESLint config](https://github.com/antfu/eslint-config) for more details on the rules and how to override them.
+
+:::caution
+Antfu renames some rules for consistency. For example, `ts/no-explicit-any` is renamed to `@typescript-eslint/no-explicit-any`.
+So if you want to disable a rule, you need to use the renamed rule name.
+:::
