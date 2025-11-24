@@ -3,42 +3,6 @@ title: Database Migrations
 description: Understanding database migrations with MikroORM
 ---
 
-## MikroORM & TypeScript Entities
-
-[MikroORM](https://mikro-orm.io/) is a TypeScript ORM (Object-Relational Mapping) that lets you define your database schema using TypeScript classes called "entities" instead of writing SQL directly.
-
-Instead of writing SQL like:
-```sql
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(255) NOT NULL,
-  name VARCHAR(255)
-);
-```
-
-You write a TypeScript class:
-```typescript
-@Entity()
-export class User {
-  @PrimaryKey()
-  id!: number
-
-  @Property()
-  email!: string
-
-  @Property()
-  name?: string
-}
-```
-
-MikroORM handles translating your TypeScript entities into database tables, columns, and relationships. This approach gives you type safety, IDE autocomplete, and keeps your database schema in sync with your code.
-
-:::note
-For more details on MikroORM features and concepts, refer to the [official MikroORM documentation](https://mikro-orm.io/docs).
-:::
-
-## Evolving Your Schema Over Time
-
 As your application grows, your data model evolves. You add new fields to your entities, create new tables, modify relationships, or change column types. Since you're working with TypeScript entities, making these changes is straightforward - you simply modify your entity classes.
 
 **In the early stages of development**, this is often enough. You modify your entities, drop and recreate your database from scratch, and keep iterating. MikroORM provides options to reset the entire database schema based on your current entities. There's no formal tracking of changes because the schema is still fluid and you don't have important data to preserve.
@@ -94,7 +58,7 @@ MikroORM provides CLI tools to generate migrations. When you run the migration g
 
 Since MikroORM compares entities against the snapshot file rather than your actual database, you can generate migrations offline without any database connection. The entire process happens in your codebase.
 
-One thing to keep in mind: if someone modifies the database schema manually (outside of migrations), MikroORM won't detect it. The snapshot only tracks changes you make to your TypeScript entities.
+One thing to keep in mind: **if someone modifies the database schema manually (outside of migrations), MikroORM won't detect it**. The snapshot only tracks changes you make to your TypeScript entities.
 
 :::caution[Important]
 The snapshot file must be committed to Git along with migration files. If someone generates a migration but doesn't commit the updated snapshot, the next person will see duplicate changes when generating their migration.
@@ -126,7 +90,7 @@ When you run the migration apply command (CLI), MikroORM executes the `up()` SQL
 MikroORM wraps each migration in its own database transaction (via the `allOrNothing` option, enabled by default). If a migration fails, that specific transaction rolls back automatically, but previously applied migrations remain intact. This works for most schema changes, but not for operations that can't be rolled back (like `DROP DATABASE`).
 :::
 
-MikroORM generates these migration files automatically, but you should always review the SQL before applying it. Migrations modify your database schema, and if you're modifying columns that already contain data, this can be critical. The generated SQL might not be optimal or safe in all cases.
+MikroORM generates these migration files automatically, **but you should always review the SQL before applying it**. Migrations modify your database schema, and if you're modifying columns that already contain data, this can be critical. The generated SQL might not be optimal or safe in all cases.
 
 For example, when renaming a field, MikroORM might generate DROP + ADD instead of RENAME, which would destroy your existing data. Adding NOT NULL columns to tables with existing data will fail unless you handle it properly. Complex type changes might need manual data transformation steps.
 
@@ -148,7 +112,7 @@ In development or staging environments, making mistakes with migrations is relat
 
 **But production is fundamentally different.** Production contains real user data, and you obviously don't want to risk losing or corrupting it. A schema change mistake can have much more serious consequences and can be stressful when applying changes to production. That's why there are best practices we'll detail here to protect against these risks.
 
-### Never Drop and Recreate in Production
+### Never use `fresh` or `migrate:fresh` in Production
 
 This might seem obvious, but let's be explicit: dropping and recreating the schema destroys all data. In production environments, you must always use the migration-based workflow.
 
@@ -163,15 +127,17 @@ Before running any migration in production:
 
 If the migration fails or causes issues, you can restore from this backup. Some teams automate this by requiring their deployment scripts to create a backup before running migrations.
 
-### Validate Migrations in CI/CD Before Production
+### Valide Migrations locally before deploying
 
-Before deploying migrations to production, it's a good idea to catch potential issues as early as possible. Running migrations in your CI/CD pipeline, alongside your test suite, helps prevent broken migrations from reaching production.
+This goes without saying, but you **should always run your migrations locally before deploying to production**.
 
-The typical flow is: migrations are applied first, then your test suite runs against that updated schema. This catches problems before they impact real users:
+The typical flow is to come back to a previous state of the project, seed the DB, checkout your branch and run your migrations.
 
-- SQL syntax errors in migrations
-- Breaking changes that cause application errors or test failures
-- Schema mismatches between your entities and the actual database structure
+You can also automate this process during CI/CD, the bare minimum is to run all migrations on a empty DB to see if they apply successfully.
+
+:::tip[Use realy data]
+Migrations are not only about database schema, but also about data. Seeding is fine, but production data is often usefull when the project becomes complex. Use `pgdump` or tools like `pgstream` to copy and anonymize production data to your local database.
+:::
 
 ### Common Pitfalls with Existing Data
 
@@ -200,11 +166,24 @@ Enums are often tricky with existing data. If you change enum values or add new 
 Unfortunately, even with careful planning, migrations can sometimes fail in production. When this happens, take a deep breath and follow this checklist:
 
 1. **Don't panic and don't run more commands blindly**
-2. Check the migration table (`mikro_orm_migrations`) to see if the migration was marked as executed
-3. Check what state your database is actually in (which tables/columns exist)
-4. If the migration was marked as executed but didn't complete, you may need to manually mark it as not executed and fix the issue
-5. If data was corrupted, restore from your backup
-6. Fix the migration file and try again
+2. Find in which fail case you are: did the migration run without errors, but the API is broken (case A)? Or did the migration fail before running (case B)?
+
+**Case A**. Your migration ran without errors, but the API is broken. In this case, the SQL is working fine but you have issues with the data, and how your migration handles production data.
+1. Check the migration table (`mikro_orm_migrations`) to confirm that the migration was marked as executed
+2. Check what state your database is actually in (which tables/columns exist)
+3. Roll back your server version
+4. Restore your database from your backup
+5. Fix the migration file and try again. To test your migration, you'll probably need to use real data and to list all the cases that failed.
+
+:::note[The problem with case A]
+Sadly, your clients, users and yourself can take time to actually notice something went wrong. Corrupted data can be subtle and hard to detect. You may need to restore your backup only partially, in which case it's SQL query time!
+:::
+
+**Case B**. The migration failed before running. In this case, the SQL is not working and you need to fix the migration file.
+1. If you did everything correctly, the `all or nothing` option will roll back the transaction, and depending on your infrastructure, the previous container should still be running.
+2. Grab the logs from the failed migration.
+3. Fix the migration file and try again.
+
 
 ### Rollback Considerations
 

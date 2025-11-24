@@ -8,6 +8,7 @@
     "build": "nest build",
     "start": "node dist/src/main.js",
     "dev": "nest start --watch",
+    "db:migration:init": "npx mikro-orm migration:create --initial",
     "db:migrate:create": "npx mikro-orm migration:create",
     "db:migrate:up": "npx mikro-orm migration:up",
     "db:migrate:down": "npx mikro-orm migration:down",
@@ -15,6 +16,7 @@
     "db:migrate:seed": "npx mikro-orm migration:fresh --seed",
     "db:fresh": "npx mikro-orm schema:fresh --run",
     "db:fresh:seed": "npx mikro-orm schema:fresh --run --seed",
+    "db:sync": "npx mikro-orm schema:update --run",
     "test": "pnpm run db:migrate:fresh && NODE_ENV=test jest",
     "test:watch": "NODE_ENV=test jest --watch",
     "typecheck": "tsc --noEmit"
