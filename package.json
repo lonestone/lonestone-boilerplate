@@ -23,7 +23,8 @@
     "lint:fix": "eslint --fix",
     "generate": "pnpm --filter=@lonestone/openapi-generator run generate",
     "test": "pnpm -r test",
-    "schematics:module": "pnpm --filter=@lonestone/schematics run schematics:module"
+    "schematics:module": "pnpm --filter=@lonestone/schematics run schematics:module",
+    "docs-only": "pnpm --filter=@lonestone/documentation run dev"
   },
   "dependencies": {
     "typescript": "^5.9.2"
