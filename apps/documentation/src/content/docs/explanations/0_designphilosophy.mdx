@@ -17,22 +17,6 @@ This project uses a "monorepo" architecture. The advantages are numerous, but pr
 While this approach could cause problems on really large codebase, with a lot of developers making changes at the same time, it's a good fit for small to medium-sized projects like we handle at Lonestone.
 :::
 
-## 📁 Project Structure
-
-```
-lonestone/
-├── apps/                  # Main applications
-│   ├── api/               # Backend API (NestJS)
-│   ├── web-spa/           # Web SPA application (React)
-│   └── web-ssr/           # Web SSR application (React)
-├── packages/              # Shared packages
-│   ├── ui/                # Reusable UI components (shadcn/ui)
-│   ├── openapi-generator/ # OpenAPI client generator
-│   └── schematics/        # Schematics used to generate code in API
-├── docs/                  # Project documentation
-└── .github/               # GitHub Actions workflows
-```
-
 ## Finding balance between features
 
 As the boilerplate is meant to be a starting point for new projects, we need to find a balance between features that are useful for most projects, and features that are only useful for specific projects.
