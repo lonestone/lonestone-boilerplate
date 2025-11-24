@@ -8,8 +8,8 @@ export default defineConfig({
   base: '/lonestone-boilerplate',
   integrations: [
     starlight({
-      title: 'Lonestone Boilerplate Documentation',
-      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+      title: 'Boilerstone Documentation',
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/lonestone/lonestone-boilerplate' }],
       sidebar: [
         { slug: 'quickstart' },
         {
