@@ -10,6 +10,9 @@ To start a new project using this boilerplate, simply create a project on Github
 
 For more details, see the [documentation](https://lonestone.github.io/lonestone-boilerplate/) or check out the local documentation in the `apps/documentation` folder.
 
+[![CI ✨](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/ci.yml/badge.svg)](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/ci.yml)
+[![Deploy documentation to GitHub Pages](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/deploy-docs.yml)
+
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
