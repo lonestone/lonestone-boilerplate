@@ -5,13 +5,13 @@ description: Auth explanation
 
 The authentication system is handled by the [Better Auth](https://www.better-auth.com/) library, which provides most features you will ever need, plus some more.
 
-Better-auth is heavily plugin-based, we propose a few guides on how to add some specific features like [organizations](/guides/better-auth-orgs), [admin](/guides/better-auth-admin), etc.
+Better-auth is heavily plugin-based, we propose a few guides on how to add some specific features like [organizations](/lonestone-boilerplate/guides/better-auth-orgs), [admin](/lonestone-boilerplate/guides/better-auth-admin), etc.
 
 # ❓ How it works
 
 Better-auth is using your database to store all of its data. Depending on the ORM you use, you might need to create some entities to store the data. 
 
-We use MikroORM in this boilerplate, and you can find the entities in the [auth module](/api/src/modules/auth).
+We use MikroORM in this boilerplate, and you can find the entities in the [auth module](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/src/modules/auth).
 
 :::note
 It's a good practise to keep all entities related to better-auth in the auth module!
