@@ -38,6 +38,8 @@ If not specified otherwise, follow the following guidelines:
 - Use shadcn/ui for components.
 - Use react-router for routing.
     - routes are usually defined in a `routes.ts` file
+- Use react-hook-form for form handling.
+- Use zod for form validation.    
 - Use tanstack-query for data fetching
     - structure queries by features, put the queries options in /features/featureName/utils/featureName-queries.ts
 ```
@@ -60,5 +62,4 @@ export function fetchOrganizationQueryOptions(options: { pageSize: number, page:
     ...fetchOrganizationQueryOptions({ page: pageValue, search: searchValue, pageSize: PAGE_SIZE }),
   })
 ```
-- Use react-hook-form for form handling.
-- Use zod for form validation.
+
