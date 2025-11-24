@@ -10,7 +10,6 @@ export default defineConfig({
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
       sidebar: [
         { slug: 'quickstart' },
-        { label: 'Design', autogenerate: { directory: 'design' } },
         {
           label: 'Explanations',
           autogenerate: { directory: 'explanations' },
