@@ -1,0 +1,56 @@
+---
+title: Auth
+description: Auth explanation
+---
+
+The authentication system is handled by the [Better Auth](https://www.better-auth.com/) library, which provides most features you will ever need, plus some more.
+
+Better-auth is heavily plugin-based, we propose a few guides on how to add some specific features like [organizations](/guides/better-auth-orgs), [admin](/guides/better-auth-admin), etc.
+
+# ❓ How it works
+
+Better-auth is using your database to store all of its data. Depending on the ORM you use, you might need to create some entities to store the data. 
+
+We use MikroORM in this boilerplate, and you can find the entities in the [auth module](/api/src/modules/auth).
+
+:::note
+It's a good practise to keep all entities related to better-auth in the auth module!
+:::
+
+# 📝 How to use
+Better-auth provides server and client methods, see the [Better Auth documentation](https://www.better-auth.com/docs) for more details.
+
+Better-auth provides a OpenAPI schema and a live documentation of your API endpoints. You can find it at [http://localhost:3000/api/auth/reference](http://localhost:3000/api/auth/reference) by default.
+
+:::note
+It's good practice to prefix better-auth related entities table names with `auth_` to keep them organized.
+::: 
+
+
+# 🧹 How to remove
+
+:::caution
+Removing Better Auth from the project is a bit more work than removing other features. It's not recommended.
+:::
+
+1. Delete the `auth` module from the `api/src/modules` folder
+2. Remove the AuthModule from the `api/src/app.module.ts` file
+3. Remove the `api/src/config/better-auth.config.ts` file
+4. Remove the following dependencies from the `api/package.json` file:
+
+```json
+"better-auth",
+"better-auth-mikro-orm",
+```
+
+5. Remove the following dependecies from the frontend apps
+
+```json
+"better-auth",
+```
+
+6. Remove the following env variables from the `api/.env` file:
+
+```
+BETTER_AUTH_SECRET=
+```
