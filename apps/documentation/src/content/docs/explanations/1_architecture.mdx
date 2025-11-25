@@ -3,7 +3,26 @@ title: Tech Stack
 description: Why we chose some tools, why we chose the "removal" path, etc.
 ---
 
-## 🛠️ Architecture and Tech Stack
+## Monorepo architecture
+This project uses a "monorepo" architecture. The advantages are numerous, but primarily:
+
+- Ability to develop full-stack features without context switching, making a single PR for a complete feature
+- Easier deployment: no need to synchronize multiple separate deployments
+- Strong end-to-end typing, easier refactoring
+- Simplified and unified tooling (linter, build, etc.)
+
+:::note 
+While this approach could cause problems on really large codebase, with a lot of developers making changes at the same time, it's a good fit for small to medium-sized projects like we handle at Lonestone.
+:::
+
+## Full-stack typing
+
+When working on a fullstack project, we found that having compile time error and warnings are a godsend, but this requires a strategy to sync the typings between the backend and the frontend.
+
+After years using GraphQL, we went back to REST (you can find the reasoning in the [Network Architecture page](/lonestone-boilerplate/explanations/4_network-architecture)), but we kept most benefits of GraphQL: full typing, documentation, caching, etc.
+
+
+## Tech Stack
 
 ### Frontend
 
@@ -30,7 +49,7 @@ description: Why we chose some tools, why we chose the "removal" path, etc.
 - [MinIO](https://min.io/) - S3-compatible object storage
 - [DotenvX](https://dotenvx.com/) - Environment variables management
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 lonestone/

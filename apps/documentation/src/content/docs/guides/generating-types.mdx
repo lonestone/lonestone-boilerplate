@@ -1,0 +1,47 @@
+---
+title: Generating types and SDKs
+description: Generate types and SDKs from the OpenAPI schema
+---
+
+## How to generate types
+
+For the types to be generated, you need to have the OpenAPI schema available. Which means your **API needs to be running without errors**.
+
+You can generate the types by running the following command (at root level):
+
+```bash
+pnpm generate
+```
+
+This will generate the types in the `packages/openapi-generator/client` folder. Those types are automatically imported by the frontend apps.
+
+:::note
+The `dev` command will watch for changes in the OpenAPI schema and regenerate the types automatically.
+:::
+
+## Usage in frontend apps
+
+
+To use the generated API client in a frontend app:
+
+```typescript
+import { client } from '@lonestone/openapi-generator'
+
+client.setConfig({
+  baseURL: 'http://localhost:3000',
+  // other options...
+})
+```
+
+```typescript
+// Usage example
+import { postControllerCreatePost } from '@lonestone/openapi-generator'
+
+const posts = await postControllerCreatePost()
+```
+
+
+## What to watch out for
+
+- Don't forget to commit your generated types to the repository, as they will be used for production builds.
+- If your type do not refresh, check out for API errors in your console. If the API is not running, the types generation can't be done.

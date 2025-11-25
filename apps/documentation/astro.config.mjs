@@ -25,6 +25,10 @@ export default defineConfig({
           autogenerate: { directory: 'guides' },
         },
         {
+          label: 'Addons',
+          autogenerate: { directory: 'addons' },
+        },
+        {
           label: 'Guidelines',
           autogenerate: { directory: 'guidelines' },
         },

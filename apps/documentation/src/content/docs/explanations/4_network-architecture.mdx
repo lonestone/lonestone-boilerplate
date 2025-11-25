@@ -1,0 +1,56 @@
+---
+title: Network Architecture
+description: Understanding the network architecture of the boilerplate
+---
+
+## How it works
+
+The boilerplate uses a REST-based network architecture. The fundamental idea is to have as much typing as possible. The NestJS REST API provides a complete OpenAPI schema, which is used by the @packages/openapi-generator to generate a full typed TypeScript client for the frontend apps.
+
+The frontend apps then use the generated SDK in combination with TanStack Query to fetch and cache data from the API.
+
+That's it!
+
+:::note[OpenAPI]
+The NestJS API provides a OpenAPI schema via its use of @lonestone/nzoth library. This library provides a set of decorators to define the API endpoints, and uses zod and typescript to generate the OpenAPI schema automatically.
+
+You can learn more about the @lonestone/nzoth library in the [@lonestone/nzoth documentation](https://github.com/lonestone/nzoth).
+:::
+
+## The REST choice
+
+At the core, the decision is about maintaining simplicity without sacrificing flexibility:
+
+- **Universally supported**: REST APIs work seamlessly with any language or framework, making integration straightforward and ensuring long-term viability.
+- **Developer-friendly tooling**: Setting up tools for developing, testing, or interacting with a REST API (whether manually or automatically) is simple and widely supported.
+- **Technology-agnostic**: REST does not lock us—or our clients—into a specific stack. Since we do not always build the frontend, this ensures our API remains accessible to any technology choice. This is also helpful when building tools (e.g. MCP) or mobile applications.
+- **Comprehensive documentation**: REST is a mature, time-tested standard with extensive documentation and tooling, which helps both internal and external teams understand and use the API confidently.
+
+### Why not GraphQL?
+We used [GraphQL](https://graphql.org/) — and are still using it. It's a great tool, but after severals years we found several issues with it:
+- It brings yet another language to learn, and another layer of complexity to the project
+- Cherry picking only the data you need ends up creating a lot of different queries, making it hard to maintain
+- Managing the depth of queries on the backend leads to performance issues
+- Permissions can get complex and hard to manage
+- On large codebase, the type generation can get slow and cumbersome
+- Apollo cache is awesome, but new libraries like React Query or TanStack Query provides most of the same features
+
+### Why not Trpc?
+
+[Trpc](https://trpc.io/) is awesome, and we toyed with the idea of using it in the boilerplate. However, it does not respect all the principles we mentioned above:
+- It brings yet another framework to learn
+- It's not technology-agnostic: it's tied to Typescript. Consuming a TRPC API from any other language is sub-par
+- It's not easy to use: testing manually (via Yaak or Postman) is not as easy as with REST
+
+### Why not ts-rest?
+
+On paper, [ts-rest](https://ts-rest.com/) provides most of the benefits we are looking for:
+- REST compatible
+- OpenAPI generation
+- Strict typing with no compilation steps (the types are user-created and lives in the repository)
+
+We tested it, but in the end we were unnhappy with the NestJS integration (did not feel NestJS native).
+
+## Current limitations
+
+- If the API is not running, the types generation can't be done. This can be an issue when developping, as you need to stabilize your API before generating the types and working on the frontend.
