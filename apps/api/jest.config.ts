@@ -23,7 +23,7 @@ const commonConfig: Config = {
 
 const configE2E: Config = {
   ...commonConfig,
-  testRegex: '.*\\.controller\\.spec\\.ts$',
+  testRegex: '.*\\.e2e-spec\\.ts$',
   setupFilesAfterEnv: [
     '<rootDir>/test/test.setup.ts',
     '<rootDir>/test/test.e2e-setup.ts',

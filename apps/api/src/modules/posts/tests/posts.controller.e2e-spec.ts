@@ -12,6 +12,9 @@ import { CreatePostInput } from '../contracts/posts.contract'
 import { PostModule } from '../posts.module'
 
 describe('postController (e2e)', () => {
+  // We set a high timeout to have enough time to launch the testcontainers
+  jest.setTimeout(60000)
+
   let testContext: TestAppContext
   let app: INestApplication
   let orm: MikroORM
@@ -20,6 +23,7 @@ describe('postController (e2e)', () => {
   let testUser: User
   let requestWithAuth: ReturnType<typeof initRequestWithAuth>
 
+  // We initialize the NestJS app and the database
   beforeAll(async () => {
     // Initialiser l'application de test
     testContext = await initializeTestApp({
@@ -28,11 +32,16 @@ describe('postController (e2e)', () => {
     app = testContext.app
     orm = testContext.orm
     em = orm.em.fork()
+  })
 
+  // Before each test we clean the database to ensure we start with a fresh state
+  beforeEach(async () => {
+    await orm.schema.refreshDatabase()
     testUser = await createUserData(em)
     requestWithAuth = initRequestWithAuth(app, testUser.id)
   })
 
+  // After all tests we close the NestJS app and the database, the testcontainer is shut down
   afterAll(async () => {
     await closeTestApp(testContext)
   })

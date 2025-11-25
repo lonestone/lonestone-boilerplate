@@ -1,12 +1,5 @@
 import { Response } from 'supertest'
 
-export function expectValidProposal(proposal: Record<string, unknown>) {
-  expect(proposal).toMatchObject({
-    id: expect.any(String),
-    name: expect.any(String),
-  })
-}
-
 export function expectPaginatedResponse(
   response: Response,
   expectedLength: number,
