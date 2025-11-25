@@ -1,0 +1,188 @@
+name: CD ✨
+
+on:
+  push:
+    branches: [main, prod]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  COMMIT_SHA: ${{ github.sha }}
+  IMAGE_NAME_API: lonestone-boilerplate/api
+  IMAGE_NAME_WEB_SPA: lonestone-boilerplate/web-spa
+  IMAGE_NAME_WEB_SSR: lonestone-boilerplate/web-ssr
+
+jobs:
+  setup:
+    name: 🛠️ Setup
+    runs-on: ubuntu-latest
+    outputs:
+      node-version: 22.14.0
+      pnpm-version: 10.5.2
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 22.14.0
+          pnpm-version: 10.5.2
+
+      - name: 📁 Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: 📦 Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📚 Install dependencies
+        run: pnpm install
+
+      - name: 💾 Cache workspace
+        uses: actions/cache@v3
+        with:
+          path: .
+          key: workspace-${{ github.sha }}
+
+  deploy-api-docker:
+    name: 🐳 Deploy API Docker Image
+    needs: [setup]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📂 Restore workspace
+        uses: actions/cache@v3
+        with:
+          path: .
+          key: workspace-${{ github.sha }}
+
+      - name: Login to GitHub Packages
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}
+          tags: |
+            type=sha,format=short,prefix=
+
+      - name: Build and push API Docker image
+        id: push-api
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ env.IMAGE_NAME_API }}:latest
+            ${{ steps.meta-api.outputs.tags }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}
+          subject-digest: ${{ steps.push-api.outputs.digest }}
+          push-to-registry: true
+
+  deploy-web-spa-docker:
+    name: 🐳 Deploy Web SPA Docker Image
+    needs: [setup]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📂 Restore workspace
+        uses: actions/cache@v3
+        with:
+          path: .
+          key: workspace-${{ github.sha }}
+
+      - name: Login to GitHub Packages
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta-spa
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB_SPA }}
+          tags: |
+            type=sha,format=short,prefix=
+
+      - name: Build and push Web SPA Docker image
+        id: push-spa
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/web-spa/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ env.IMAGE_NAME_WEB_SPA }}:latest
+            ${{ steps.meta-spa.outputs.tags }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB_SPA }}
+          subject-digest: ${{ steps.push-spa.outputs.digest }}
+          push-to-registry: true
+
+  deploy-web-ssr-docker:
+    name: 🐳 Deploy Web SSR Docker Image
+    needs: [setup]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📂 Restore workspace
+        uses: actions/cache@v3
+        with:
+          path: .
+          key: workspace-${{ github.sha }}
+
+      - name: Login to GitHub Packages
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta-ssr
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB_SSR }}
+          tags: |
+            type=sha,format=short,prefix=
+
+      - name: Build and push Web SSR Docker image
+        id: push-ssr
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/web-ssr/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ env.IMAGE_NAME_WEB_SSR }}:latest
+            ${{ steps.meta-ssr.outputs.tags }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB_SSR }}
+          subject-digest: ${{ steps.push-ssr.outputs.digest }}
+          push-to-registry: true
