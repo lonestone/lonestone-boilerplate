@@ -84,18 +84,18 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}
           tags: |
+            latest
             type=sha,format=short,prefix=
 
       - name: Build and push API Docker image
         id: push-api
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64
           context: .
           file: ./apps/api/Dockerfile
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}:latest
-            ${{ steps.meta-api.outputs.tags }}
+          tags: ${{ steps.meta-api.outputs.tags }}
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
@@ -128,18 +128,18 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB_SPA }}
           tags: |
+            latest
             type=sha,format=short,prefix=
 
       - name: Build and push Web SPA Docker image
         id: push-spa
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64
           context: .
           file: ./apps/web-spa/Dockerfile
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB_SPA }}:latest
-            ${{ steps.meta-spa.outputs.tags }}
+          tags: ${{ steps.meta-spa.outputs.tags }}
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
@@ -172,18 +172,18 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB_SSR }}
           tags: |
+            latest
             type=sha,format=short,prefix=
 
       - name: Build and push Web SSR Docker image
         id: push-ssr
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64
           context: .
           file: ./apps/web-ssr/Dockerfile
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB_SSR }}:latest
-            ${{ steps.meta-ssr.outputs.tags }}
+          tags: ${{ steps.meta-ssr.outputs.tags }}
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
