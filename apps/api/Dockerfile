@@ -22,7 +22,7 @@ RUN pnpm --filter {apps/api}... build
 # This respects gitignore in /apps/api, so remember to include your dist folder in the "files" section of your package.json
 RUN pnpm deploy --legacy --filter="./apps/api" --prod /app/api
 
-# Stage 4: Production (Final image)
+# Stage 3: Production (Final image)
 FROM base AS runner
 
 WORKDIR /app
