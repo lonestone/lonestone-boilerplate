@@ -16,9 +16,10 @@ on:
 env:
   REGISTRY: ghcr.io
   COMMIT_SHA: ${{ github.sha }}
-  IMAGE_NAME_API: ${{ github.repository_owner }}/lonestone-boilerplate/api
-  IMAGE_NAME_WEB_SPA: ${{ github.repository_owner }}/lonestone-boilerplate/web-spa
-  IMAGE_NAME_WEB_SSR: ${{ github.repository_owner }}/lonestone-boilerplate/web-ssr
+  IMAGE_NAME_API: ${{ github.repository }}/api
+  IMAGE_NAME_WEB_SPA: ${{ github.repository }}/web-spa
+  IMAGE_NAME_WEB_SSR: ${{ github.repository }}/web-ssr
+  API_URL: ${{ secrets.API_URL }}
 
 jobs:
   setup:
@@ -140,6 +141,8 @@ jobs:
           file: ./apps/web-spa/Dockerfile
           push: true
           tags: ${{ steps.meta-spa.outputs.tags }}
+          build-args: |
+            VITE_API_URL=${{ env.API_URL }}
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
@@ -184,6 +187,8 @@ jobs:
           file: ./apps/web-ssr/Dockerfile
           push: true
           tags: ${{ steps.meta-ssr.outputs.tags }}
+          build-args: |
+            API_URL=${{ env.API_URL }}
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
