@@ -13,7 +13,7 @@
     "pnpm": "10.5.2"
   },
   "scripts": {
-    "setup": "ts-node ./cli/setup.ts",
+    "setup-env": "ts-node ./cli/setup.ts",
     "dev": "pnpm --parallel dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",

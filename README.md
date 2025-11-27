@@ -86,7 +86,7 @@ The project includes an automated setup script that will:
 - Optionally run database migrations
 
 ```bash
-pnpm run setup
+pnpm setup-env
 ```
 
 The script will guide you through the configuration process interactively. It will:
