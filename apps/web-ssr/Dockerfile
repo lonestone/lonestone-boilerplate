@@ -10,8 +10,8 @@ WORKDIR /app
 FROM base AS builder
 
 # Define build arguments
-ARG API_URL
-ENV API_URL=${API_URL}
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
 
 # pnpm fetch does require only lockfile
 COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./

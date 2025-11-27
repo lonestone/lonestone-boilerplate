@@ -188,7 +188,7 @@ jobs:
           push: true
           tags: ${{ steps.meta-ssr.outputs.tags }}
           build-args: |
-            API_URL=${{ env.API_URL }}
+            VITE_API_URL=${{ env.API_URL }}
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
