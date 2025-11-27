@@ -12,10 +12,10 @@ Dans le dossier `src/modules/*/tests/`, vous trouverez les tests pour le module 
 ## Commandes
 
 ```bash
-# Tests e2e
+# Tests
 pnpm test
 
-# Tests unitaires en mode watch
+# Tests en mode watch
 pnpm test:watch
 
 # Tests avec couverture

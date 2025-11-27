@@ -9,6 +9,7 @@ import { MikroORM } from '@mikro-orm/core'
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { INestApplication, ModuleMetadata } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { json } from 'express'
 import * as express from 'express'
 import supertest, { Request, Response } from 'supertest'
@@ -19,6 +20,8 @@ import { MOCK_AUTH_TOKEN, MockAuthGuard } from './test-auth-guard.mock'
 
 export const TEST_USER_ID = 'cc8edee2-e4e6-4122-b77f-344247f86ead'
 export const TEST_USER_TOKEN = 'test-token'
+
+let postgresContainer: StartedPostgreSqlContainer
 
 export interface TestAppContext {
   app: INestApplication
@@ -42,15 +45,25 @@ interface InitializeOptions {
 export async function initializeTestApp(
   metadata: ModuleMetadata & InitializeOptions,
 ): Promise<TestAppContext> {
-  const orm = await MikroORM.init(createTestMikroOrmOptions({
+  // Initialize DB with test containers
+  postgresContainer = await new PostgreSqlContainer('postgres:16-alpine').start()
+
+  const mikroOrmOptions = createTestMikroOrmOptions({
     allowGlobalContext: true,
-  }))
+    dbName: postgresContainer.getDatabase(),
+    host: postgresContainer.getHost(),
+    port: postgresContainer.getPort(),
+    user: postgresContainer.getUsername(),
+    password: postgresContainer.getPassword(),
+  })
+
+  const orm = await MikroORM.init(mikroOrmOptions)
+
+  await orm.schema.refreshDatabase()
 
   const moduleBuilder = Test.createTestingModule({
     imports: [
-      MikroOrmModule.forRoot(createTestMikroOrmOptions({
-        allowGlobalContext: true,
-      })),
+      MikroOrmModule.forRoot(mikroOrmOptions),
       ...(metadata.includeAuthModule === false ? [] : [AuthModule]),
       ...(metadata.imports ?? []),
     ],
@@ -201,4 +214,5 @@ export function initRequestWithAuthAndSSE(
 export async function closeTestApp(context: TestAppContext): Promise<void> {
   await context.app.close()
   await context.orm.close(true)
+  await postgresContainer.stop()
 }

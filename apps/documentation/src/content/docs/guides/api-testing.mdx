@@ -1,0 +1,124 @@
+---
+title: API Testing
+description: Guide to test the API
+---
+
+Testing is done using Jest. We will outline the most important files and configurations.
+
+## Launching tests
+
+You can launch the tests by running the following command:
+
+```bash
+cd apps/api && pnpm test
+```
+
+You can also launch the tests in watch mode by running the following command:
+
+```bash
+cd apps/api && pnpm test:watch
+```
+
+## Different kinds of tests
+
+We have two kinds of tests:
+
+- Unit tests
+- E2E tests
+
+Unit tests are tests that test a single unit of code. They are named like this: `*.service.spec.ts` or `*.processor.spec.ts`.
+
+E2E tests are tests that test the entire application end to end, which means mostly testing your controllers. They are named like this: `*.e2e-spec.ts`.
+
+:::note
+If you want to know more about testing in NestJS, you can read the [NestJS testing documentation](https://docs.nestjs.com/fundamentals/testing).
+:::
+
+## Infrastructure setup
+
+We use Testcontainers to mock the infrastructure, mainly for things like databases, redis, etc.
+
+You will find an example of launching the database in the `test/test.utils.ts` file:
+
+```typescript
+  // Initialize DB with test containers
+  postgresContainer = await new PostgreSqlContainer('postgres:16-alpine').start()
+
+  const mikroOrmOptions = createTestMikroOrmOptions({
+    allowGlobalContext: true,
+    dbName: postgresContainer.getDatabase(),
+    host: postgresContainer.getHost(),
+    port: postgresContainer.getPort(),
+    user: postgresContainer.getUsername(),
+    password: postgresContainer.getPassword(),
+  })
+```
+
+Note that we use the default mikro-orm configuration for the test database (`createTestMikroOrmOptions`), but we override the database name, host, port, user and password to use the test container.
+
+You will want to stop the test container at the end of your test suite, and you'll probably want to clean the database at the beginning of each test.
+
+```typescript
+  // We initialize the NestJS app and the database
+  beforeAll(async () => {
+    // Initialize the test application (this will launch the test container)
+    testContext = await initializeTestApp({
+      imports: [PostModule],
+    })
+    app = testContext.app
+    orm = testContext.orm
+    em = orm.em.fork()
+  })
+
+  // Before each test we clean the database to ensure we start with a fresh state
+  beforeEach(async () => {
+    await orm.schema.refreshDatabase()
+    testUser = await createUserData(em)
+    requestWithAuth = initRequestWithAuth(app, testUser.id)
+  })
+
+  // After all tests we close the NestJS app and the database, the testcontainer is shut down
+  afterAll(async () => {
+    await closeTestApp(testContext)
+  })
+```
+
+## Service mocking
+
+You can mock some services or external services by using the `jest.mock` function.
+
+Here is an example of mocking the `EmailService` in the `test/test.e2e-setup.ts` file.
+```typescript
+jest.mock('../modules/email/email.service', () => ({
+  EmailService: jest.fn().mockImplementation(() => ({
+    sendEmail: jest.fn(),
+  })),
+}))
+
+// Mocking the ai service example
+jest.mock('ai', () => ({
+  generateObject: jest.fn().mockResolvedValue({ object: { analysisResult: 'mocked result' } } as never),
+}))
+
+// Mock langfuse at module level
+jest.mock('langfuse', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => ({
+    trace: jest.fn().mockReturnValue({
+      span: jest.fn().mockReturnValue({
+        end: jest.fn(),
+      }),
+      update: jest.fn(),
+      getTraceUrl: jest.fn(),
+    }),
+    shutdown: jest.fn(),
+  })),
+  observeOpenAI: jest.fn((openaiInstance: unknown) => openaiInstance),
+}))
+```
+
+## Utils and configurations
+
+The `test/test.utils.ts` file contains some useful utilities for testing, like initializing the test application, creating a test user, and initializing the request with authentication.
+
+The `jest.config.ts` file contains the Jest configuration for the project. You can customize it to your needs.
