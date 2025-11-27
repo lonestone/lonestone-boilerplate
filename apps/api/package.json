@@ -24,7 +24,7 @@
   "dependencies": {
     "@dotenvx/dotenvx": "^1.49.0",
     "@faker-js/faker": "^10.0.0",
-    "@lonestone/nzoth": "^1.0.0",
+    "@lonestone/nzoth": "^1.1.4",
     "@mikro-orm/cli": "6.4.16",
     "@mikro-orm/core": "6.4.16",
     "@mikro-orm/migrations": "6.4.16",
