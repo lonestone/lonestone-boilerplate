@@ -46,8 +46,8 @@ See the [Project Structure](apps/documentation/src/content/docs/explanations/arc
 
 ## 📋 Prerequisites
 
-- [Node.js](https://nodejs.org/) (version 22.14.0)
-- [PNPM](https://pnpm.io/) (version 10.5.0)
+- [Node.js](https://nodejs.org/) (version 24.10.0)
+- [PNPM](https://pnpm.io/) (version 10.5.2)
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
 
 ## 🚀 Installation
@@ -59,13 +59,13 @@ git clone https://github.com/lonestone/yourproject.git
 cd yourproject
 ```
 
-2. Ensure you have the correct node and pnpm versions (see root `package.json` file's  `engine` property).
+2. Ensure you have the correct node and pnpm versions (see root `package.json` file's `engines` property).
 
 You can use [fnm](https://github.com/Schniz/fnm) for managing your node version
 
 ```bash
-fnm use 22.14.0
-npm i -g pnpm@10.5.0
+fnm use 24.10.0
+npm i -g pnpm@10.5.2
 ```
 
 3. Install dependencies:
@@ -74,11 +74,37 @@ npm i -g pnpm@10.5.0
 pnpm install
 ```
 
-4. Configure environment variables
+4. Run the setup script
 
-The `.env` file at the project's root is used by docker (docker compose).
+The project includes an automated setup script that will:
+- Detect available applications (API, Web SPA, Web SSR, OpenAPI Generator)
+- Prompt you for database configuration (user, password, name, host, port)
+- Prompt you for application ports
+- Configure SMTP settings (MailDev)
+- Copy and configure all `.env` files automatically
+- Optionally start Docker services (database, MailDev)
+- Optionally run database migrations
 
-Each app then has its own `.env` file in its corresponding subfolder.
+```bash
+pnpm setup-env
+```
+
+The script will guide you through the configuration process interactively. It will:
+- Check for existing `.env` files and only prompt for missing variables
+- Automatically update all `.env` files with your configuration
+- Set up proper API URLs and trusted origins across all applications
+
+5. Start applications in development mode:
+
+```bash
+pnpm dev
+```
+
+### Manual Setup (Alternative)
+
+If you prefer to configure everything manually:
+
+1. Copy environment files:
 
 ```bash
 cp .env.example .env
@@ -90,26 +116,21 @@ cp packages/openapi-generator/.env.example packages/openapi-generator/.env
 
 ⚠️ In most of those `.env` files, the API url and port are used. Remember to update all the files to match your API url and port.
 
-5. Start Docker services:
+2. Start Docker services:
 
 ```bash
-pnpm docker:up db
+pnpm docker:up
 ```
 
-6. Run migrations or set up your schema by following the instructions in the [API README](apps/api/README.md).
-
-7. Start applications in development mode:
-
-```bash
-pnpm dev
-```
+3. Run migrations or set up your schema by following the instructions in the [API README](apps/api/README.md).
 
 ## 🐳 Docker Services
 
 The project uses Docker Compose to provide the following services:
 
-- PostgreSQL
-- MinIO, a S3 compatible storage solution (not to be used in production!)
+- PostgreSQL - Database server
+- MailDev - SMTP server for development (not to be used in production!)
+- MinIO - S3 compatible storage solution (not to be used in production!)
 
 ## ⌨️ Useful Commands
 
