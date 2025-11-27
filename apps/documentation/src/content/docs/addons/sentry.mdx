@@ -1,0 +1,98 @@
+---
+title: Adding Sentry feature
+description: Guide to add Sentry to the project
+---
+import { Steps } from '@astrojs/starlight/components';
+
+You should add Sentry — or an open source alternative — to monitor errors and performance in your project.
+
+At Lonestone, we use [Bugsink](https://www.bugsink.com/) which is a self-hosted Sentry alternative, compatible with the Sentry SDK.
+
+:::note
+This doc is mostly based on the [Sentry NestJS documentation](https://docs.nestjs.com/recipes/sentry), with some modifications to fit the Boilerstone project.
+:::
+
+<Steps>
+
+1. ### Install the Sentry SDK in the API project
+
+   ```bash
+   cd apps/api
+   pnpm add @sentry/nestjs
+   ```
+
+   <br/>
+
+2. ### Add environment variables in the API project (both .env and .env.example)
+
+   ```env
+   SENTRY_DSN=https://<your-dsn>@sentry.io/<your-project>
+   ```
+
+   <br/>
+
+3. ### Load the env in your env.config.ts file. Follow the same pattern as the other env.
+
+
+    ```typescript   title="src/config/env.config.ts"
+        export const configValidationSchema = z.object({
+        // ... other env variables ...
+          SENTRY_DSN: z.string(),
+        })
+
+        // .....
+
+        export const config = {
+            // ... other config variables ...
+            sentry: {
+                dsn: configParsed.data.SENTRY_DSN,
+            },
+        } as const
+    ```
+
+4. ### Create an `instrument.ts` file at the root of the API project
+
+   ```typescript   title="src/instrument.ts"
+    import * as Sentry from '@sentry/nestjs'
+    import { config } from './config/env.config'
+
+    // Ensure to call this before requiring any other modules!
+    Sentry.init({
+        dsn: config.sentry.dsn,
+    })
+   ```
+
+   <br/>
+
+5. ### Load the Sentry module
+
+   ```typescript   title="src/app.module.ts"
+    /* eslint-disable perfectionist/sort-imports */
+
+    // Import this first to initialize Sentry!
+    import './instrument'
+
+    // .. other imports //
+    import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup'
+
+
+    @Module({
+    imports: [
+        SentryModule.forRoot(), // add this line
+        // .. other imports //
+    ],
+    controllers: [],
+    providers: [
+        // Add this provider to catch all errors
+        {
+            provide: APP_FILTER,
+            useClass: SentryGlobalFilter,
+        },
+        // .. other providers //
+    ],
+    })
+    export class AppModule {}
+
+   ```
+
+</Steps>
