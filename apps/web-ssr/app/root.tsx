@@ -17,7 +17,7 @@ import '@fontsource/source-sans-pro'
 import '@lonestone/ui/globals.css'
 
 client.setConfig({
-  baseUrl: import.meta.env.VITE_API_URL,
+  baseUrl: process.env.API_URL,
   credentials: 'include',
 })
 
