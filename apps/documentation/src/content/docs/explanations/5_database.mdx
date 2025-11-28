@@ -1,0 +1,63 @@
+---
+title: ORM & Database
+description: How to work with your DB
+---
+
+## ❓ How it works
+The project uses MikroORM for ORM and database management. The implementation is based on the [MikroORM NestJS module](https://github.com/mikro-orm/nestjs) provided by the MikroORM team.
+
+## 💡 Why we use MikroORM
+
+MikroORM is a solid ORM, supported by a strong community (and an excellent developer), and provides really good default for the technology we use.
+ 
+- Very stable and proven
+- Very close to SQL, no fancy abstraction
+- Easy to extend as needed (e.g. custom columns)
+- Actually based on Knex, a rewrite is planned for v7 to use Kysely instead
+
+- Drizzle, très cool car 100% TS mais avec encore pas mal de lacunes quand on [creuse un peu](https://www.notion.so/3262ab9bba874259ae8bcacf49c9e9f2?pvs=21) (pas de transactions par défaut, un typage bif bof trop basé sur l’inférence, etc.)
+
+### Why not TypeORM?
+
+[TypeORM](https://typeorm.io/) has been around for a long time (we used it for years before switching to MikroORM), and it shows. Its core architecture wasn't great, and it has become a mess of spaghetti code.
+
+The project is not longer maintained by a dedicated team, and its stability and performance are not great.
+
+
+### Why not Prisma?
+We have tested [Prisma](https://www.prisma.io/) extensively, and even use it in production for some projects. However we chose to stick to MikroORM because:
+
+- Prisma adds a compilation step, which slows down the development process (often need to restart the ts-server, and this can get slow on large projects)
+- Prisma does not provide a "default" transaction management for incoming HTTP requests, which is a must-have for NestJS projects
+- The support for custom columns is really bad. A custom column will remove the main methods on the entity (`findMany`, `create`, etc.), the column is completely ignored by the ORM. You need to then [extend](https://www.prisma.io/docs/orm/prisma-client/client-extensions) the whole Prisma client to re-create the methods. Comparatively, other ORM allow to create "hooks" or transformation methods (in input and output) on the column ([Mikro](https://mikro-orm.io/docs/custom-types) or [Drizzle](https://github.com/drizzle-team/drizzle-orm/blob/main/docs/custom-types.md)).
+- To build these methods in the extended client, the only solution is to pass by SQL, which cannot be validated at build (IDE extensions allow to validate at least at dev time). To avoid losing too much reliability, we decided to double some queries (we let Prisma do a `find` then we do a `SELECT` manually just for our missing custom column), it’s far from optimal but we prefer it to … rewrite everything in SQL!
+- The experience with Nest.JS is very bad if you need to extend the Prisma client. I lost hours to find a clean solution, and I’m not convinced yet. [Issue Github](https://github.com/prisma/prisma/issues/18628)
+
+### Why not Drizzle?
+ A lot of great things with [Drizzle](https://orm.drizzle.team/), which we like quite a lot:
+- It's really easy to set up, even more than Prisma
+- It's nice to define your entities in Typescript, even if the relations are more verbose than Prisma
+- The migrations and `drizzle kit pusb` work well
+- The generated types are useful (but with some limits see below)
+- Support of PostGIS by default, and custom types seem to be better supported
+- Easy to setup hooks on events
+
+But some drawbacks:
+- There are some quite basic Typing which are not exported by Drizzle. For example, if you want to type an object `filters` that you would use in `select(…).where(filters)`, you need to use inference to get this type.
+- You lose a lot of "magic" proposed by default in Prisma or Mikro. For example, it's not possible to add relations in an object you would want to persist, you will need to make several requests. This makes things more difficult for dynamic helpers, etc.
+- The query builder is less practical than the one of Mikro
+- When you are used to Mikro and its "default transactions" (via [em.flush](https://www.notion.so/Drizzle-3262ab9bba874259ae8bcacf49c9e9f2?pvs=21)), it's a pain to manage everything manually in Drizzle. It reminds me of the time we used decorators to pass the TypeORM context from one method to another in our services. Honestly for the moment I don't know how to manage, [this](https://orm.drizzle.team/docs/transactions) seems not at all usable in prod.
+
+## 📝 How to use
+
+We use Mikro in a very basic way, it's up to you to read the [official documentation](https://mikro-orm.io/) for more details.
+
+Some important concepts to know:
+
+- MikroORM use the concept of "[Unit of Work](https://mikro-orm.io/docs/unit-of-work)" and "[Identity Map](https://mikro-orm.io/docs/identity-map)". Those concepts are really key, so ensure you understand them well.
+- Linked to those concepts, be warry of `em.fork()` which will create a new Context
+- MikroORM NestJS module automatically creates a new Context for each request, you don't need to do anything special to get it. But if you want to use some functions outside of a request — for example in a CRON job — you will need to create a new Context manually (or use the `EnsureRequestContext` decorator).
+
+:::note [About migrations]
+Migrations are an important part of database management, you can read more about them in the [Database Migrations](/lonestone-boilerplate/explanations/6_database_migrations) page.
+:::
