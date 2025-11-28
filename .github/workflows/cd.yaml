@@ -7,11 +7,11 @@ permissions:
   attestations: write
 
 on:
-  push:
-    branches: [main, prod]
-  pull_request:
-    branches: [main, prod]
   workflow_dispatch:
+  workflow_run:
+    workflows: ["CI ✨"]
+    types: [completed]
+    branches: [main, prod]
 
 env:
   REGISTRY: ghcr.io
@@ -25,6 +25,7 @@ jobs:
   setup:
     name: 🛠️ Setup
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success' }}
     outputs:
       node-version: 22.14.0
       pnpm-version: 10.5.2
