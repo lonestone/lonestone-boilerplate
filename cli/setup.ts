@@ -470,6 +470,116 @@ function updateEnvFile(filePath: string, replacements: Record<string, string>, o
   }
 }
 
+function updatePackageJsonName(packagePath: string, newName: string): void {
+  if (!existsSync(packagePath)) {
+    return
+  }
+
+  const content = readFileSync(packagePath, 'utf-8')
+  const packageJson = JSON.parse(content)
+  packageJson.name = newName
+
+  writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
+}
+
+function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, newPrefix: string): void {
+  if (!existsSync(packagePath)) {
+    return
+  }
+
+  const content = readFileSync(packagePath, 'utf-8')
+  const packageJson = JSON.parse(content)
+
+  const updateDependenciesSection = (deps: Record<string, string> | undefined): Record<string, string> | undefined => {
+    if (!deps) {
+      return deps
+    }
+
+    const updatedDeps: Record<string, string> = {}
+    for (const [key, value] of Object.entries(deps)) {
+      if (key.startsWith(oldPrefix)) {
+        const newKey = key.replace(oldPrefix, newPrefix)
+        updatedDeps[newKey] = value
+      }
+      else {
+        updatedDeps[key] = value
+      }
+    }
+    return updatedDeps
+  }
+
+  packageJson.dependencies = updateDependenciesSection(packageJson.dependencies)
+  packageJson.devDependencies = updateDependenciesSection(packageJson.devDependencies)
+  packageJson.peerDependencies = updateDependenciesSection(packageJson.peerDependencies)
+
+  writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
+}
+
+async function renameProjects(projectName: string, availableApps: AvailableApps): Promise<void> {
+  console.log(`\n${colorize('📦 Renaming project packages', 'cyan')}\n`)
+
+  const oldPrefix = '@lonestone'
+  const newPrefix = `@${projectName}`
+
+  // Update root package.json
+  const rootPackagePath = join(projectRoot, 'package.json')
+  if (existsSync(rootPackagePath)) {
+    const content = readFileSync(rootPackagePath, 'utf-8')
+    const packageJson = JSON.parse(content)
+    packageJson.name = projectName
+    writeFileSync(rootPackagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
+    console.log(`  ${colorize('✓', 'green')} Updated ${colorize('package.json', 'dim')}`)
+  }
+
+  // Update apps
+  const appsToUpdate: Array<{ path: string, name: string, condition: boolean }> = [
+    { path: 'apps/api/package.json', name: 'api', condition: availableApps.api },
+    { path: 'apps/web-spa/package.json', name: 'web-spa', condition: availableApps.webSpa },
+    { path: 'apps/web-ssr/package.json', name: 'web-ssr', condition: availableApps.webSsr },
+    { path: 'apps/documentation/package.json', name: 'documentation', condition: true },
+  ]
+
+  for (const { path, name, condition } of appsToUpdate) {
+    if (!condition) {
+      continue
+    }
+
+    const packagePath = join(projectRoot, path)
+    updatePackageJsonName(packagePath, `${newPrefix}/${name}`)
+    updatePackageJsonDependencies(packagePath, oldPrefix, newPrefix)
+    console.log(`  ${colorize('✓', 'green')} Updated ${colorize(path, 'dim')}`)
+  }
+
+  // Update packages
+  const packagesToUpdate: Array<{ path: string, name: string, condition: boolean }> = [
+    { path: 'packages/ui/package.json', name: 'ui', condition: true },
+    { path: 'packages/openapi-generator/package.json', name: 'openapi-generator', condition: availableApps.openapiGenerator },
+  ]
+
+  for (const { path, name, condition } of packagesToUpdate) {
+    if (!condition) {
+      continue
+    }
+
+    const packagePath = join(projectRoot, path)
+    updatePackageJsonName(packagePath, `${newPrefix}/${name}`)
+    updatePackageJsonDependencies(packagePath, oldPrefix, newPrefix)
+    console.log(`  ${colorize('✓', 'green')} Updated ${colorize(path, 'dim')}`)
+  }
+
+  console.log(`\n  ${colorize('✓', 'green')} All project packages renamed to ${colorize(`@${projectName}/*`, 'bright')}`)
+
+  // Run linter with auto-fix to ensure formatting is correct
+  console.log(`\n  ${colorize('→', 'cyan')} Running linter with auto-fix...`)
+  try {
+    await runCommand('pnpm', ['lint:fix'])
+    console.log(`  ${colorize('✓', 'green')} Linting completed`)
+  }
+  catch {
+    console.log(`  ${colorize('⚠', 'yellow')} Linting failed, but continuing setup`)
+  }
+}
+
 function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): void {
   console.log(`\n${colorize('✏️  Updating .env files', 'cyan')}\n`)
 
@@ -568,6 +678,12 @@ async function main(): Promise<void> {
 
     // Check .env files (but don't copy yet)
     const envFilesInfo = checkEnvFiles(availableApps)
+
+    // Prompt for project name
+    const projectName = await prompt('Project name', 'my-project')
+
+    // Update package.json files for detected applications with the project name
+    await renameProjects(projectName, availableApps)
 
     // Prompt for configuration BEFORE copying files
     const databaseConfig = await promptDatabaseConfig()

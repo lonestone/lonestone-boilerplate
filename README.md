@@ -86,7 +86,7 @@ The project includes an automated setup script that will:
 - Optionally run database migrations
 
 ```bash
-pnpm setup-env
+pnpm rock
 ```
 
 The script will guide you through the configuration process interactively. It will:
