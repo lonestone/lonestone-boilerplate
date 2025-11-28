@@ -4,6 +4,9 @@
   "private": true,
   "description": "",
   "license": "UNLICENSED",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "nest build",
     "start": "node dist/src/main.js",
