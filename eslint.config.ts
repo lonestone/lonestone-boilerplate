@@ -15,6 +15,8 @@ export default antfu(
       'packages/openapi-generator/client/',
       '**/.astro/**',
       'node_modules/',
+      '.github/**/*.yml',
+      '.github/**/*.yaml',
     ],
     rules: {
       'ts/no-explicit-any': 'error',

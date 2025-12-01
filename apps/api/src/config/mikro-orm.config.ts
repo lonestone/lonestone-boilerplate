@@ -30,7 +30,7 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
     debug: config.env === 'development',
     extensions: [SeedManager, Migrator],
     seeder: {
-      path: './dist/seeders',
+      path: './dist/src/seeders',
       pathTs: './src/seeders',
       defaultSeeder: 'DatabaseSeeder',
       glob: '!(*.d).{js,ts}',
@@ -38,7 +38,7 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
       fileName: (className: string) => className,
     },
     migrations: {
-      path: './dist/modules/db/migrations',
+      path: './dist/src/modules/db/migrations',
       pathTs: './src/modules/db/migrations',
       allOrNothing: true,
       disableForeignKeys: false,

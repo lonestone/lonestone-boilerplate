@@ -71,6 +71,23 @@ Unlike a SPA, an SSR application can use environment variables at runtime becaus
 | `API_URL` | Backend API URL | Yes | - |
 | `NODE_ENV` | Environment (development, production) | No | `development` |
 
+In Vite-powered SSR applications, environment variables prefixed with `VITE_` are exposed to the client-side bundle and are accessible via `import.meta.env`.
+This is required when you need to configure client-side code, such as API clients, with environment-specific values at build time.
+
+For this app, **`VITE_API_URL`** must be set in your environment for the client to know where to send requests.
+You can see this used in [`app/root.tsx`](./app/root.tsx) as:
+
+```ts
+client.setConfig({
+  baseUrl: import.meta.env.VITE_API_URL,
+  credentials: 'include',
+})
+```
+
+If you use the provided `.env.example` file, remember to set the appropriate `VITE_API_URL` for your backend API.
+
+> **Note:** Client-side code cannot access unprefixed server `.env` variables. Always use the `VITE_` prefix for values needed in the browser.
+
 See [.env.example](/apps/web-ssr/.env.example) as a reference.
 
 ## Building with Docker

@@ -22,7 +22,7 @@ RUN pnpm --filter {apps/api}... build
 # This respects gitignore in /apps/api, so remember to include your dist folder in the "files" section of your package.json
 RUN pnpm deploy --legacy --filter="./apps/api" --prod /app/api
 
-# Stage 4: Production (Final image)
+# Stage 3: Production (Final image)
 FROM base AS runner
 
 WORKDIR /app
@@ -38,7 +38,7 @@ COPY --from=builder /app/api/package.json ./package.json
 EXPOSE 3000
 
 ENV MIKRO_ORM_CLI_USE_TS_NODE=false
-ENV MIKRO_ORM_CLI_CONFIG=dist/config/mikro-orm.config.js
+ENV MIKRO_ORM_CLI_CONFIG=dist/src/config/mikro-orm.config.js
 
 # Start the application
 CMD ["sh", "-c", "pnpm db:migrate:up && pnpm run start"]
