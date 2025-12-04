@@ -1,16 +1,15 @@
-import type {
-  CreateCommentSchema,
-} from '@lonestone/openapi-generator'
-import { commentsControllerCreateComment, commentsControllerDeleteComment, commentsControllerGetComments } from '@lonestone/openapi-generator/client/sdk.gen'
+import type { CreateCommentSchema } from '@boilerstone/openapi-generator'
 import {
-  Alert,
-  AlertDescription,
-} from '@lonestone/ui/components/primitives/alert'
-import { Card, CardContent } from '@lonestone/ui/components/primitives/card'
-import { Separator } from '@lonestone/ui/components/primitives/separator'
-import { Skeleton } from '@lonestone/ui/components/primitives/skeleton'
-import { useInView } from '@lonestone/ui/hooks/use-in-view'
-import { cn } from '@lonestone/ui/lib/utils'
+  commentsControllerCreateComment,
+  commentsControllerDeleteComment,
+  commentsControllerGetComments,
+} from '@boilerstone/openapi-generator/client/sdk.gen'
+import { Alert, AlertDescription } from '@boilerstone/ui/components/primitives/alert'
+import { Card, CardContent } from '@boilerstone/ui/components/primitives/card'
+import { Separator } from '@boilerstone/ui/components/primitives/separator'
+import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
+import { useInView } from '@boilerstone/ui/hooks/use-in-view'
+import { cn } from '@boilerstone/ui/lib/utils'
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query'
 import { Loader2, MessageSquare } from 'lucide-react'
 import { useMemo } from 'react'

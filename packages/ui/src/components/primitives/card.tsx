@@ -1,4 +1,4 @@
-import { cn } from '@lonestone/ui/lib/utils'
+import { cn } from '@boilerstone/ui/lib/utils'
 
 import { Slot } from '@radix-ui/react-slot'
 import * as React from 'react'

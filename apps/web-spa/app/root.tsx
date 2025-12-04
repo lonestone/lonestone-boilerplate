@@ -1,19 +1,12 @@
 import type { Route } from './+types/root'
-import { client } from '@lonestone/openapi-generator'
+import { client } from '@boilerstone/openapi-generator'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import {
-  isRouteErrorResponse,
-  Links,
-  Meta,
-  Outlet,
-  Scripts,
-  ScrollRestoration,
-} from 'react-router'
+import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router'
 import { queryClient } from '@/lib/query-client'
 import useTheme from './hooks/useTheme'
 import '@fontsource/source-sans-pro'
-import '@lonestone/ui/globals.css'
+import '@boilerstone/ui/globals.css'
 
 client.setConfig({
   baseUrl: import.meta.env.VITE_API_URL,

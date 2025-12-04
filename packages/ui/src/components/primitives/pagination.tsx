@@ -1,12 +1,8 @@
-import type { Button } from '@lonestone/ui/components/primitives/button'
-import { buttonVariants } from '@lonestone/ui/components/primitives/button'
-import { cn } from '@lonestone/ui/lib/utils'
+import type { Button } from '@boilerstone/ui/components/primitives/button'
+import { buttonVariants } from '@boilerstone/ui/components/primitives/button'
+import { cn } from '@boilerstone/ui/lib/utils'
 
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  MoreHorizontalIcon,
-} from 'lucide-react'
+import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from 'lucide-react'
 import * as React from 'react'
 
 function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {

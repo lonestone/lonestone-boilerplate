@@ -1,4 +1,4 @@
-import { cn } from '@lonestone/ui/lib/utils'
+import { cn } from '@boilerstone/ui/lib/utils'
 import * as LabelPrimitive from '@radix-ui/react-label'
 
 import * as React from 'react'

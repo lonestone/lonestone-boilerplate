@@ -1,4 +1,4 @@
-import { cn } from '@lonestone/ui/lib/utils'
+import { cn } from '@boilerstone/ui/lib/utils'
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu'
 import { CheckIcon, ChevronRightIcon, CircleIcon } from 'lucide-react'
 

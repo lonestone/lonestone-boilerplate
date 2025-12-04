@@ -1,5 +1,5 @@
 import type { AuthRegisterFormData } from '../forms/auth-register-form'
-import { toast } from '@lonestone/ui/components/primitives/sonner'
+import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { useMutation } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
 import { authClient } from '@/lib/auth-client'

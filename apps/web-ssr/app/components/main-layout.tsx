@@ -1,4 +1,4 @@
-import { Header } from '@lonestone/ui/components/layout/Header'
+import { Header } from '@boilerstone/ui/components/layout/Header'
 import { Link, NavLink, Outlet } from 'react-router'
 
 export default function MainLayout() {
