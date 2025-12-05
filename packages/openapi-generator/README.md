@@ -57,7 +57,7 @@ La configuration se trouve dans le fichier `openapi-ts.config.ts`. Elle définit
 Pour utiliser le client API généré dans une application :
 
 ```typescript
-import { client } from '@lonestone/openapi-generator'
+import { client } from '@boilerstone/openapi-generator'
 
 client.setConfig({
   baseURL: 'http://localhost:3000',
@@ -67,7 +67,7 @@ client.setConfig({
 
 ```typescript
 // Exemple d'utilisation
-import { postControllerCreatePost } from '@lonestone/openapi-generator'
+import { postControllerCreatePost } from '@boilerstone/openapi-generator'
 
 const posts = await postControllerCreatePost()
 ```

@@ -1,4 +1,4 @@
-import { cn } from '@lonestone/ui/lib/utils'
+import { cn } from '@boilerstone/ui/lib/utils'
 import * as SwitchPrimitives from '@radix-ui/react-switch'
 
 import * as React from 'react'

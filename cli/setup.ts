@@ -515,10 +515,34 @@ function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, n
   writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
 }
 
+function updateDockerCompose(projectName: string): void {
+  const dockerComposePath = join(projectRoot, 'docker-compose.yml')
+  if (!existsSync(dockerComposePath)) {
+    return
+  }
+
+  let content = readFileSync(dockerComposePath, 'utf-8')
+  const oldNames = ['boilerstone', 'lonestone']
+  let updated = false
+
+  for (const oldName of oldNames) {
+    const regex = new RegExp(oldName, 'g')
+    if (regex.test(content)) {
+      content = content.replace(regex, projectName)
+      updated = true
+    }
+  }
+
+  if (updated) {
+    writeFileSync(dockerComposePath, content, 'utf-8')
+    console.log(`  ${colorize('✓', 'green')} Updated ${colorize('docker-compose.yml', 'dim')}`)
+  }
+}
+
 async function renameProjects(projectName: string, availableApps: AvailableApps): Promise<void> {
   console.log(`\n${colorize('📦 Renaming project packages', 'cyan')}\n`)
 
-  const oldPrefix = '@lonestone'
+  const oldPrefix = '@boilerstone'
   const newPrefix = `@${projectName}`
 
   // Update root package.json
@@ -569,6 +593,9 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
 
   console.log(`\n  ${colorize('✓', 'green')} All project packages renamed to ${colorize(`@${projectName}/*`, 'bright')}`)
 
+  // Update docker-compose.yml
+  updateDockerCompose(projectName)
+
   // Run linter with auto-fix to ensure formatting is correct
   console.log(`\n  ${colorize('→', 'cyan')} Running linter with auto-fix...`)
   try {
@@ -577,6 +604,16 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
   }
   catch {
     console.log(`  ${colorize('⚠', 'yellow')} Linting failed, but continuing setup`)
+  }
+
+  // Install dependencies
+  console.log(`\n  ${colorize('→', 'cyan')} Installing new dependencies...`)
+  try {
+    await runCommand('pnpm', ['install'])
+    console.log(`  ${colorize('✓', 'green')} New dependencies installed`)
+  }
+  catch {
+    console.log(`  ${colorize('⚠', 'yellow')} New dependencies installation failed, but continuing setup`)
   }
 }
 

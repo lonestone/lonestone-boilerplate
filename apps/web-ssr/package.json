@@ -1,5 +1,5 @@
 {
-  "name": "@lonestone/web-ssr",
+  "name": "@boilerstone/web-ssr",
   "type": "module",
   "private": true,
   "scripts": {
@@ -9,10 +9,10 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@boilerstone/openapi-generator": "workspace:*",
+    "@boilerstone/ui": "workspace:*",
     "@fontsource/source-sans-pro": "^5.2.5",
     "@hookform/resolvers": "^5.2.1",
-    "@lonestone/openapi-generator": "workspace:*",
-    "@lonestone/ui": "workspace:*",
     "@react-router/node": "^7.8.2",
     "@react-router/serve": "^7.8.2",
     "@tanstack/react-query": "^5.85.5",

@@ -1,14 +1,10 @@
-import type {
-  CreateCommentSchema,
-} from '@lonestone/openapi-generator'
+import type { CreateCommentSchema } from '@boilerstone/openapi-generator'
+import { zCreateCommentSchema } from '@boilerstone/openapi-generator'
+import { Button } from '@boilerstone/ui/components/primitives/button'
+import { Card, CardContent } from '@boilerstone/ui/components/primitives/card'
+import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
+import { cn } from '@boilerstone/ui/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  zCreateCommentSchema,
-} from '@lonestone/openapi-generator'
-import { Button } from '@lonestone/ui/components/primitives/button'
-import { Card, CardContent } from '@lonestone/ui/components/primitives/card'
-import { Textarea } from '@lonestone/ui/components/primitives/textarea'
-import { cn } from '@lonestone/ui/lib/utils'
 
 import { Loader2, Send, User } from 'lucide-react'
 import { useEffect } from 'react'

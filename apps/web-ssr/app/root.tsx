@@ -1,20 +1,12 @@
 import type { Route } from './+types/root'
 import process from 'node:process'
-import { client } from '@lonestone/openapi-generator'
+import { client } from '@boilerstone/openapi-generator'
 import { HydrationBoundary, QueryClientProvider } from '@tanstack/react-query'
-import {
-  isRouteErrorResponse,
-  Links,
-  Meta,
-  Outlet,
-  Scripts,
-  ScrollRestoration,
-  useRouteLoaderData,
-} from 'react-router'
+import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData } from 'react-router'
 import { useDehydratedState } from '@/hooks/use-dehydrated-state'
 import { queryClient } from '@/lib/query-client'
 import '@fontsource/source-sans-pro'
-import '@lonestone/ui/globals.css'
+import '@boilerstone/ui/globals.css'
 
 client.setConfig({
   baseUrl: import.meta.env.VITE_API_URL,

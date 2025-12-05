@@ -1,11 +1,6 @@
-import type { UserPostSchema } from '@lonestone/openapi-generator'
-import { Badge } from '@lonestone/ui/components/primitives/badge'
-import {
-  Card,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@lonestone/ui/components/primitives/card'
+import type { UserPostSchema } from '@boilerstone/openapi-generator'
+import { Badge } from '@boilerstone/ui/components/primitives/badge'
+import { Card, CardFooter, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { Link } from 'react-router'
 
 export function UserPostCard({ post }: { post: Omit<UserPostSchema, 'content'> }) {

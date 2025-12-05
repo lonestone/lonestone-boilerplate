@@ -2,26 +2,14 @@ import type {
   CommentSchema,
   CommentsControllerGetCommentRepliesResponse,
   CreateCommentSchema,
-} from '@lonestone/openapi-generator'
-import { commentsControllerGetCommentReplies } from '@lonestone/openapi-generator/client/sdk.gen'
-import { Button } from '@lonestone/ui/components/primitives/button'
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from '@lonestone/ui/components/primitives/card'
-import { Separator } from '@lonestone/ui/components/primitives/separator'
-import { cn } from '@lonestone/ui/lib/utils'
+} from '@boilerstone/openapi-generator'
+import { commentsControllerGetCommentReplies } from '@boilerstone/openapi-generator/client/sdk.gen'
+import { Button } from '@boilerstone/ui/components/primitives/button'
+import { Card, CardContent, CardFooter, CardHeader } from '@boilerstone/ui/components/primitives/card'
+import { Separator } from '@boilerstone/ui/components/primitives/separator'
+import { cn } from '@boilerstone/ui/lib/utils'
 import { useQuery } from '@tanstack/react-query'
-import {
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  Reply,
-  Trash2,
-  User,
-} from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2, Reply, Trash2, User } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CommentForm } from '@/features/comments/comment-form'
 import { queryClient } from '@/lib/query-client'

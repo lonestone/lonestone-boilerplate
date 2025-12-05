@@ -1,5 +1,5 @@
 {
-  "name": "lonestone",
+  "name": "boilerstone",
   "type": "module",
   "version": "1.0.0",
   "private": true,
@@ -22,10 +22,10 @@
     "docker:logs": "docker-compose logs -f",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "generate": "pnpm --filter=@lonestone/openapi-generator run generate",
+    "generate": "pnpm --filter=@boilerstone/openapi-generator run generate",
     "test": "pnpm -r test",
-    "schematics:module": "pnpm --filter=@lonestone/schematics run schematics:module",
-    "docs-only": "pnpm --filter=@lonestone/documentation run dev"
+    "schematics:module": "pnpm --filter=@boilerstone/schematics run schematics:module",
+    "docs-only": "pnpm --filter=@boilerstone/documentation run dev"
   },
   "dependencies": {
     "typescript": "^5.9.2"
