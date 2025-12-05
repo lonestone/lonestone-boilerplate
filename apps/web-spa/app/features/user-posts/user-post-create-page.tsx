@@ -1,7 +1,5 @@
-import type {
-  CreatePostSchema,
-} from '@lonestone/openapi-generator'
-import { postControllerCreatePost } from '@lonestone/openapi-generator/client/sdk.gen'
+import type { CreatePostSchema } from '@boilerstone/openapi-generator'
+import { postControllerCreatePost } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { useMutation } from '@tanstack/react-query'
 import { AlertCircle, Check, Settings } from 'lucide-react'
 import { useState } from 'react'

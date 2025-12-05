@@ -199,18 +199,18 @@ importers:
 
   apps/web-spa:
     dependencies:
+      '@boilerstone/openapi-generator':
+        specifier: workspace:*
+        version: link:../../packages/openapi-generator
+      '@boilerstone/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@fontsource/source-sans-pro':
         specifier: ^5.2.5
         version: 5.2.5
       '@hookform/resolvers':
         specifier: ^5.2.1
         version: 5.2.1(react-hook-form@7.62.0(react@19.1.1))
-      '@lonestone/openapi-generator':
-        specifier: workspace:*
-        version: link:../../packages/openapi-generator
-      '@lonestone/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@react-router/node':
         specifier: ^7.8.2
         version: 7.8.2(react-router@7.8.2(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(typescript@5.9.2)
@@ -272,18 +272,18 @@ importers:
 
   apps/web-ssr:
     dependencies:
+      '@boilerstone/openapi-generator':
+        specifier: workspace:*
+        version: link:../../packages/openapi-generator
+      '@boilerstone/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@fontsource/source-sans-pro':
         specifier: ^5.2.5
         version: 5.2.5
       '@hookform/resolvers':
         specifier: ^5.2.1
         version: 5.2.1(react-hook-form@7.62.0(react@19.1.1))
-      '@lonestone/openapi-generator':
-        specifier: workspace:*
-        version: link:../../packages/openapi-generator
-      '@lonestone/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@react-router/node':
         specifier: ^7.8.2
         version: 7.8.2(react-router@7.8.2(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(typescript@5.9.2)
@@ -357,12 +357,12 @@ importers:
 
   packages/ui:
     dependencies:
+      '@boilerstone/openapi-generator':
+        specifier: workspace:*
+        version: link:../openapi-generator
       '@hookform/resolvers':
         specifier: ^5.2.1
         version: 5.2.1(react-hook-form@7.62.0(react@19.1.1))
-      '@lonestone/openapi-generator':
-        specifier: workspace:*
-        version: link:../openapi-generator
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.1.8(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)

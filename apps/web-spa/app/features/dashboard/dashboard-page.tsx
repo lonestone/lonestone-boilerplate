@@ -1,5 +1,5 @@
-import { Header } from '@lonestone/ui/components/layout/Header'
-import { Button } from '@lonestone/ui/components/primitives/button'
+import { Header } from '@boilerstone/ui/components/layout/Header'
+import { Button } from '@boilerstone/ui/components/primitives/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,18 +7,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@lonestone/ui/components/primitives/dropdown-menu'
-import { Switch } from '@lonestone/ui/components/primitives/switch'
-import {
-  LayoutDashboard,
-  LogOut,
-  MoonStar,
-  PlusCircle,
-  Settings,
-  Sun,
-  User,
-  UserIcon,
-} from 'lucide-react'
+} from '@boilerstone/ui/components/primitives/dropdown-menu'
+import { Switch } from '@boilerstone/ui/components/primitives/switch'
+import { LayoutDashboard, LogOut, MoonStar, PlusCircle, Settings, Sun, User, UserIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router'
 import useTheme from '@/hooks/useTheme'
