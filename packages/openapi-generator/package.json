@@ -1,5 +1,5 @@
 {
-  "name": "@lonestone/openapi-generator",
+  "name": "@boilerstone/openapi-generator",
   "version": "0.0.1",
   "private": true,
   "main": "./index.ts",

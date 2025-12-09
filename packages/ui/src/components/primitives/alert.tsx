@@ -1,5 +1,5 @@
 import type { VariantProps } from 'class-variance-authority'
-import { cn } from '@lonestone/ui/lib/utils'
+import { cn } from '@boilerstone/ui/lib/utils'
 import { cva } from 'class-variance-authority'
 
 import * as React from 'react'

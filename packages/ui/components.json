@@ -10,11 +10,11 @@
     "prefix": ""
   },
   "aliases": {
-    "components": "@lonestone/ui/components",
-    "utils": "@lonestone/ui/lib/utils",
-    "ui": "@lonestone/ui/components/primitives",
-    "lib": "@lonestone/ui/lib",
-    "hooks": "@lonestone/ui/hooks"
+    "components": "@boilerstone/ui/components",
+    "utils": "@boilerstone/ui/lib/utils",
+    "ui": "@boilerstone/ui/components/primitives",
+    "lib": "@boilerstone/ui/lib",
+    "hooks": "@boilerstone/ui/hooks"
   },
   "iconLibrary": "lucide"
 }

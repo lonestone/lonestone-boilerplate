@@ -1,4 +1,4 @@
-import type { PostContentSchema } from '@lonestone/openapi-generator'
+import type { PostContentSchema } from '@boilerstone/openapi-generator'
 
 export default function PostContent({
   content,

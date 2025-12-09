@@ -1,17 +1,10 @@
 import type * as LabelPrimitive from '@radix-ui/react-label'
 import type { ControllerProps, FieldPath, FieldValues } from 'react-hook-form'
-import { Label } from '@lonestone/ui/components/primitives/label'
-import { cn } from '@lonestone/ui/lib/utils'
-
+import { Label } from '@boilerstone/ui/components/primitives/label'
+import { cn } from '@boilerstone/ui/lib/utils'
 import { Slot } from '@radix-ui/react-slot'
 import * as React from 'react'
-import {
-  Controller,
-
-  FormProvider,
-  useFormContext,
-  useFormState,
-} from 'react-hook-form'
+import { Controller, FormProvider, useFormContext, useFormState } from 'react-hook-form'
 
 const Form = FormProvider
 

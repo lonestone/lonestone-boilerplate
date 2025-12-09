@@ -1,11 +1,5 @@
-import type { PublicPostsSchema } from '@lonestone/openapi-generator'
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@lonestone/ui/components/primitives/card'
+import type { PublicPostsSchema } from '@boilerstone/openapi-generator'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { ArrowUpRight, Calendar, MessageCircle, User } from 'lucide-react'
 
 import { useMemo } from 'react'

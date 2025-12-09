@@ -6,8 +6,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@lonestone/ui/components/primitives/dialog'
-import { cn } from '@lonestone/ui/lib/utils'
+} from '@boilerstone/ui/components/primitives/dialog'
+import { cn } from '@boilerstone/ui/lib/utils'
 import { Command as CommandPrimitive } from 'cmdk'
 
 import { SearchIcon } from 'lucide-react'

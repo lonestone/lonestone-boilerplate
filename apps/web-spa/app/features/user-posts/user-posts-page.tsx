@@ -1,13 +1,8 @@
-import { postControllerGetUserPosts } from '@lonestone/openapi-generator/client/sdk.gen'
-import { Button } from '@lonestone/ui/components/primitives/button'
-import { Input } from '@lonestone/ui/components/primitives/input'
+import { postControllerGetUserPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
+import { Button } from '@boilerstone/ui/components/primitives/button'
+import { Input } from '@boilerstone/ui/components/primitives/input'
 import { useQuery } from '@tanstack/react-query'
-import {
-  ChevronLeft,
-  ChevronRight,
-  PlusCircleIcon,
-  SearchIcon,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, PlusCircleIcon, SearchIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { UserPostCard } from '@/features/user-posts/user-post-card'

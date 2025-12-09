@@ -1,9 +1,12 @@
-import type {
-  UpdatePostSchema,
-} from '@lonestone/openapi-generator'
-import { postControllerGetUserPost, postControllerPublishPost, postControllerUnpublishPost, postControllerUpdatePost } from '@lonestone/openapi-generator/client/sdk.gen'
-import { Button } from '@lonestone/ui/components/primitives/button'
-import { SendIcon } from '@lonestone/ui/icons'
+import type { UpdatePostSchema } from '@boilerstone/openapi-generator'
+import {
+  postControllerGetUserPost,
+  postControllerPublishPost,
+  postControllerUnpublishPost,
+  postControllerUpdatePost,
+} from '@boilerstone/openapi-generator/client/sdk.gen'
+import { Button } from '@boilerstone/ui/components/primitives/button'
+import { SendIcon } from '@boilerstone/ui/icons'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router'
 import { queryClient } from '@/lib/query-client'

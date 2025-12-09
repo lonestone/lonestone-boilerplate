@@ -1,7 +1,7 @@
 import type { Route } from './+types/posts-list-page'
-import { publicPostControllerGetPosts } from '@lonestone/openapi-generator/client/sdk.gen'
-import { Button } from '@lonestone/ui/components/primitives/button'
-import { Input } from '@lonestone/ui/components/primitives/input'
+import { publicPostControllerGetPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
+import { Button } from '@boilerstone/ui/components/primitives/button'
+import { Input } from '@boilerstone/ui/components/primitives/input'
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 
 import { useMemo, useState } from 'react'

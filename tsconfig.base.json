@@ -5,7 +5,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@lonestone/*": ["packages/*/src"]
+      "@boilerstone/*": ["packages/*/src"]
     }
   }
 }
