@@ -1,0 +1,56 @@
+---
+description: React Native Expo mobile app rules
+globs: apps/mobile/**
+alwaysApply: false
+---
+
+# Rules
+
+The most important document you need is [mobile.mdx](../../apps/documentation/src/content/docs/guidelines/mobile.mdx). Always read this file.
+
+## Mobile Development Rules
+
+- Use React Native and Expo for mobile development
+- Use React Navigation for navigation (native stack)
+- Use NativeWind for styling (Tailwind CSS for React Native)
+- Use Zustand for state management
+- Use TanStack Query for data fetching
+- Use Better Auth for authentication
+- Use Lucide React Native for icons only
+- Follow the naming conventions in the common guidelines
+- Structure features according to the frontend guidelines
+- Use react-hook-form with Zod for form validation
+- Write unit tests with Jest and React Native Testing Library
+- Use EAS for building and deploying
+
+## Environment Variables
+
+- Use `react-native-dotenv` for environment variables
+- Prefix public env vars with `EXPO_PUBLIC_`
+- Validate env vars with Zod in `config/env.config.ts`
+
+## Navigation
+
+- Use React Navigation native stack
+- Define types in `app/navigation/types.ts`
+- Use typed navigation hooks from `@react-navigation/native`
+
+## State Management
+
+- Use Zustand for global state
+- Structure stores in `store/` directory
+- Export store hooks from `store/index.ts`
+
+## Styling
+
+- Use NativeWind for styling
+- Follow dark mode best practices with `useTheme` hook
+- Use TailwindCSS classes with `className` prop
+- Avoid inline styles when possible
+
+## Components
+
+- Create reusable components in `components/` directory
+- Feature-specific components go in `features/*/components/`
+- Use TypeScript interfaces for props
+- Export components from index files

@@ -1,0 +1,61 @@
+{
+  "auth": {
+    "login": {
+      "title": "Connexion",
+      "subtitle": "Connectez-vous pour continuer avec Lonestone.",
+      "email": "Email",
+      "emailPlaceholder": "votre@email.com",
+      "password": "Mot de passe",
+      "passwordPlaceholder": "••••••••",
+      "signIn": "Se connecter",
+      "createAccount": "Créer un compte",
+      "errors": {
+        "requiredFields": "Veuillez remplir tous les champs",
+        "loginFailed": "Échec de la connexion",
+        "unexpectedError": "Une erreur inattendue s'est produite"
+      }
+    },
+    "register": {
+      "title": "Créer un compte",
+      "subtitle": "Rejoignez Lonestone aujourd'hui.",
+      "name": "Nom",
+      "namePlaceholder": "Jean Dupont",
+      "email": "Email",
+      "emailPlaceholder": "votre@email.com",
+      "password": "Mot de passe",
+      "passwordPlaceholder": "••••••••",
+      "confirmPassword": "Confirmer le mot de passe",
+      "confirmPasswordPlaceholder": "••••••••",
+      "createAccount": "Créer un compte",
+      "signIn": "Se connecter",
+      "errors": {
+        "requiredFields": "Veuillez remplir tous les champs",
+        "passwordMismatch": "Les mots de passe ne correspondent pas",
+        "registrationFailed": "Échec de l'inscription",
+        "unexpectedError": "Une erreur inattendue s'est produite"
+      }
+    }
+  },
+  "home": {
+    "title": "Accueil",
+    "welcome": "Bienvenue",
+    "posts": {
+      "loading": "Chargement des posts...",
+      "empty": "Aucun post pour le moment",
+      "error": "Échec du chargement des posts",
+      "pullToRefresh": "Tirer pour actualiser"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "logout": "Déconnexion",
+    "logoutConfirm": "Êtes-vous sûr de vouloir vous déconnecter ?"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "retry": "Réessayer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer"
+  }
+}

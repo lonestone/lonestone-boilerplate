@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-native",
+    "baseUrl": ".",
+    "moduleResolution": "node",
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@lonestone/openapi-generator": [
+        "../../packages/openapi-generator"
+      ]
+    },
+    "typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
+    "strict": true
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "jest.config.ts",
+    "jest.setup.ts"
+  ]
+}

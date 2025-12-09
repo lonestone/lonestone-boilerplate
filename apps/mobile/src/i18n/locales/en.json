@@ -1,0 +1,61 @@
+{
+  "auth": {
+    "login": {
+      "title": "Login",
+      "subtitle": "Sign in to continue with Lonestone.",
+      "email": "Email",
+      "emailPlaceholder": "your@email.com",
+      "password": "Password",
+      "passwordPlaceholder": "••••••••",
+      "signIn": "Sign In",
+      "createAccount": "Create Account",
+      "errors": {
+        "requiredFields": "Please fill in all fields",
+        "loginFailed": "Login failed",
+        "unexpectedError": "An unexpected error occurred"
+      }
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Join Lonestone today.",
+      "name": "Name",
+      "namePlaceholder": "John Doe",
+      "email": "Email",
+      "emailPlaceholder": "your@email.com",
+      "password": "Password",
+      "passwordPlaceholder": "••••••••",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "••••••••",
+      "createAccount": "Create Account",
+      "signIn": "Sign In",
+      "errors": {
+        "requiredFields": "Please fill in all fields",
+        "passwordMismatch": "Passwords do not match",
+        "registrationFailed": "Registration failed",
+        "unexpectedError": "An unexpected error occurred"
+      }
+    }
+  },
+  "home": {
+    "title": "Home",
+    "welcome": "Welcome",
+    "posts": {
+      "loading": "Loading posts...",
+      "empty": "No posts yet",
+      "error": "Failed to load posts",
+      "pullToRefresh": "Pull to refresh"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "logout": "Logout",
+    "logoutConfirm": "Are you sure you want to logout?"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  }
+}
