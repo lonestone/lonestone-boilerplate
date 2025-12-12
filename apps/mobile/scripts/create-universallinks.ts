@@ -3,10 +3,30 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
 
-const { Input, Confirm } = Enquirer as unknown as {
-  Input: new (options: { message: string, initial?: string }) => { run: () => Promise<string> }
-  Confirm: new (options: { message: string, initial?: boolean }) => { run: () => Promise<boolean> }
+interface InputPromptOptions {
+  message: string
+  initial?: string
 }
+
+interface ConfirmPromptOptions {
+  message: string
+  initial?: boolean
+}
+
+interface InputPrompt {
+  run: () => Promise<string>
+}
+
+interface ConfirmPrompt {
+  run: () => Promise<boolean>
+}
+
+interface EnquirerConstructors {
+  Input: new (options: InputPromptOptions) => InputPrompt
+  Confirm: new (options: ConfirmPromptOptions) => ConfirmPrompt
+}
+
+const { Input, Confirm } = Enquirer as unknown as EnquirerConstructors
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -45,7 +65,7 @@ function normalizePathList(raw: string): string[] {
     .split(',')
     .map(s => s.trim())
     .filter(Boolean)
-    .map(s => {
+    .map((s) => {
       const prefixed = ensureLeadingSlash(s)
       return prefixed.endsWith('*') ? prefixed : `${prefixed}${prefixed.endsWith('/') ? '*' : '/*'}`
     })

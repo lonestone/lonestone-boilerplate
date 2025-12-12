@@ -27,11 +27,12 @@ export class AuthService implements OnModuleInit {
       trustedOrigins: config.betterAuth.trustedOrigins,
       connectionStringUrl: config.database.connectionStringUrl,
       sendResetPassword: async (data) => {
-        const url = `${config.clients.webApp.url}/reset-password?token=${data.token}`
+        const webUrl = `${config.clients.webApp.url}/reset-password?token=${data.token}`
+        const mobileUrl = `${config.clients.mobile.scheme}://${config.clients.mobile.resetPath}?token=${data.token}`
         return this.emailService.sendEmail({
           to: data.user.email,
           subject: 'Reset your password',
-          content: `Hello ${data.user.name}, please reset your password by clicking on the link below: <a href="${url}">${url}</a>`,
+          content: `Hello ${data.user.name}, please reset your password with the link below:<br/>Mobile app: <a href="${mobileUrl}">${mobileUrl}</a><br/>Web app: <a href="${webUrl}">${webUrl}</a>`,
         })
       },
       sendVerificationEmail: async (data) => {

@@ -9,6 +9,14 @@ dist
 out
 build
 
+# Expo / React Native
+/android
+/ios
+/ios/Pods
+.podfile.lock
+.expo
+.expo-shared
+
 # Cache
 .turbo
 .cache
@@ -48,3 +56,9 @@ temp
 
 ./packages/openapi-generator/client
 openapi-ts-error-*
+
+# android
+android/
+
+# ios
+ios/

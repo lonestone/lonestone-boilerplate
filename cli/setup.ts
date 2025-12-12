@@ -5,10 +5,31 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
 
-const { Input, Confirm } = Enquirer as unknown as {
-  Input: new (options: { message: string, initial?: string }) => { run: () => Promise<string> }
-  Confirm: new (options: { name: string, message: string, initial?: boolean }) => { run: () => Promise<boolean> }
+interface InputPromptOptions {
+  message: string
+  initial?: string
 }
+
+interface ConfirmPromptOptions {
+  name: string
+  message: string
+  initial?: boolean
+}
+
+interface InputPrompt {
+  run: () => Promise<string>
+}
+
+interface ConfirmPrompt {
+  run: () => Promise<boolean>
+}
+
+interface EnquirerConstructors {
+  Input: new (options: InputPromptOptions) => InputPrompt
+  Confirm: new (options: ConfirmPromptOptions) => ConfirmPrompt
+}
+
+const { Input, Confirm } = Enquirer as unknown as EnquirerConstructors
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -538,6 +559,7 @@ function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, n
 
   const content = readFileSync(packagePath, 'utf-8')
   const packageJson = JSON.parse(content)
+  const preservePackages = new Set<string>(['@lonestone/nzoth'])
 
   const updateDependenciesSection = (deps: Record<string, string> | undefined): Record<string, string> | undefined => {
     if (!deps) {
@@ -546,7 +568,10 @@ function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, n
 
     const updatedDeps: Record<string, string> = {}
     for (const [key, value] of Object.entries(deps)) {
-      if (key.startsWith(oldPrefix)) {
+      if (preservePackages.has(key)) {
+        updatedDeps[key] = value
+      }
+      else if (key.startsWith(oldPrefix)) {
         const newKey = key.replace(oldPrefix, newPrefix)
         updatedDeps[newKey] = value
       }
@@ -620,6 +645,58 @@ function updateDockerCompose(projectName: string): void {
   if (updated) {
     writeFileSync(dockerComposePath, content, 'utf-8')
     console.log(`  ${colorize('✓', 'green')} Updated ${colorize('docker-compose.yml', 'dim')}`)
+  }
+}
+
+function updateMobileTypeScriptFiles(scheme: string): void {
+  console.log(`\n${colorize('📱 Updating mobile TypeScript files', 'cyan')}\n`)
+
+  const filesToUpdate = [
+    {
+      path: join(projectRoot, 'apps/mobile/lib/auth-client.ts'),
+      replacements: [
+        { pattern: /scheme:\s*'[^']*',/, value: `scheme: '${scheme}',`, label: 'auth-client.ts scheme' },
+      ],
+    },
+    {
+      path: join(projectRoot, 'apps/mobile/lib/api-client.ts'),
+      replacements: [
+        { pattern: /const mobileScheme = Constants\.expoConfig\?\.scheme \?\? '[^']*'/, value: `const mobileScheme = Constants.expoConfig?.scheme ?? '${scheme}'`, label: 'api-client.ts scheme fallback' },
+      ],
+    },
+    {
+      path: join(projectRoot, 'apps/mobile/lib/secure-storage-adapter.ts'),
+      replacements: [
+        { pattern: /export const AUTH_STORAGE_PREFIX = '[^']*'/, value: `export const AUTH_STORAGE_PREFIX = '${scheme}_auth'`, label: 'secure-storage-adapter.ts prefix' },
+      ],
+    },
+  ]
+
+  for (const { path, replacements } of filesToUpdate) {
+    if (!existsSync(path)) {
+      console.log(`  ${colorize('⚠', 'yellow')} File not found: ${colorize(path, 'dim')}`)
+      continue
+    }
+
+    let content = readFileSync(path, 'utf-8')
+    let updated = false
+
+    for (const { pattern, value, label } of replacements) {
+      const nextContent = content.replace(pattern, value)
+      if (nextContent !== content) {
+        content = nextContent
+        updated = true
+      }
+      else {
+        console.log(`  ${colorize('⚠', 'yellow')} Could not update ${colorize(label, 'dim')} (pattern not found)`)
+      }
+    }
+
+    if (updated) {
+      writeFileSync(path, content, 'utf-8')
+      const fileName = path.replace(projectRoot, '')
+      console.log(`  ${colorize('✓', 'green')} Updated ${colorize(fileName, 'dim')}`)
+    }
   }
 }
 
@@ -731,7 +808,7 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
   }
 }
 
-function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): void {
+function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps, mobileConfig: MobileConfig | null): void {
   console.log(`\n${colorize('✏️  Updating .env files', 'cyan')}\n`)
 
   const origins: string[] = []
@@ -745,8 +822,9 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   if (config.ports.webSsr) {
     origins.push(`http://localhost:${config.ports.webSsr}`)
   }
-
-  const trustedOrigins = origins.join(',')
+  // Allow Expo dev origins wildcard and mobile custom scheme
+  const mobileSchemeOrigin = mobileConfig ? `${mobileConfig.scheme}://*` : undefined
+  const trustedOrigins = [...origins, 'exp://*', ...(mobileSchemeOrigin ? [mobileSchemeOrigin] : [])].join(',')
 
   // Root .env (docker-compose) - update all configured vars
   const rootUpdates: Record<string, string> = {}
@@ -780,6 +858,8 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
     if (config.ports.webSsr) {
       updates.CLIENTS_WEB_SSR_URL = `http://localhost:${config.ports.webSsr}`
     }
+    updates.CLIENTS_MOBILE_SCHEME = mobileConfig?.scheme ?? 'my-project'
+    updates.CLIENTS_MOBILE_RESET_PATH = 'reset-password'
 
     if (Object.keys(updates).length > 0) {
       updateEnvFile(apiEnvPath, updates, false)
@@ -811,7 +891,13 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   if (availableApps.mobile && config.ports.api) {
     const mobileEnvPath = join(projectRoot, 'apps/mobile/.env')
     const apiUrl = `http://localhost:${config.ports.api}`
-    updateEnvFile(mobileEnvPath, { EXPO_PUBLIC_API_URL: apiUrl }, false)
+    const updates: Record<string, string> = {
+      EXPO_PUBLIC_API_URL: apiUrl,
+    }
+    if (mobileConfig) {
+      updates.EXPO_PUBLIC_SCHEME = mobileConfig.scheme
+    }
+    updateEnvFile(mobileEnvPath, updates, false)
   }
 
   console.log(`  ${colorize('✓', 'green')} Configuration values have been updated in .env files`)
@@ -847,6 +933,7 @@ async function main(): Promise<void> {
     await renameProjects(projectName, availableApps)
     if (mobileConfig) {
       updateMobileAppConfig(mobileConfig)
+      updateMobileTypeScriptFiles(mobileConfig.scheme)
     }
 
     // Prompt for configuration BEFORE copying files
@@ -864,7 +951,7 @@ async function main(): Promise<void> {
     copyEnvFiles(envFilesInfo)
 
     // Update .env files with the configured values
-    updateAllEnvFiles(config, availableApps)
+    updateAllEnvFiles(config, availableApps, mobileConfig)
 
     console.log(`\n${colorize('✅ Setup completed successfully!', 'green')}`)
     console.log(`\n${colorize('📝 Configuration Summary:', 'cyan')}`)

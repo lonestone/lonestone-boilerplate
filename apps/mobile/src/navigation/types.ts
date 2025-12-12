@@ -4,20 +4,24 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
  * Authentication Stack Parameters
  * Screens available when user is NOT authenticated
  */
-export interface AuthStackParamList {
-  [key: string]: object | undefined
+export interface AuthStackParamList extends Record<string, object | undefined> {
   Login: undefined
   Register: undefined
+  ResetPassword: {
+    token?: string
+  }
 }
 
 /**
  * Main Application Stack Parameters
  * Screens available when user IS authenticated
  */
-export interface MainStackParamList {
-  [key: string]: object | undefined
+export interface MainStackParamList extends Record<string, object | undefined> {
   Home: undefined
   Profile: undefined
+  ResetPassword: {
+    token?: string
+  }
 }
 
 /**

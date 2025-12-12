@@ -9,10 +9,13 @@ import { useAuthInitialization } from '@/src/common/hooks/use-auth-initializatio
 
 import { LoginScreen } from '@/src/features/auth/screens/login-screen'
 import { RegisterScreen } from '@/src/features/auth/screens/register-screen'
+import { ResetPasswordScreen } from '@/src/features/auth/screens/reset-password-screen'
 import { HomeScreen } from '@/src/features/home/home-screen'
 import { ProfileScreen } from '@/src/features/profile/profile-screen'
+import i18n from '@/src/i18n/config'
 import { useAuthStore } from '@/src/store'
 import { colors } from '@/src/theme/colors'
+import { useLinking } from './use-linking'
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>()
 const MainStack = createNativeStackNavigator<MainStackParamList>()
@@ -27,12 +30,17 @@ function AuthNavigator() {
       <AuthStack.Screen
         name="Login"
         component={LoginScreen}
-        options={{ title: 'Login' }}
+        options={{ title: i18n.t('navigation.login') }}
       />
       <AuthStack.Screen
         name="Register"
         component={RegisterScreen}
-        options={{ title: 'Register' }}
+        options={{ title: i18n.t('navigation.register') }}
+      />
+      <AuthStack.Screen
+        name="ResetPassword"
+        component={ResetPasswordScreen}
+        options={{ title: i18n.t('navigation.resetPassword') }}
       />
     </AuthStack.Navigator>
   )
@@ -49,11 +57,11 @@ function MainNavigator() {
         name="Home"
         component={HomeScreen}
         options={({ navigation }): NativeStackNavigationOptions => ({
-          title: 'Home',
+          title: i18n.t('navigation.home'),
           headerRight: () => (
             <TouchableOpacity
               onPress={() => navigation.navigate('Profile')}
-              accessibilityLabel="Go to profile"
+              accessibilityLabel={i18n.t('navigation.goToProfile')}
               hitSlop={8}
               style={{
                 paddingHorizontal: 10,
@@ -69,9 +77,16 @@ function MainNavigator() {
         name="Profile"
         component={ProfileScreen}
         options={{
-          title: 'Profile',
+          title: i18n.t('navigation.profile'),
           headerBackVisible: true,
           headerBackTitle: '',
+        }}
+      />
+      <MainStack.Screen
+        name="ResetPassword"
+        component={ResetPasswordScreen}
+        options={{
+          headerShown: false,
         }}
       />
     </MainStack.Navigator>
@@ -81,6 +96,7 @@ function MainNavigator() {
 export function RootNavigator() {
   const { isInitialized } = useAuthInitialization()
   const isAuthenticated = useAuthStore(state => state.isAuthenticated)
+  const { linking, navigationRef, onNavigationReady } = useLinking()
 
   // Show loading while checking auth state from SecureStore
   if (!isInitialized) {
@@ -92,7 +108,12 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={onNavigationReady}
+      linking={linking}
+      fallback={<ActivityIndicator />}
+    >
       {isAuthenticated ? <MainNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   )

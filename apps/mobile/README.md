@@ -192,6 +192,25 @@ The mobile app uses Better Auth with the same configuration as the web apps. Use
 
 Authentication state is managed globally with Zustand and persists across app restarts.
 
+## Deep links (reset password)
+
+- Scheme: `lonestone://reset-password?token=...` (configurable via `EXPO_PUBLIC_SCHEME` in `apps/mobile/.env` and `CLIENTS_MOBILE_SCHEME` in `apps/api/.env`).
+- **Important:** Expo Go does not support custom schemes; you need a dev build or an installed app with this scheme to test.
+- Useful commands:
+  - Prebuild with this command `pnpm expo prebuild --clean --no-install`
+  - Install a dev build for iOS (simulator): `pnpm expo run:ios`
+  - Open a deeplink on the simulator: `xcrun simctl openurl booted "lonestone://reset-password?token=YOUR_TOKEN"`
+  - Via utility: `npx uri-scheme open "lonestone://reset-password?token=YOUR_TOKEN" --ios`
+- If you change the scheme, regenerate the prebuild and reinstall the dev build (`pnpm expo prebuild --clean --no-install && pnpm expo run:ios`).
+
+### Universal Links (to be implemented)
+
+The current flow uses a simple deeplink. To switch to Universal Links (iOS) / App Links (Android):
+
+- Prepare the apple-app-site-association / assetlinks.json files on your domain.
+- Use the utility script `pnpm create:universallinks` (see `apps/mobile/scripts/create-universallinks.ts`) to generate the base configuration.
+- Update the iOS/Android config (entitlements, manifest) and align the API to send the universal URL.
+
 ## Dark Mode
 
 The app supports automatic dark mode based on system preferences. Users can also toggle dark mode manually using the `useTheme` hook:

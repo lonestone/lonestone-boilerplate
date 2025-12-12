@@ -9,10 +9,24 @@
       "passwordPlaceholder": "••••••••",
       "signIn": "Sign In",
       "createAccount": "Create Account",
+      "forgotPassword": "Forgot password?",
+      "forgotPasswordSheet": {
+        "title": "Forgot password",
+        "subtitle": "Enter your email to receive a reset link.",
+        "submit": "Send reset link"
+      },
+      "forgotPasswordSuccess": {
+        "title": "Email sent",
+        "subtitle": "Check your inbox for the reset link."
+      },
+      "forgotPasswordErrors": {
+        "title": "Failed to send reset link"
+      },
       "errors": {
         "requiredFields": "Please fill in all fields",
         "loginFailed": "Login failed",
-        "unexpectedError": "An unexpected error occurred"
+        "unexpectedError": "An unexpected error occurred",
+        "invalidEmail": "Please enter a valid email address"
       }
     },
     "register": {
@@ -33,6 +47,30 @@
         "passwordMismatch": "Passwords do not match",
         "registrationFailed": "Registration failed",
         "unexpectedError": "An unexpected error occurred"
+      }
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "subtitle": "Choose a new password to secure your account.",
+      "password": "New Password",
+      "passwordPlaceholder": "••••••••",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "••••••••",
+      "submit": "Update Password",
+      "backToLogin": "Back to login",
+      "missingTokenHelp": "Open the reset link from your email to continue.",
+      "success": {
+        "title": "Password updated",
+        "subtitle": "You can now sign in with your new password."
+      },
+      "errors": {
+        "missingTokenTitle": "Reset link missing",
+        "missingTokenSubtitle": "The reset link is invalid or expired.",
+        "resetFailed": "Failed to reset password",
+        "unexpectedError": "An unexpected error occurred",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "confirmPasswordRequired": "Please confirm your password",
+        "passwordMismatch": "Passwords do not match"
       }
     }
   },
@@ -57,5 +95,13 @@
     "retry": "Retry",
     "cancel": "Cancel",
     "confirm": "Confirm"
+  },
+  "navigation": {
+    "login": "Login",
+    "register": "Register",
+    "resetPassword": "Reset password",
+    "home": "Home",
+    "profile": "Profile",
+    "goToProfile": "Go to profile"
   }
 }

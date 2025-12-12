@@ -26,10 +26,15 @@
     "generate": "pnpm --filter=@boilerstone/openapi-generator run generate",
     "test": "pnpm -r test",
     "schematics:module": "pnpm --filter=@boilerstone/schematics run schematics:module",
-    "docs-only": "pnpm --filter=@boilerstone/documentation run dev"
+    "docs-only": "pnpm --filter=@boilerstone/documentation run dev",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "expo": "~54.0.27",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^5.2.1",

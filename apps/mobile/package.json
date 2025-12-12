@@ -6,8 +6,8 @@
   "scripts": {
     "start": "expo start",
     "dev": "expo start --clear --go",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "build:android": "eas build --platform android",
     "build:ios": "eas build --platform ios",

@@ -9,10 +9,24 @@
       "passwordPlaceholder": "••••••••",
       "signIn": "Se connecter",
       "createAccount": "Créer un compte",
+      "forgotPassword": "Mot de passe oublié ?",
+      "forgotPasswordSheet": {
+        "title": "Mot de passe oublié",
+        "subtitle": "Saisissez votre email pour recevoir un lien de réinitialisation.",
+        "submit": "Envoyer le lien"
+      },
+      "forgotPasswordSuccess": {
+        "title": "Email envoyé",
+        "subtitle": "Consultez votre boîte mail pour le lien de réinitialisation."
+      },
+      "forgotPasswordErrors": {
+        "title": "Envoi du lien impossible"
+      },
       "errors": {
         "requiredFields": "Veuillez remplir tous les champs",
         "loginFailed": "Échec de la connexion",
-        "unexpectedError": "Une erreur inattendue s'est produite"
+        "unexpectedError": "Une erreur inattendue s'est produite",
+        "invalidEmail": "Veuillez saisir une adresse email valide"
       }
     },
     "register": {
@@ -33,6 +47,30 @@
         "passwordMismatch": "Les mots de passe ne correspondent pas",
         "registrationFailed": "Échec de l'inscription",
         "unexpectedError": "Une erreur inattendue s'est produite"
+      }
+    },
+    "resetPassword": {
+      "title": "Réinitialiser le mot de passe",
+      "subtitle": "Choisissez un nouveau mot de passe pour sécuriser votre compte.",
+      "password": "Nouveau mot de passe",
+      "passwordPlaceholder": "••••••••",
+      "confirmPassword": "Confirmer le mot de passe",
+      "confirmPasswordPlaceholder": "••••••••",
+      "submit": "Mettre à jour le mot de passe",
+      "backToLogin": "Retour à la connexion",
+      "missingTokenHelp": "Ouvrez le lien de réinitialisation reçu par email pour continuer.",
+      "success": {
+        "title": "Mot de passe mis à jour",
+        "subtitle": "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."
+      },
+      "errors": {
+        "missingTokenTitle": "Lien de réinitialisation manquant",
+        "missingTokenSubtitle": "Le lien de réinitialisation est invalide ou expiré.",
+        "resetFailed": "Échec de la réinitialisation",
+        "unexpectedError": "Une erreur inattendue s'est produite",
+        "passwordMinLength": "Le mot de passe doit contenir au moins 6 caractères",
+        "confirmPasswordRequired": "Veuillez confirmer votre mot de passe",
+        "passwordMismatch": "Les mots de passe ne correspondent pas"
       }
     }
   },
@@ -57,5 +95,13 @@
     "retry": "Réessayer",
     "cancel": "Annuler",
     "confirm": "Confirmer"
+  },
+  "navigation": {
+    "login": "Connexion",
+    "register": "Inscription",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "home": "Accueil",
+    "profile": "Profil",
+    "goToProfile": "Aller au profil"
   }
 }
