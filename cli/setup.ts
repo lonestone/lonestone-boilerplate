@@ -35,6 +35,7 @@ interface AvailableApps {
   webSpa: boolean
   webSsr: boolean
   openapiGenerator: boolean
+  mobile: boolean
 }
 
 interface EnvConfig {
@@ -54,6 +55,14 @@ interface EnvConfig {
     port: number
     portWeb: number
   }
+}
+
+interface MobileConfig {
+  appName: string
+  slug: string
+  scheme: string
+  iosBundleId: string
+  androidPackage: string
 }
 
 async function prompt(message: string, initial: string): Promise<string> {
@@ -100,6 +109,21 @@ function runCommand(command: string, args: string[]): Promise<void> {
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function slugify(value: string, fallback: string): string {
+  const slug = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return slug || fallback
+}
+
+function dotNotation(value: string, fallback: string): string {
+  const dotted = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/\.{2,}/g, '.').replace(/^\.+|\.+$/g, '')
+  return dotted || fallback
+}
+
+function safeScheme(value: string, fallback: string): string {
+  const cleaned = value.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+  return cleaned || fallback
 }
 
 async function waitForDatabase(maxRetries: number = 30, delayMs: number = 1000): Promise<boolean> {
@@ -174,6 +198,7 @@ function detectAvailableApps(): AvailableApps {
     webSpa: false,
     webSsr: false,
     openapiGenerator: false,
+    mobile: false,
   }
 
   if (existsSync(appsDir)) {
@@ -185,6 +210,7 @@ function detectAvailableApps(): AvailableApps {
     apps.api = appDirs.includes('api')
     apps.webSpa = appDirs.includes('web-spa')
     apps.webSsr = appDirs.includes('web-ssr')
+    apps.mobile = appDirs.includes('mobile')
   }
 
   if (existsSync(packagesDir)) {
@@ -374,6 +400,25 @@ async function promptSmtpConfig(): Promise<EnvConfig['smtp']> {
   return { port, portWeb }
 }
 
+async function promptMobileConfig(projectName: string): Promise<MobileConfig> {
+  const slugDefault = slugify(projectName, 'app')
+  const appNameDefault = `${projectName} Mobile`
+  const schemeDefault = safeScheme(projectName, 'app')
+  const idBase = dotNotation(projectName, 'app')
+  const bundleDefault = `com.${idBase}.mobile`
+  const packageDefault = `com.${idBase}.mobile`
+
+  console.log(`\n${colorize('📱 Mobile Configuration', 'cyan')}\n`)
+
+  const appName = await prompt('Mobile app display name', appNameDefault)
+  const slug = await prompt('Mobile slug (Expo)', slugDefault)
+  const scheme = await prompt('Deeplink scheme', schemeDefault)
+  const iosBundleId = await prompt('iOS bundle identifier', bundleDefault)
+  const androidPackage = await prompt('Android package name', packageDefault)
+
+  return { appName, slug, scheme, iosBundleId, androidPackage }
+}
+
 interface EnvFileInfo {
   from: string
   to: string
@@ -396,6 +441,10 @@ function checkEnvFiles(availableApps: AvailableApps): EnvFileInfo[] {
 
   if (availableApps.webSsr) {
     envFiles.push({ from: 'apps/web-ssr/.env.example', to: 'apps/web-ssr/.env' })
+  }
+
+  if (availableApps.mobile) {
+    envFiles.push({ from: 'apps/mobile/.env.example', to: 'apps/mobile/.env' })
   }
 
   if (availableApps.openapiGenerator) {
@@ -515,6 +564,41 @@ function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, n
   writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
 }
 
+function updateMobileAppConfig(mobileConfig: MobileConfig): void {
+  const appConfigPath = join(projectRoot, 'apps/mobile/app.config.ts')
+
+  if (!existsSync(appConfigPath)) {
+    console.log(`  ${colorize('⚠', 'yellow')} File not found: ${colorize('apps/mobile/app.config.ts', 'dim')}`)
+    return
+  }
+
+  let content = readFileSync(appConfigPath, 'utf-8')
+  let updated = false
+
+  const replacements: Array<{ pattern: RegExp, value: string, label: string }> = [
+    { pattern: /name: '([^']*)',/, value: `name: '${mobileConfig.appName}',`, label: 'app name' },
+    { pattern: /slug: '([^']*)',/, value: `slug: '${mobileConfig.slug}',`, label: 'slug' },
+    { pattern: /bundleIdentifier: '([^']*)',/, value: `bundleIdentifier: '${mobileConfig.iosBundleId}',`, label: 'iOS bundle identifier' },
+    { pattern: /package: '([^']*)',/, value: `package: '${mobileConfig.androidPackage}',`, label: 'Android package name' },
+  ]
+
+  for (const { pattern, value, label } of replacements) {
+    const nextContent = content.replace(pattern, value)
+    if (nextContent !== content) {
+      content = nextContent
+      updated = true
+    }
+    else {
+      console.log(`  ${colorize('⚠', 'yellow')} Could not update mobile ${colorize(label, 'dim')} automatically (pattern not found)`)
+    }
+  }
+
+  if (updated) {
+    writeFileSync(appConfigPath, content, 'utf-8')
+    console.log(`  ${colorize('✓', 'green')} Updated ${colorize('apps/mobile/app.config.ts', 'dim')}`)
+  }
+}
+
 function updateDockerCompose(projectName: string): void {
   const dockerComposePath = join(projectRoot, 'docker-compose.yml')
   if (!existsSync(dockerComposePath)) {
@@ -539,6 +623,34 @@ function updateDockerCompose(projectName: string): void {
   }
 }
 
+interface PackageJson {
+  scripts?: Record<string, string>
+  [key: string]: unknown
+}
+
+function updateRootScripts(packageJson: PackageJson, oldPrefix: string, newPrefix: string): PackageJson {
+  if (!packageJson.scripts) {
+    return packageJson
+  }
+
+  const scriptsToRewrite = ['dev', 'dev:mobile', 'generate', 'schematics:module', 'docs-only']
+  const nextScripts: Record<string, string> = {}
+
+  for (const [key, value] of Object.entries<string>(packageJson.scripts)) {
+    if (scriptsToRewrite.includes(key)) {
+      nextScripts[key] = value.replaceAll(oldPrefix, newPrefix)
+    }
+    else {
+      nextScripts[key] = value
+    }
+  }
+
+  return {
+    ...packageJson,
+    scripts: nextScripts,
+  }
+}
+
 async function renameProjects(projectName: string, availableApps: AvailableApps): Promise<void> {
   console.log(`\n${colorize('📦 Renaming project packages', 'cyan')}\n`)
 
@@ -549,8 +661,9 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
   const rootPackagePath = join(projectRoot, 'package.json')
   if (existsSync(rootPackagePath)) {
     const content = readFileSync(rootPackagePath, 'utf-8')
-    const packageJson = JSON.parse(content)
+    let packageJson = JSON.parse(content)
     packageJson.name = projectName
+    packageJson = updateRootScripts(packageJson, oldPrefix, newPrefix)
     writeFileSync(rootPackagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
     console.log(`  ${colorize('✓', 'green')} Updated ${colorize('package.json', 'dim')}`)
   }
@@ -561,6 +674,7 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
     { path: 'apps/web-spa/package.json', name: 'web-spa', condition: availableApps.webSpa },
     { path: 'apps/web-ssr/package.json', name: 'web-ssr', condition: availableApps.webSsr },
     { path: 'apps/documentation/package.json', name: 'documentation', condition: true },
+    { path: 'apps/mobile/package.json', name: 'mobile', condition: availableApps.mobile },
   ]
 
   for (const { path, name, condition } of appsToUpdate) {
@@ -693,6 +807,13 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
     updateEnvFile(openapiEnvPath, { API_URL: apiUrl }, false)
   }
 
+  // Mobile .env (Expo)
+  if (availableApps.mobile && config.ports.api) {
+    const mobileEnvPath = join(projectRoot, 'apps/mobile/.env')
+    const apiUrl = `http://localhost:${config.ports.api}`
+    updateEnvFile(mobileEnvPath, { EXPO_PUBLIC_API_URL: apiUrl }, false)
+  }
+
   console.log(`  ${colorize('✓', 'green')} Configuration values have been updated in .env files`)
 }
 
@@ -712,15 +833,21 @@ async function main(): Promise<void> {
       console.log(`  ${colorize('✓', 'green')} ${colorize('Web SSR', 'bright')}`)
     if (availableApps.openapiGenerator)
       console.log(`  ${colorize('✓', 'green')} ${colorize('OpenAPI Generator', 'bright')}`)
+    if (availableApps.mobile)
+      console.log(`  ${colorize('✓', 'green')} ${colorize('Mobile', 'bright')}`)
 
     // Check .env files (but don't copy yet)
     const envFilesInfo = checkEnvFiles(availableApps)
 
     // Prompt for project name
     const projectName = await prompt('Project name', 'my-project')
+    const mobileConfig = availableApps.mobile ? await promptMobileConfig(projectName) : null
 
     // Update package.json files for detected applications with the project name
     await renameProjects(projectName, availableApps)
+    if (mobileConfig) {
+      updateMobileAppConfig(mobileConfig)
+    }
 
     // Prompt for configuration BEFORE copying files
     const databaseConfig = await promptDatabaseConfig()

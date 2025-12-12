@@ -9,7 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
-  scheme: 'lonestone',
+  scheme: process.env.EXPO_PUBLIC_SCHEME ?? 'lonestone',
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
@@ -32,6 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: ['expo-secure-store'],
   extra: {
+    EXPO_PUBLIC_SCHEME: process.env.EXPO_PUBLIC_SCHEME ?? 'lonestone',
     EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
   },
 })

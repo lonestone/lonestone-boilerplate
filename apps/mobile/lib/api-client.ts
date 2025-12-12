@@ -1,9 +1,11 @@
 import { client } from '@lonestone/openapi-generator'
+import Constants from 'expo-constants'
 import * as Linking from 'expo-linking'
 import { config } from '@/config/env.config'
 import { authClient } from './auth-client'
 
-const expoOrigin = Linking.createURL('', { scheme: 'lonestone' })
+const mobileScheme = Constants.expoConfig?.scheme ?? 'lonestone'
+const expoOrigin = Linking.createURL('', { scheme: Array.isArray(mobileScheme) ? mobileScheme[0] : mobileScheme })
 
 async function buildAuthHeaders() {
   const headers: Record<string, string> = {
