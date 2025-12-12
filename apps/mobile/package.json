@@ -15,7 +15,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "create:universallinks": "ts-node ./scripts/create-universallinks.ts"
+
   },
   "dependencies": {
     "@better-auth/expo": "^1.4.6",
