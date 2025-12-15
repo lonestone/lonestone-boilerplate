@@ -207,6 +207,87 @@ await authClient.signOut()
 logout()
 ```
 
+## Deep Linking
+
+### Configuration
+
+Deep links are configured using a custom scheme (e.g., `lonestone://`):
+
+```typescript
+// app.config.ts
+export default {
+  scheme: process.env.EXPO_PUBLIC_SCHEME || 'lonestone',
+  // ...
+}
+```
+
+### Handling Deep Links
+
+Use the `useLinking` hook for deep link navigation:
+
+```typescript
+import { useLinking } from '@/navigation/use-linking'
+import { useNavigation } from '@react-navigation/native'
+
+function MyComponent() {
+  const navigation = useNavigation()
+
+  // Handle deep link on mount
+  useEffect(() => {
+    const handleDeepLink = async (url: string) => {
+      // Parse URL and extract params
+      const { hostname, queryParams } = Linking.parse(url)
+
+      if (hostname === 'reset-password' && queryParams?.token) {
+        navigation.navigate('ResetPassword', { token: queryParams.token })
+      }
+    }
+
+    // Get initial URL
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink(url)
+    })
+
+    // Listen for incoming links
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url)
+    })
+
+    return () => subscription.remove()
+  }, [])
+}
+```
+
+### Testing Deep Links
+
+:::caution[Native build required]
+Deep links only work with a native build, not Expo Go. You must:
+
+1. Generate native projects: `pnpm expo prebuild --clean --no-install`
+2. Install on simulator: `pnpm expo run:ios`
+:::
+
+Test with:
+
+```bash
+# iOS Simulator
+xcrun simctl openurl booted "lonestone://reset-password?token=YOUR_TOKEN"
+
+# Or use uri-scheme utility
+npx uri-scheme open "lonestone://reset-password?token=YOUR_TOKEN" --ios
+```
+
+Replace `lonestone://` with your project's custom scheme.
+
+### Universal Links (Production)
+
+For production apps, use Universal Links (iOS) and App Links (Android) instead of custom schemes:
+
+1. Configure `apple-app-site-association` and `assetlinks.json` on your domain
+2. Use the utility script: `pnpm create:universallinks`
+3. Update iOS entitlements and Android manifest
+4. Configure API to send universal URLs instead of custom scheme URLs
+
 ## Styling with NativeWind
 
 ### Using Tailwind Classes
