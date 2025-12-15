@@ -12,12 +12,14 @@ interface SlideUpModalProps {
  * Reusable slide-up modal with fade backdrop.
  */
 export function SlideUpModal({ visible, onClose, children, contentClassName = '' }: SlideUpModalProps) {
-  const [isMounted, setIsMounted] = React.useState(visible)
+  const [isAnimating, setIsAnimating] = React.useState(false)
   const animation = React.useRef(new Animated.Value(0)).current
+
+  const isMounted = visible || isAnimating
 
   React.useEffect(() => {
     if (visible) {
-      setIsMounted(true)
+      setIsAnimating(true)
       animation.setValue(0)
       Animated.timing(animation, {
         toValue: 1,
@@ -25,18 +27,18 @@ export function SlideUpModal({ visible, onClose, children, contentClassName = ''
         useNativeDriver: true,
       }).start()
     }
-    else {
+    else if (isAnimating) {
       Animated.timing(animation, {
         toValue: 0,
         duration: 180,
         useNativeDriver: true,
       }).start(({ finished }) => {
         if (finished) {
-          setIsMounted(false)
+          setIsAnimating(false)
         }
       })
     }
-  }, [animation, visible])
+  }, [animation, visible, isAnimating])
 
   if (!isMounted) {
     return null

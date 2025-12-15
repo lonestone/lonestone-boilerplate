@@ -14,8 +14,8 @@
   },
   "scripts": {
     "rock": "ts-node ./cli/setup.ts",
-    "dev": "pnpm --parallel --filter=!@lonestone/mobile dev",
-    "dev:mobile": "pnpm --filter=@lonestone/mobile dev",
+    "dev": "pnpm --parallel --filter=!@boilerstone/mobile dev",
+    "dev:mobile": "pnpm --filter=@boilerstone/mobile dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "docker:up": "docker-compose up -d",
@@ -31,10 +31,7 @@
     "ios": "expo run:ios"
   },
   "dependencies": {
-    "typescript": "^5.9.2",
-    "expo": "~54.0.27",
-    "react": "19.1.0",
-    "react-native": "0.81.5"
+    "typescript": "^5.9.2"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^5.2.1",
@@ -45,5 +42,11 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.1.0",
+      "react-dom": "19.1.0"
+    }
   }
 }
