@@ -589,90 +589,66 @@ function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, n
   writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
 }
 
-function updateMobileAppConfig(mobileConfig: MobileConfig): void {
+function updateMobileFiles(mobileConfig: MobileConfig): void {
+  console.log(`\n${colorize('📱 Updating mobile files', 'cyan')}\n`)
+
+  // 1. Update app.config.ts
   const appConfigPath = join(projectRoot, 'apps/mobile/app.config.ts')
 
-  if (!existsSync(appConfigPath)) {
+  if (existsSync(appConfigPath)) {
+    let content = readFileSync(appConfigPath, 'utf-8')
+    let updated = false
+
+    const appConfigReplacements: Array<{ pattern: RegExp, value: string, label: string }> = [
+      { pattern: /name: '([^']*)',/, value: `name: '${mobileConfig.appName}',`, label: 'app name' },
+      { pattern: /slug: '([^']*)',/, value: `slug: '${mobileConfig.slug}',`, label: 'slug' },
+      { pattern: /bundleIdentifier: '([^']*)',/, value: `bundleIdentifier: '${mobileConfig.iosBundleId}',`, label: 'iOS bundle identifier' },
+      { pattern: /package: '([^']*)',/, value: `package: '${mobileConfig.androidPackage}',`, label: 'Android package name' },
+    ]
+
+    for (const { pattern, value, label } of appConfigReplacements) {
+      const nextContent = content.replace(pattern, value)
+      if (nextContent !== content) {
+        content = nextContent
+        updated = true
+      }
+      else {
+        console.log(`  ${colorize('⚠', 'yellow')} Could not update mobile ${colorize(label, 'dim')} automatically (pattern not found)`)
+      }
+    }
+
+    if (updated) {
+      writeFileSync(appConfigPath, content, 'utf-8')
+      console.log(`  ${colorize('✓', 'green')} Updated ${colorize('apps/mobile/app.config.ts', 'dim')}`)
+    }
+  }
+  else {
     console.log(`  ${colorize('⚠', 'yellow')} File not found: ${colorize('apps/mobile/app.config.ts', 'dim')}`)
-    return
   }
 
-  let content = readFileSync(appConfigPath, 'utf-8')
-  let updated = false
-
-  const replacements: Array<{ pattern: RegExp, value: string, label: string }> = [
-    { pattern: /name: '([^']*)',/, value: `name: '${mobileConfig.appName}',`, label: 'app name' },
-    { pattern: /slug: '([^']*)',/, value: `slug: '${mobileConfig.slug}',`, label: 'slug' },
-    { pattern: /bundleIdentifier: '([^']*)',/, value: `bundleIdentifier: '${mobileConfig.iosBundleId}',`, label: 'iOS bundle identifier' },
-    { pattern: /package: '([^']*)',/, value: `package: '${mobileConfig.androidPackage}',`, label: 'Android package name' },
-  ]
-
-  for (const { pattern, value, label } of replacements) {
-    const nextContent = content.replace(pattern, value)
-    if (nextContent !== content) {
-      content = nextContent
-      updated = true
-    }
-    else {
-      console.log(`  ${colorize('⚠', 'yellow')} Could not update mobile ${colorize(label, 'dim')} automatically (pattern not found)`)
-    }
-  }
-
-  if (updated) {
-    writeFileSync(appConfigPath, content, 'utf-8')
-    console.log(`  ${colorize('✓', 'green')} Updated ${colorize('apps/mobile/app.config.ts', 'dim')}`)
-  }
-}
-
-function updateDockerCompose(projectName: string): void {
-  const dockerComposePath = join(projectRoot, 'docker-compose.yml')
-  if (!existsSync(dockerComposePath)) {
-    return
-  }
-
-  let content = readFileSync(dockerComposePath, 'utf-8')
-  const oldNames = ['boilerstone', 'lonestone']
-  let updated = false
-
-  for (const oldName of oldNames) {
-    const regex = new RegExp(oldName, 'g')
-    if (regex.test(content)) {
-      content = content.replace(regex, projectName)
-      updated = true
-    }
-  }
-
-  if (updated) {
-    writeFileSync(dockerComposePath, content, 'utf-8')
-    console.log(`  ${colorize('✓', 'green')} Updated ${colorize('docker-compose.yml', 'dim')}`)
-  }
-}
-
-function updateMobileTypeScriptFiles(scheme: string): void {
-  console.log(`\n${colorize('📱 Updating mobile TypeScript files', 'cyan')}\n`)
-
-  const filesToUpdate = [
+  // 2. Update TypeScript files with scheme
+  const tsFilesToUpdate = [
     {
       path: join(projectRoot, 'apps/mobile/lib/auth-client.ts'),
       replacements: [
-        { pattern: /scheme:\s*'[^']*',/, value: `scheme: '${scheme}',`, label: 'auth-client.ts scheme' },
+        { pattern: /scheme:\s*'[^']*',/, value: `scheme: '${mobileConfig.scheme}',`, label: 'auth-client.ts scheme' },
       ],
     },
     {
       path: join(projectRoot, 'apps/mobile/lib/api-client.ts'),
       replacements: [
-        { pattern: /const mobileScheme = Constants\.expoConfig\?\.scheme \?\? '[^']*'/, value: `const mobileScheme = Constants.expoConfig?.scheme ?? '${scheme}'`, label: 'api-client.ts scheme fallback' },
+        { pattern: /const mobileScheme = Constants\.expoConfig\?\.scheme \?\? '[^']*'/, value: `const mobileScheme = Constants.expoConfig?.scheme ?? '${mobileConfig.scheme}'`, label: 'api-client.ts scheme fallback' },
       ],
     },
     {
       path: join(projectRoot, 'apps/mobile/lib/secure-storage-adapter.ts'),
       replacements: [
-        { pattern: /export const AUTH_STORAGE_PREFIX = '[^']*'/, value: `export const AUTH_STORAGE_PREFIX = '${scheme}_auth'`, label: 'secure-storage-adapter.ts prefix' },
+        { pattern: /export const AUTH_STORAGE_PREFIX = '[^']*'/, value: `export const AUTH_STORAGE_PREFIX = '${mobileConfig.scheme}_auth'`, label: 'secure-storage-adapter.ts prefix' },
       ],
     },
   ]
 
-  for (const { path, replacements } of filesToUpdate) {
+  for (const { path, replacements } of tsFilesToUpdate) {
     if (!existsSync(path)) {
       console.log(`  ${colorize('⚠', 'yellow')} File not found: ${colorize(path, 'dim')}`)
       continue
@@ -697,6 +673,30 @@ function updateMobileTypeScriptFiles(scheme: string): void {
       const fileName = path.replace(projectRoot, '')
       console.log(`  ${colorize('✓', 'green')} Updated ${colorize(fileName, 'dim')}`)
     }
+  }
+}
+
+function updateDockerCompose(projectName: string): void {
+  const dockerComposePath = join(projectRoot, 'docker-compose.yml')
+  if (!existsSync(dockerComposePath)) {
+    return
+  }
+
+  let content = readFileSync(dockerComposePath, 'utf-8')
+  const oldNames = ['boilerstone', 'lonestone']
+  let updated = false
+
+  for (const oldName of oldNames) {
+    const regex = new RegExp(oldName, 'g')
+    if (regex.test(content)) {
+      content = content.replace(regex, projectName)
+      updated = true
+    }
+  }
+
+  if (updated) {
+    writeFileSync(dockerComposePath, content, 'utf-8')
+    console.log(`  ${colorize('✓', 'green')} Updated ${colorize('docker-compose.yml', 'dim')}`)
   }
 }
 
@@ -932,8 +932,7 @@ async function main(): Promise<void> {
     // Update package.json files for detected applications with the project name
     await renameProjects(projectName, availableApps)
     if (mobileConfig) {
-      updateMobileAppConfig(mobileConfig)
-      updateMobileTypeScriptFiles(mobileConfig.scheme)
+      updateMobileFiles(mobileConfig)
     }
 
     // Prompt for configuration BEFORE copying files
