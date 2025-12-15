@@ -32,11 +32,13 @@ jest.mock('@better-auth/expo', () => ({
 
 jest.mock('better-auth/plugins', () => ({
   openAPI: () => ({ name: 'openapi-plugin-mock' }),
-  createAuthMiddleware: (fn: (...args: any[]) => any) => fn,
+  createAuthMiddleware: <TArgs extends unknown[], TReturn>(
+    fn: (...args: TArgs) => TReturn,
+  ) => fn,
 }))
 
 jest.mock('better-auth/node', () => ({
-  toNodeHandler: jest.fn(() => (_req: any, _res: any, next: () => void) => {
+  toNodeHandler: jest.fn(() => (_req: unknown, _res: unknown, next: () => void) => {
     if (typeof next === 'function')
       next()
   }),

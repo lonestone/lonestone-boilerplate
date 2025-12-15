@@ -17,28 +17,40 @@ export function SlideUpModal({ visible, onClose, children, contentClassName = ''
 
   const isMounted = visible || isAnimating
 
+  const startEnterAnimation = React.useCallback(() => {
+    // Allow state update here to keep modal mounted during the enter animation.
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+    setIsAnimating(true)
+    animation.setValue(0)
+    Animated.timing(animation, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start()
+  }, [animation])
+
+  const startExitAnimation = React.useCallback(() => {
+    Animated.timing(animation, {
+      toValue: 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        // Allow state update here to unmount after exit animation completes.
+        // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+        setIsAnimating(false)
+      }
+    })
+  }, [animation])
+
   React.useEffect(() => {
     if (visible) {
-      setIsAnimating(true)
-      animation.setValue(0)
-      Animated.timing(animation, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start()
+      startEnterAnimation()
     }
     else if (isAnimating) {
-      Animated.timing(animation, {
-        toValue: 0,
-        duration: 180,
-        useNativeDriver: true,
-      }).start(({ finished }) => {
-        if (finished) {
-          setIsAnimating(false)
-        }
-      })
+      startExitAnimation()
     }
-  }, [animation, visible, isAnimating])
+  }, [isAnimating, startEnterAnimation, startExitAnimation, visible])
 
   if (!isMounted) {
     return null
