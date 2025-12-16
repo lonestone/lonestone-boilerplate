@@ -64,12 +64,10 @@ export function PostsList({ ListHeaderComponent }: PostsListProps) {
       {renderHeader}
       <View className="mb-3 mt-4 flex-row items-center justify-between px-4">
         <Text className="text-xl font-semibold text-zinc-900 dark:text-white">
-          Your Posts
+          {t('home.posts.title')}
         </Text>
         <Text className="text-sm text-muted">
-          {data.meta.itemCount}
-          {' '}
-          {data.meta.itemCount === 1 ? 'post' : 'posts'}
+          {t('home.posts.count', { count: data.meta.itemCount })}
         </Text>
       </View>
     </>

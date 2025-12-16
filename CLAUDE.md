@@ -162,7 +162,7 @@ src/
 **Key patterns**:
 
 - Use components from `@lonestone/ui` package (shadcn/ui)
-- Import types/schemas/SDK from `@lonestone/openapi-generator`
+- Import types/schemas/SDK from `@boilerstone/openapi-generator`
 - TanStack Query options organized in `features/*/utils/*-queries.ts` files
 - React Router v7 for routing (routes defined in `routes.ts`)
 - React Hook Form + Zod for form validation
@@ -188,7 +188,7 @@ const { data } = useQuery(fetchPostsQueryOptions({ page: 1 }))
 2. Use `@TypedRoute.*` decorators to register endpoints
 3. API automatically generates OpenAPI spec at `/api/docs`
 4. Run `pnpm generate` to create TypeScript types/SDK in `packages/openapi-generator/client/`
-5. Frontend imports types and SDK from `@lonestone/openapi-generator`
+5. Frontend imports types and SDK from `@boilerstone/openapi-generator`
 
 ## Naming Conventions
 

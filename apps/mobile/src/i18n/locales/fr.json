@@ -77,17 +77,27 @@
   "home": {
     "title": "Accueil",
     "welcome": "Bienvenue",
+    "welcomeName": "Bienvenue, {{name}} !",
+    "subtitle": "Voici votre écran d'accueil. Allez dans votre profil pour plus de détails.",
     "posts": {
       "loading": "Chargement des posts...",
       "empty": "Aucun post pour le moment",
       "error": "Échec du chargement des posts",
-      "pullToRefresh": "Tirer pour actualiser"
+      "pullToRefresh": "Tirer pour actualiser",
+      "title": "Vos posts",
+      "count_one": "{{count}} post",
+      "count_other": "{{count}} posts"
     }
   },
   "profile": {
     "title": "Profil",
     "logout": "Déconnexion",
-    "logoutConfirm": "Êtes-vous sûr de vouloir vous déconnecter ?"
+    "logoutConfirm": "Êtes-vous sûr de vouloir vous déconnecter ?",
+    "fields": {
+      "name": "Nom",
+      "email": "Email",
+      "userId": "ID utilisateur"
+    }
   },
   "common": {
     "loading": "Chargement...",

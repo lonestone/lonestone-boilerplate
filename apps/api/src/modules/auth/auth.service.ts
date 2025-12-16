@@ -27,6 +27,7 @@ export class AuthService implements OnModuleInit {
       trustedOrigins: config.betterAuth.trustedOrigins,
       connectionStringUrl: config.database.connectionStringUrl,
       sendResetPassword: async (data) => {
+        // Use webUrl for browser flow or mobileUrl for deep link; ideally swap to a universal link when available.
         const webUrl = `${config.clients.webApp.url}/reset-password?token=${data.token}`
         const mobileUrl = `${config.clients.mobile.scheme}://${config.clients.mobile.resetPath}?token=${data.token}`
         return this.emailService.sendEmail({

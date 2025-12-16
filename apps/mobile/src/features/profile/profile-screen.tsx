@@ -1,10 +1,12 @@
-import React from 'react'
-import { ScrollView, Text, View } from 'react-native'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/src/components'
+import { useTranslation } from '@/src/i18n'
 import { useAuthStore } from '@/src/store'
+import React from 'react'
+import { ScrollView, Text, View } from 'react-native'
 
 export function ProfileScreen() {
+  const { t } = useTranslation()
   const { user, logout } = useAuthStore()
   const [isLoading, setIsLoading] = React.useState(false)
 
@@ -26,12 +28,12 @@ export function ProfileScreen() {
     <ScrollView className="flex-1 bg-white dark:bg-gray-900">
       <View className="px-6 py-8">
         <Text className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-          Profile
+          {t('profile.title')}
         </Text>
 
         <View className="mb-6">
           <Text className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-            Name
+            {t('profile.fields.name')}
           </Text>
           <Text className="text-lg text-gray-900 dark:text-white">
             {user?.name}
@@ -40,7 +42,7 @@ export function ProfileScreen() {
 
         <View className="mb-6">
           <Text className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-            Email
+            {t('profile.fields.email')}
           </Text>
           <Text className="text-lg text-gray-900 dark:text-white">
             {user?.email}
@@ -49,7 +51,7 @@ export function ProfileScreen() {
 
         <View className="mb-6">
           <Text className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-            User ID
+            {t('profile.fields.userId')}
           </Text>
           <Text className="text-lg text-gray-900 dark:text-white font-mono">
             {user?.id}
@@ -61,7 +63,7 @@ export function ProfileScreen() {
           onPress={handleLogout}
           isLoading={isLoading}
         >
-          Sign Out
+          {t('profile.logout')}
         </Button>
       </View>
     </ScrollView>

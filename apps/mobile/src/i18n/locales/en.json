@@ -77,17 +77,27 @@
   "home": {
     "title": "Home",
     "welcome": "Welcome",
+    "welcomeName": "Welcome, {{name}}!",
+    "subtitle": "This is your home screen. Navigate to your profile to see more details.",
     "posts": {
       "loading": "Loading posts...",
       "empty": "No posts yet",
       "error": "Failed to load posts",
-      "pullToRefresh": "Pull to refresh"
+      "pullToRefresh": "Pull to refresh",
+      "title": "Your posts",
+      "count_one": "{{count}} post",
+      "count_other": "{{count}} posts"
     }
   },
   "profile": {
     "title": "Profile",
     "logout": "Logout",
-    "logoutConfirm": "Are you sure you want to logout?"
+    "logoutConfirm": "Are you sure you want to logout?",
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "userId": "User ID"
+    }
   },
   "common": {
     "loading": "Loading...",
