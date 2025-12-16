@@ -1,0 +1,8 @@
+{
+  "android": {
+    "package": "com.lonestone.app"
+  },
+  "ios": {
+    "bundleIdentifier": "com.lonestone.app"
+  }
+}

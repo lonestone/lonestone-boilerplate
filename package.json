@@ -14,7 +14,8 @@
   },
   "scripts": {
     "rock": "ts-node ./cli/setup.ts",
-    "dev": "pnpm --parallel dev",
+    "dev": "pnpm --parallel --filter=!@boilerstone/mobile dev",
+    "dev:mobile": "pnpm --filter=@boilerstone/mobile dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "docker:up": "docker-compose up -d",
@@ -25,7 +26,10 @@
     "generate": "pnpm --filter=@boilerstone/openapi-generator run generate",
     "test": "pnpm -r test",
     "schematics:module": "pnpm --filter=@boilerstone/schematics run schematics:module",
-    "docs-only": "pnpm --filter=@boilerstone/documentation run dev"
+    "docs-only": "pnpm --filter=@boilerstone/documentation run dev",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "prepare": "husky"
   },
   "dependencies": {
     "typescript": "^5.9.2"
@@ -37,7 +41,15 @@
     "eslint": "^9.34.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.1.0",
+      "react-dom": "19.1.0"
+    }
   }
 }

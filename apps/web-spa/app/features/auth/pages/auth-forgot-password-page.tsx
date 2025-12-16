@@ -10,7 +10,7 @@ export default function AuthForgotPasswordPage() {
   const [isSuccess, setIsSuccess] = useState(false)
   const { mutate: forgotPasswordMutate, isPending, error } = useMutation({
     mutationFn: async (data: AuthForgotPasswordFormData) => {
-      const response = await authClient.forgetPassword({
+      const response = await authClient.requestPasswordReset({
         email: data.email,
       })
 

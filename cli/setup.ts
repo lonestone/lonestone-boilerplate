@@ -1,40 +1,49 @@
+import type { MobileConfig } from './mobile-setup.js'
 import { spawn } from 'node:child_process'
 import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
+import { generateMobileDefaults, updateMobileFiles } from './mobile-setup.js'
+import { colorize } from './utils.js'
 
-const { Input, Confirm } = Enquirer as unknown as {
-  Input: new (options: { message: string, initial?: string }) => { run: () => Promise<string> }
-  Confirm: new (options: { name: string, message: string, initial?: boolean }) => { run: () => Promise<boolean> }
+interface InputPromptOptions {
+  message: string
+  initial?: string
 }
+
+interface ConfirmPromptOptions {
+  name: string
+  message: string
+  initial?: boolean
+}
+
+interface InputPrompt {
+  run: () => Promise<string>
+}
+
+interface ConfirmPrompt {
+  run: () => Promise<boolean>
+}
+
+interface EnquirerConstructors {
+  Input: new (options: InputPromptOptions) => InputPrompt
+  Confirm: new (options: ConfirmPromptOptions) => ConfirmPrompt
+}
+
+const { Input, Confirm } = Enquirer as unknown as EnquirerConstructors
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..')
-
-// ANSI color codes for console output
-const colors = {
-  reset: '\x1B[0m',
-  bright: '\x1B[1m',
-  dim: '\x1B[2m',
-  red: '\x1B[31m',
-  green: '\x1B[32m',
-  yellow: '\x1B[33m',
-  blue: '\x1B[34m',
-  cyan: '\x1B[36m',
-} as const
-
-function colorize(text: string, color: keyof typeof colors): string {
-  return `${colors[color]}${text}${colors.reset}`
-}
 
 interface AvailableApps {
   api: boolean
   webSpa: boolean
   webSsr: boolean
   openapiGenerator: boolean
+  mobile: boolean
 }
 
 interface EnvConfig {
@@ -174,6 +183,7 @@ function detectAvailableApps(): AvailableApps {
     webSpa: false,
     webSsr: false,
     openapiGenerator: false,
+    mobile: false,
   }
 
   if (existsSync(appsDir)) {
@@ -185,6 +195,7 @@ function detectAvailableApps(): AvailableApps {
     apps.api = appDirs.includes('api')
     apps.webSpa = appDirs.includes('web-spa')
     apps.webSsr = appDirs.includes('web-ssr')
+    apps.mobile = appDirs.includes('mobile')
   }
 
   if (existsSync(packagesDir)) {
@@ -374,6 +385,20 @@ async function promptSmtpConfig(): Promise<EnvConfig['smtp']> {
   return { port, portWeb }
 }
 
+async function promptMobileConfig(projectName: string): Promise<MobileConfig> {
+  const defaults = generateMobileDefaults(projectName)
+
+  console.log(`\n${colorize('📱 Mobile Configuration', 'cyan')}\n`)
+
+  const appName = await prompt('Mobile app display name', defaults.appName)
+  const slug = await prompt('Mobile slug (Expo)', defaults.slug)
+  const scheme = await prompt('Deeplink scheme', defaults.scheme)
+  const iosBundleId = await prompt('iOS bundle identifier', defaults.iosBundleId)
+  const androidPackage = await prompt('Android package name', defaults.androidPackage)
+
+  return { appName, slug, scheme, iosBundleId, androidPackage }
+}
+
 interface EnvFileInfo {
   from: string
   to: string
@@ -396,6 +421,10 @@ function checkEnvFiles(availableApps: AvailableApps): EnvFileInfo[] {
 
   if (availableApps.webSsr) {
     envFiles.push({ from: 'apps/web-ssr/.env.example', to: 'apps/web-ssr/.env' })
+  }
+
+  if (availableApps.mobile) {
+    envFiles.push({ from: 'apps/mobile/.env.example', to: 'apps/mobile/.env' })
   }
 
   if (availableApps.openapiGenerator) {
@@ -489,6 +518,7 @@ function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, n
 
   const content = readFileSync(packagePath, 'utf-8')
   const packageJson = JSON.parse(content)
+  const preservePackages = new Set<string>(['@lonestone/nzoth'])
 
   const updateDependenciesSection = (deps: Record<string, string> | undefined): Record<string, string> | undefined => {
     if (!deps) {
@@ -497,7 +527,10 @@ function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, n
 
     const updatedDeps: Record<string, string> = {}
     for (const [key, value] of Object.entries(deps)) {
-      if (key.startsWith(oldPrefix)) {
+      if (preservePackages.has(key)) {
+        updatedDeps[key] = value
+      }
+      else if (key.startsWith(oldPrefix)) {
         const newKey = key.replace(oldPrefix, newPrefix)
         updatedDeps[newKey] = value
       }
@@ -539,6 +572,34 @@ function updateDockerCompose(projectName: string): void {
   }
 }
 
+interface PackageJson {
+  scripts?: Record<string, string>
+  [key: string]: unknown
+}
+
+function updateRootScripts(packageJson: PackageJson, oldPrefix: string, newPrefix: string): PackageJson {
+  if (!packageJson.scripts) {
+    return packageJson
+  }
+
+  const scriptsToRewrite = ['dev', 'dev:mobile', 'generate', 'schematics:module', 'docs-only']
+  const nextScripts: Record<string, string> = {}
+
+  for (const [key, value] of Object.entries<string>(packageJson.scripts)) {
+    if (scriptsToRewrite.includes(key)) {
+      nextScripts[key] = value.replaceAll(oldPrefix, newPrefix)
+    }
+    else {
+      nextScripts[key] = value
+    }
+  }
+
+  return {
+    ...packageJson,
+    scripts: nextScripts,
+  }
+}
+
 async function renameProjects(projectName: string, availableApps: AvailableApps): Promise<void> {
   console.log(`\n${colorize('📦 Renaming project packages', 'cyan')}\n`)
 
@@ -549,8 +610,9 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
   const rootPackagePath = join(projectRoot, 'package.json')
   if (existsSync(rootPackagePath)) {
     const content = readFileSync(rootPackagePath, 'utf-8')
-    const packageJson = JSON.parse(content)
+    let packageJson = JSON.parse(content)
     packageJson.name = projectName
+    packageJson = updateRootScripts(packageJson, oldPrefix, newPrefix)
     writeFileSync(rootPackagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
     console.log(`  ${colorize('✓', 'green')} Updated ${colorize('package.json', 'dim')}`)
   }
@@ -561,6 +623,7 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
     { path: 'apps/web-spa/package.json', name: 'web-spa', condition: availableApps.webSpa },
     { path: 'apps/web-ssr/package.json', name: 'web-ssr', condition: availableApps.webSsr },
     { path: 'apps/documentation/package.json', name: 'documentation', condition: true },
+    { path: 'apps/mobile/package.json', name: 'mobile', condition: availableApps.mobile },
   ]
 
   for (const { path, name, condition } of appsToUpdate) {
@@ -617,7 +680,7 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
   }
 }
 
-function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): void {
+function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps, mobileConfig: MobileConfig | null): void {
   console.log(`\n${colorize('✏️  Updating .env files', 'cyan')}\n`)
 
   const origins: string[] = []
@@ -631,8 +694,9 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   if (config.ports.webSsr) {
     origins.push(`http://localhost:${config.ports.webSsr}`)
   }
-
-  const trustedOrigins = origins.join(',')
+  // Allow Expo dev origins wildcard and mobile custom scheme
+  const mobileSchemeOrigin = mobileConfig ? `${mobileConfig.scheme}://*` : undefined
+  const trustedOrigins = [...origins, 'exp://*', ...(mobileSchemeOrigin ? [mobileSchemeOrigin] : [])].join(',')
 
   // Root .env (docker-compose) - update all configured vars
   const rootUpdates: Record<string, string> = {}
@@ -666,6 +730,8 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
     if (config.ports.webSsr) {
       updates.CLIENTS_WEB_SSR_URL = `http://localhost:${config.ports.webSsr}`
     }
+    updates.CLIENTS_MOBILE_SCHEME = mobileConfig?.scheme ?? 'my-project'
+    updates.CLIENTS_MOBILE_RESET_PATH = 'reset-password'
 
     if (Object.keys(updates).length > 0) {
       updateEnvFile(apiEnvPath, updates, false)
@@ -693,6 +759,19 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
     updateEnvFile(openapiEnvPath, { API_URL: apiUrl }, false)
   }
 
+  // Mobile .env (Expo)
+  if (availableApps.mobile && config.ports.api) {
+    const mobileEnvPath = join(projectRoot, 'apps/mobile/.env')
+    const apiUrl = `http://localhost:${config.ports.api}`
+    const updates: Record<string, string> = {
+      EXPO_PUBLIC_API_URL: apiUrl,
+    }
+    if (mobileConfig) {
+      updates.EXPO_PUBLIC_SCHEME = mobileConfig.scheme
+    }
+    updateEnvFile(mobileEnvPath, updates, false)
+  }
+
   console.log(`  ${colorize('✓', 'green')} Configuration values have been updated in .env files`)
 }
 
@@ -712,15 +791,21 @@ async function main(): Promise<void> {
       console.log(`  ${colorize('✓', 'green')} ${colorize('Web SSR', 'bright')}`)
     if (availableApps.openapiGenerator)
       console.log(`  ${colorize('✓', 'green')} ${colorize('OpenAPI Generator', 'bright')}`)
+    if (availableApps.mobile)
+      console.log(`  ${colorize('✓', 'green')} ${colorize('Mobile', 'bright')}`)
 
     // Check .env files (but don't copy yet)
     const envFilesInfo = checkEnvFiles(availableApps)
 
     // Prompt for project name
     const projectName = await prompt('Project name', 'my-project')
+    const mobileConfig = availableApps.mobile ? await promptMobileConfig(projectName) : null
 
     // Update package.json files for detected applications with the project name
     await renameProjects(projectName, availableApps)
+    if (mobileConfig) {
+      updateMobileFiles(mobileConfig, projectRoot)
+    }
 
     // Prompt for configuration BEFORE copying files
     const databaseConfig = await promptDatabaseConfig()
@@ -737,7 +822,7 @@ async function main(): Promise<void> {
     copyEnvFiles(envFilesInfo)
 
     // Update .env files with the configured values
-    updateAllEnvFiles(config, availableApps)
+    updateAllEnvFiles(config, availableApps, mobileConfig)
 
     console.log(`\n${colorize('✅ Setup completed successfully!', 'green')}`)
     console.log(`\n${colorize('📝 Configuration Summary:', 'cyan')}`)
