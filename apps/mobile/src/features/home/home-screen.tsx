@@ -1,10 +1,10 @@
-import { Button } from '@/src/components'
-import { useTranslation } from '@/src/i18n'
 import type { RootNavigationProp } from '@/src/navigation/types'
-import { useAuthStore } from '@/src/store'
 import { useNavigation } from '@react-navigation/native'
 import React from 'react'
 import { Text, View } from 'react-native'
+import { Button } from '@/src/components'
+import { useTranslation } from '@/src/i18n'
+import { useAuthStore } from '@/src/store'
 import { PostsList } from './components/posts-list'
 
 export function HomeScreen() {

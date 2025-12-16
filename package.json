@@ -28,7 +28,8 @@
     "schematics:module": "pnpm --filter=@boilerstone/schematics run schematics:module",
     "docs-only": "pnpm --filter=@boilerstone/documentation run dev",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "prepare": "husky"
   },
   "dependencies": {
     "typescript": "^5.9.2"
@@ -40,6 +41,8 @@
     "eslint": "^9.34.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
   },

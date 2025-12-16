@@ -1,9 +1,9 @@
+import React from 'react'
+import { ScrollView, Text, View } from 'react-native'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/src/components'
 import { useTranslation } from '@/src/i18n'
 import { useAuthStore } from '@/src/store'
-import React from 'react'
-import { ScrollView, Text, View } from 'react-native'
 
 export function ProfileScreen() {
   const { t } = useTranslation()

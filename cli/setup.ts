@@ -1,10 +1,11 @@
+import type { MobileConfig } from './mobile-setup.js'
 import { spawn } from 'node:child_process'
 import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
-import { MobileConfig, generateMobileDefaults, updateMobileFiles } from './mobile-setup.js'
+import { generateMobileDefaults, updateMobileFiles } from './mobile-setup.js'
 import { colorize } from './utils.js'
 
 interface InputPromptOptions {
@@ -64,7 +65,6 @@ interface EnvConfig {
   }
 }
 
-
 async function prompt(message: string, initial: string): Promise<string> {
   const input = new Input({
     message,
@@ -110,7 +110,6 @@ function runCommand(command: string, args: string[]): Promise<void> {
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
-
 
 async function waitForDatabase(maxRetries: number = 30, delayMs: number = 1000): Promise<boolean> {
   console.log(`  ${colorize('⏳', 'yellow')} Waiting for database to be ready...`)
@@ -548,7 +547,6 @@ function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, n
 
   writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
 }
-
 
 function updateDockerCompose(projectName: string): void {
   const dockerComposePath = join(projectRoot, 'docker-compose.yml')
