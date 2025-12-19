@@ -1,4 +1,4 @@
-export { Button } from './atoms/button'
-export { Input } from './atoms/input'
-export { PasswordInput } from './atoms/password-input'
-export { SlideUpModal } from './organisms/slide-up-modal'
+export { Button } from './primitives/button'
+export { Input } from './primitives/input'
+export { PasswordInput } from './primitives/password-input'
+export { SlideUpModal } from './primitives/slide-up-modal'

@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { Settings } from 'lucide-react-native'
 import React from 'react'
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native'
-import { useAuthInitialization } from '@/src/common/hooks/use-auth-initialization'
+import { useAuthInitialization } from '@/src/features/auth/hooks/use-auth-initialization'
 
 import { LoginScreen } from '@/src/features/auth/screens/login-screen'
 import { RegisterScreen } from '@/src/features/auth/screens/register-screen'
