@@ -233,6 +233,22 @@ function MyComponent() {
 }
 ```
 
+### Design Tokens Changes
+
+When modifying design tokens in `packages/ui/src/design-tokens.ts`:
+
+**For Mobile App:**
+
+- You must restart Expo with cleared cache: `pnpm start --clear`
+- Reason: Metro caches the module import in `tailwind.config.js`
+
+**For Web Apps:**
+
+
+- Simply refresh the browser (F5/Cmd+R)
+- Reason: HMR doesn't re-execute root-level initialization code
+
+
 ## CI/CD
 
 The mobile app has a dedicated GitHub Actions workflow (`.github/workflows/mobile-ci.yml`) that:

@@ -12,6 +12,8 @@ Guidance for AI agents working in this repo.
 - `pnpm --filter=api dev` – API only.
 - `pnpm --filter=web-spa dev` – SPA only.
 - `pnpm --filter=web-ssr dev` – SSR app only.
+- `pnpm dev:mobile` – mobile app (Expo) only.
+- From `apps/mobile`: `pnpm start -- --clear` – restart with cleared Metro cache (required after design token changes).
 
 ### Build & Quality
 - `pnpm build` – build all applications.
