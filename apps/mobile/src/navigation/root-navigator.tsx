@@ -1,12 +1,13 @@
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack'
 import type { AuthStackParamList, MainStackParamList } from './types'
+import { colors } from '@boilerstone/ui/src/design-tokens'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { Settings } from 'lucide-react-native'
 import React from 'react'
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native'
-import { useAuthInitialization } from '@/src/features/auth/hooks/use-auth-initialization'
 
+import { useAuthInitialization } from '@/src/features/auth/hooks/use-auth-initialization'
 import { LoginScreen } from '@/src/features/auth/screens/login-screen'
 import { RegisterScreen } from '@/src/features/auth/screens/register-screen'
 import { ResetPasswordScreen } from '@/src/features/auth/screens/reset-password-screen'
@@ -14,7 +15,6 @@ import { HomeScreen } from '@/src/features/home/home-screen'
 import { ProfileScreen } from '@/src/features/profile/profile-screen'
 import i18n from '@/src/i18n/config'
 import { useAuthStore } from '@/src/store'
-import { colors } from '@/src/theme/colors'
 import { useLinking } from './use-linking'
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>()

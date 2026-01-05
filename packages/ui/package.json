@@ -5,6 +5,7 @@
   "private": true,
   "exports": {
     "./globals.css": "./src/styles/globals.css",
+    "./design-tokens": "./src/design-tokens.ts",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
