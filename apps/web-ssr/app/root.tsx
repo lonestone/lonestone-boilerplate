@@ -1,7 +1,6 @@
 import type { Route } from './+types/root'
 import process from 'node:process'
 import { client } from '@boilerstone/openapi-generator'
-import { getThemeCssText } from '@boilerstone/ui/lib/apply-theme-variables'
 import { HydrationBoundary, QueryClientProvider } from '@tanstack/react-query'
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData } from 'react-router'
 import { useDehydratedState } from '@/hooks/use-dehydrated-state'
@@ -27,31 +26,14 @@ export const links: Route.LinksFunction = () => [
   },
 ]
 
-type Theme = 'light' | 'dark'
-
-function getThemeFromRequest(request: Request): Theme {
-  const cookieHeader = request.headers.get('cookie') ?? ''
-  const match = cookieHeader.match(/(?:^|; )app-theme=([^;]*)/)
-  const cookieTheme = match?.[1]
-
-  if (cookieTheme === 'light' || cookieTheme === 'dark') {
-    return cookieTheme
-  }
-
-  return 'dark'
-}
-
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader() {
   return {
     API_URL: process.env.API_URL as string,
-    theme: getThemeFromRequest(request),
   }
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const data = useRouteLoaderData<typeof loader>('root')
-  const theme = data?.theme ?? 'dark'
-  const bodyClassName = `${theme === 'dark' ? 'dark ' : ''}font-display min-h-screen bg-background`
 
   return (
     <html lang="en">
@@ -60,13 +42,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
-        <style
-          id="theme-variables"
-          // eslint-disable-next-line react-dom/no-dangerously-set-innerhtml -- CSS variables injected from tokens
-          dangerouslySetInnerHTML={{ __html: getThemeCssText(theme) }}
-        />
       </head>
-      <body className={bodyClassName}>
+      <body className="dark font-display min-h-screen bg-background">
         {children}
         <ScrollRestoration />
         <Scripts />

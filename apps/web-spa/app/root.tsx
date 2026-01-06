@@ -1,11 +1,10 @@
 import type { Route } from './+types/root'
 import { client } from '@boilerstone/openapi-generator'
-import { applyThemeVariables } from '@boilerstone/ui/lib/apply-theme-variables'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router'
 import { queryClient } from '@/lib/query-client'
-import useTheme, { getThemeFromLocalStorage } from './hooks/useTheme'
+import useTheme from './hooks/useTheme'
 import '@fontsource/source-sans-pro'
 import '@boilerstone/ui/globals.css'
 
@@ -13,10 +12,6 @@ client.setConfig({
   baseUrl: import.meta.env.VITE_API_URL,
   credentials: 'include',
 })
-
-if (typeof document !== 'undefined') {
-  applyThemeVariables({ scheme: getThemeFromLocalStorage() })
-}
 
 export const links: Route.LinksFunction = () => [
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -35,7 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [theme] = useTheme()
 
   useEffect(() => {
-    applyThemeVariables({ scheme: theme })
+    document.body.classList.toggle('dark', theme === 'dark')
   }, [theme])
 
   return (
@@ -57,7 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="bg-gradient-bg">
+      <body className="dark bg-gradient-bg">
         {children}
         <ScrollRestoration />
         <Scripts />

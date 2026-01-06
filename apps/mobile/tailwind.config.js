@@ -1,5 +1,3 @@
-const { colors, spacing, radius } = require('@boilerstone/ui/design-tokens')
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -12,9 +10,25 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
-      colors,
-      spacing,
-      borderRadius: radius,
+      colors: {
+        'primary': '#f5d90a',
+        'primary-foreground': '#0f172a',
+        'muted': '#6b7280',
+        'border': '#e5e7eb',
+        'card': '#ffffff',
+        'card-foreground': '#0f172a',
+        'background': '#ffffff',
+        'foreground': '#09090b',
+        'destructive': '#ef4444',
+        'destructive-foreground': '#ffffff',
+        'secondary': '#f4f4f5',
+        'secondary-foreground': '#18181b',
+        'accent': '#f4f4f5',
+        'accent-foreground': '#18181b',
+        'input': '#e4e4e7',
+        'ring': '#18181b',
+        'muted-foreground': '#71717a',
+      },
     },
   },
   plugins: [],
