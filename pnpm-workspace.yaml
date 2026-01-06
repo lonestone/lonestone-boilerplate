@@ -5,6 +5,10 @@ onlyBuiltDependencies:
   - '@nestjs/core'
   - '@scarf/scarf'
   - '@tailwindcss/oxide'
+  - cpu-features
   - esbuild
   - nestjs-pino
+  - protobufjs
+  - sharp
+  - ssh2
   - unrs-resolver
