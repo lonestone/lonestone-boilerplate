@@ -1,0 +1,64 @@
+{
+  "name": "@boilerstone/i18n",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./store": {
+      "types": "./dist/i18n-store.d.ts",
+      "import": "./dist/i18n-store.js",
+      "require": "./dist/i18n-store.js",
+      "default": "./dist/i18n-store.js"
+    },
+    "./config": {
+      "types": "./dist/i18n-config.d.ts",
+      "import": "./dist/i18n-config.js",
+      "require": "./dist/i18n-config.js",
+      "default": "./dist/i18n-config.js"
+    },
+    "./utils": {
+      "types": "./dist/i18n-utils.d.ts",
+      "import": "./dist/i18n-utils.js",
+      "require": "./dist/i18n-utils.js",
+      "default": "./dist/i18n-utils.js"
+    },
+    "./instance": {
+      "types": "./dist/i18n-instance.d.ts",
+      "import": "./dist/i18n-instance.js",
+      "require": "./dist/i18n-instance.js",
+      "default": "./dist/i18n-instance.js"
+    },
+    "./cookies": {
+      "types": "./dist/i18n-cookies.d.ts",
+      "import": "./dist/i18n-cookies.js",
+      "require": "./dist/i18n-cookies.js",
+      "default": "./dist/i18n-cookies.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "sync-translations": "tsx ./src/i18n-sync.ts"
+  },
+  "dependencies": {
+    "glob": "^10.5.0",
+    "i18next": "^25.7.4",
+    "persist-and-sync": "^1.2.3",
+    "react-i18next": "^15.7.4"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/node": "^24.10.7",
+    "@types/react": "^19.2.8",
+    "@types/react-dom": "^19.2.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -11,19 +11,24 @@ import { Input } from '@boilerstone/ui/components/primitives/input'
 import { zodResolver } from '@hookform/resolvers/zod'
 import React from 'react'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 
-const registerSchema = z.object({
+const baseRegisterSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   password: z.string().min(6),
   confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
 })
 
-export type AuthRegisterFormData = z.infer<typeof registerSchema>
+function getRegisterSchema(t: (key: string) => string) {
+  return baseRegisterSchema.refine(data => data.password === data.confirmPassword, {
+    message: t('errorCodes.PASSWORDS_DO_NOT_MATCH'),
+    path: ['confirmPassword'],
+  })
+}
+
+export type AuthRegisterFormData = z.infer<typeof baseRegisterSchema>
 
 interface AuthRegisterFormProps {
   onSubmit: (data: AuthRegisterFormData) => void
@@ -31,6 +36,8 @@ interface AuthRegisterFormProps {
 }
 
 export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({ onSubmit, isPending }) => {
+  const { t } = useTranslation()
+  const registerSchema = getRegisterSchema(t)
   const form = useForm<AuthRegisterFormData>({
     resolver: zodResolver(registerSchema),
   })
@@ -44,7 +51,7 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({ onSubmit, is
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="name">Name</FormLabel>
+              <FormLabel htmlFor="name">{t('auth.register.name')}</FormLabel>
               <FormControl>
                 <Input id="name" {...field} type="text" autoComplete="name" placeholder="John" />
               </FormControl>
@@ -57,7 +64,7 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({ onSubmit, is
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="email">Email</FormLabel>
+              <FormLabel htmlFor="email">{t('auth.register.email')}</FormLabel>
               <FormControl>
                 <Input id="email" {...field} type="email" autoComplete="email" placeholder="your@email.com" />
               </FormControl>
@@ -70,7 +77,7 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({ onSubmit, is
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="password">Password</FormLabel>
+              <FormLabel htmlFor="password">{t('auth.register.password')}</FormLabel>
               <FormControl>
                 <Input id="password" {...field} type="password" autoComplete="new-password" placeholder="••••••••" />
               </FormControl>
@@ -83,7 +90,7 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({ onSubmit, is
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="confirmPassword">Confirm Password</FormLabel>
+              <FormLabel htmlFor="confirmPassword">{t('auth.register.confirmPassword')}</FormLabel>
               <FormControl>
                 <Input id="confirmPassword" {...field} type="password" autoComplete="new-password" placeholder="••••••••" />
               </FormControl>
@@ -92,7 +99,7 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({ onSubmit, is
           )}
         />
         <Button className="w-full" type="submit" disabled={isPending}>
-          Sign Up
+          {t('auth.register.signUp')}
         </Button>
       </form>
     </Form>

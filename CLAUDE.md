@@ -74,12 +74,6 @@ pnpm generate
 
 The `pnpm dev` command automatically watches for API changes and regenerates types. Generated files are in [packages/openapi-generator/client/](packages/openapi-generator/client/) and must be committed.
 
-### Module Generation
-
-```bash
-# Generate new API module (controller, service, entity, contract, tests)
-pnpm schematics:module
-```
 
 ### Testing
 

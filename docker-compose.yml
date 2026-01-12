@@ -18,7 +18,7 @@ services:
 
   maildev:
     container_name: lonestone-maildev
-    image: maildev/maildev:latest
+    image: netoun/fastmail-dev:latest
     ports:
       - '${SMTP_PORT_WEB}:1080'
       - '${SMTP_PORT}:1025'
