@@ -227,12 +227,7 @@ export const zPaginationQuerySchema = z.object({
  * SortingQueryStringSchema
  * Schema for sorting items
  */
-export const zSortingQueryStringSchema = z.array(
-  z.object({
-    property: z.union([z.literal("title"), z.literal("createdAt")]),
-    direction: z.enum(["asc", "desc"]),
-  }),
-);
+export const zSortingQueryStringSchema = z.string();
 
 /**
  * FilterQueryStringSchema
@@ -240,26 +235,7 @@ export const zSortingQueryStringSchema = z.array(
  * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
  * <br> Available properties: title
  */
-export const zFilterQueryStringSchema = z.array(
-  z.object({
-    property: z.literal("title"),
-    rule: z.enum([
-      "eq",
-      "neq",
-      "gt",
-      "gte",
-      "lt",
-      "lte",
-      "like",
-      "nlike",
-      "in",
-      "nin",
-      "isnull",
-      "isnotnull",
-    ]),
-    value: z.optional(z.string()),
-  }),
-);
+export const zFilterQueryStringSchema = z.string();
 
 export const zCommentsControllerPostSlug = z.string();
 
@@ -273,36 +249,8 @@ export const zPostControllerGetUserPostsData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.object({
-    filter: z.optional(
-      z.array(
-        z.object({
-          property: z.literal("title"),
-          rule: z.enum([
-            "eq",
-            "neq",
-            "gt",
-            "gte",
-            "lt",
-            "lte",
-            "like",
-            "nlike",
-            "in",
-            "nin",
-            "isnull",
-            "isnotnull",
-          ]),
-          value: z.optional(z.string()),
-        }),
-      ),
-    ),
-    sort: z.optional(
-      z.array(
-        z.object({
-          property: z.union([z.literal("title"), z.literal("createdAt")]),
-          direction: z.enum(["asc", "desc"]),
-        }),
-      ),
-    ),
+    filter: z.optional(z.string()),
+    sort: z.optional(z.string()),
     offset: z.int().gte(0).lte(9007199254740991).default(0),
     pageSize: z.int().gte(1).lte(100).default(20),
   }),
@@ -432,36 +380,8 @@ export const zPublicPostControllerGetPostsData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.object({
-    filter: z.optional(
-      z.array(
-        z.object({
-          property: z.literal("title"),
-          rule: z.enum([
-            "eq",
-            "neq",
-            "gt",
-            "gte",
-            "lt",
-            "lte",
-            "like",
-            "nlike",
-            "in",
-            "nin",
-            "isnull",
-            "isnotnull",
-          ]),
-          value: z.optional(z.string()),
-        }),
-      ),
-    ),
-    sort: z.optional(
-      z.array(
-        z.object({
-          property: z.union([z.literal("title"), z.literal("createdAt")]),
-          direction: z.enum(["asc", "desc"]),
-        }),
-      ),
-    ),
+    filter: z.optional(z.string()),
+    sort: z.optional(z.string()),
     offset: z.int().gte(0).lte(9007199254740991).default(0),
     pageSize: z.int().gte(1).lte(100).default(20),
   }),
@@ -478,36 +398,8 @@ export const zCommentsControllerGetCommentsData = z.object({
     postSlug: z.string(),
   }),
   query: z.object({
-    filter: z.optional(
-      z.array(
-        z.object({
-          property: z.literal("content"),
-          rule: z.enum([
-            "eq",
-            "neq",
-            "gt",
-            "gte",
-            "lt",
-            "lte",
-            "like",
-            "nlike",
-            "in",
-            "nin",
-            "isnull",
-            "isnotnull",
-          ]),
-          value: z.optional(z.string()),
-        }),
-      ),
-    ),
-    sort: z.optional(
-      z.array(
-        z.object({
-          property: z.union([z.literal("createdAt"), z.literal("authorName")]),
-          direction: z.enum(["asc", "desc"]),
-        }),
-      ),
-    ),
+    filter: z.optional(z.string()),
+    sort: z.optional(z.string()),
     offset: z.int().gte(0).lte(9007199254740991).default(0),
     pageSize: z.int().gte(1).lte(100).default(20),
   }),
@@ -555,14 +447,7 @@ export const zCommentsControllerGetCommentRepliesData = z.object({
     postSlug: z.string(),
   }),
   query: z.object({
-    sort: z.optional(
-      z.array(
-        z.object({
-          property: z.union([z.literal("createdAt"), z.literal("authorName")]),
-          direction: z.enum(["asc", "desc"]),
-        }),
-      ),
-    ),
+    sort: z.optional(z.string()),
     offset: z.int().gte(0).lte(9007199254740991).default(0),
     pageSize: z.int().gte(1).lte(100).default(20),
   }),

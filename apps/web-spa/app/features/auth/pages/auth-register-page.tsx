@@ -1,12 +1,14 @@
 import type { AuthRegisterFormData } from '../forms/auth-register-form'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { useMutation } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { authClient } from '@/lib/auth-client'
 import { AuthPageHeader } from '../components/auth-page-header'
 import { AuthRegisterForm } from '../forms/auth-register-form'
 
 export default function Register() {
+  const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const { mutate: register, isPending, isSuccess, error: errorRegister } = useMutation({
@@ -26,7 +28,7 @@ export default function Register() {
     },
     onSuccess: (data) => {
       setSearchParams({ email: data.user.email })
-      toast.success('Registration successful')
+      toast.success(t('auth.register.registrationSuccessful'))
     },
   })
 
@@ -37,27 +39,29 @@ export default function Register() {
   return isSuccess || searchParams.get('email')
     ? (
         <div>
-          <AuthPageHeader title="Registration successful" description="Check your email for the activation link." />
+          <AuthPageHeader title={t('auth.register.success.title')} description={t('auth.register.success.description')} />
           <div className="text-sm text-center mt-4">
             <Link to="/login" className="font-medium transition-colors">
-              Back to Login
+              {t('auth.register.backToLogin')}
             </Link>
           </div>
         </div>
       )
     : (
         <div className="space-y-6">
-          <AuthPageHeader title="Registration" description="Create an account to get started." />
+          <AuthPageHeader title={t('auth.register.title')} description={t('auth.register.description')} />
           <AuthRegisterForm
             onSubmit={handleRegister}
             isPending={isPending}
           />
           <div className="h-10">
-            {errorRegister ? <div className="text-sm font-medium text-red-500">Failed to register</div> : null}
+            {errorRegister ? <div className="text-sm font-medium text-red-500">{t('auth.register.failedToRegister')}</div> : null}
           </div>
           <div className="text-sm text-center">
             <Link to="/login" className="font-medium transition-colors">
-              Already have an account? Login
+              {t('auth.register.hasAccount')}
+              {' '}
+              {t('auth.register.login')}
             </Link>
           </div>
         </div>

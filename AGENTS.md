@@ -28,8 +28,6 @@ Guidance for AI agents working in this repo.
 ### Type Generation
 - `pnpm generate` – build OpenAPI SDK/types (`packages/openapi-generator/client/`; commit results). `pnpm dev` also regenerates when API is running.
 
-### Module Generation
-- `pnpm schematics:module` – scaffold API module (controller, service, entity, contracts, tests).
 
 ### Testing
 - `pnpm test` – all tests.

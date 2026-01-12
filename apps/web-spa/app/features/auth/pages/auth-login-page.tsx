@@ -1,12 +1,14 @@
 import type { AuthLoginFormData } from '../forms/auth-login-form'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { useMutation } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { authClient } from '@/lib/auth-client'
 import { AuthPageHeader } from '../components/auth-page-header'
 import { AuthLoginForm } from '../forms/auth-login-form'
 
 export default function Login() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const { mutate: loginMutate, isPending: isLoginPending, error } = useMutation({
@@ -22,7 +24,7 @@ export default function Login() {
         throw new Error(response.error.code)
       }
 
-      toast.success('Logged in successfully')
+      toast.success(t('auth.login.loggedInSuccess'))
       return response.data
     },
     onSuccess: (data) => {
@@ -36,17 +38,19 @@ export default function Login() {
 
   return (
     <div className="space-y-6">
-      <AuthPageHeader title="Login" description="Enter your email and password to login." />
+      <AuthPageHeader title={t('auth.login.title')} description={t('auth.login.description')} />
       <AuthLoginForm
         onSubmit={handleLogin}
         isPending={isLoginPending}
       />
       <div className="h-10">
-        {error ? <div className="text-sm font-medium text-red-500">{error.message === 'BANNED_USER' ? 'Banned user' : 'Bad credentials'}</div> : null}
+        {error ? <div className="text-sm font-medium text-red-500">{error.message === 'BANNED_USER' ? t('auth.login.bannedUser') : t('auth.login.badCredentials')}</div> : null}
       </div>
       <div className="text-sm text-center">
         <Link to="/register" className="font-medium transition-colors">
-          Don&apos;t have an account? Sign up
+          {t('auth.login.noAccount')}
+          {' '}
+          {t('auth.login.signUp')}
         </Link>
       </div>
     </div>

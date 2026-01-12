@@ -182,10 +182,7 @@ export type PaginationQuerySchema = {
  * SortingQueryStringSchema
  * Schema for sorting items
  */
-export type SortingQueryStringSchema = Array<{
-  property: "title" | "createdAt";
-  direction: "asc" | "desc";
-}>;
+export type SortingQueryStringSchema = string;
 
 /**
  * FilterQueryStringSchema
@@ -193,23 +190,7 @@ export type SortingQueryStringSchema = Array<{
  * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
  * <br> Available properties: title
  */
-export type FilterQueryStringSchema = Array<{
-  property: "title";
-  rule:
-    | "eq"
-    | "neq"
-    | "gt"
-    | "gte"
-    | "lt"
-    | "lte"
-    | "like"
-    | "nlike"
-    | "in"
-    | "nin"
-    | "isnull"
-    | "isnotnull";
-  value?: string;
-}>;
+export type FilterQueryStringSchema = string;
 
 export type CommentsControllerPostSlug = string;
 
@@ -234,31 +215,12 @@ export type PostControllerGetUserPostsData = {
      * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
      * <br> Available properties: title
      */
-    filter?: Array<{
-      property: "title";
-      rule:
-        | "eq"
-        | "neq"
-        | "gt"
-        | "gte"
-        | "lt"
-        | "lte"
-        | "like"
-        | "nlike"
-        | "in"
-        | "nin"
-        | "isnull"
-        | "isnotnull";
-      value?: string;
-    }>;
+    filter?: string;
     /**
      * SortingQueryStringSchema
      * Schema for sorting items
      */
-    sort?: Array<{
-      property: "title" | "createdAt";
-      direction: "asc" | "desc";
-    }>;
+    sort?: string;
     /**
      * Starting position of the query
      */
@@ -456,31 +418,12 @@ export type PublicPostControllerGetPostsData = {
      * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
      * <br> Available properties: title
      */
-    filter?: Array<{
-      property: "title";
-      rule:
-        | "eq"
-        | "neq"
-        | "gt"
-        | "gte"
-        | "lt"
-        | "lte"
-        | "like"
-        | "nlike"
-        | "in"
-        | "nin"
-        | "isnull"
-        | "isnotnull";
-      value?: string;
-    }>;
+    filter?: string;
     /**
      * SortingQueryStringSchema
      * Schema for sorting items
      */
-    sort?: Array<{
-      property: "title" | "createdAt";
-      direction: "asc" | "desc";
-    }>;
+    sort?: string;
     /**
      * Starting position of the query
      */
@@ -515,31 +458,12 @@ export type CommentsControllerGetCommentsData = {
      * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
      * <br> Available properties: content
      */
-    filter?: Array<{
-      property: "content";
-      rule:
-        | "eq"
-        | "neq"
-        | "gt"
-        | "gte"
-        | "lt"
-        | "lte"
-        | "like"
-        | "nlike"
-        | "in"
-        | "nin"
-        | "isnull"
-        | "isnotnull";
-      value?: string;
-    }>;
+    filter?: string;
     /**
      * SortingQueryStringSchema
      * Schema for sorting items
      */
-    sort?: Array<{
-      property: "createdAt" | "authorName";
-      direction: "asc" | "desc";
-    }>;
+    sort?: string;
     /**
      * Starting position of the query
      */
@@ -612,10 +536,7 @@ export type CommentsControllerGetCommentRepliesData = {
      * SortingQueryStringSchema
      * Schema for sorting items
      */
-    sort?: Array<{
-      property: "createdAt" | "authorName";
-      direction: "asc" | "desc";
-    }>;
+    sort?: string;
     /**
      * Starting position of the query
      */

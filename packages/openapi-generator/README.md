@@ -40,7 +40,7 @@ Le client est généré dans le répertoire `./src/client` et comprend :
 
 Les packages suivants dépendent d'OpenAPI Generator :
 
-- `apps/web-spa` : Application frontend React en SPA
+- `apps/web` : Application frontend React en SPA
 - `apps/web-ssr` : Application frontend React en SSR
 - `packages/ui` : Bibliothèque de composants UI partagés
 
@@ -57,7 +57,7 @@ La configuration se trouve dans le fichier `openapi-ts.config.ts`. Elle définit
 Pour utiliser le client API généré dans une application :
 
 ```typescript
-import { client } from '@boilerstone/openapi-generator'
+import { client } from '@interlud/openapi-generator'
 
 client.setConfig({
   baseURL: 'http://localhost:3000',
@@ -67,7 +67,7 @@ client.setConfig({
 
 ```typescript
 // Exemple d'utilisation
-import { postControllerCreatePost } from '@boilerstone/openapi-generator'
+import { postControllerCreatePost } from '@interlud/openapi-generator'
 
 const posts = await postControllerCreatePost()
 ```

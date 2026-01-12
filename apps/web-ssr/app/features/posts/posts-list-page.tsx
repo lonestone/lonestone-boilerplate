@@ -2,6 +2,11 @@ import type { Route } from './+types/posts-list-page'
 import { publicPostControllerGetPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Input } from '@boilerstone/ui/components/primitives/input'
+import {
+  FilterRule,
+  FiltersToString,
+} from '@lonestone/nzoth/client'
+
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 
 import { useMemo, useState } from 'react'
@@ -16,8 +21,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   const page = Number.parseInt(searchParams.get('page') || '1')
 
   const posts = await publicPostControllerGetPosts({
+
     query: {
-      filter: search ? [{ property: 'title', rule: 'like', value: search }] : [],
+      filter: search ? FiltersToString([{ property: 'title', rule: FilterRule.LIKE, value: search }]) : '',
       offset: (page - 1) * 10,
       pageSize: 10,
     },
