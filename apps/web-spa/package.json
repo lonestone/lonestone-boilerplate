@@ -8,6 +8,7 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@boilerstone/i18n": "workspace:*",
     "@boilerstone/openapi-generator": "workspace:*",
     "@boilerstone/ui": "workspace:*",
     "@fontsource/source-sans-pro": "^5.2.5",

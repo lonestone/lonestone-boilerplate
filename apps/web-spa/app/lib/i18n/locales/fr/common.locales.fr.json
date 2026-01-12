@@ -1,0 +1,100 @@
+{
+  "error": {
+    "default": "Quelque chose s'est mal passé",
+    "description": "Nous avons rencontré une erreur inattendue. Veuillez réessayer ou retourner à la page d'accueil.",
+    "goHome": "Aller à l'accueil",
+    "oops": "Oups !",
+    "pageNotFound": "Page introuvable",
+    "pageNotFoundDescription": "La page que vous recherchez n'existe pas.",
+    "goBack": "Retour"
+  },
+  "auth": {
+    "login": {
+      "title": "Connexion",
+      "description": "Entrez votre email et mot de passe pour vous connecter.",
+      "email": "Email",
+      "password": "Mot de passe",
+      "forgotPassword": "Mot de passe oublié ?",
+      "signIn": "Se connecter",
+      "noAccount": "Vous n'avez pas de compte ?",
+      "signUp": "S'inscrire",
+      "loggedInSuccess": "Connexion réussie",
+      "bannedUser": "Utilisateur banni",
+      "badCredentials": "Identifiants incorrects"
+    },
+    "register": {
+      "title": "Inscription",
+      "description": "Créez un compte pour commencer.",
+      "name": "Nom",
+      "email": "Email",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "signUp": "S'inscrire",
+      "hasAccount": "Vous avez déjà un compte ?",
+      "login": "Se connecter",
+      "success": {
+        "title": "Inscription réussie",
+        "description": "Vérifiez votre email pour le lien d'activation."
+      },
+      "backToLogin": "Retour à la connexion",
+      "registrationSuccessful": "Inscription réussie",
+      "failedToRegister": "Échec de l'inscription"
+    },
+    "forgotPassword": {
+      "title": "Mot de passe oublié",
+      "description": "Entrez votre email pour recevoir un lien de réinitialisation.",
+      "email": "Email",
+      "sendResetLink": "Envoyer le lien de réinitialisation",
+      "backToLogin": "Retour à la connexion",
+      "failedToSend": "Échec de l'envoi du lien de réinitialisation"
+    },
+    "resetPassword": {
+      "title": "Réinitialiser le mot de passe",
+      "description": "Entrez votre nouveau mot de passe.",
+      "password": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le nouveau mot de passe",
+      "reset": "Réinitialiser",
+      "backToLogin": "Retour à la connexion"
+    },
+    "verifyEmail": {
+      "title": "Vérification de l'email",
+      "description": "Vérifiez votre email pour activer votre compte.",
+      "verifying": "Vérification de l'email",
+      "verified": "Email vérifié",
+      "redirecting": "Redirection vers la connexion...",
+      "pleaseWait": "Veuillez patienter...",
+      "redirectNow": "Rediriger maintenant"
+    }
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "brand": "Lonestone - Tableau de bord",
+    "newPost": "Nouveau post",
+    "userMenu": "Menu utilisateur",
+    "settings": "Paramètres",
+    "lightMode": "Mode clair",
+    "darkMode": "Mode sombre",
+    "logOut": "Se déconnecter",
+    "language": "Langue"
+  },
+  "posts": {
+    "title": "Articles de blog",
+    "description": "Parcourez vos articles de blog",
+    "searchPlaceholder": "Rechercher des articles...",
+    "noPosts": "Aucun article trouvé",
+    "createNew": "Créer un nouvel article",
+    "showing": "Affichage",
+    "to": "à",
+    "of": "sur",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "page": "Page",
+    "create": {
+      "title": "Créer un nouvel article",
+      "description": "Partagez vos pensées, images et vidéos avec le monde.",
+      "creating": "Création...",
+      "created": "Créé !",
+      "error": "Une erreur s'est produite lors de la création de l'article"
+    }
+  }
+}
