@@ -1,0 +1,30 @@
+---
+title: Reporting, logging and monitoring
+description: How to report errors, log traces and monitor your project
+---
+
+## ❓ How it works
+The project uses Sentry (or Sentry compatible alternative) for error reporting, and OpenTelemetry for logging and monitoring.
+
+## Why this matters
+
+Debugging in production can be a pain. How many times have you been stuck in a situation where you need to debug a problem in production, but:
+
+- The client / manager has a hard time giving you the information you need (reproduction steps, context, etc.)
+- You can't reproduce it locally
+- You can't access or can't find the right logs (because they are written in the container, and are erased after a new deployment)
+- this list goes on...
+
+Good reporting and monitoring tools can save you hours, days or even weeks of debugging or performance tuning. Thanks to the rise of OTEL, they got easier to setup and use.
+
+## 💡 Why Sentry and OpenTelemetry
+
+Sentry is the de facto standard for error reporting. It's UX is great, and it has numerous integrations with other tools and frameworks (even niche ones like Unity3D).
+
+The possibility of self-hosting Sentry is another important factor.
+
+OpenTelemetry has become the standard for logging and monitoring, and Sentry is compatible with it for tracing. There is always the possibility to use another tool for logging and tracing, like Signoz, due their compatibility with OTEL.
+
+## 📝 How to use
+
+See the [Adding Error Reporting with Sentry](/lonestone-boilerplate/addons/error-reporting-sentry) and [Adding Tracing with Sentry](/lonestone-boilerplate/addons/tracing-sentry) guides for more details.
