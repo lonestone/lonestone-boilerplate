@@ -1,12 +1,12 @@
 ---
-title: Adding Sentry feature
-description: Guide to add Sentry to the project
+title: Adding Error Reporting with Sentry
+description: Guide to add Error Reporting with Sentry to the project
 ---
 import { Steps } from '@astrojs/starlight/components';
 
-You should add Sentry — or an open source alternative — to monitor errors and performance in your project.
+You should add Sentry — or an open source alternative — to monitor errors in your project.
 
-At Lonestone, we use [Bugsink](https://www.bugsink.com/) which is a self-hosted Sentry alternative, compatible with the Sentry SDK.
+At Lonestone, we use both [Sentry](https://sentry.io/) and [Bugsink](https://www.bugsink.com/), which is a self-hosted Sentry alternative, compatible with the Sentry SDK.
 
 :::note
 This doc is mostly based on the [Sentry NestJS documentation](https://docs.nestjs.com/recipes/sentry), with some modifications to fit the Boilerstone project.
@@ -33,10 +33,15 @@ This doc is mostly based on the [Sentry NestJS documentation](https://docs.nestj
 
 3. ### Load the env in your env.config.ts file. Follow the same pattern as the other env.
 
+    When using Sentry, it's a good practice to set a release name. This can be done in numerous ways, here is an example using the package.json version.
 
     ```typescript   title="src/config/env.config.ts"
+        import { version } from '../../package.json'
+
+
         export const configValidationSchema = z.object({
         // ... other env variables ...
+          VERSION: z.string().default(version),
           SENTRY_DSN: z.string(),
         })
 
@@ -44,6 +49,7 @@ This doc is mostly based on the [Sentry NestJS documentation](https://docs.nestj
 
         export const config = {
             // ... other config variables ...
+            version: configParsed.data.VERSION,
             sentry: {
                 dsn: configParsed.data.SENTRY_DSN,
             },
@@ -59,6 +65,8 @@ This doc is mostly based on the [Sentry NestJS documentation](https://docs.nestj
     // Ensure to call this before requiring any other modules!
     Sentry.init({
         dsn: config.sentry.dsn,
+        environment: config.env,
+        release: config.version,
     })
    ```
 
