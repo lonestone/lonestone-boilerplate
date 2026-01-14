@@ -1,0 +1,47 @@
+---
+title: Adding structured logging with Sentry
+description: Guide to add structured logging with Sentry to the project
+---
+import { Steps } from '@astrojs/starlight/components';
+
+You should add Sentry to log structured logs in your project.
+
+At Lonestone, we use [Sentry](https://sentry.io/) to log structured logs, but this guide is mostly applicable for alternatives such as [Signoz](https://signoz.io/).
+
+
+<Steps>
+1. ### Install and setup the Sentry SDK
+   See the [Error Reporting with Sentry](/lonestone-boilerplate/addons/error-reporting-sentry) guide for more details.
+
+2. ### Ensure your pino, pino-http and pino-pretty are installed and up to date
+
+    Older versions of those packages are not playing well with Sentry.
+    The minimum versions required are correctly setup in the api `package.json` file.
+
+   <br/>
+
+
+3. ### Update the `instrument.ts` file at the root of the API project
+   ```typescript   title="src/instrument.ts"
+        // Ensure to call this before requiring any other modules!
+        Sentry.init({
+            // [...] other Sentry config ...
+
+            
+          // Enable logs to be sent to Sentry
+          enableLogs: true,
+          integrations: [Sentry.pinoIntegration()],
+        })
+   ```
+
+   <br/>
+
+
+4. ### Test your setup
+    Open Yaak or Postman and make a request to the API. You should see structured logs in Sentry.
+
+    ![Sentry traces](../../../assets/sentry_logs.png)
+   
+     <br/>
+
+</Steps>
