@@ -18,7 +18,6 @@
       "signIn": "Se connecter",
       "noAccount": "Vous n'avez pas de compte ?",
       "signUp": "S'inscrire",
-      "loggedInSuccess": "Connexion réussie",
       "bannedUser": "Utilisateur banni",
       "badCredentials": "Identifiants incorrects"
     },

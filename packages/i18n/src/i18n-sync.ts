@@ -1,117 +1,165 @@
 /* eslint-disable node/prefer-global/process */
+import type { SupportedLocale } from './i18n-config'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { glob } from 'glob'
+import { SUPPORTED_LOCALES } from './i18n-config'
+
+const SUPPORTED_LOCALE_KEYS = Object.keys(SUPPORTED_LOCALES) as SupportedLocale[]
 
 interface TranslationObject {
   [key: string]: string | TranslationObject | string[]
 }
 
-function mergeKeys(
+interface MissingKeysReport {
+  locale: string
+  namespace: string
+  keys: string[]
+}
+
+interface OrphanedKeysReport {
+  locale: string
+  namespace: string
+  keys: string[]
+}
+
+/**
+ * Recursively finds keys that exist in base but are missing in target.
+ * Returns an array of dot-notation key paths.
+ */
+function findMissingKeys(
   base: TranslationObject,
   target: TranslationObject,
-): TranslationObject {
-  const result: TranslationObject = { ...target }
+  prefix = '',
+): string[] {
+  const missingKeys: string[] = []
+
   for (const key of Object.keys(base)) {
     const baseVal = base[key]
     const targetVal = target[key]
+    const fullKey = prefix ? `${prefix}.${key}` : key
+
     if (!(key in target)) {
-      if (Array.isArray(baseVal)) {
-        result[key] = baseVal
-      }
-      else if (typeof baseVal === 'object' && baseVal !== null) {
-        result[key] = mergeKeys(baseVal as TranslationObject, {})
-      }
-      else {
-        result[key] = `${(baseVal as string)}`
-      }
+      // Key is completely missing in target
+      missingKeys.push(fullKey)
     }
-    else if (Array.isArray(baseVal) && Array.isArray(targetVal)) {
-      // If both are arrays, preserve the target array (do not overwrite existing translations)
-      result[key] = targetVal
+    else if (
+      typeof baseVal === 'object'
+      && baseVal !== null
+      && !Array.isArray(baseVal)
+      && typeof targetVal === 'object'
+      && targetVal !== null
+      && !Array.isArray(targetVal)
+    ) {
+      // Both are objects, recurse
+      missingKeys.push(
+        ...findMissingKeys(baseVal as TranslationObject, targetVal as TranslationObject, fullKey),
+      )
     }
-    else if (Array.isArray(baseVal) && !Array.isArray(targetVal)) {
-      // If base is array but target is not, replace with base array
-      result[key] = baseVal
-    }
-    else if (typeof baseVal === 'object' && baseVal !== null && typeof targetVal === 'object' && targetVal !== null && !Array.isArray(baseVal) && !Array.isArray(targetVal)) {
-      result[key] = mergeKeys(baseVal as TranslationObject, targetVal as TranslationObject)
-    }
-    else if (typeof baseVal === 'object' && baseVal !== null && typeof targetVal === 'string' && !Array.isArray(baseVal)) {
-      // If base value is an object but target value is a string, replace with the object structure
-      result[key] = mergeKeys(baseVal as TranslationObject, {})
+    else if (
+      typeof baseVal === 'object'
+      && baseVal !== null
+      && !Array.isArray(baseVal)
+      && typeof targetVal === 'string'
+    ) {
+      // Base is an object but target is a string - structure mismatch, report as missing
+      missingKeys.push(fullKey)
     }
   }
-  return result
+
+  return missingKeys
 }
 
 function getDirname(metaUrl: string) {
   return path.dirname(fileURLToPath(metaUrl))
 }
 
-function writeLocaleFile(localesDir: string, locale: string, namespace: string, data: TranslationObject) {
-  const filePath = path.join(localesDir, locale, `${namespace}.locales.${locale}.json`)
-  const content = JSON.stringify(data, null, 2)
-  // Add newline at the end to satisfy linter requirements
-  const contentWithNewline = `${content}\n`
-  fs.writeFileSync(filePath, contentWithNewline, 'utf-8')
+type LocalesData = Record<SupportedLocale, Record<string, Record<string, unknown>>>
+
+function loadLocalesForLocale(localesDir: string, locale: SupportedLocale): Record<string, Record<string, unknown>> {
+  const localeDir = path.join(localesDir, locale)
+  const result: Record<string, Record<string, unknown>> = {}
+
+  if (!fs.existsSync(localeDir)) {
+    return result
+  }
+
+  const files = fs.readdirSync(localeDir).filter(file => file.endsWith(`.locales.${locale}.json`))
+  for (const file of files) {
+    const namespace = file.replace(`.locales.${locale}.json`, '')
+    const filePath = path.join(localeDir, file)
+    const content = fs.readFileSync(filePath, 'utf-8')
+    result[namespace] = JSON.parse(content)
+  }
+
+  return result
 }
 
-async function loadLocalesForDirectory(localesDir: string) {
-  const enDir = path.join(localesDir, 'en')
-  const frDir = path.join(localesDir, 'fr')
-  const esDir = path.join(localesDir, 'es')
+function loadLocalesForDirectory(localesDir: string): LocalesData {
+  const result = {} as LocalesData
 
-  const en: Record<string, Record<string, unknown>> = {}
-  const fr: Record<string, Record<string, unknown>> = {}
-  const es: Record<string, Record<string, unknown>> = {}
-
-  // Load English locales
-  if (fs.existsSync(enDir)) {
-    const enFiles = fs.readdirSync(enDir).filter(file => file.endsWith('.locales.en.json'))
-    for (const file of enFiles) {
-      const namespace = file.replace('.locales.en.json', '')
-      const filePath = path.join(enDir, file)
-      const content = fs.readFileSync(filePath, 'utf-8')
-      en[namespace] = JSON.parse(content)
-    }
+  for (const locale of SUPPORTED_LOCALE_KEYS) {
+    result[locale] = loadLocalesForLocale(localesDir, locale)
   }
 
-  // Load French locales
-  if (fs.existsSync(frDir)) {
-    const frFiles = fs.readdirSync(frDir).filter(file => file.endsWith('.locales.fr.json'))
-    for (const file of frFiles) {
-      const namespace = file.replace('.locales.fr.json', '')
-      const filePath = path.join(frDir, file)
-      const content = fs.readFileSync(filePath, 'utf-8')
-      fr[namespace] = JSON.parse(content)
-    }
-  }
-
-  // Load Spanish locales
-  if (fs.existsSync(esDir)) {
-    const esFiles = fs.readdirSync(esDir).filter(file => file.endsWith('.locales.es.json'))
-    for (const file of esFiles) {
-      const namespace = file.replace('.locales.es.json', '')
-      const filePath = path.join(esDir, file)
-      const content = fs.readFileSync(filePath, 'utf-8')
-      es[namespace] = JSON.parse(content)
-    }
-  }
-
-  return { en, fr, es }
+  return result
 }
 
-async function syncTranslationsForDirectory(localesDir: string) {
-  console.warn(`\n🔄 Syncing translations for: ${localesDir}`)
+function generateI18nextTypes(localesDir: string, namespaces: string[]) {
+  // The i18next.d.ts file should be placed in the parent directory of locales (where i18n config lives)
+  const i18nDir = path.dirname(localesDir)
+  const typesFilePath = path.join(i18nDir, 'i18next.d.ts')
 
-  const { en, fr, es } = await loadLocalesForDirectory(localesDir)
-  const resources = { en, fr, es } as Record<string, Record<string, TranslationObject>>
+  if (namespaces.length === 0) {
+    console.warn(`   ⚠️  No namespaces to generate types for`)
+    return
+  }
+
+  // Generate imports
+  const imports = namespaces
+    .map(ns => `import type ${ns}En from './locales/en/${ns}.locales.en.json'`)
+    .join('\n')
+
+  // Generate resources object entries
+  const resourceEntries = namespaces
+    .map(ns => `      ${ns}: typeof ${ns}En`)
+    .join('\n')
+
+  const content = `${imports}
+
+import 'i18next'
+
+declare module 'i18next' {
+  interface CustomTypeOptions {
+    resources: {
+${resourceEntries}
+    }
+  }
+}
+`
+
+  fs.writeFileSync(typesFilePath, content, 'utf-8')
+  console.warn(`   📝 Generated ${path.relative(path.resolve(localesDir, '../..'), typesFilePath)}`)
+}
+
+interface CheckResult {
+  missingKeys: MissingKeysReport[]
+  orphanedKeys: OrphanedKeysReport[]
+}
+
+/**
+ * Check translations for a directory and report missing/orphaned keys.
+ * Returns missing keys (in en but not in other langs) and orphaned keys (in other langs but not in en).
+ */
+async function checkTranslationsForDirectory(localesDir: string): Promise<CheckResult> {
+  console.warn(`\n🔍 Checking translations for: ${localesDir}`)
+
+  const resources = loadLocalesForDirectory(localesDir) as Record<string, Record<string, TranslationObject>>
 
   const languages = Object.keys(resources)
 
-  // Get all unique namespaces from both languages
+  // Get all unique namespaces from all languages
   const allNamespaces = new Set<string>()
   for (const lang of languages) {
     const langNamespaces = Object.keys(resources[lang] || {})
@@ -122,8 +170,11 @@ async function syncTranslationsForDirectory(localesDir: string) {
 
   if (namespaces.length === 0) {
     console.warn(`   ⚠️  No namespaces found in ${localesDir}`)
-    return
+    return { missingKeys: [], orphanedKeys: [] }
   }
+
+  const allMissingKeys: MissingKeysReport[] = []
+  const allOrphanedKeys: OrphanedKeysReport[] = []
 
   for (const namespace of namespaces) {
     // Use English as the single source of truth
@@ -134,21 +185,62 @@ async function syncTranslationsForDirectory(localesDir: string) {
         continue
 
       const targetData = resources[targetLang]?.[namespace] || {}
-      const merged = mergeKeys(sourceData, targetData)
 
-      // Ensure the target language directory exists
-      const targetDir = path.join(localesDir, targetLang)
-      if (!fs.existsSync(targetDir)) {
-        fs.mkdirSync(targetDir, { recursive: true })
+      // Find keys missing in target (present in en, missing in target)
+      const missingKeys = findMissingKeys(sourceData, targetData)
+      if (missingKeys.length > 0) {
+        allMissingKeys.push({
+          locale: targetLang,
+          namespace,
+          keys: missingKeys,
+        })
       }
 
-      writeLocaleFile(localesDir, targetLang, namespace, merged)
-      console.warn(`   ✅ Synced ${targetLang}/${namespace}.locales.${targetLang}.json (from en)`)
+      // Find orphaned keys (present in target, missing in en)
+      const orphanedKeys = findMissingKeys(targetData, sourceData)
+      if (orphanedKeys.length > 0) {
+        allOrphanedKeys.push({
+          locale: targetLang,
+          namespace,
+          keys: orphanedKeys,
+        })
+      }
     }
   }
+
+  // Print missing keys report
+  if (allMissingKeys.length > 0) {
+    console.warn(`\n📋 Missing keys (to translate):`)
+    for (const report of allMissingKeys) {
+      console.warn(`   ${report.locale}/${report.namespace}.locales.${report.locale}.json:`)
+      for (const key of report.keys) {
+        console.warn(`     - ${key}`)
+      }
+    }
+  }
+
+  // Print orphaned keys report
+  if (allOrphanedKeys.length > 0) {
+    console.warn(`\n🗑️  Orphaned keys (to remove):`)
+    for (const report of allOrphanedKeys) {
+      console.warn(`   ${report.locale}/${report.namespace}.locales.${report.locale}.json:`)
+      for (const key of report.keys) {
+        console.warn(`     - ${key}`)
+      }
+    }
+  }
+
+  if (allMissingKeys.length === 0 && allOrphanedKeys.length === 0) {
+    console.warn(`   ✅ All translations are complete and clean`)
+  }
+
+  // Generate TypeScript types for i18next
+  generateI18nextTypes(localesDir, namespaces)
+
+  return { missingKeys: allMissingKeys, orphanedKeys: allOrphanedKeys }
 }
 
-async function syncTranslations() {
+async function checkTranslations() {
   const workspaceRoot = path.resolve(getDirname(import.meta.url), '../../..')
 
   console.warn('🔍 Searching for locales directories in the monorepo...')
@@ -186,23 +278,68 @@ async function syncTranslations() {
     console.warn(`   📂 ${path.relative(workspaceRoot, dir)}`)
   })
 
-  // Sync each locales directory independently
+  // Check each locales directory independently
+  const allMissingReports: MissingKeysReport[] = []
+  const allOrphanedReports: OrphanedKeysReport[] = []
+
   for (const localesDir of uniqueLocalesDirs) {
     try {
-      await syncTranslationsForDirectory(localesDir)
+      const { missingKeys, orphanedKeys } = await checkTranslationsForDirectory(localesDir)
+      allMissingReports.push(...missingKeys)
+      allOrphanedReports.push(...orphanedKeys)
     }
     catch (error) {
-      console.error(`❌ Failed to sync ${localesDir}:`, error)
+      console.error(`❌ Failed to check ${localesDir}:`, error)
     }
   }
 
-  console.warn('\n🎉 Translation synchronization completed!')
+  // Print summary
+  console.warn(`\n${'─'.repeat(50)}`)
+
+  const hasIssues = allMissingReports.length > 0 || allOrphanedReports.length > 0
+
+  if (!hasIssues) {
+    console.warn('✅ All translations are complete and clean!')
+  }
+  else {
+    // Summary for missing keys
+    if (allMissingReports.length > 0) {
+      const missingByLocale = new Map<string, number>()
+      for (const report of allMissingReports) {
+        const current = missingByLocale.get(report.locale) || 0
+        missingByLocale.set(report.locale, current + report.keys.length)
+      }
+
+      const totalMissing = allMissingReports.reduce((sum, r) => sum + r.keys.length, 0)
+      const missingSummary = Array.from(missingByLocale.entries())
+        .map(([locale, count]) => `${count} in ${locale}`)
+        .join(', ')
+
+      console.warn(`⚠️  Missing translations: ${totalMissing} keys (${missingSummary})`)
+    }
+
+    // Summary for orphaned keys
+    if (allOrphanedReports.length > 0) {
+      const orphanedByLocale = new Map<string, number>()
+      for (const report of allOrphanedReports) {
+        const current = orphanedByLocale.get(report.locale) || 0
+        orphanedByLocale.set(report.locale, current + report.keys.length)
+      }
+
+      const totalOrphaned = allOrphanedReports.reduce((sum, r) => sum + r.keys.length, 0)
+      const orphanedSummary = Array.from(orphanedByLocale.entries())
+        .map(([locale, count]) => `${count} in ${locale}`)
+        .join(', ')
+
+      console.warn(`🗑️  Orphaned keys: ${totalOrphaned} keys (${orphanedSummary})`)
+    }
+  }
 }
 
 const isMain = import.meta.url === `file://${process.argv[1]}`
 if (isMain) {
-  syncTranslations().catch((err) => {
-    console.error('❌ Sync failed:', err)
+  checkTranslations().catch((err) => {
+    console.error('❌ Check failed:', err)
     process.exit(1)
   })
 }

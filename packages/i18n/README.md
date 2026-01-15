@@ -8,7 +8,7 @@ It includes:
 - helpers to load “per-namespace” translations from JSON files
 - locale selection management on the client (cookie) and on the server (cookie + `Accept-Language`)
 - a persisted/synchronized Zustand store to track the current language and drive `i18next`
-- a CLI script to synchronize translation keys across languages at the monorepo level
+- a CLI script to check for missing translation keys across languages at the monorepo level
 
 ## Public exports
 
@@ -35,8 +35,8 @@ Then the i18next “resources” look like:
 
 ## Scripts
 
-- `pnpm --filter @boilerstone/i18n sync-translations`
-  - Runs `src/i18n-sync.ts` and automatically syncs keys from English (`en`) to the other detected languages.
+- `pnpm --filter @boilerstone/i18n check-translations`
+  - Runs `src/i18n-sync.ts` and reports missing translation keys across all detected languages (using English as source of truth).
 
 
 ## Tools 
@@ -80,8 +80,9 @@ Then the i18next “resources” look like:
     - `getLocaleFromRequestWithFallback(request)`: cookie → `Accept-Language` → default
 
 - `src/i18n-sync.ts`
-  - Node (CLI) script that scans the monorepo for `locales` directories and synchronizes keys:
+  - Node (CLI) script that scans the monorepo for `locales` directories and reports missing translation keys:
     - English (`en`) is the source of truth
-    - for each namespace, other languages receive missing keys (without overwriting existing translations)
-    - writes/normalizes JSON files and adds a trailing newline
-  - Runnable via `tsx` (see `sync-translations` script).
+    - for each namespace, lists keys present in English but missing in other languages
+    - generates TypeScript types for i18next
+    - does not modify translation files (i18next fallback handles missing keys at runtime)
+  - Runnable via `tsx` (see `check-translations` script).

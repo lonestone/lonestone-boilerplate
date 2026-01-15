@@ -45,7 +45,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "sync-translations": "tsx ./src/i18n-sync.ts"
+    "check-translations": "tsx ./src/i18n-sync.ts"
   },
   "dependencies": {
     "glob": "^10.5.0",
