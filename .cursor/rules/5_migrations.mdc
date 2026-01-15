@@ -1,0 +1,10 @@
+---
+description: Working or creating database migrations
+alwaysApply: false
+---
+Migrations should be created using the `mikro-orm` CLI, after modifying any entity file.
+
+```bash
+cd apps/api
+pnpm db:migrate:create
+```

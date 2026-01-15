@@ -14,8 +14,5 @@ The most important document you need is [backend.mdx](../../apps/documentation/s
 - Structure modules according to NestJS best practices
 - Use TypedRoute, TypedBody, TypedParam decorators from @lonestone/nzoth/server
 - Use Better Auth for authentication
-- Document API with Swagger/OpenAPI
 - Follow the naming conventions in the guidelines
-- Use proper HTTP methods for RESTful API design
-- Include appropriate error handling
 - Write unit and integration tests

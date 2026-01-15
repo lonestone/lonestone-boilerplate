@@ -28,12 +28,14 @@ Generate code, corrections, and refactorings that comply with the basic principl
 - Always specify which doc and rules (cursor) you are following (just by names) at the start of the conversation, or when you use a new one
 - Always begin with step-by-step planning
 - Always explain your plan before proposing changes
+- Ask the user for clarifications
 - Write detailed pseudocode before implementation
-- Document component architecture and data flow
 - Consider edge cases and error scenarios
 
 # Naming convention
 ### General Rules
+Respect the current project structure and file names.
+
 In general, try to follow those Guidelines:
 - Use PascalCase for:
 	- Type definitions
@@ -87,7 +89,6 @@ In general, try to follow those Guidelines:
 - Use functional and declarative programming patterns; avoid classes.
 - Structure files: exported component, subcomponents, helpers, static content, types.
 - Use TypeScript for all code; prefer interfaces over types.
-
 
 ## Functions
 
