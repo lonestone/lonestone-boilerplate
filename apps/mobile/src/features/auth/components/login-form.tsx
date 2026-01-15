@@ -1,6 +1,6 @@
 import type { LoginFormData } from '../schemas/auth.schema'
 import { zodResolver } from '@hookform/resolvers/zod'
-import React from 'react'
+import * as React from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native'
 import { Button, Input, PasswordInput } from '@/src/components'

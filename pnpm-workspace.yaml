@@ -1,6 +1,9 @@
 packages:
   - packages/*
   - apps/*
+overrides:
+  react: 19.1.0
+  react-dom: 19.1.0
 onlyBuiltDependencies:
   - '@nestjs/core'
   - '@scarf/scarf'

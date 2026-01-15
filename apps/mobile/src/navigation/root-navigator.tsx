@@ -3,7 +3,7 @@ import type { AuthStackParamList, MainStackParamList } from './types'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { Settings } from 'lucide-react-native'
-import React from 'react'
+import * as React from 'react'
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native'
 import { useAuthInitialization } from '@/src/features/auth/hooks/use-auth-initialization'
 

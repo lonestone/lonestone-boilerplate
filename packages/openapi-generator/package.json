@@ -8,8 +8,8 @@
     "generate": "dotenvx run -- openapi-ts -f ./openapi-ts.config.ts"
   },
   "devDependencies": {
-    "@dotenvx/dotenvx": "^1.49.0",
-    "@hey-api/openapi-ts": "^0.81.1",
-    "wait-on": "^8.0.4"
+    "@dotenvx/dotenvx": "^1.51.4",
+    "@hey-api/openapi-ts": "^0.90.3",
+    "wait-on": "^9.0.3"
   }
 }

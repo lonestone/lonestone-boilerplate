@@ -1,6 +1,6 @@
 import type { TextInputProps } from 'react-native'
 import { Eye, EyeOff } from 'lucide-react-native'
-import React from 'react'
+import * as React from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 
 interface PasswordInputProps extends Omit<TextInputProps, 'secureTextEntry' | 'ref'> {

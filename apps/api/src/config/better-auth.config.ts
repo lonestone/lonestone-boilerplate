@@ -9,11 +9,11 @@ interface BetterAuthOptionsDynamic {
   connectionStringUrl: string
   sendResetPassword?: (
     data: { user: User, url: string, token: string },
-    request: Request | undefined
+    request: Request | undefined,
   ) => Promise<void>
   sendVerificationEmail?: (
     data: { user: User, url: string, token: string },
-    request: Request | undefined
+    request: Request | undefined,
   ) => Promise<void>
   beforeHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
   afterHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)

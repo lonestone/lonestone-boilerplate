@@ -1,6 +1,6 @@
 import type { RootNavigationProp } from '@/src/navigation/types'
 import { useNavigation } from '@react-navigation/native'
-import React from 'react'
+import * as React from 'react'
 import { Text, View } from 'react-native'
 import { Button } from '@/src/components'
 import { useTranslation } from '@/src/i18n'
