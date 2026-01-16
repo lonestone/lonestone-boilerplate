@@ -3,7 +3,6 @@ import { publicPostControllerGetPosts } from '@boilerstone/openapi-generator/cli
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
-
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 
@@ -17,7 +16,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const posts = await publicPostControllerGetPosts({
     query: {
-      filter: search ? `title:like:${search}` : '',
+      filter: search ? [{ property: 'title', rule: 'like', value: search }] : [],
       offset: (page - 1) * 10,
       pageSize: 10,
     },

@@ -212,6 +212,101 @@ export type FilterQueryStringSchema = string;
 
 export type CommentsControllerPostSlug = string;
 
+export type PostControllerGetUserPostsFilterItem = {
+  property: "title";
+  rule:
+    | "eq"
+    | "neq"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "like"
+    | "nlike"
+    | "in"
+    | "nin"
+    | "isnull"
+    | "isnotnull";
+  value?: string;
+};
+
+export type PostControllerGetUserPostsFilterArray =
+  Array<PostControllerGetUserPostsFilterItem>;
+
+export type PostControllerGetUserPostsSortItem = {
+  property: "title" | "createdAt";
+  direction: "asc" | "desc";
+};
+
+export type PostControllerGetUserPostsSortArray =
+  Array<PostControllerGetUserPostsSortItem>;
+
+export type PublicPostControllerGetPostsFilterItem = {
+  property: "title";
+  rule:
+    | "eq"
+    | "neq"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "like"
+    | "nlike"
+    | "in"
+    | "nin"
+    | "isnull"
+    | "isnotnull";
+  value?: string;
+};
+
+export type PublicPostControllerGetPostsFilterArray =
+  Array<PublicPostControllerGetPostsFilterItem>;
+
+export type PublicPostControllerGetPostsSortItem = {
+  property: "title" | "createdAt";
+  direction: "asc" | "desc";
+};
+
+export type PublicPostControllerGetPostsSortArray =
+  Array<PublicPostControllerGetPostsSortItem>;
+
+export type CommentsControllerGetCommentsFilterItem = {
+  property: "content";
+  rule:
+    | "eq"
+    | "neq"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "like"
+    | "nlike"
+    | "in"
+    | "nin"
+    | "isnull"
+    | "isnotnull";
+  value?: string;
+};
+
+export type CommentsControllerGetCommentsFilterArray =
+  Array<CommentsControllerGetCommentsFilterItem>;
+
+export type CommentsControllerGetCommentsSortItem = {
+  property: "createdAt" | "authorName";
+  direction: "asc" | "desc";
+};
+
+export type CommentsControllerGetCommentsSortArray =
+  Array<CommentsControllerGetCommentsSortItem>;
+
+export type CommentsControllerGetCommentRepliesSortItem = {
+  property: "createdAt" | "authorName";
+  direction: "asc" | "desc";
+};
+
+export type CommentsControllerGetCommentRepliesSortArray =
+  Array<CommentsControllerGetCommentRepliesSortItem>;
+
 export type AppControllerGetHelloData = {
   body?: never;
   path?: never;
@@ -228,19 +323,15 @@ export type PostControllerGetUserPostsData = {
   path?: never;
   query: {
     /**
-     * FilterQueryStringSchema
-     *
      * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
      * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
      * <br> Available properties: title
      */
-    filter?: string;
+    filter?: PostControllerGetUserPostsFilterArray;
     /**
-     * SortingQueryStringSchema
-     *
      * Schema for sorting items
      */
-    sort?: string;
+    sort?: PostControllerGetUserPostsSortArray;
     /**
      * Starting position of the query
      */
@@ -437,19 +528,15 @@ export type PublicPostControllerGetPostsData = {
   path?: never;
   query: {
     /**
-     * FilterQueryStringSchema
-     *
      * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
      * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
      * <br> Available properties: title
      */
-    filter?: string;
+    filter?: PublicPostControllerGetPostsFilterArray;
     /**
-     * SortingQueryStringSchema
-     *
      * Schema for sorting items
      */
-    sort?: string;
+    sort?: PublicPostControllerGetPostsSortArray;
     /**
      * Starting position of the query
      */
@@ -479,19 +566,15 @@ export type CommentsControllerGetCommentsData = {
   };
   query: {
     /**
-     * FilterQueryStringSchema
-     *
      * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
      * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
      * <br> Available properties: content
      */
-    filter?: string;
+    filter?: CommentsControllerGetCommentsFilterArray;
     /**
-     * SortingQueryStringSchema
-     *
      * Schema for sorting items
      */
-    sort?: string;
+    sort?: CommentsControllerGetCommentsSortArray;
     /**
      * Starting position of the query
      */
@@ -562,11 +645,9 @@ export type CommentsControllerGetCommentRepliesData = {
   };
   query: {
     /**
-     * SortingQueryStringSchema
-     *
      * Schema for sorting items
      */
-    sort?: string;
+    sort?: CommentsControllerGetCommentRepliesSortArray;
     /**
      * Starting position of the query
      */

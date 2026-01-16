@@ -1,10 +1,11 @@
 packages:
   - packages/*
   - apps/*
+# Switched from package.json overrides to pnpm-workspace.yaml (Best practice)
+# We override dependencies here to ensure that the correct version of the dependency is used for each package
 overrides:
   react: 19.1.0
   react-dom: 19.1.0
-  lightningcss: 1.30.1
 onlyBuiltDependencies:
   - '@nestjs/core'
   - '@scarf/scarf'

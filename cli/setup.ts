@@ -749,7 +749,7 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps, mobi
   if (availableApps.webSsr && config.ports.api) {
     const webSsrEnvPath = join(projectRoot, 'apps/web-ssr/.env')
     const apiUrl = `http://localhost:${config.ports.api}`
-    updateEnvFile(webSsrEnvPath, { API_URL: apiUrl }, false)
+    updateEnvFile(webSsrEnvPath, { VITE_API_URL: apiUrl }, false)
   }
 
   // OpenAPI Generator .env

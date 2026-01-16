@@ -68,7 +68,7 @@ Unlike a SPA, an SSR application can use environment variables at runtime becaus
 
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
-| `API_URL` | Backend API URL | Yes | - |
+| `VITE_API_URL` | Backend API URL | Yes | - |
 | `NODE_ENV` | Environment (development, production) | No | `development` |
 
 See [.env.example](/apps/web-ssr/.env.example) as a reference.
@@ -86,7 +86,7 @@ docker build -t lonestone/web-ssr -f apps/web-ssr/Dockerfile .
 
 ```bash
 docker run -p 3000:3000 \
-  -e API_URL=https://api.example.com \
+  -e VITE_API_URL=https://api.example.com \
   -e NODE_ENV=production \
   lonestone/web-ssr
 ```
