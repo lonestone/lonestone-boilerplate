@@ -17,7 +17,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const posts = await publicPostControllerGetPosts({
     query: {
-      filter: search ? [{ property: 'title', rule: 'like', value: search }] : [],
+      filter: search ? `title:like:${search}` : '',
       offset: (page - 1) * 10,
       pageSize: 10,
     },

@@ -44,7 +44,7 @@ export default function PostsListPage() {
         query: {
           offset: (pageValue - 1) * PAGE_SIZE,
           pageSize: PAGE_SIZE,
-          filter: searchValue ? [{ property: 'title', rule: 'like', value: searchValue }] : [],
+          filter: searchValue ? `title:like:${searchValue}` : '',
         },
       })
 
