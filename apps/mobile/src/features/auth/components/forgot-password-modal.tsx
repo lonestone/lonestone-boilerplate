@@ -1,6 +1,6 @@
 import type { ForgotPasswordFormData } from '../schemas/forgot-password.schema'
 import { zodResolver } from '@hookform/resolvers/zod'
-import React from 'react'
+import * as React from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { Text, View } from 'react-native'
 import Toast from 'react-native-toast-message'

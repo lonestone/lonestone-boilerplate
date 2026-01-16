@@ -9,7 +9,7 @@ import {
 } from '@boilerstone/ui/components/primitives/form'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { zodResolver } from '@hookform/resolvers/zod'
-import React from 'react'
+import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 

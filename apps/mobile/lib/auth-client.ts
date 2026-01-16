@@ -8,6 +8,7 @@ import { AUTH_STORAGE_PREFIX, secureStorageAdapter } from './secure-storage-adap
 export const authClient = createAuthClient({
   baseURL: config.apiUrl,
   plugins: [
+    // @disable-eslint-next-line @typescript-eslint/ban-ts-comment -- BetterAuthType is too complex
     customSessionClient<BetterAuthType>(),
     inferAdditionalFields<BetterAuthType>(),
     expoClient({

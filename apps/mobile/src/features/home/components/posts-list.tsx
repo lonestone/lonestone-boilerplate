@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import React from 'react'
+import * as React from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native'
 import { postsQueryOptions } from '@/src/api/queries/posts-queries'
 import { useTranslation } from '@/src/i18n'

@@ -1,4 +1,4 @@
-import React from 'react'
+import * as React from 'react'
 import { Animated, Modal, Pressable } from 'react-native'
 
 interface SlideUpModalProps {
@@ -13,7 +13,7 @@ interface SlideUpModalProps {
  */
 export function SlideUpModal({ visible, onClose, children, contentClassName = '' }: SlideUpModalProps) {
   const [isAnimating, setIsAnimating] = React.useState(false)
-  const animation = React.useRef(new Animated.Value(0)).current
+  const animation = React.useMemo(() => new Animated.Value(0), [])
 
   const isMounted = visible || isAnimating
 

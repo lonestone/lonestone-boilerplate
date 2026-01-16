@@ -1,12 +1,10 @@
-import process from 'node:process'
 import { defineConfig } from '@hey-api/openapi-ts'
 
 export default defineConfig({
   input:
-    `${process.env.API_URL}/api/docs.json`,
+    './tmp/openapi.json',
   output: {
-    format: 'prettier',
-    lint: 'eslint',
+    postProcess: ['eslint', 'prettier'],
     path: './client',
   },
   plugins: [

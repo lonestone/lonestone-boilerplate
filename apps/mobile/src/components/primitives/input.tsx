@@ -1,5 +1,5 @@
 import type { TextInputProps } from 'react-native'
-import React from 'react'
+import * as React from 'react'
 import { Text, TextInput, View } from 'react-native'
 
 interface InputProps extends Omit<TextInputProps, 'ref'> {

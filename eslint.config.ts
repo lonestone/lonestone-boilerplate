@@ -18,6 +18,7 @@ export default antfu(
       'CLAUDE.md',
       'AGENTS.md',
       '**/README.md',
+      'pnpm-workspace.yaml',
     ],
     rules: {
       'ts/no-explicit-any': 'error',

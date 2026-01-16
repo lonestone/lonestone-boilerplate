@@ -3,7 +3,6 @@ import { publicPostControllerGetPosts } from '@boilerstone/openapi-generator/cli
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
-
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 

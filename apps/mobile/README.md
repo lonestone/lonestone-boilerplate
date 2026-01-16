@@ -15,8 +15,8 @@ React Native mobile application built with Expo, featuring authentication, navig
 
 ## Prerequisites
 
-- Node.js 24.10.0
-- pnpm 10.5.2
+- Node.js 24.13.0
+- pnpm 10.28.0
 - Expo CLI (installed automatically)
 - iOS Simulator (for iOS development on macOS)
 - Android Studio or Android Emulator (for Android development)

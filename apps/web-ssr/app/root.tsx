@@ -9,7 +9,7 @@ import '@fontsource/source-sans-pro'
 import '@boilerstone/ui/globals.css'
 
 client.setConfig({
-  baseUrl: import.meta.env.VITE_API_URL,
+  baseUrl: import.meta.env.VITE_API_URL as string,
   credentials: 'include',
 })
 
@@ -28,7 +28,7 @@ export const links: Route.LinksFunction = () => [
 
 export async function loader() {
   return {
-    API_URL: process.env.API_URL as string,
+    API_URL: process.env.VITE_API_URL as string,
   }
 }
 
@@ -60,6 +60,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const dehydratedState = useDehydratedState()
+
   return (
     <QueryClientProvider client={queryClient}>
       <HydrationBoundary state={dehydratedState}>
