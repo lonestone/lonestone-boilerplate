@@ -1,0 +1,587 @@
+---
+title: Adding Teams feature
+description: Guide to integrate the Better Auth Teams plugin into the project
+---
+
+Better Auth's organization plugin includes an optional Teams feature that allows you to organize members within an organization into smaller groups. Teams enable more granular access control and project management within organizations.
+
+The [official Better Auth documentation](https://www.better-auth.com/docs/plugins/organization#teams) covers teams functionality as part of the organization plugin.
+
+:::note[Prerequisites]
+This guide assumes you have already integrated the Organizations plugin. If you haven't, please follow the [Organizations integration guide](/lonestone-boilerplate/addons/better-auth-orgs) first.
+:::
+
+This guide will walk you through the process of enabling and configuring Teams in the boilerplate with NestJS and MikroORM.
+
+## File Structure
+
+Since Teams are part of the Better Auth organization plugin, we will add all team-related entities to the existing `/auth` folder.
+
+Here is the file structure we will modify:
+
+```
+apps/api/src/
+├── auth/
+│   └── auth.entity.ts              (to update)
+└── better-auth.config.ts           (to update)
+```
+
+### Installation
+
+<br/>
+
+import { Steps } from '@astrojs/starlight/components';
+
+<Steps>
+
+1. ### Enable Teams in Better Auth configuration
+
+   In your Better Auth configuration file `better-auth.config.ts` on the API side, enable teams in the `organization` plugin:
+
+   ```typescript title="src/config/better-auth.config.ts"
+   import { organization } from "better-auth/plugins"
+
+   export const auth = betterAuth({
+     // ... your existing config
+     plugins: [
+       organization({
+         teams: {
+           enabled: true, // Enable teams feature
+         }
+       })
+     ]
+   })
+   ```
+
+   :::tip[Configuration options]
+   The teams feature can be enabled with additional options:
+   - `enabled`: Set to `true` to enable teams (required)
+   - `maximumTeams`: Limit the number of teams per organization (number or async function)
+   - `maximumMembersPerTeam`: Limit the number of members per team (number or async function)
+   - `allowRemovingAllTeams`: Control whether the last team can be removed (default: `true`)
+   :::
+
+   <br/>
+
+2. ### Add Team entities
+
+   The Teams feature requires 2 additional tables: **Team** and **TeamMember**. You also need to update the **Invitation** and **Session** entities.
+
+   The [official Better Auth schema](https://www.better-auth.com/docs/plugins/organization#teams-optional) details all tables and their fields.
+
+   Add the team entities to your existing `auth.entity.ts` file:
+
+   ```typescript title="src/auth/auth.entity.ts"
+   // ... your existing entities (User, Session, Organization, Member, Invitation, etc.)
+   import { Collection, OneToMany } from '@mikro-orm/core'
+
+   /**
+    * Store team information within an organization
+    */
+   @Entity({ tableName: 'team' })
+   export class Team {
+     @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+     id!: string;
+
+     @Property()
+     name!: string;
+
+     @ManyToOne(() => Organization, { fieldName: 'organizationId' })
+     organization!: Organization;
+
+     @Property({ fieldName: 'createdAt' })
+     createdAt: Date = new Date();
+
+     @Property({ fieldName: 'updatedAt', nullable: true, onUpdate: () => new Date() })
+     updatedAt?: Date;
+
+     @OneToMany(() => TeamMember, (teamMember) => teamMember.team)
+     members = new Collection<TeamMember>(this);
+   }
+
+   /**
+    * Store members of a team
+    */
+   @Entity({ tableName: 'teamMember' })
+   export class TeamMember {
+     @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+     id!: string;
+
+     @ManyToOne(() => Team, { fieldName: 'teamId' })
+     team!: Team;
+
+     @ManyToOne(() => User, { fieldName: 'userId' })
+     user!: User;
+
+     @Property({ fieldName: 'createdAt' })
+     createdAt: Date = new Date();
+   }
+   ```
+
+   :::tip[Customizing entities]
+   You can customize the database table names using the `@Entity({ tableName: '...' })` decorator. For example, you might want to prefix all auth-related tables with `auth_` (like `auth_team`, `auth_teamMember`, etc.) to keep them organized. You can also add custom fields to your team entities - see [Extending the schema](#extending-the-schema) below.
+   :::
+
+   #### Update the Organization entity
+
+   Add the relationship to teams:
+
+   ```typescript title="src/auth/auth.entity.ts"
+   // ... your existing Organization entity
+   @Entity({ tableName: 'organization' })
+   export class Organization {
+     // ... your existing properties
+
+     @OneToMany(() => Team, (team) => team.organization)
+     teams = new Collection<Team>(this);
+   }
+   ```
+
+   #### Update the User entity
+
+   Add the relationship to team members:
+
+   ```typescript title="src/auth/auth.entity.ts"
+   // ... your existing User entity
+   @Entity({ tableName: 'user' })
+   export class User {
+     // ... your existing properties
+
+     @OneToMany(() => TeamMember, (teamMember) => teamMember.user)
+     teamMembers = new Collection<TeamMember>(this);
+   }
+   ```
+
+   #### Update the Invitation entity
+
+   Teams can be associated with invitations. Add the optional `teamId` field to your Invitation entity:
+
+   ```typescript title="src/auth/auth.entity.ts"
+   // ... your existing Invitation entity
+   @Entity({ tableName: 'invitation' })
+   export class Invitation {
+     // ... your existing properties
+
+     @ManyToOne(() => Team, { fieldName: 'teamId', nullable: true })
+     team?: Team;
+   }
+   ```
+
+   #### Update the Session entity
+
+   The Better Auth Teams plugin automatically adds the `activeTeamId` field to the session when a user switches their active team. You need to add this field to your MikroORM Session entity:
+
+   ```typescript title="src/auth/auth.entity.ts"
+   // ... your existing Session entity
+   @Entity({ tableName: 'session' })
+   export class Session {
+     // ... your existing properties
+
+     @Property({ fieldName: 'activeOrganizationId', nullable: true })
+     activeOrganizationId?: string;
+
+     @Property({ fieldName: 'activeTeamId', nullable: true })
+     activeTeamId?: string;
+   }
+   ```
+
+   :::note[About Active Team]
+   The `activeTeamId` field stores which team the user is currently working in within their active organization. Users can switch between teams using `authClient.organization.setActiveTeam()`. The active team must belong to the user's active organization.
+
+   For detailed information on managing active teams, see the [Better Auth Teams documentation](https://www.better-auth.com/docs/plugins/organization#teams).
+   :::
+
+   <br/>
+
+3. ### Update the database
+
+   Now that you have added the entities, you need to update your database to create the corresponding tables.
+
+   Depending on your project stage, you can either recreate your database from scratch if you're in development without important data, or use the migration system to preserve existing data.
+
+   :::note[Need help with database updates?]
+   For detailed instructions on database migrations and schema updates, check out the [Migrations explanation](/lonestone-boilerplate/explanations/6_database_migrations).
+   :::
+
+   <br/>
+
+4. ### Configure the client-side plugin
+
+   Enable teams in your frontend auth client configuration:
+
+   ```typescript title="apps/web-spa/app/lib/auth-client.ts"
+   import { createAuthClient } from "better-auth/client"
+   import { organizationClient } from "better-auth/client/plugins"
+
+   export const authClient = createAuthClient({
+     plugins: [
+       organizationClient({
+         teams: {
+           enabled: true, // Enable teams feature on the client
+         },
+       }),
+     ],
+   })
+   ```
+
+   :::note[Client configuration]
+   The client-side configuration must match the server-side configuration. If teams are enabled on the server, they must also be enabled on the client to use team-related methods.
+   :::
+
+   <br/>
+
+5. ### Use the client on the frontend
+
+   Now that everything is configured on both the API and client sides, you can use team-related methods from your frontend client.
+
+   **Basic usage examples:**
+
+   ```typescript
+   // Create a team within an organization
+   const { data, error } = await authClient.organization.createTeam({
+     name: "Development Team",
+     organizationId: "org-id-here", // optional, defaults to active organization
+   })
+
+   // List teams in an organization
+   const { data, error } = await authClient.organization.listTeams({
+     organizationId: "org-id-here", // optional, defaults to active organization
+   })
+
+   // Set active team
+   const { data, error } = await authClient.organization.setActiveTeam({
+     teamId: "team-id-here", // optional, pass null to unset
+   })
+
+   // Add a member to a team
+   const { data, error } = await authClient.organization.addTeamMember({
+     teamId: "team-id-here",
+     userId: "user-id-here",
+   })
+   ```
+
+   :::tip
+   All available routes and methods are documented in the [official Better Auth - Teams documentation](https://www.better-auth.com/docs/plugins/organization#teams).
+   :::
+
+    <br/>
+
+</Steps>
+
+The Teams plugin is now configured and operational. You can create teams within organizations, add members to teams, and manage team access via the Better Auth client.
+
+## Team Permissions
+
+Teams follow the organization's permission system. To manage teams, users need the following permissions:
+
+* `team:create` - Create new teams
+* `team:update` - Update team details
+* `team:delete` - Remove teams
+
+By default:
+
+* Organization owners and admins can manage teams
+* Regular members cannot create, update, or delete teams
+
+## Team Configuration Options
+
+The teams feature supports several configuration options:
+
+### Maximum Teams
+
+Limit the number of teams per organization:
+
+```typescript title="src/config/better-auth.config.ts"
+organization({
+  teams: {
+    enabled: true,
+    maximumTeams: 10, // Fixed number
+    // OR
+    maximumTeams: async ({ organizationId, session }, ctx) => {
+      // Dynamic limit based on organization plan
+      const plan = await getPlan(organizationId)
+      return plan === 'pro' ? 20 : 5
+    },
+  },
+})
+```
+
+### Maximum Members Per Team
+
+Limit the number of members per team:
+
+```typescript title="src/config/better-auth.config.ts"
+organization({
+  teams: {
+    enabled: true,
+    maximumMembersPerTeam: 10, // Fixed number
+    // OR
+    maximumMembersPerTeam: async ({ teamId, session, organizationId }, ctx) => {
+      // Dynamic limit based on team plan
+      const plan = await getPlan(organizationId, teamId)
+      return plan === 'pro' ? 50 : 10
+    },
+  },
+})
+```
+
+### Allow Removing All Teams
+
+Control whether the last team can be removed:
+
+```typescript title="src/config/better-auth.config.ts"
+organization({
+  teams: {
+    enabled: true,
+    allowRemovingAllTeams: false, // Prevent removing the last team
+  },
+})
+```
+
+## Going further
+
+### Common use cases team logic
+
+Better Auth provides a complete set of [methods](https://www.better-auth.com/docs/plugins/organization#teams) to interact with team entities (create, update, delete, add members, etc.).
+
+However, you may need to implement custom business logic specific to your application. In this case, you can create your own methods in `team.service.ts` to handle team-related operations that go beyond what Better Auth provides out of the box.
+
+**Example:**
+
+```typescript title="src/auth/team.service.ts"
+import { EnsureRequestContext, EntityManager } from '@mikro-orm/core'
+import { Injectable } from '@nestjs/common'
+import { Team, TeamMember, Organization, User } from './auth.entity'
+
+@Injectable()
+export class TeamService {
+  constructor(private readonly em: EntityManager) {}
+
+  @EnsureRequestContext()
+  async getTeamById(teamId: string): Promise<Team | null> {
+    return this.em.findOne(Team, { id: teamId }, { populate: ['organization', 'members'] })
+  }
+
+  @EnsureRequestContext()
+  async getTeamsByOrganization(organizationId: string): Promise<Team[]> {
+    return this.em.find(Team, { organization: { id: organizationId } })
+  }
+
+  @EnsureRequestContext()
+  async getTeamMembers(teamId: string): Promise<User[]> {
+    const teamMembers = await this.em.find(TeamMember, 
+      { team: { id: teamId } },
+      { populate: ['user'] }
+    )
+    return teamMembers.map(tm => tm.user)
+  }
+
+  @EnsureRequestContext()
+  async getUserTeamsInOrganization(userId: string, organizationId: string): Promise<Team[]> {
+    const teamMembers = await this.em.find(TeamMember, 
+      { 
+        user: { id: userId },
+        team: { organization: { id: organizationId } }
+      },
+      { populate: ['team'] }
+    )
+    return teamMembers.map(tm => tm.team)
+  }
+
+  @EnsureRequestContext()
+  async isUserInTeam(userId: string, teamId: string): Promise<boolean> {
+    const teamMember = await this.em.findOne(TeamMember, {
+      user: { id: userId },
+      team: { id: teamId }
+    })
+    return teamMember !== null
+  }
+}
+```
+
+### NestJS Decorators & Guards
+
+The boilerplate already provides authentication decorators and guards. You can extend them to handle team-specific logic.
+
+**Add team-related guards:**
+
+For example, if you have a resource linked to a team, and want to create a guard to check if the user is a member of the team, you can do the following:
+
+```typescript title="src/auth/team.guard.ts"
+import { EntityManager } from '@mikro-orm/postgresql'
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common'
+import { LoggedInBetterAuthSession } from '../../../config/better-auth.config'
+import { ErrorCode } from '../../../utils/error-handling'
+import { Team, TeamMember } from './auth.entity'
+
+// Guard to check if the user is a member of the team
+@Injectable()
+export class TeamMemberGuard implements CanActivate {
+  constructor(private readonly em: EntityManager) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest()
+    const teamId: string = request.params.teamId
+    const session = request.session as LoggedInBetterAuthSession
+    const userId = session.session.userId
+
+    if (!teamId) {
+      throw new NotFoundException(ErrorCode.NOT_FOUND)
+    }
+
+    // Verify team exists and belongs to active organization
+    const team = await this.em.findOne(Team, { 
+      id: teamId,
+      organization: { id: session.session.activeOrganizationId }
+    })
+
+    if (!team) {
+      throw new NotFoundException(ErrorCode.NOT_FOUND)
+    }
+
+    // Check if user is a member of the team
+    const teamMember = await this.em.findOne(TeamMember, {
+      team: { id: teamId },
+      user: { id: userId }
+    })
+
+    if (!teamMember) {
+      throw new UnauthorizedException(ErrorCode.UNAUTHORIZED)
+    }
+
+    return true
+  }
+}
+```
+
+**Usage in controllers:**
+
+```typescript title="src/some-module/some.controller.ts"
+import { Controller, Get, UseGuards } from '@nestjs/common'
+import { TeamMemberGuard } from '../auth/team.guard'
+
+@Controller('teams')
+export class SomeController {
+  @Get(':teamId/resources')
+  @UseGuards(TeamMemberGuard)
+  async getTeamResources(@Param('teamId') teamId: string) {
+    // User is guaranteed to be a member of the team
+    // ...
+  }
+}
+```
+
+### Extending the schema
+
+You can add custom fields to the team entities to match your business needs. Since Better Auth v1.3, custom fields added via `additionalFields` will automatically be available in the API endpoints.
+
+**Server-side configuration:**
+
+```typescript title="src/config/better-auth.config.ts"
+import { organization } from "better-auth/plugins"
+
+export const auth = betterAuth({
+  plugins: [
+    organization({
+      teams: {
+        enabled: true,
+      },
+      schema: {
+        team: {
+          additionalFields: {
+            description: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+            color: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+          },
+        },
+      },
+    }),
+  ],
+})
+```
+
+**Update your Team entity:**
+
+```typescript title="src/auth/auth.entity.ts"
+@Entity({ tableName: 'team' })
+export class Team {
+  // ... existing properties
+
+  @Property({ nullable: true })
+  description?: string;
+
+  @Property({ nullable: true })
+  color?: string;
+}
+```
+
+**Client-side type inference:**
+
+```typescript title="apps/web-spa/app/lib/auth-client.ts"
+import { createAuthClient } from "better-auth/client"
+import {
+  inferOrgAdditionalFields,
+  organizationClient,
+} from "better-auth/client/plugins"
+import type { auth } from "@/config/better-auth.config"
+
+const client = createAuthClient({
+  plugins: [
+    organizationClient({
+      teams: {
+        enabled: true,
+      },
+      schema: inferOrgAdditionalFields<typeof auth>(),
+    }),
+  ],
+})
+
+// Now you can use custom fields
+await client.organization.createTeam({
+  name: "Development Team",
+  organizationId: "org-id",
+  description: "Team responsible for development",
+  color: "#3b82f6",
+})
+```
+
+See the [official Better Auth documentation](https://www.better-auth.com/docs/plugins/organization#customizing-the-schema) for more details on schema customization.
+
+### Team invitations
+
+When inviting users to an organization, you can optionally specify a team. The invited user will be added to both the organization and the specified team upon acceptance.
+
+```typescript
+// Invite user to organization and specific team
+const { data, error } = await authClient.organization.inviteMember({
+  email: "user@example.com",
+  organizationId: "org-id",
+  role: "member",
+  teamId: "team-id", // Optional: add user to team upon acceptance
+})
+```
+
+### Best practices
+
+1. **Team hierarchy**: Teams belong to organizations. Always verify that a team belongs to the user's active organization before allowing access.
+
+2. **Active team context**: The `activeTeamId` in the session should always correspond to a team within the `activeOrganizationId`. Validate this relationship in your guards and services.
+
+3. **Member management**: Users must be members of an organization before they can be added to teams within that organization.
+
+4. **Permissions**: Consider implementing role-based permissions at the team level if needed. You can extend the TeamMember entity with a `role` field for this purpose.
+
+5. **Team limits**: Use the `maximumMembersPerTeam` option in the plugin configuration to prevent teams from growing too large.
