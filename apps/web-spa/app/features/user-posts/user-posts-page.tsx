@@ -1,7 +1,7 @@
 import { postControllerGetUserPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Input } from '@boilerstone/ui/components/primitives/input'
-import { FilterRule, FiltersToString } from '@lonestone/nzoth/client'
+import { FilterRule } from '@lonestone/nzoth/client'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, PlusCircleIcon, SearchIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -47,7 +47,7 @@ export default function PostsListPage() {
         query: {
           offset: (pageValue - 1) * PAGE_SIZE,
           pageSize: PAGE_SIZE,
-          filter: searchValue ? FiltersToString([{ property: 'title', rule: FilterRule.LIKE, value: searchValue }]) : '',
+          filter: searchValue ? [{ property: 'title', rule: FilterRule.LIKE, value: searchValue }] : [],
         },
       })
 
