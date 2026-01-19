@@ -55,6 +55,7 @@ temp
 ./temp
 
 ./packages/openapi-generator/client
+./packages/openapi-generator/tmp
 openapi-ts-error-*
 
 # android

@@ -3,7 +3,7 @@ import type { RootStackParamList } from './types'
 import { createNavigationContainerRef } from '@react-navigation/native'
 import Constants from 'expo-constants'
 import * as Linking from 'expo-linking'
-import React from 'react'
+import * as React from 'react'
 
 interface UseLinkingResult {
   linking: LinkingOptions<RootStackParamList>

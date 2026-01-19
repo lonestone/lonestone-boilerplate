@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 
 import { Loader2, Send, User } from 'lucide-react'
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 
 interface CommentFormProps {
   initialData?: CreateCommentSchema
@@ -29,7 +29,7 @@ export function CommentForm({
     handleSubmit,
     formState: { errors, isSubmitting, isValid, isDirty },
     reset,
-    watch,
+    control,
   } = useForm<CreateCommentSchema>({
     resolver: zodResolver(zCreateCommentSchema),
     defaultValues: {
@@ -63,9 +63,9 @@ export function CommentForm({
     }
   }
 
-  const content = watch('content')
+  const content = useWatch({ control, name: 'content' })
   const isReply = !!initialData?.parentId
-  const hasContent = content.trim().length > 0
+  const hasContent = (content ?? '').trim().length > 0
 
   return (
     <Card

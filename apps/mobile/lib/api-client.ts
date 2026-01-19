@@ -35,7 +35,7 @@ client.setConfig({
   // Custom fetch to inject auth headers on every request
   fetch: async (request) => {
     const authHeaders = await buildAuthHeaders()
-    const mergedHeaders = new Headers(request.headers)
+    const mergedHeaders = new Headers((request as Request).headers)
     for (const [key, value] of Object.entries(authHeaders)) {
       if (value)
         mergedHeaders.set(key, value)

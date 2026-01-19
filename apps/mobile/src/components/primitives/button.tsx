@@ -1,5 +1,5 @@
 import type { TouchableOpacityProps } from 'react-native'
-import React from 'react'
+import * as React from 'react'
 import { ActivityIndicator, Text, TouchableOpacity } from 'react-native'
 
 type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'

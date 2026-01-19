@@ -1,4 +1,4 @@
-import React from 'react'
+import * as React from 'react'
 import { LogBox } from 'react-native'
 import { AppContainer } from './src/app/app-container'
 

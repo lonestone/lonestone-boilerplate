@@ -1,7 +1,7 @@
 import type { LoginFormData } from '../schemas/auth.schema'
 import type { RootNavigationProp } from '@/src/navigation/types'
 import { useNavigation } from '@react-navigation/native'
-import React from 'react'
+import * as React from 'react'
 import Toast from 'react-native-toast-message'
 import { authClient } from '@/lib/auth-client'
 import { useTranslation } from '@/src/i18n'
