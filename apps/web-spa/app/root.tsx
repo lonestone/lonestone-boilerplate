@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router'
 import { queryClient } from '@/lib/query-client'
 import useTheme from './hooks/useTheme'
+import '@/lib/i18n/i18n-client'
 import '@fontsource/source-sans-pro'
 import '@boilerstone/ui/globals.css'
 

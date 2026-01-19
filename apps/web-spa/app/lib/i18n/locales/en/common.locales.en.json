@@ -1,0 +1,100 @@
+{
+  "error": {
+    "default": "Something went wrong",
+    "description": "An unexpected error occurred. Try again or return to the home page.",
+    "goHome": "Go home",
+    "oops": "Oops!",
+    "pageNotFound": "Page not found",
+    "pageNotFoundDescription": "The page you are looking for does not exist.",
+    "goBack": "Go back"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "description": "Enter your email and password to sign in.",
+      "email": "Email",
+      "password": "Password",
+      "forgotPassword": "Forgot your password?",
+      "signIn": "Sign in",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "loggedInSuccess": "Successfully signed in",
+      "bannedUser": "Banned user",
+      "badCredentials": "Incorrect credentials"
+    },
+    "register": {
+      "title": "Register",
+      "description": "Create an account to get started.",
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "signUp": "Sign up",
+      "hasAccount": "Already have an account?",
+      "login": "Sign in",
+      "success": {
+        "title": "Registration successful",
+        "description": "Check your email for the activation link."
+      },
+      "backToLogin": "Back to sign in",
+      "registrationSuccessful": "Registration successful",
+      "failedToRegister": "Failed to register"
+    },
+    "forgotPassword": {
+      "title": "Forgot my password",
+      "description": "Enter your email to receive a reset link.",
+      "email": "Email",
+      "sendResetLink": "Send reset link",
+      "backToLogin": "Back to sign in",
+      "failedToSend": "Failed to send reset link"
+    },
+    "resetPassword": {
+      "title": "Reset password",
+      "description": "Enter your new password.",
+      "password": "New password",
+      "confirmPassword": "Confirm new password",
+      "reset": "Reset",
+      "backToLogin": "Back to sign in"
+    },
+    "verifyEmail": {
+      "title": "Email verification",
+      "description": "Check your email to activate your account.",
+      "verifying": "Verifying email",
+      "verified": "Email verified",
+      "redirecting": "Redirecting to sign in...",
+      "pleaseWait": "Please wait...",
+      "redirectNow": "Redirect now"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "brand": "Lonestone - Dashboard",
+    "newPost": "New post",
+    "userMenu": "User menu",
+    "settings": "Settings",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "logOut": "Log out",
+    "language": "Language"
+  },
+  "posts": {
+    "title": "Blog posts",
+    "description": "Browse your blog posts",
+    "searchPlaceholder": "Search posts...",
+    "noPosts": "No posts found",
+    "createNew": "Create a new post",
+    "showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "create": {
+      "title": "Create new post",
+      "description": "Share your thoughts, images and videos with the world.",
+      "creating": "Creating...",
+      "created": "Created!",
+      "error": "An error occurred while creating the post"
+    }
+  }
+}

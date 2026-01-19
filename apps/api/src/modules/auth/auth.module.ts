@@ -41,10 +41,10 @@ import { AuthService } from './auth.service'
 export class AuthModule implements NestModule, OnModuleInit {
   constructor(
     private readonly authService: AuthService,
-      @Inject(DiscoveryService)
-      private discoveryService: DiscoveryService,
-      @Inject(MetadataScanner)
-      private metadataScanner: MetadataScanner,
+    @Inject(DiscoveryService)
+    private discoveryService: DiscoveryService,
+    @Inject(MetadataScanner)
+    private metadataScanner: MetadataScanner,
   ) {}
 
   async onModuleInit() {
@@ -94,7 +94,7 @@ export class AuthModule implements NestModule, OnModuleInit {
           returned?: unknown
           responseHeaders?: Headers
         }
-      >
+      >,
     ) => Promise<void>,
     providerInstance: unknown,
   ) {

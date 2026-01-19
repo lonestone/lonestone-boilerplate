@@ -1,15 +1,18 @@
 import { postControllerGetUserPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Input } from '@boilerstone/ui/components/primitives/input'
+import { FilterRule } from '@lonestone/nzoth/client'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, PlusCircleIcon, SearchIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { UserPostCard } from '@/features/user-posts/user-post-card'
 
 const PAGE_SIZE = 12
 
 export default function PostsListPage() {
+  const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [searchValue, setSearchValue] = useState(
     searchParams.get('search') || '',
@@ -44,7 +47,7 @@ export default function PostsListPage() {
         query: {
           offset: (pageValue - 1) * PAGE_SIZE,
           pageSize: PAGE_SIZE,
-          filter: searchValue ? [{ property: 'title', rule: 'like', value: searchValue }] : [],
+          filter: searchValue ? [{ property: 'title', rule: FilterRule.LIKE, value: searchValue }] : [],
         },
       })
 
@@ -65,15 +68,15 @@ export default function PostsListPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-xl font-bold">Blog Posts</h2>
-        <p className="text-muted-foreground">Browse through your blog posts</p>
+        <h2 className="text-xl font-bold">{t('posts.title')}</h2>
+        <p className="text-muted-foreground">{t('posts.description')}</p>
       </div>
 
       <div className="flex items-center space-x-2">
         <div className="relative flex-1">
           <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-20" />
           <Input
-            placeholder="Search posts..."
+            placeholder={t('posts.searchPlaceholder')}
             value={searchValue}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               handleSearch(e.target.value)}
@@ -91,22 +94,22 @@ export default function PostsListPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Showing
+                  {t('posts.showing')}
                   {' '}
                   {(pageValue - 1) * PAGE_SIZE + 1}
                   {' '}
-                  to
+                  {t('posts.to')}
                   {' '}
                   {Math.min(
                     pageValue * PAGE_SIZE,
                     posts.meta.itemCount || 0,
                   )}
                   {' '}
-                  of
+                  {t('posts.of')}
                   {' '}
                   {posts.meta.itemCount}
                   {' '}
-                  posts
+                  {t('posts.title')}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -116,14 +119,14 @@ export default function PostsListPage() {
                     disabled={pageValue <= 1}
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
+                    {t('posts.previous')}
                   </Button>
                   <div className="text-sm text-muted-foreground">
-                    Page
+                    {t('posts.page')}
                     {' '}
                     {pageValue}
                     {' '}
-                    of
+                    {t('posts.of')}
                     {' '}
                     {totalPages}
                   </div>
@@ -133,7 +136,7 @@ export default function PostsListPage() {
                     onClick={() => handlePageChange(pageValue + 1)}
                     disabled={pageValue >= totalPages}
                   >
-                    Next
+                    {t('posts.next')}
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
@@ -142,11 +145,11 @@ export default function PostsListPage() {
           )
         : (
             <div className="space-y-2 ">
-              <div className="text-muted-foreground">No posts found</div>
+              <div className="text-muted-foreground">{t('posts.noPosts')}</div>
               <Button variant="outline" size="sm" asChild>
                 <Link to="./posts/new">
                   <PlusCircleIcon className="h-4 w-4" />
-                  Create a new post
+                  {t('posts.createNew')}
                 </Link>
               </Button>
             </div>

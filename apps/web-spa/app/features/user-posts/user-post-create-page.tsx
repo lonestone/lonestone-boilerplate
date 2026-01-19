@@ -3,10 +3,12 @@ import { postControllerCreatePost } from '@boilerstone/openapi-generator/client/
 import { useMutation } from '@tanstack/react-query'
 import { AlertCircle, Check, Settings } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import UserPostForm from './user-post-form'
 
 export default function UserPostCreatePage() {
+  const { t } = useTranslation()
   const [status, setStatus] = useState<
     'idle' | 'processing' | 'success' | 'error'
   >('idle')
@@ -21,7 +23,7 @@ export default function UserPostCreatePage() {
     onSuccess: async (result) => {
       if (!result.data) {
         setStatus('error')
-        setErrorMessage('Post created but no ID returned')
+        setErrorMessage(t('posts.create.error'))
         return
       }
       setStatus('success')
@@ -31,7 +33,7 @@ export default function UserPostCreatePage() {
     onError: (error) => {
       setStatus('error')
       setErrorMessage(
-        error?.message || 'An error occurred while creating the post',
+        error?.message || t('posts.create.error'),
       )
     },
   })
@@ -47,9 +49,9 @@ export default function UserPostCreatePage() {
       <div className="space-y-4 max-w-3xl">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Create New Post</h1>
+            <h1 className="text-2xl font-bold">{t('posts.create.title')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Share your thoughts, images, and videos with the world.
+              {t('posts.create.description')}
             </p>
           </div>
           <div className="flex justify-start items-center gap-3">
@@ -60,7 +62,7 @@ export default function UserPostCreatePage() {
                       <>
                         <Settings className="size-4 text-muted-foreground animate-spin" />
                         <span className="text-sm text-muted-foreground">
-                          Creating...
+                          {t('posts.create.creating')}
                         </span>
                       </>
                     )
@@ -68,7 +70,7 @@ export default function UserPostCreatePage() {
                     ? (
                         <>
                           <Check className="size-4 text-primary" />
-                          <span className="text-sm text-primary">Created!</span>
+                          <span className="text-sm text-primary">{t('posts.create.created')}</span>
                         </>
                       )
                     : (
