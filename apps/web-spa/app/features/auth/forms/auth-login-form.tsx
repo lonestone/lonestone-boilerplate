@@ -11,6 +11,7 @@ import { Input } from '@boilerstone/ui/components/primitives/input'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { z } from 'zod'
 
@@ -27,6 +28,7 @@ interface AuthLoginFormProps {
 }
 
 export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({ onSubmit, isPending }) => {
+  const { t } = useTranslation()
   const form = useForm<AuthLoginFormData>({
     resolver: zodResolver(loginSchema),
   })
@@ -39,7 +41,7 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({ onSubmit, isPendin
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="email">Email</FormLabel>
+              <FormLabel htmlFor="email">{t('auth.login.email')}</FormLabel>
               <FormControl>
                 <Input id="email" {...field} type="email" autoComplete="email" placeholder="your@email.com" />
               </FormControl>
@@ -53,9 +55,9 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({ onSubmit, isPendin
           render={({ field }) => (
             <FormItem>
               <div className="flex justify-between">
-                <FormLabel htmlFor="password">Password</FormLabel>
+                <FormLabel htmlFor="password">{t('auth.login.password')}</FormLabel>
                 <Link className="text-sm text-muted-foreground" to="/forgot-password">
-                  Forgot password?
+                  {t('auth.login.forgotPassword')}
                 </Link>
               </div>
               <FormControl>
@@ -67,7 +69,7 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({ onSubmit, isPendin
         />
 
         <Button className="w-full" type="submit" disabled={isPending}>
-          Sign In
+          {t('auth.login.signIn')}
         </Button>
       </form>
     </Form>

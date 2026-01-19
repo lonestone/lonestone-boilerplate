@@ -11,6 +11,7 @@ import { Input } from '@boilerstone/ui/components/primitives/input'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 
 const forgotPasswordSchema = z.object({
@@ -25,6 +26,7 @@ interface AuthForgotPasswordFormProps {
 }
 
 export const AuthForgotPasswordForm: React.FC<AuthForgotPasswordFormProps> = ({ onSubmit, isPending }) => {
+  const { t } = useTranslation()
   const form = useForm<AuthForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
   })
@@ -37,7 +39,7 @@ export const AuthForgotPasswordForm: React.FC<AuthForgotPasswordFormProps> = ({ 
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="email">Email</FormLabel>
+              <FormLabel htmlFor="email">{t('auth.forgotPassword.email')}</FormLabel>
               <FormControl>
                 <Input id="email" {...field} type="email" autoComplete="email" placeholder="your@email.com" />
               </FormControl>
@@ -47,7 +49,7 @@ export const AuthForgotPasswordForm: React.FC<AuthForgotPasswordFormProps> = ({ 
         />
 
         <Button type="submit" className="w-full" disabled={isPending}>
-          Send Reset Link
+          {t('auth.forgotPassword.sendResetLink')}
         </Button>
       </form>
     </Form>
