@@ -1,0 +1,1714 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Lonestone API",
+    "description": "The Lonestone API description",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "@lonestone",
+      "description": ""
+    }
+  ],
+  "servers": [],
+  "paths": {
+    "/api": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "tags": [
+          "App"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/posts": {
+      "post": {
+        "operationId": "PostController_createPost",
+        "tags": [
+          "Admin Posts"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Schema for creating/updating a post",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "content": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "text"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "image"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "video"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "title": "PostContentSchema",
+                      "description": "Schema for content items (text, image, video)",
+                      "type": "object"
+                    }
+                  }
+                },
+                "required": [
+                  "title",
+                  "content"
+                ],
+                "additionalProperties": false,
+                "title": "CreatePostSchema",
+                "description": "Schema for creating/updating a post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema for a user's post",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPostSchema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "PostController_getUserPosts",
+        "tags": [
+          "Admin Posts"
+        ],
+        "parameters": [
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PostController_getUserPosts_filterArray"
+            },
+            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PostController_getUserPosts_sortArray"
+            },
+            "description": "Schema for sorting items",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "description": "Starting position of the query",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "description": "Number of items to return",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema for a list of user's posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPostsSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/posts/{id}": {
+      "put": {
+        "operationId": "PostController_updatePost",
+        "tags": [
+          "Admin Posts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Schema for updating a post",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "content": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "text"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "image"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "video"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "title": "PostContentSchema",
+                      "description": "Schema for content items (text, image, video)",
+                      "type": "object"
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdatePostSchema",
+                "description": "Schema for updating a post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema for a user's post",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPostSchema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "PostController_getUserPost",
+        "tags": [
+          "Admin Posts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema for a user's post",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPostSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/posts/{id}/publish": {
+      "patch": {
+        "operationId": "PostController_publishPost",
+        "tags": [
+          "Admin Posts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/posts/{id}/unpublish": {
+      "patch": {
+        "operationId": "PostController_unpublishPost",
+        "tags": [
+          "Admin Posts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/public/posts/random": {
+      "get": {
+        "operationId": "PublicPostController_getRandomPost",
+        "tags": [
+          "Public Posts"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "A public post",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPostSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/posts/{slug}": {
+      "get": {
+        "operationId": "PublicPostController_getPost",
+        "tags": [
+          "Public Posts"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A public post",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPostSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/posts": {
+      "get": {
+        "operationId": "PublicPostController_getPosts",
+        "tags": [
+          "Public Posts"
+        ],
+        "parameters": [
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PublicPostController_getPosts_filterArray"
+            },
+            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PublicPostController_getPosts_sortArray"
+            },
+            "description": "Schema for sorting items",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "description": "Starting position of the query",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "description": "Number of items to return",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of public posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPostsSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/posts/{postSlug}/comments": {
+      "post": {
+        "operationId": "CommentsController_createComment",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Schema for creating a comment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "parentId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "content"
+                ],
+                "additionalProperties": false,
+                "title": "CreateCommentSchema",
+                "description": "Schema for creating a comment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema for a comment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentSchema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "CommentsController_getComments",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CommentsController_getComments_filterArray"
+            },
+            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: content",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CommentsController_getComments_sortArray"
+            },
+            "description": "Schema for sorting items",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "description": "Starting position of the query",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "description": "Number of items to return",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema for a paginated list of comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentsSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/posts/{postSlug}/comments/count": {
+      "get": {
+        "operationId": "CommentsController_getCommentCount",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/posts/{postSlug}/comments/{commentId}/replies": {
+      "get": {
+        "operationId": "CommentsController_getCommentReplies",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortArray"
+            },
+            "description": "Schema for sorting items",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "description": "Starting position of the query",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "description": "Number of items to return",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema for a paginated list of comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentsSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/posts/{postSlug}/comments/{commentId}": {
+      "delete": {
+        "operationId": "CommentsController_deleteComment",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateCommentSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "additionalProperties": false,
+        "title": "CreateCommentSchema",
+        "description": "Schema for creating a comment"
+      },
+      "CreatePostSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostContentSchema"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "content"
+        ],
+        "additionalProperties": false,
+        "title": "CreatePostSchema",
+        "description": "Schema for creating/updating a post"
+      },
+      "UpdatePostSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostContentSchema"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdatePostSchema",
+        "description": "Schema for updating a post"
+      },
+      "CommentSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "content": {
+            "type": "string"
+          },
+          "authorName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parentId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "replyIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "replyCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "content",
+          "authorName",
+          "createdAt",
+          "user",
+          "parentId"
+        ],
+        "additionalProperties": false,
+        "title": "CommentSchema",
+        "description": "Schema for a comment"
+      },
+      "CommentsSchema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommentSchema"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "offset": {
+                "type": "number"
+              },
+              "pageSize": {
+                "type": "number"
+              },
+              "itemCount": {
+                "type": "number"
+              },
+              "hasMore": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "offset",
+              "pageSize",
+              "itemCount",
+              "hasMore"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false,
+        "title": "CommentsSchema",
+        "description": "Schema for a paginated list of comments"
+      },
+      "UserPostSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostContentSchema"
+            }
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostVersionSchema"
+            }
+          },
+          "publishedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "published",
+              "draft"
+            ]
+          },
+          "commentCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "content",
+          "versions",
+          "type"
+        ],
+        "additionalProperties": false,
+        "title": "UserPostSchema",
+        "description": "Schema for a user's post"
+      },
+      "PostContentSchema": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "text"
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "data"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "image"
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "data"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "video"
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "data"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "title": "PostContentSchema",
+        "description": "Schema for content items (text, image, video)",
+        "type": "object"
+      },
+      "PostVersionSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "createdAt"
+        ],
+        "additionalProperties": false,
+        "title": "PostVersionSchema",
+        "description": "Schema for a post version"
+      },
+      "UserPostsSchema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "slug": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "title": {
+                  "type": "string"
+                },
+                "versions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PostVersionSchema"
+                  }
+                },
+                "publishedAt": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "published",
+                    "draft"
+                  ]
+                },
+                "commentCount": {
+                  "type": "number"
+                },
+                "contentPreview": {
+                  "$ref": "#/components/schemas/PostContentSchema"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "versions",
+                "type",
+                "contentPreview"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "offset": {
+                "type": "number"
+              },
+              "pageSize": {
+                "type": "number"
+              },
+              "itemCount": {
+                "type": "number"
+              },
+              "hasMore": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "offset",
+              "pageSize",
+              "itemCount",
+              "hasMore"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false,
+        "title": "UserPostsSchema",
+        "description": "Schema for a list of user's posts"
+      },
+      "PublicPostSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "author": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostContentSchema"
+            }
+          },
+          "publishedAt": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "commentCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "title",
+          "author",
+          "content",
+          "publishedAt"
+        ],
+        "additionalProperties": false,
+        "title": "PublicPostSchema",
+        "description": "A public post"
+      },
+      "PublicPostsSchema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "author": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ],
+                  "additionalProperties": false
+                },
+                "publishedAt": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "commentCount": {
+                  "type": "number"
+                },
+                "contentPreview": {
+                  "$ref": "#/components/schemas/PostContentSchema"
+                }
+              },
+              "required": [
+                "title",
+                "author",
+                "publishedAt",
+                "contentPreview"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "offset": {
+                "type": "number"
+              },
+              "pageSize": {
+                "type": "number"
+              },
+              "itemCount": {
+                "type": "number"
+              },
+              "hasMore": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "offset",
+              "pageSize",
+              "itemCount",
+              "hasMore"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false,
+        "title": "PublicPostsSchema",
+        "description": "A list of public posts"
+      },
+      "PaginationQuerySchema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "default": 0,
+            "description": "Starting position of the query",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pageSize": {
+            "default": 20,
+            "description": "Number of items to return",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "offset",
+          "pageSize"
+        ],
+        "additionalProperties": false,
+        "title": "PaginationQuerySchema",
+        "description": "Schema for pagination query"
+      },
+      "SortingQueryStringSchema": {
+        "title": "SortingQueryStringSchema",
+        "description": "Schema for sorting items",
+        "example": "name:asc,age:desc",
+        "type": "string",
+        "items": {
+          "title": "SortingStringSchema",
+          "description": "Schema for sorting items",
+          "type": "object",
+          "properties": {
+            "property": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "title"
+                },
+                {
+                  "type": "string",
+                  "const": "createdAt"
+                }
+              ]
+            },
+            "direction": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          "required": [
+            "property",
+            "direction"
+          ],
+          "additionalProperties": false
+        },
+        "format": "sort"
+      },
+      "FilterQueryStringSchema": {
+        "title": "FilterQueryStringSchema",
+        "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title",
+        "example": "name:eq:John;age:gt:30",
+        "type": "string",
+        "items": {
+          "type": "object",
+          "properties": {
+            "property": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "title"
+                }
+              ]
+            },
+            "rule": {
+              "type": "string",
+              "enum": [
+                "eq",
+                "neq",
+                "gt",
+                "gte",
+                "lt",
+                "lte",
+                "like",
+                "nlike",
+                "in",
+                "nin",
+                "isnull",
+                "isnotnull"
+              ]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "property",
+            "rule"
+          ],
+          "additionalProperties": false,
+          "title": "FilteringSchema",
+          "description": "Schema for a single filtering item"
+        },
+        "format": "filter"
+      },
+      "CommentsController_postSlug": {
+        "type": "string"
+      },
+      "PostController_getUserPosts_filterItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "title"
+              }
+            ]
+          },
+          "rule": {
+            "type": "string",
+            "enum": [
+              "eq",
+              "neq",
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "like",
+              "nlike",
+              "in",
+              "nin",
+              "isnull",
+              "isnotnull"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "property",
+          "rule"
+        ],
+        "additionalProperties": false
+      },
+      "PostController_getUserPosts_filterArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PostController_getUserPosts_filterItem"
+        }
+      },
+      "PostController_getUserPosts_sortItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "title"
+              },
+              {
+                "type": "string",
+                "const": "createdAt"
+              }
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "property",
+          "direction"
+        ],
+        "additionalProperties": false
+      },
+      "PostController_getUserPosts_sortArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PostController_getUserPosts_sortItem"
+        }
+      },
+      "PublicPostController_getPosts_filterItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "title"
+              }
+            ]
+          },
+          "rule": {
+            "type": "string",
+            "enum": [
+              "eq",
+              "neq",
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "like",
+              "nlike",
+              "in",
+              "nin",
+              "isnull",
+              "isnotnull"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "property",
+          "rule"
+        ],
+        "additionalProperties": false
+      },
+      "PublicPostController_getPosts_filterArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PublicPostController_getPosts_filterItem"
+        }
+      },
+      "PublicPostController_getPosts_sortItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "title"
+              },
+              {
+                "type": "string",
+                "const": "createdAt"
+              }
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "property",
+          "direction"
+        ],
+        "additionalProperties": false
+      },
+      "PublicPostController_getPosts_sortArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PublicPostController_getPosts_sortItem"
+        }
+      },
+      "CommentsController_getComments_filterItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "content"
+              }
+            ]
+          },
+          "rule": {
+            "type": "string",
+            "enum": [
+              "eq",
+              "neq",
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "like",
+              "nlike",
+              "in",
+              "nin",
+              "isnull",
+              "isnotnull"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "property",
+          "rule"
+        ],
+        "additionalProperties": false
+      },
+      "CommentsController_getComments_filterArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CommentsController_getComments_filterItem"
+        }
+      },
+      "CommentsController_getComments_sortItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "createdAt"
+              },
+              {
+                "type": "string",
+                "const": "authorName"
+              }
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "property",
+          "direction"
+        ],
+        "additionalProperties": false
+      },
+      "CommentsController_getComments_sortArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CommentsController_getComments_sortItem"
+        }
+      },
+      "CommentsController_getCommentReplies_sortItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "createdAt"
+              },
+              {
+                "type": "string",
+                "const": "authorName"
+              }
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "property",
+          "direction"
+        ],
+        "additionalProperties": false
+      },
+      "CommentsController_getCommentReplies_sortArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortItem"
+        }
+      }
+    }
+  }
+}

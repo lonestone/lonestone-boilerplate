@@ -3,6 +3,12 @@ import path from 'node:path'
 import process from 'node:process'
 import fetch from 'node-fetch'
 
+/**
+ * Preprocess the OpenAPI spec to add dynamic filter/sort arrays
+ * The OpenAPI from Nzoth will have the sort and filter parameters as strings with items schema, we need to convert them to arrays for client strong typing
+ * It'll then be converted back to correctly formatted strings before being sent to the server (See index.ts at root of the package)
+ * Nzoth will handle the backend verification of the sort and filter strings
+ */
 async function main() {
   const url = `${process.env.API_URL}/api/docs.json`
   const tmp = path.resolve('tmp', 'openapi.json')
@@ -16,11 +22,13 @@ async function main() {
     for (const [, op] of Object.entries(pathObj || {})) {
       const parameters = op.parameters || []
       op.parameters = parameters.map((param) => {
-        // Only process query params with inline object items
+        // Only process sort and filter schemas
         if (param.in === 'query'
           && param.schema?.type === 'string'
           && param.schema.items
-          && param.schema.items.type === 'object') {
+          && param.schema.items.type === 'object'
+          && (param.name.includes('sort') || param.name.includes('filter'))
+          && (param.schema?.format === 'filter' || param.schema?.format === 'sort')) {
           const item = param.schema.items
           const baseName = `${op.operationId}_${param.name}`
 
