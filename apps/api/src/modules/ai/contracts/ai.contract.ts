@@ -18,16 +18,33 @@ export const aiGenerateOptionsSchema = z.object({
 
 export type AiGenerateOptions = z.infer<typeof aiGenerateOptionsSchema>
 
+export const coreMessageSchema = z.object({
+  role: z.enum(['user', 'assistant', 'system', 'tool']),
+  content: z.string(),
+}).meta({
+  title: 'CoreMessage',
+  description: 'A message in the conversation history following Vercel AI SDK patterns',
+})
+
+export type CoreMessage = z.infer<typeof coreMessageSchema>
+
 export const aiGenerateInputSchema = z.object({
-  prompt: z.string().min(1),
+  prompt: z.string().min(1).optional(),
+  messages: z.array(coreMessageSchema).optional(),
   model: z.custom<ModelId>(val => typeof val === 'string').optional(),
   options: aiGenerateOptionsSchema.optional(),
   schema: z.custom<z.ZodType>(val => val && typeof val === 'object').optional(),
   tools: z.custom<Record<string, Tool>>(val => val && typeof val === 'object').optional(),
   signal: z.custom<AbortSignal>(val => val instanceof AbortSignal).optional(),
-}).meta({
+}).refine(
+  data => data.prompt || (data.messages && data.messages.length > 0),
+  {
+    message: 'Either prompt or messages must be provided',
+    path: ['prompt', 'messages'],
+  },
+).meta({
   title: 'AiGenerateInput',
-  description: 'Input for an AI generation',
+  description: 'Input for an AI generation. Either prompt (single turn) or messages (conversation history) must be provided.',
 })
 
 export type AiGenerateInputWithoutSchema = Omit<z.infer<typeof aiGenerateInputSchema>, 'schema'> & { schema?: undefined }
@@ -44,6 +61,7 @@ const aiGenerateResultBaseSchema = z.object({
     })
     .optional(),
   finishReason: z.string().optional(),
+  messages: z.array(coreMessageSchema).optional(),
   toolCalls: z
     .array(
       z.object({
@@ -94,13 +112,21 @@ export const chatSchemaTypeSchema = z.enum(['userProfile', 'task', 'product', 'n
 export type ChatSchemaType = z.infer<typeof chatSchemaTypeSchema>
 
 export const chatRequestSchema = z.object({
-  message: z.string().min(1),
+  message: z.string().min(1).optional(),
+  messages: z.array(coreMessageSchema).optional(),
+  conversationId: z.string().optional(),
   model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
   options: aiGenerateOptionsSchema.optional(),
   schemaType: chatSchemaTypeSchema.optional(),
-}).meta({
+}).refine(
+  data => data.message || (data.messages && data.messages.length > 0),
+  {
+    message: 'Either message or messages must be provided',
+    path: ['message', 'messages'],
+  },
+).meta({
   title: 'ChatRequest',
-  description: 'Request for AI chat',
+  description: 'Request for AI chat. Either message (single turn) or messages (conversation history) must be provided.',
 })
 
 export type ChatRequest = z.infer<typeof chatRequestSchema>
