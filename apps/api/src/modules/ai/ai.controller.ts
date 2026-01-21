@@ -49,13 +49,27 @@ export class AiController {
       getCryptoPrice: getCryptoPriceTool,
     }
 
+    // Build generate input - prefer messages over message for conversation history
+    const generateInput = body.messages && body.messages.length > 0
+      ? {
+          messages: body.messages,
+          model: body.model,
+          options: body.options,
+          schema,
+          tools,
+        }
+      : {
+          prompt: body.message!,
+          model: body.model,
+          options: body.options,
+          schema,
+          tools,
+        }
+
     if (schema) {
       const result = await this.aiService.generate({
-        prompt: body.message,
-        model: body.model,
-        options: body.options,
+        ...generateInput,
         schema,
-        tools,
       })
 
       return {
@@ -64,24 +78,21 @@ export class AiController {
         type: result.type,
         usage: result.usage,
         finishReason: result.finishReason,
+        messages: result.messages,
         toolCalls: result.toolCalls,
         toolResults: result.toolResults,
       }
     }
     else {
-      const result = await this.aiService.generate({
-        prompt: body.message,
-        model: body.model,
-        options: body.options,
-        tools,
-      })
+      const result = await this.aiService.generate(generateInput)
 
       return {
-        result: result.result,
+        result: result.result as string,
         error: result.error,
         type: result.type,
         usage: result.usage,
         finishReason: result.finishReason,
+        messages: result.messages,
         toolCalls: result.toolCalls,
         toolResults: result.toolResults,
       }

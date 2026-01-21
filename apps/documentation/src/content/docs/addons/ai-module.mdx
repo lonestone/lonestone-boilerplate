@@ -14,6 +14,7 @@ The AI module provides a clean, maintainable service for AI text generation usin
 - **Cancellation Support**: Both AbortSignal parameter and returned AbortController
 - **Schema Validation**: Optional Zod schema validation via prompt commands with discriminated union types
 - **Tool Calling**: Support for AI tool/function calling with automatic result handling
+- **Conversation History**: Support for multi-turn conversations using messages array following Vercel AI SDK patterns
 - **Type Safety**: Full TypeScript support with inferred types and function overloads
 
 ## Configuration
@@ -103,6 +104,135 @@ export class MyService {
     }
   }
 }
+```
+
+### With Conversation History
+
+The AI module supports multi-turn conversations using a `messages` array following Vercel AI SDK patterns. This allows the AI to maintain context across multiple interactions.
+
+:::note[History Management]
+The module does not store conversation history automatically. You are responsible for managing and persisting the messages array (e.g., in a database, Redis, or frontend state).
+:::
+
+```typescript
+import { Injectable } from '@nestjs/common'
+import { AiService } from '../modules/ai/ai.service'
+import { GOOGLE_GEMINI_3_FLASH } from '../modules/ai/ai.config'
+import type { CoreMessage } from '../modules/ai/contracts/ai.contract'
+
+@Injectable()
+export class ChatService {
+  constructor(private readonly aiService: AiService) {}
+
+  async chat(userMessage: string, conversationHistory: CoreMessage[] = []) {
+    // Build messages array with conversation history
+    const messages: CoreMessage[] = [
+      ...conversationHistory,
+      { role: 'user', content: userMessage },
+    ]
+
+    const result = await this.aiService.generate({
+      messages,
+      model: GOOGLE_GEMINI_3_FLASH,
+    })
+
+    // The response includes updated messages array with assistant's response
+    if (result.type === 'text' && result.messages) {
+      // result.messages includes the full conversation including the new assistant response
+      const updatedHistory = result.messages
+      
+      // Store updatedHistory in your database/state for next turn
+      return {
+        response: result.result,
+        messages: updatedHistory,
+      }
+    }
+  }
+}
+```
+
+**Example: Multi-turn Conversation**
+
+```typescript
+// First turn
+let conversationHistory: CoreMessage[] = []
+
+const firstResult = await this.aiService.generate({
+  messages: [
+    { role: 'user', content: 'What is the capital of France?' },
+  ],
+  model: GOOGLE_GEMINI_3_FLASH,
+})
+
+// Save the updated messages for next turn
+if (firstResult.messages) {
+  conversationHistory = firstResult.messages
+}
+
+// Second turn - AI remembers the previous conversation
+const secondResult = await this.aiService.generate({
+  messages: [
+    ...conversationHistory,
+    { role: 'user', content: 'What is its population?' },
+  ],
+  model: GOOGLE_GEMINI_3_FLASH,
+})
+
+// conversationHistory now includes both turns
+```
+
+**Message Format**
+
+Each message follows the Vercel AI SDK `CoreMessage` format:
+
+```typescript
+type CoreMessage = {
+  role: 'user' | 'assistant' | 'system' | 'tool'
+  content: string
+}
+```
+
+- `role`: The role of the message sender
+  - `'user'`: User messages
+  - `'assistant'`: AI assistant responses
+  - `'system'`: System instructions (optional, typically at the start)
+  - `'tool'`: Tool call results (used internally by the SDK)
+- `content`: The message text content
+
+**System Messages**
+
+You can include a system message at the start of the conversation to set the AI's behavior:
+
+```typescript
+const messages: CoreMessage[] = [
+  { role: 'system', content: 'You are a helpful assistant that speaks in a friendly, casual tone.' },
+  { role: 'user', content: 'Hello!' },
+]
+
+const result = await this.aiService.generate({
+  messages,
+  model: GOOGLE_GEMINI_3_FLASH,
+})
+```
+
+**Backward Compatibility**
+
+The `prompt` parameter still works for single-turn conversations. If both `prompt` and `messages` are provided, `messages` takes precedence.
+
+```typescript
+// Single turn (backward compatible)
+const result = await this.aiService.generate({
+  prompt: 'Hello!',
+  model: GOOGLE_GEMINI_3_FLASH,
+})
+
+// Multi-turn with messages
+const result2 = await this.aiService.generate({
+  messages: [
+    { role: 'user', content: 'Hello!' },
+  ],
+  model: GOOGLE_GEMINI_3_FLASH,
+})
 ```
 
 ### With Schema Validation
@@ -446,6 +576,8 @@ To add support for a new provider (e.g., Cohere):
 
 The module includes a REST API controller at `/ai/chat` for easy integration:
 
+**Single-turn conversation (using `message`):**
+
 ```typescript
 POST /ai/chat
 Content-Type: application/json
@@ -461,17 +593,58 @@ Content-Type: application/json
 }
 ```
 
+**Multi-turn conversation (using `messages`):**
+
+```typescript
+POST /ai/chat
+Content-Type: application/json
+
+{
+  "messages": [
+    { "role": "user", "content": "What is the capital of France?" },
+    { "role": "assistant", "content": "The capital of France is Paris." },
+    { "role": "user", "content": "What is its population?" }
+  ],
+  "model": "GOOGLE_GEMINI_3_FLASH", // Optional
+  "options": { // Optional
+    "temperature": 0.7,
+    "maxTokens": 500
+  },
+  "conversationId": "conv-123" // Optional: for your own tracking
+}
+```
+
+The response includes an updated `messages` array with the assistant's response:
+
+```typescript
+{
+  "type": "text",
+  "result": "Paris has a population of approximately 2.1 million people...",
+  "messages": [
+    { "role": "user", "content": "What is the capital of France?" },
+    { "role": "assistant", "content": "The capital of France is Paris." },
+    { "role": "user", "content": "What is its population?" },
+    { "role": "assistant", "content": "Paris has a population of approximately 2.1 million people..." }
+  ],
+  "usage": { ... }
+}
+```
+
 :::note[Authentication Required]
 The `/ai/chat` endpoint requires authentication. Make sure to include your authentication token in the request headers.
+:::
+
+:::tip[History Management]
+Either `message` or `messages` must be provided. If both are provided, `messages` takes precedence. The response includes an updated `messages` array when `messages` was provided in the request, which you can store and send back in subsequent requests to maintain conversation context.
 :::
 
 ## Langfuse Integration
 
 All AI calls are automatically traced in Langfuse (if configured) with:
 - Trace name: `ai.generate`
-- **Full prompt**: Both original and enhanced (with schema commands) prompts are included
-- Input: Complete enhanced prompt sent to the model
-- Metadata: model ID, model name, prompt lengths, schema presence, tool presence, options
+- **Full prompt/messages**: Both original and enhanced (with schema commands) prompts or messages are included
+- Input: Complete enhanced prompt or messages array sent to the model
+- Metadata: model ID, model name, prompt/message lengths, message count, schema presence, tool presence, options
 - Token usage and costs
 - Latency metrics
 - Tool calls and results

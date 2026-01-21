@@ -10,6 +10,7 @@ The AI module provides a clean, maintainable service for AI text generation usin
 - **Cancellation Support**: Both AbortSignal parameter and returned AbortController
 - **Schema Validation**: Optional Zod schema validation via prompt commands with discriminated union types
 - **Tool Calling**: Support for AI tool/function calling with automatic result handling
+- **Conversation History**: Support for multi-turn conversations using messages array following Vercel AI SDK patterns
 - **Type Safety**: Full TypeScript support with inferred types and function overloads
 
 ## Configuration
@@ -66,6 +67,132 @@ export class MyService {
     }
   }
 }
+```
+
+### With Conversation History
+
+The AI module supports multi-turn conversations using a `messages` array following Vercel AI SDK patterns. This allows the AI to maintain context across multiple interactions.
+
+**Note**: The module does not store conversation history automatically. You are responsible for managing and persisting the messages array (e.g., in a database, Redis, or frontend state).
+
+```typescript
+import { AiService } from '../modules/ai/ai.service'
+import { GOOGLE_GEMINI_3_FLASH } from '../modules/ai/ai.config'
+import type { CoreMessage } from '../modules/ai/contracts/ai.contract'
+
+@Injectable()
+export class ChatService {
+  constructor(private readonly aiService: AiService) {}
+
+  async chat(userMessage: string, conversationHistory: CoreMessage[] = []) {
+    // Build messages array with conversation history
+    const messages: CoreMessage[] = [
+      ...conversationHistory,
+      { role: 'user', content: userMessage },
+    ]
+
+    const result = await this.aiService.generate({
+      messages,
+      model: GOOGLE_GEMINI_3_FLASH,
+    })
+
+    // The response includes updated messages array with assistant's response
+    if (result.type === 'text' && result.messages) {
+      // result.messages includes the full conversation including the new assistant response
+      const updatedHistory = result.messages
+      
+      // Store updatedHistory in your database/state for next turn
+      return {
+        response: result.result,
+        messages: updatedHistory,
+      }
+    }
+  }
+}
+```
+
+**Example: Multi-turn Conversation**
+
+```typescript
+// First turn
+let conversationHistory: CoreMessage[] = []
+
+const firstResult = await this.aiService.generate({
+  messages: [
+    { role: 'user', content: 'What is the capital of France?' },
+  ],
+  model: GOOGLE_GEMINI_3_FLASH,
+})
+
+// Save the updated messages for next turn
+if (firstResult.messages) {
+  conversationHistory = firstResult.messages
+}
+
+// Second turn - AI remembers the previous conversation
+const secondResult = await this.aiService.generate({
+  messages: [
+    ...conversationHistory,
+    { role: 'user', content: 'What is its population?' },
+  ],
+  model: GOOGLE_GEMINI_3_FLASH,
+})
+
+// conversationHistory now includes both turns
+```
+
+**Message Format**
+
+Each message follows the Vercel AI SDK `CoreMessage` format:
+
+```typescript
+type CoreMessage = {
+  role: 'user' | 'assistant' | 'system' | 'tool'
+  content: string
+}
+```
+
+- `role`: The role of the message sender
+  - `'user'`: User messages
+  - `'assistant'`: AI assistant responses
+  - `'system'`: System instructions (optional, typically at the start)
+  - `'tool'`: Tool call results (used internally by the SDK)
+- `content`: The message text content
+
+**System Messages**
+
+You can include a system message at the start of the conversation to set the AI's behavior:
+
+```typescript
+const messages: CoreMessage[] = [
+  { role: 'system', content: 'You are a helpful assistant that speaks in a friendly, casual tone.' },
+  { role: 'user', content: 'Hello!' },
+]
+
+const result = await this.aiService.generate({
+  messages,
+  model: GOOGLE_GEMINI_3_FLASH,
+})
+```
+
+**Backward Compatibility**
+
+The `prompt` parameter still works for single-turn conversations. If both `prompt` and `messages` are provided, `messages` takes precedence.
+
+```typescript
+// Single turn (backward compatible)
+const result = await this.aiService.generate({
+  prompt: 'Hello!',
+  model: GOOGLE_GEMINI_3_FLASH,
+})
+
+// Multi-turn with messages
+const result2 = await this.aiService.generate({
+  messages: [
+    { role: 'user', content: 'Hello!' },
+  ],
+  model: GOOGLE_GEMINI_3_FLASH,
+})
 ```
 
 ### With Model Selection
@@ -607,7 +734,8 @@ Generates text or structured data using the configured AI model. Uses function o
 - `generate<T>(input: AiGenerateInputWithSchema<T>): Promise<AiGenerateResultObject<T>>` - Returns typed object result when schema provided
 
 **Parameters:**
-- `prompt` (string, required): The prompt to send to the model
+- `prompt` (string, optional): The prompt to send to the model (for single-turn conversations). Either `prompt` or `messages` must be provided.
+- `messages` (CoreMessage[], optional): Conversation history as an array of messages following Vercel AI SDK patterns. Either `prompt` or `messages` must be provided. If both are provided, `messages` takes precedence.
 - `model` (ModelId, required): Model ID constant to use (e.g., `OPENAI_GPT_5_NANO`, `GOOGLE_GEMINI_3_FLASH`, `CLAUDE_HAIKU_3_5`, `MISTRAL_SMALL`)
 - `options` (object, optional): Generation options
   - `temperature` (number, 0-2): Sampling temperature
@@ -633,6 +761,7 @@ Discriminated union type based on whether schema is provided:
   - `completionTokens` (number)
   - `totalTokens` (number)
 - `finishReason` (string, optional): Reason generation finished
+- `messages` (CoreMessage[], optional): Updated conversation history including the assistant's response (only returned when `messages` was provided in input)
 - `toolCalls` (array, optional): Tool calls made during generation
 - `toolResults` (array, optional): Results from tool calls
 - `abortController` (AbortController, optional): Controller for cancellation (only if no signal provided)
@@ -645,6 +774,7 @@ Discriminated union type based on whether schema is provided:
   - `completionTokens` (number)
   - `totalTokens` (number)
 - `finishReason` (string, optional): Reason generation finished
+- `messages` (CoreMessage[], optional): Updated conversation history including the assistant's response (only returned when `messages` was provided in input)
 - `toolCalls` (array, optional): Tool calls made during generation
 - `toolResults` (array, optional): Results from tool calls
 - `abortController` (AbortController, optional): Controller for cancellation (only if no signal provided)
@@ -653,9 +783,9 @@ Discriminated union type based on whether schema is provided:
 
 All AI calls are automatically traced in Langfuse (if configured) with:
 - Trace name: `ai.generate`
-- **Full prompt**: Both original and enhanced (with schema commands) prompts are included
-- Input: Complete enhanced prompt sent to the model
-- Metadata: model ID, model name, prompt lengths, schema presence, tool presence, options
+- **Full prompt/messages**: Both original and enhanced (with schema commands) prompts or messages are included
+- Input: Complete enhanced prompt or messages array sent to the model
+- Metadata: model ID, model name, prompt/message lengths, message count, schema presence, tool presence, options
 - Token usage and costs
 - Latency metrics
 - Tool calls and results

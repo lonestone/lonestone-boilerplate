@@ -1,6 +1,6 @@
 import type { LanguageModel, LanguageModelUsage } from 'ai'
 import type { ModelId } from './ai.config'
-import type { AiGenerateInput, AiGenerateInputWithoutSchema, AiGenerateInputWithSchema, AiGenerateOutputObject, AiGenerateOutputText } from './contracts/ai.contract'
+import type { AiGenerateInput, AiGenerateInputWithoutSchema, AiGenerateInputWithSchema, AiGenerateOutputObject, AiGenerateOutputText, CoreMessage } from './contracts/ai.contract'
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { generateText, stepCountIs } from 'ai'
 import { Langfuse } from 'langfuse'
@@ -104,6 +104,7 @@ export class AiService implements OnModuleInit {
   async generate<T>(input: AiGenerateInput<T>): Promise<AiGenerateResult<T>>
   async generate<T>({
     prompt,
+    messages,
     model,
     options,
     schema,
@@ -116,17 +117,55 @@ export class AiService implements OnModuleInit {
     const modelInstance = await this.getModelInstance(model)
     const modelName = this.getModelName(model)
 
-    let enhancedPrompt = prompt
+    // Build messages array - messages takes precedence over prompt
+    let conversationMessages: CoreMessage[] = []
+    let hasMessages = false
+
+    if (messages && messages.length > 0) {
+      // Use provided messages (conversation history)
+      conversationMessages = [...messages] as CoreMessage[]
+      hasMessages = true
+    }
+    else if (prompt) {
+      // Convert prompt to single user message (backward compatibility)
+      conversationMessages = [{ role: 'user', content: prompt }]
+    }
+    else {
+      throw new Error('Either prompt or messages must be provided')
+    }
+
+    // Handle schema prompt - append to system message if exists, otherwise create/update system message
     if (schema) {
-      enhancedPrompt = prompt + this.createSchemaPrompt(schema)
+      const schemaPrompt = this.createSchemaPrompt(schema)
+      const systemMessageIndex = conversationMessages.findIndex(m => m.role === 'system')
+
+      if (systemMessageIndex >= 0) {
+        // Append to existing system message
+        conversationMessages[systemMessageIndex] = {
+          ...conversationMessages[systemMessageIndex],
+          content: conversationMessages[systemMessageIndex].content + schemaPrompt,
+        }
+      }
+      else {
+        // Create new system message with schema instructions
+        conversationMessages.unshift({
+          role: 'system',
+          content: schemaPrompt.trim(),
+        })
+      }
     }
 
     const startTime = Date.now()
+
+    // Prepare input for Langfuse tracing
+    const inputForTrace = hasMessages
+      ? { messages: conversationMessages }
+      : { prompt: conversationMessages[0]?.content || '' }
+
     const trace = this.langfuseClient?.trace({
       name: 'ai.generate',
       input: {
-        prompt: enhancedPrompt,
-        originalPrompt: prompt,
+        ...inputForTrace,
         hasSchema: !!schema,
         hasTools: !!tools,
         toolNames: tools ? Object.keys(tools) : [],
@@ -134,8 +173,9 @@ export class AiService implements OnModuleInit {
       metadata: {
         model: modelName,
         modelId: model,
-        promptLength: prompt.length,
-        enhancedPromptLength: enhancedPrompt.length,
+        messageCount: conversationMessages.length,
+        hasMessages,
+        promptLength: prompt?.length ?? 0,
         hasSchema: !!schema,
         hasTools: !!tools,
         toolCount: tools ? Object.keys(tools).length : 0,
@@ -146,7 +186,7 @@ export class AiService implements OnModuleInit {
     const generation = trace?.generation({
       name: schema ? 'object-generation' : 'text-generation',
       model: modelName,
-      input: enhancedPrompt,
+      input: hasMessages ? conversationMessages : conversationMessages[0]?.content || '',
       metadata: {
         temperature: options?.temperature,
         maxTokens: options?.maxTokens,
@@ -154,9 +194,9 @@ export class AiService implements OnModuleInit {
     })
 
     try {
-      const generateOptions: Parameters<typeof generateText>[0] = {
+      // Build generate options - use separate branches for messages vs prompt to satisfy TypeScript
+      const generateOptionsBase = {
         model: modelInstance,
-        prompt: enhancedPrompt,
         abortSignal,
         ...(options?.temperature !== undefined && { temperature: options.temperature }),
         ...(options?.topP !== undefined && { topP: options.topP }),
@@ -168,7 +208,17 @@ export class AiService implements OnModuleInit {
         stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
       }
 
-      const result = await generateText(generateOptions)
+      const generateOptions = hasMessages
+        ? {
+            ...generateOptionsBase,
+            messages: conversationMessages as Parameters<typeof generateText>[0]['messages'],
+          }
+        : {
+            ...generateOptionsBase,
+            prompt: conversationMessages[0]?.content || '',
+          }
+
+      const result = await generateText(generateOptions as Parameters<typeof generateText>[0])
 
       const duration = Date.now() - startTime
 
@@ -183,6 +233,14 @@ export class AiService implements OnModuleInit {
         },
       })
 
+      // Build updated messages array for response
+      const updatedMessages: CoreMessage[] = hasMessages
+        ? [
+            ...conversationMessages,
+            { role: 'assistant', content: result.text },
+          ]
+        : []
+
       trace?.update({
         output: {
           text: result.text,
@@ -190,10 +248,12 @@ export class AiService implements OnModuleInit {
           finishReason: result.finishReason,
           toolCalls: result.steps?.flatMap(step => step.toolCalls || []),
           toolResults: result.steps?.flatMap(step => step.toolResults || []),
+          ...(hasMessages && { messages: updatedMessages }),
         },
         metadata: {
           duration,
           steps: result.steps?.length ?? 0,
+          messageCount: updatedMessages.length,
         },
       })
 
@@ -246,6 +306,7 @@ export class AiService implements OnModuleInit {
         usage,
         finishReason: result.finishReason,
         abortController,
+        ...(hasMessages && updatedMessages.length > 0 && { messages: updatedMessages }),
         ...(toolCalls && toolCalls.length > 0 && { toolCalls }),
         ...(toolResults && toolResults.length > 0 && { toolResults }),
       }
