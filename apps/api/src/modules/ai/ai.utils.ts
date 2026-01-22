@@ -1,6 +1,10 @@
 import type { LanguageModel } from 'ai'
 import type { ModelId } from './ai.config'
+import { Logger } from '@nestjs/common'
+import { wrapWithRetryAfter } from './ai-rate-limit.middleware'
 import { modelRegistry, providers } from './ai.config'
+
+const logger = new Logger('AiUtils')
 
 export async function getModel(modelId: ModelId): Promise<LanguageModel> {
   const modelConfig = modelRegistry.get(modelId)
@@ -15,8 +19,9 @@ export async function getModel(modelId: ModelId): Promise<LanguageModel> {
   }
 
   const providerInstance = provider instanceof Promise ? await provider : provider
+  const baseModel = providerInstance(modelConfig.modelString)
 
-  return providerInstance(modelConfig.modelString)
+  return wrapWithRetryAfter(baseModel, undefined, logger)
 }
 
 export async function getDefaultModel(): Promise<LanguageModel | null> {
