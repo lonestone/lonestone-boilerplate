@@ -220,6 +220,17 @@ This documentation is also used by our custom cursor rules.
 - [Backend Guidelines](docs/backend-guidelines.md)
 - [API Readme](apps/api/README.md)
 
+## 🔍 Tracing Architecture
+
+The project uses a unified OpenTelemetry tracing architecture that integrates both Sentry and Langfuse:
+
+- **Shared TracerProvider**: A single OpenTelemetry TracerProvider manages traces for both Sentry (application monitoring) and Langfuse (AI/LLM tracing)
+- **Distributed Tracing**: Traces are automatically propagated across services, allowing you to see the full request flow
+- **AI Tracing**: All AI/LLM calls are automatically traced in Langfuse with full prompt visibility, token usage, and latency metrics
+- **Application Tracing**: All application spans (controllers, services, database queries) are traced in Sentry for performance monitoring and error tracking
+
+The tracing system is initialized in `apps/api/src/instrument.ts` and automatically started when the API server boots. See the [AI module documentation](apps/api/src/modules/ai/README.md) and [tracing documentation](apps/documentation/src/content/docs/addons/tracing-sentry.mdx) for more details.
+
 ## 🚀 Deployment
 
 It's your choice to decide how you want to deploy the applications, your main options being:

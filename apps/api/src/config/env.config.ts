@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import dotenvx from '@dotenvx/dotenvx'
 import { z } from 'zod'
@@ -9,6 +10,25 @@ if (nodeEnv === 'test') {
 }
 else {
   dotenvx.config()
+}
+
+function getVersion() {
+  const packageJson = readFileSync(join(process.cwd(), 'package.json'), 'utf8')
+
+  if (!packageJson) {
+    console.warn('Failed to read package.json')
+    return 'Unknown version'
+  }
+
+  try {
+    const packageJsonData = JSON.parse(packageJson)
+
+    return packageJsonData.version ?? 'Unknown version'
+  }
+  catch {
+    console.warn('Failed to parse package.json version')
+    return 'Unknown version'
+  }
 }
 
 export const configValidationSchema = z.object({
@@ -53,6 +73,9 @@ export const configValidationSchema = z.object({
   LANGFUSE_SECRET_KEY: z.string().optional(),
   LANGFUSE_PUBLIC_KEY: z.string().optional(), // Optional
   LANGFUSE_HOST: z.string().optional(), // Optional, defaults to cloud
+
+  // Sentry
+  SENTRY_DSN: z.string().optional(),
 })
 
 export type ConfigSchema = z.infer<typeof configValidationSchema>
@@ -62,7 +85,7 @@ const configParsed = configValidationSchema.safeParse(process.env)
 if (!configParsed.success) {
   throw new Error(
     `Invalid environment variables: ${JSON.stringify(
-      configParsed.error.format(),
+      z.treeifyError(configParsed.error),
       null,
       4,
     )}`,
@@ -72,6 +95,7 @@ if (!configParsed.success) {
 export const config = {
   env: configParsed.data.NODE_ENV,
   apiPort: configParsed.data.API_PORT,
+  version: getVersion(),
   betterAuth: {
     secret: configParsed.data.BETTER_AUTH_SECRET,
     trustedOrigins: configParsed.data.TRUSTED_ORIGINS,
@@ -124,5 +148,8 @@ export const config = {
         apiKey: configParsed.data.MISTRAL_API_KEY,
       },
     },
+  },
+  sentry: {
+    dsn: configParsed.data.SENTRY_DSN,
   },
 } as const

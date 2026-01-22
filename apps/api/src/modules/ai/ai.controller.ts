@@ -1,6 +1,7 @@
 import type { ChatRequest, ChatResponse, ChatSchemaType } from './contracts/ai.contract'
 import { TypedBody, TypedController, TypedRoute } from '@lonestone/nzoth/server'
 import { UseGuards } from '@nestjs/common'
+import { LangfuseService } from 'src/modules/ai/langfuse.service'
 import { z } from 'zod'
 import { AuthGuard } from '../auth/auth.guard'
 import { AiService } from './ai.service'
@@ -35,7 +36,7 @@ const testSchemas: Record<Exclude<ChatSchemaType, 'none'>, z.ZodType> = {
 @UseGuards(AuthGuard)
 @TypedController('ai')
 export class AiController {
-  constructor(private readonly aiService: AiService) {}
+  constructor(private readonly aiService: AiService, private readonly langfuseService: LangfuseService) {}
 
   @TypedRoute.Post('chat', chatResponseSchema)
   async chat(@TypedBody(chatRequestSchema) body: ChatRequest): Promise<ChatResponse> {
@@ -49,19 +50,35 @@ export class AiController {
       getCryptoPrice: getCryptoPriceTool,
     }
 
+    const prompt = await this.langfuseService.getLangfusePrompt('Boilerplate tests')
+
     // Build generate input - prefer messages over message for conversation history
     const generateInput = body.messages && body.messages.length > 0
       ? {
           messages: body.messages,
           model: body.model,
-          options: body.options,
+          options: {
+            ...body.options,
+            telemetry: {
+              traceName: `chat-at-time-${Date.now()}`,
+              functionId: 'chat',
+              originalPrompt: prompt?.toJSON(),
+            },
+          },
           schema,
           tools,
         }
       : {
           prompt: body.message!,
           model: body.model,
-          options: body.options,
+          options: {
+            ...body.options,
+            telemetry: {
+              traceName: `chat-at-time-${Date.now()}`,
+              functionId: 'chat',
+              originalPrompt: prompt?.toJSON(),
+            },
+          },
           schema,
           tools,
         }

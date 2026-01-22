@@ -6,6 +6,8 @@ description: How to report errors, log traces and monitor your project
 ## ❓ How it works
 The project uses Sentry (or Sentry compatible alternative) for error reporting, and OpenTelemetry for logging and monitoring.
 
+The project uses a **unified OpenTelemetry tracing architecture** that integrates both Sentry and Langfuse through a shared TracerProvider. This provides distributed tracing across services, with LLM spans exported to Langfuse (for prompt management) and all spans exported to Sentry (for application monitoring). See the [Tracing Architecture](/lonestone-boilerplate/addons/tracing-sentry#tracing-architecture) section for more details.
+
 ## Why this matters
 
 Debugging in production can be a pain. How many times have you been stuck in a situation where you need to debug a problem in production, but:
