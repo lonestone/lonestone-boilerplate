@@ -745,6 +745,10 @@ Generates text or structured data using the configured AI model. Uses function o
   - `presencePenalty` (number, -2 to 2): Presence penalty
   - `maxSteps` (number): Maximum tool calling steps
   - `stopWhen` (number): Stop condition for tool calling
+  - `telemetry` (object, optional): Telemetry options for trace organization
+    - `traceName` (string, required if telemetry is used): Groups LLM calls with the same `traceName` into the same trace. A deterministic `traceId` is automatically generated from this value.
+    - `functionId` (string, optional): Identifies the specific function/operation. Defaults to `traceName` if not provided. Used as the observation name in Langfuse.
+    - `langfuseOriginalPrompt` (string, optional): The original prompt before any enhancements (like schema commands). Allows langfuse to link your langfuse prompt to the trace. Useful for debugging and prompt management.
 - `schema` (ZodSchema, optional): Zod schema for response validation. When provided, response type is `'object'` with typed result
 - `tools` (Record<string, Tool>, optional): Tools available for the AI to call. Tools are created using `tool()` from `ai` SDK or obtained from MCP clients. See "With Tool Calling" section for examples.
 - `signal` (AbortSignal, optional): Signal for cancellation
@@ -779,17 +783,168 @@ Discriminated union type based on whether schema is provided:
 - `toolResults` (array, optional): Results from tool calls
 - `abortController` (AbortController, optional): Controller for cancellation (only if no signal provided)
 
-## Langfuse Integration
+## Langfuse Integration & Tracing Architecture
+
+The AI module uses a unified OpenTelemetry tracing architecture that integrates with both Sentry and Langfuse through a shared TracerProvider.
+
+### Tracing Architecture
+
+The project uses a **shared OpenTelemetry TracerProvider** that combines:
+- **LangfuseSpanProcessor**: Filters and exports only LLM-related spans (instrumentation scope: `langfuse-sdk` or `ai`) to Langfuse
+- **SentrySpanProcessor**: Receives all spans for application monitoring in Sentry
+
+This architecture provides:
+- **Distributed Tracing**: Traces are automatically propagated, allowing you to see the full request flow from API calls through AI generation
+- **Dual Export**: LLM spans appear in both Langfuse (for prompt management) and Sentry (for full request context)
+- **Automatic Instrumentation**: No manual tracing code needed - all AI calls are automatically traced
+
+The tracing system is initialized in `apps/api/src/instrument.ts` before the NestJS application starts.
+
+### Langfuse Trace Details
 
 All AI calls are automatically traced in Langfuse (if configured) with:
-- Trace name: `ai.generate`
-- **Full prompt/messages**: Both original and enhanced (with schema commands) prompts or messages are included
-- Input: Complete enhanced prompt or messages array sent to the model
-- Metadata: model ID, model name, prompt/message lengths, message count, schema presence, tool presence, options
-- Token usage and costs
-- Latency metrics
-- Tool calls and results
-- Error tracking
+- **Trace name**: `ai.generate` (default) or custom name via `options.telemetry.traceName`
+- **Trace ID**: Automatically generated from `traceName` (deterministic, same `traceName` = same `traceId`)
+- **Function ID**: Identifies the operation (from `options.telemetry.functionId` or defaults to `traceName`)
+- **Full prompt/messages**: Both original (via `langfuseOriginalPrompt`) and enhanced (with schema commands) prompts or messages are included
+- **Input**: Complete enhanced prompt or messages array sent to the model
+- **Metadata**: model ID, model name, prompt/message lengths, message count, schema presence, tool presence, options
+- **Token usage and costs**: Detailed token consumption and cost information
+- **Latency metrics**: Request duration and timing information
+- **Tool calls and results**: All tool invocations and their results
+- **Error tracking**: Errors are captured with full context
+
+**Grouping Calls**: Multiple AI calls with the same `traceName` are automatically grouped into a single trace, making it easy to see the full flow of operations in both Langfuse and Sentry.
+
+### Organizing Traces with Telemetry Options
+
+You can organize and group AI calls into meaningful traces using the `telemetry` option. This is especially useful for:
+
+- **Grouping related calls**: Multiple AI calls with the same `traceName` are grouped into a single trace
+- **Identifying operations**: Use `functionId` to identify specific operations within a trace
+- **Preserving original prompts**: Use `langfuseOriginalPrompt` to keep the original prompt before enhancements
+
+#### Telemetry Options
+
+- **`traceName`** (required if using telemetry): Groups LLM calls with the same `traceName` into the same trace. A deterministic `traceId` is automatically generated from this value.
+- **`functionId`** (optional): Identifies the specific function/operation. Defaults to `traceName` if not provided. Used as the observation name in Langfuse.
+- **`langfuseOriginalPrompt`** (optional): The original prompt before any enhancements (like schema commands). Useful for debugging and prompt management.
+
+#### Example: Grouping Related Calls
+
+```typescript
+// Multiple AI calls grouped into the same trace
+const traceName = `user-profile-generation-${userId}`
+
+// First call: Generate user profile
+const profileResult = await this.aiService.generate({
+  prompt: 'Generate a user profile',
+  model: GOOGLE_GEMINI_3_FLASH,
+  options: {
+    telemetry: {
+      traceName,
+      functionId: 'generate-profile',
+      langfuseOriginalPrompt: 'Generate a user profile',
+    },
+  },
+})
+
+// Second call: Enhance profile with additional data
+const enhancedResult = await this.aiService.generate({
+  prompt: 'Add preferences to the profile',
+  model: GOOGLE_GEMINI_3_FLASH,
+  options: {
+    telemetry: {
+      traceName, // Same traceName = same trace
+      functionId: 'enhance-profile',
+      langfuseOriginalPrompt: 'Add preferences to the profile',
+    },
+  },
+})
+```
+
+Both calls will appear in the same trace in Langfuse and Sentry, making it easy to see the full flow of operations.
+
+#### Example: Request-Scoped Tracing
+
+```typescript
+@Injectable()
+export class UserService {
+  constructor(private readonly aiService: AiService) {}
+
+  async processUserRequest(userId: string, requestId: string) {
+    // Create a trace that spans the entire request
+    const traceName = `request-${requestId}`
+
+    // Step 1: Analyze user input
+    const analysis = await this.aiService.generate({
+      prompt: 'Analyze user input',
+      model: GOOGLE_GEMINI_3_FLASH,
+      options: {
+        telemetry: {
+          traceName,
+          functionId: 'analyze-input',
+        },
+      },
+    })
+
+    // Step 2: Generate response
+    const response = await this.aiService.generate({
+      prompt: 'Generate response',
+      model: GOOGLE_GEMINI_3_FLASH,
+      options: {
+        telemetry: {
+          traceName, // Same trace
+          functionId: 'generate-response',
+        },
+      },
+    })
+
+    return response
+  }
+}
+```
+
+#### Example: Preserving Original Prompts
+
+When prompts are enhanced (e.g., with schema commands), preserve the original:
+
+```typescript
+const originalPrompt = 'Generate a user profile'
+
+const result = await this.aiService.generate({
+  prompt: originalPrompt,
+  model: GOOGLE_GEMINI_3_FLASH,
+  schema: userProfileSchema, // This adds schema commands to the prompt
+  options: {
+    telemetry: {
+      traceName: 'user-profile',
+      functionId: 'generate-profile',
+      langfuseOriginalPrompt: originalPrompt, // Preserve original
+    },
+  },
+})
+```
+
+#### How Trace IDs Work
+
+The `traceId` is automatically generated from `traceName` using a deterministic algorithm. This means:
+- Same `traceName` = same `traceId` = same trace
+- Different `traceName` = different `traceId` = different trace
+- You don't need to manually create or manage trace IDs
+
+#### Distributed Tracing
+
+When using `traceName`, the trace is automatically linked across Sentry and Langfuse:
+- **Sentry**: Shows the full request flow including all AI calls grouped by trace
+- **Langfuse**: Shows detailed LLM-specific information for each call within the trace
+- Both tools share the same trace ID, allowing you to correlate data between them
+
+### Important Notes
+
+- **Sentry Visibility**: Because of the shared TracerProvider, Langfuse traces will also appear in Sentry. This allows you to see AI calls in the context of full request traces.
+- **Span Filtering**: Only spans with instrumentation scope names `langfuse-sdk` or `ai` are exported to Langfuse, while all spans go to Sentry.
+- **Configuration**: Both Sentry DSN and Langfuse credentials must be configured for tracing to work. See environment variables section above.
 
 ## Architecture
 

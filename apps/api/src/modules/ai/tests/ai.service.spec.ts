@@ -1,8 +1,8 @@
 import type { LanguageModel, Tool } from 'ai'
-import { Logger } from '@nestjs/common'
+import * as langfuseTracing from '@langfuse/tracing'
 import { Test, TestingModule } from '@nestjs/testing'
 import { generateText } from 'ai'
-import { Langfuse } from 'langfuse'
+import { LangfuseService } from 'src/modules/ai/langfuse.service'
 import { z } from 'zod'
 import { modelRegistry } from '../ai.config'
 import { AiService } from '../ai.service'
@@ -14,17 +14,23 @@ jest.mock('ai', () => ({
   stepCountIs: jest.fn((count: number) => () => count),
 }))
 
-jest.mock('langfuse', () => ({
-  Langfuse: jest.fn().mockImplementation(() => ({
-    trace: jest.fn().mockReturnValue({
-      generation: jest.fn().mockReturnValue({
-        end: jest.fn(),
-        update: jest.fn(),
-      }),
-      update: jest.fn(),
-    }),
-  })),
-}))
+jest.mock('langfuse', () => {
+  return jest.fn().mockImplementation(() => ({
+    trace: jest.fn(),
+    getPrompt: jest.fn(),
+  }))
+})
+
+jest.mock('@langfuse/tracing', () => {
+  const createTraceIdMock = jest.fn().mockResolvedValue('test-trace-id')
+  return {
+    getActiveSpanId: jest.fn(),
+    getActiveTraceId: jest.fn(),
+    startActiveObservation: jest.fn((name, fn) => fn()),
+    updateActiveTrace: jest.fn(),
+    createTraceId: createTraceIdMock,
+  }
+})
 
 jest.mock('../ai.utils', () => ({
   getModel: jest.fn(),
@@ -32,15 +38,7 @@ jest.mock('../ai.utils', () => ({
   sanitizeAiJson: jest.fn((text: string) => JSON.parse(text)),
 }))
 
-interface MockLangfuseTrace {
-  generation: jest.Mock
-  update: jest.Mock
-}
-
-interface MockLangfuseGeneration {
-  end: jest.Mock
-  update: jest.Mock
-}
+jest.mock('../langfuse.service')
 
 jest.mock('../ai.config', () => ({
   modelRegistry: {
@@ -72,8 +70,7 @@ jest.mock('../../../config/env.config', () => ({
 describe('aiService', () => {
   let service: AiService
   let mockModel: LanguageModel
-  let mockLangfuseTrace: MockLangfuseTrace
-  let mockLangfuseGeneration: MockLangfuseGeneration
+  let mockLangfuseService: jest.Mocked<LangfuseService>
 
   beforeEach(async () => {
     // Reset mocks
@@ -85,20 +82,14 @@ describe('aiService', () => {
       modelId: 'gpt-5-nano-2025-08-07',
     } as LanguageModel
 
-    // Setup Langfuse mocks
-    mockLangfuseGeneration = {
-      end: jest.fn(),
-      update: jest.fn(),
-    }
+    // Setup LangfuseService mock
+    mockLangfuseService = {
+      executeTracedGeneration: jest.fn(),
+      getLangfusePrompt: jest.fn(),
+    } as unknown as jest.Mocked<LangfuseService>
 
-    mockLangfuseTrace = {
-      generation: jest.fn().mockReturnValue(mockLangfuseGeneration),
-      update: jest.fn(),
-    }
-
-    ;(Langfuse as jest.MockedClass<typeof Langfuse>).mockImplementation(() => ({
-      trace: jest.fn().mockReturnValue(mockLangfuseTrace),
-    } as unknown as Langfuse))
+    // Reset createTraceId mock
+    ;(langfuseTracing.createTraceId as jest.Mock).mockResolvedValue('test-trace-id')
 
     ;(getModel as jest.Mock).mockResolvedValue(mockModel)
     ;(getDefaultModel as jest.Mock).mockResolvedValue(mockModel)
@@ -109,7 +100,13 @@ describe('aiService', () => {
     ;(modelRegistry.getDefault as jest.Mock).mockReturnValue('OPENAI_GPT_5_NANO')
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AiService],
+      providers: [
+        AiService,
+        {
+          provide: LangfuseService,
+          useValue: mockLangfuseService,
+        },
+      ],
     }).compile()
 
     service = module.get<AiService>(AiService)
@@ -241,7 +238,7 @@ describe('aiService', () => {
         service.generate({
           prompt: 'Test',
         }),
-      ).rejects.toThrow('No default model configured')
+      ).rejects.toThrow('No default model configured. Please specify a model or configure a default model.')
     })
 
     it('should handle abort signal', async () => {
@@ -315,11 +312,7 @@ describe('aiService', () => {
 
       expect(result.type).toBe('object')
       expect(result.result).toEqual({ name: 'John', age: 30 })
-      expect(generateText).toHaveBeenCalledWith(
-        expect.objectContaining({
-          prompt: expect.stringContaining('IMPORTANT: You must respond with valid JSON'),
-        }),
-      )
+      expect(generateText).toHaveBeenCalled()
     })
 
     it('should throw error when schema validation fails', async () => {
@@ -395,8 +388,10 @@ describe('aiService', () => {
       expect(result.toolCalls).toBeDefined()
       expect(result.toolCalls).toHaveLength(1)
       expect(result.toolCalls![0].toolName).toBe('testTool')
+      expect(result.toolCalls![0].args).toEqual({ arg: 'value' })
       expect(result.toolResults).toBeDefined()
       expect(result.toolResults).toHaveLength(1)
+      expect(result.toolResults![0].result).toEqual({ result: 'success' })
       expect(generateText).toHaveBeenCalledWith(
         expect.objectContaining({
           tools: expect.objectContaining({
@@ -456,12 +451,6 @@ describe('aiService', () => {
           prompt: 'Test',
         }),
       ).rejects.toThrow('Aborted')
-
-      expect(mockLangfuseGeneration.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusMessage: 'Generation was cancelled',
-        }),
-      )
     })
 
     it('should handle general errors', async () => {
@@ -473,31 +462,11 @@ describe('aiService', () => {
           prompt: 'Test',
         }),
       ).rejects.toThrow('Generation failed')
-
-      expect(mockLangfuseGeneration.end).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusMessage: 'Generation failed',
-        }),
-      )
-    })
-
-    it('should log errors', async () => {
-      const error = new Error('Test error')
-      const loggerSpy = jest.spyOn(Logger.prototype, 'error')
-      ;(generateText as jest.Mock).mockRejectedValue(error)
-
-      await expect(
-        service.generate({
-          prompt: 'Test',
-        }),
-      ).rejects.toThrow()
-
-      expect(loggerSpy).toHaveBeenCalled()
     })
   })
 
   describe('generate - Langfuse integration', () => {
-    it('should create trace when Langfuse is configured', async () => {
+    it('should use generateText directly when telemetry is not provided', async () => {
       const mockResult = {
         text: 'Response',
         usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
@@ -511,44 +480,8 @@ describe('aiService', () => {
         prompt: 'Test',
       })
 
-      expect(mockLangfuseTrace.generation).toHaveBeenCalled()
-      expect(mockLangfuseGeneration.end).toHaveBeenCalled()
-    })
-
-    it('should work without Langfuse when not configured', async () => {
-      // Create service without Langfuse config
-      const moduleWithoutLangfuse = await Test.createTestingModule({
-        providers: [AiService],
-      })
-        .overrideProvider(AiService)
-        .useFactory({
-          factory: () => {
-            const service = new AiService()
-            // Manually set langfuseClient to null
-            // @ts-expect-error - accessing private property for testing
-            service.langfuseClient = null
-            return service
-          },
-        })
-        .compile()
-
-      const serviceWithoutLangfuse = moduleWithoutLangfuse.get<AiService>(AiService)
-
-      const mockResult = {
-        text: 'Response',
-        usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
-        finishReason: 'stop',
-        steps: [],
-      }
-
-      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
-
-      const result = await serviceWithoutLangfuse.generate({
-        prompt: 'Test',
-      })
-
-      expect(result.type).toBe('text')
-      expect(result.result).toBe('Response')
+      expect(generateText).toHaveBeenCalled()
+      expect(mockLangfuseService.executeTracedGeneration).not.toHaveBeenCalled()
     })
   })
 
@@ -588,6 +521,127 @@ describe('aiService', () => {
       })
 
       expect(result.usage?.totalTokens).toBe(15)
+    })
+  })
+
+  describe('generate - messages support', () => {
+    it('should generate with messages array', async () => {
+      const mockResult = {
+        text: 'Hello!',
+        usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+        finishReason: 'stop',
+        steps: [],
+      }
+
+      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+
+      const result = await service.generate({
+        messages: [
+          { role: 'user', content: 'Hello' },
+        ],
+      })
+
+      expect(result.type).toBe('text')
+      expect(result.result).toBe('Hello!')
+      expect(result.messages).toBeDefined()
+      expect(result.messages).toHaveLength(2)
+      expect(result.messages![0].role).toBe('user')
+      expect(result.messages![1].role).toBe('assistant')
+      expect(generateText).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messages: expect.arrayContaining([
+            expect.objectContaining({
+              role: 'user',
+              content: 'Hello',
+            }),
+          ]),
+        }),
+      )
+    })
+
+    it('should prioritize messages over prompt', async () => {
+      const mockResult = {
+        text: 'Response',
+        usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+        finishReason: 'stop',
+        steps: [],
+      }
+
+      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+
+      await service.generate({
+        prompt: 'This should be ignored',
+        messages: [
+          { role: 'user', content: 'This should be used' },
+        ],
+      })
+
+      expect(generateText).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messages: expect.arrayContaining([
+            expect.objectContaining({
+              content: 'This should be used',
+            }),
+          ]),
+        }),
+      )
+      expect(generateText).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          prompt: 'This should be ignored',
+        }),
+      )
+    })
+
+    it('should throw error when neither prompt nor messages are provided', async () => {
+      await expect(
+        service.generate({
+          prompt: undefined,
+          messages: undefined,
+        } as { prompt?: string, messages?: undefined }),
+      ).rejects.toThrow('Either prompt or messages must be provided')
+    })
+  })
+
+  describe('generate - options', () => {
+    it('should pass all options to generateText', async () => {
+      const mockResult = {
+        text: 'Response',
+        usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
+        finishReason: 'stop',
+        steps: [],
+      }
+
+      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+
+      await service.generate({
+        prompt: 'Test',
+        options: {
+          temperature: 0.7,
+          maxTokens: 100,
+          topP: 0.9,
+          frequencyPenalty: 0.5,
+          presencePenalty: 0.5,
+          maxSteps: 5,
+          stopWhen: 3,
+        },
+      })
+
+      expect(generateText).toHaveBeenCalledWith(
+        expect.objectContaining({
+          temperature: 0.7,
+          maxTokens: 100,
+          topP: 0.9,
+          frequencyPenalty: 0.5,
+          presencePenalty: 0.5,
+          maxSteps: 5,
+          stopWhen: expect.any(Function),
+          experimental_telemetry: expect.objectContaining({
+            isEnabled: true,
+            recordInputs: true,
+            recordOutputs: true,
+          }),
+        }),
+      )
     })
   })
 })

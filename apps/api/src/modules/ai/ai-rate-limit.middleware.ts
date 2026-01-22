@@ -91,29 +91,19 @@ function extractRetryAfter(error: RetryableError): string | undefined {
     return undefined
   }
 
-  if (err.response?.headers) {
-    const retryAfter = getHeaderValue(err.response.headers, 'retry-after')
-    if (retryAfter) {
-      return retryAfter
-    }
-    const retryAfterUpper = getHeaderValue(err.response.headers, 'Retry-After')
-    if (retryAfterUpper) {
-      return retryAfterUpper
-    }
+  const headers = err.response?.headers || err.headers
+
+  if (!headers) {
+    return undefined
   }
 
-  if (err.headers) {
-    const retryAfter = getHeaderValue(err.headers, 'retry-after')
-    if (retryAfter) {
-      return retryAfter
-    }
-    const retryAfterUpper = getHeaderValue(err.headers, 'Retry-After')
-    if (retryAfterUpper) {
-      return retryAfterUpper
-    }
-  }
+  const retryAfter = getHeaderValue(headers, 'retry-after')
+    || getHeaderValue(headers, 'Retry-After')
+    || getHeaderValue(headers, 'retry-after-ms')
+    || getHeaderValue(headers, 'Retry-After-Ms')
+    || undefined
 
-  return undefined
+  return retryAfter
 }
 
 export function withRetryAfter(

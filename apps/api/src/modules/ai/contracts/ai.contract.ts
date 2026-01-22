@@ -11,6 +11,11 @@ export const aiGenerateOptionsSchema = z.object({
   presencePenalty: z.number().min(-2).max(2).optional(),
   maxSteps: z.number().positive().optional(),
   stopWhen: z.number().positive().optional(),
+  telemetry: z.object({
+    traceName: z.string().describe('Merges LLM calls with the same traceName into the same trace.'),
+    functionId: z.string().optional(),
+    langfuseOriginalPrompt: z.string().optional().describe('The original prompt that was used to generate the response. (Use prompt.toJSON())'),
+  }).optional(),
 }).meta({
   title: 'AiGenerateOptions',
   description: 'Options for an AI generation',

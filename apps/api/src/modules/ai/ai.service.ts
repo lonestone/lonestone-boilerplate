@@ -1,13 +1,12 @@
-import type { LanguageModel, LanguageModelUsage } from 'ai'
+import type { LanguageModel, LanguageModelUsage, ModelMessage } from 'ai'
 import type { ModelId } from './ai.config'
-import type { AiGenerateInput, AiGenerateInputWithoutSchema, AiGenerateInputWithSchema, AiGenerateOutputObject, AiGenerateOutputText, CoreMessage } from './contracts/ai.contract'
+import type { AiGenerateInput, AiGenerateInputWithoutSchema, AiGenerateInputWithSchema, AiGenerateOptions, AiGenerateOutputObject, AiGenerateOutputText, CoreMessage } from './contracts/ai.contract'
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { generateText, stepCountIs } from 'ai'
-import { Langfuse } from 'langfuse'
 import z from 'zod'
-import { config } from '../../config/env.config'
 import { modelConfigBase, modelRegistry } from './ai.config'
 import { getDefaultModel, getModel, sanitizeAiJson } from './ai.utils'
+import { LangfuseService } from './langfuse.service'
 
 const defaultStopWhen = 10
 
@@ -35,24 +34,19 @@ function createSchemaPromptCommand(schema: z.ZodType): string {
 @Injectable()
 export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name)
-  private langfuseClient: Langfuse | null = null
 
-  constructor() {
-    if (config.langfuse.secretKey) {
-      this.langfuseClient = new Langfuse({
-        secretKey: config.langfuse.secretKey,
-        publicKey: config.langfuse.publicKey,
-        baseUrl: config.langfuse.host,
-      })
-      this.logger.log('Langfuse client initialized')
-    }
-    else {
-      this.logger.warn('Langfuse secret key not configured. Telemetry will be disabled.')
-    }
-  }
+  constructor(private readonly langfuseService: LangfuseService) {}
 
   onModuleInit() {
     this.registerDefaultModels()
+  }
+
+  static async createTraceId(seed: string): Promise<string> {
+    return LangfuseService.createTraceId(seed)
+  }
+
+  async getLangfusePrompt(promptName: string, promptLabel?: string, version?: number) {
+    return this.langfuseService.getLangfusePrompt(promptName, promptLabel, version)
   }
 
   private registerDefaultModels() {
@@ -71,23 +65,6 @@ export class AiService implements OnModuleInit {
       throw new Error('No default model configured. Please specify a model or configure a default model.')
     }
     return defaultModel
-  }
-
-  private getModelName(modelId?: ModelId): string {
-    if (modelId) {
-      const modelConfig = modelRegistry.get(modelId)
-      if (modelConfig) {
-        return `${modelConfig.provider}:${modelConfig.modelString}`
-      }
-    }
-    const defaultModelId = modelRegistry.getDefault()
-    if (defaultModelId) {
-      const modelConfig = modelRegistry.get(defaultModelId)
-      if (modelConfig) {
-        return `${modelConfig.provider}:${modelConfig.modelString}`
-      }
-    }
-    return 'unknown'
   }
 
   private createSchemaPrompt(schema: z.ZodType): string {
@@ -115,7 +92,6 @@ export class AiService implements OnModuleInit {
     const abortSignal = signal || abortController!.signal
 
     const modelInstance = await this.getModelInstance(model)
-    const modelName = this.getModelName(model)
 
     // Build messages array - messages takes precedence over prompt
     let conversationMessages: CoreMessage[] = []
@@ -155,207 +131,126 @@ export class AiService implements OnModuleInit {
       }
     }
 
-    const startTime = Date.now()
+    const traceId = options?.telemetry ? await LangfuseService.createTraceId(options?.telemetry?.traceName) : undefined
 
-    // Prepare input for Langfuse tracing
-    const inputForTrace = hasMessages
-      ? { messages: conversationMessages }
-      : { prompt: conversationMessages[0]?.content || '' }
-
-    const trace = this.langfuseClient?.trace({
-      name: 'ai.generate',
-      input: {
-        ...inputForTrace,
-        hasSchema: !!schema,
-        hasTools: !!tools,
-        toolNames: tools ? Object.keys(tools) : [],
-      },
-      metadata: {
-        model: modelName,
-        modelId: model,
-        messageCount: conversationMessages.length,
-        hasMessages,
-        promptLength: prompt?.length ?? 0,
-        hasSchema: !!schema,
-        hasTools: !!tools,
-        toolCount: tools ? Object.keys(tools).length : 0,
-        options,
-      },
-    })
-
-    const generation = trace?.generation({
-      name: schema ? 'object-generation' : 'text-generation',
-      model: modelName,
-      input: hasMessages ? conversationMessages : conversationMessages[0]?.content || '',
-      metadata: {
-        temperature: options?.temperature,
-        maxTokens: options?.maxTokens,
-      },
-    })
-
-    try {
-      // Build generate options - use separate branches for messages vs prompt to satisfy TypeScript
-      const generateOptionsBase = {
-        model: modelInstance,
-        abortSignal,
-        ...(options?.temperature !== undefined && { temperature: options.temperature }),
-        ...(options?.topP !== undefined && { topP: options.topP }),
-        ...(options?.frequencyPenalty !== undefined && { frequencyPenalty: options.frequencyPenalty }),
-        ...(options?.presencePenalty !== undefined && { presencePenalty: options.presencePenalty }),
-        ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
-        ...(tools && { tools }),
-        ...(options?.maxSteps !== undefined && { maxSteps: options.maxSteps }),
-        stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
-      }
-
-      const generateOptions = hasMessages
-        ? {
-            ...generateOptionsBase,
-            messages: conversationMessages as Parameters<typeof generateText>[0]['messages'],
-          }
-        : {
-            ...generateOptionsBase,
-            prompt: conversationMessages[0]?.content || '',
-          }
-
-      const result = await generateText(generateOptions as Parameters<typeof generateText>[0])
-
-      const duration = Date.now() - startTime
-
-      generation?.end({
-        output: result.text,
-        usage: result.usage,
-        metadata: {
-          finishReason: result.finishReason,
-          duration,
-          toolCalls: result.steps?.flatMap(step => step.toolCalls || []).length ?? 0,
-          toolResults: result.steps?.flatMap(step => step.toolResults || []).length ?? 0,
-        },
-      })
-
-      // Build updated messages array for response
-      const updatedMessages: CoreMessage[] = hasMessages
-        ? [
-            ...conversationMessages,
-            { role: 'assistant', content: result.text },
-          ]
-        : []
-
-      trace?.update({
-        output: {
-          text: result.text,
-          usage: result.usage,
-          finishReason: result.finishReason,
-          toolCalls: result.steps?.flatMap(step => step.toolCalls || []),
-          toolResults: result.steps?.flatMap(step => step.toolResults || []),
-          ...(hasMessages && { messages: updatedMessages }),
-        },
-        metadata: {
-          duration,
-          steps: result.steps?.length ?? 0,
-          messageCount: updatedMessages.length,
-        },
-      })
-
-      let parsed: T | undefined
-      if (schema) {
-        try {
-          parsed = this.validateAndParse(result.text, schema)
-        }
-        catch (error) {
-          this.logger.error('Schema validation failed', error)
-          generation?.update({
-            statusMessage: `Schema validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          })
-          throw new Error(`Schema validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-        }
-      }
-
-      let usage: { promptTokens: number, completionTokens: number, totalTokens: number } | undefined
-      if (result.usage) {
-        const usageAny = result.usage as LanguageModelUsage
-        usage = {
-          promptTokens: usageAny.inputTokens ?? 0,
-          completionTokens: usageAny.outputTokens ?? 0,
-          totalTokens: result.usage.totalTokens ?? (usageAny.inputTokens ?? 0) + (usageAny.outputTokens ?? 0),
-        }
-      }
-
-      const toolCalls = result.steps?.flatMap(step =>
-        (step.toolCalls || []).map((tc) => {
-          const toolCall = tc
-          return {
-            toolCallId: toolCall.toolCallId,
-            toolName: toolCall.toolName,
-            args: toolCall.input,
-          }
+    // Build generate options - use separate branches for messages vs prompt to satisfy TypeScript
+    const generateOptionsBase: Omit<Parameters<typeof generateText>[0], 'messages' | 'prompt'> = {
+      model: modelInstance,
+      abortSignal,
+      ...(options?.temperature !== undefined && { temperature: options.temperature }),
+      ...(options?.topP !== undefined && { topP: options.topP }),
+      ...(options?.frequencyPenalty !== undefined && { frequencyPenalty: options.frequencyPenalty }),
+      ...(options?.presencePenalty !== undefined && { presencePenalty: options.presencePenalty }),
+      ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
+      ...(tools && { tools }),
+      ...(options?.maxSteps !== undefined && { maxSteps: options.maxSteps }),
+      stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
+      experimental_telemetry: {
+        isEnabled: true,
+        recordInputs: true,
+        recordOutputs: true,
+        ...(options?.telemetry && {
+          traceName: options.telemetry.traceName || 'ai.generate',
+          traceId,
+          functionId: options.telemetry.functionId || '',
+          originalPrompt: options.telemetry.langfuseOriginalPrompt || '',
         }),
-      )
-      const toolResults = result.steps?.flatMap(step =>
-        (step.toolResults || []).map((tr) => {
-          const toolResult = tr
-          return {
-            toolCallId: toolResult.toolCallId,
-            toolName: toolResult.toolName,
-            result: toolResult.output,
-          }
-        }),
-      )
+      },
+    }
 
-      const baseResponse = {
-        usage,
-        finishReason: result.finishReason,
-        abortController,
-        ...(hasMessages && updatedMessages.length > 0 && { messages: updatedMessages }),
-        ...(toolCalls && toolCalls.length > 0 && { toolCalls }),
-        ...(toolResults && toolResults.length > 0 && { toolResults }),
-      }
+    const generateOptions: Parameters<typeof generateText>[0] = hasMessages
+      ? {
+          ...generateOptionsBase,
+          messages: conversationMessages as ModelMessage[],
+        }
+      : {
+          ...generateOptionsBase,
+          prompt: conversationMessages[0]?.content || '',
+        }
 
-      if (parsed !== undefined) {
-        const response: AiGenerateResultObject<T> = {
-          ...baseResponse,
-          type: 'object' as const,
-          result: parsed,
-        }
-        return response as AiGenerateResult<T>
+    const result = await this.executeGeneration(generateOptions, traceId, options)
+
+    let parsed: T | undefined
+    if (schema) {
+      try {
+        parsed = this.validateAndParse(result.text, schema)
       }
-      else {
-        const response: AiGenerateResultText = {
-          ...baseResponse,
-          type: 'text' as const,
-          result: result.text,
-        }
-        return response as AiGenerateResult<T>
+      catch (error) {
+        this.logger.error('Schema validation failed', error)
+        throw new Error(`Schema validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
     }
-    catch (error) {
-      const duration = Date.now() - startTime
 
-      if (error instanceof Error && error.name === 'AbortError') {
-        generation?.update({
-          statusMessage: 'Generation was cancelled',
-          metadata: { duration },
-        })
-        trace?.update({
-          metadata: { cancelled: true, duration },
-        })
-        throw error
+    const updatedMessages: CoreMessage[] | undefined = hasMessages && conversationMessages
+      ? [
+          ...conversationMessages,
+          { role: 'assistant', content: result.text },
+        ]
+      : undefined
+
+    let usage: { promptTokens: number, completionTokens: number, totalTokens: number } | undefined
+
+    if (result.usage) {
+      const usageAny = result.usage as LanguageModelUsage
+      usage = {
+        promptTokens: usageAny.inputTokens ?? 0,
+        completionTokens: usageAny.outputTokens ?? 0,
+        totalTokens: result.usage.totalTokens ?? (usageAny.inputTokens ?? 0) + (usageAny.outputTokens ?? 0),
       }
-
-      generation?.end({
-        statusMessage: error instanceof Error ? error.message : 'Unknown error',
-        metadata: { duration },
-      })
-
-      trace?.update({
-        metadata: {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          duration,
-        },
-      })
-
-      this.logger.error('Text generation failed', error)
-      throw error
     }
+
+    const toolCalls = result.steps?.flatMap(step =>
+      (step.toolCalls || []).map((tc) => {
+        const toolCall = tc
+        return {
+          toolCallId: toolCall.toolCallId,
+          toolName: toolCall.toolName,
+          args: toolCall.input as Record<string, unknown>,
+        }
+      }),
+    )
+    const toolResults = result.steps?.flatMap(step =>
+      (step.toolResults || []).map((tr) => {
+        const toolResult = tr
+        return {
+          toolCallId: toolResult.toolCallId,
+          toolName: toolResult.toolName,
+          result: toolResult.output,
+        }
+      }),
+    )
+
+    const baseResponse = {
+      usage,
+      finishReason: result.finishReason,
+      abortController,
+      ...(hasMessages && updatedMessages && updatedMessages.length > 0 && { messages: updatedMessages }),
+      ...(toolCalls && toolCalls.length > 0 && { toolCalls }),
+      ...(toolResults && toolResults.length > 0 && { toolResults }),
+    }
+
+    if (parsed !== undefined) {
+      return {
+        ...baseResponse,
+        type: 'object' as const,
+        result: parsed,
+      }
+    }
+    else {
+      return {
+        ...baseResponse,
+        type: 'text' as const,
+        result: result.text,
+      }
+    }
+  }
+
+  private async executeGeneration(generateOptions: Parameters<typeof generateText>[0], traceId?: string, options?: AiGenerateOptions) {
+    // If traceId is provided, execute the generation in a langfuse traced context
+    if (traceId) {
+      return this.langfuseService.executeTracedGeneration(generateOptions, options)
+    }
+
+    return generateText(generateOptions)
   }
 }
