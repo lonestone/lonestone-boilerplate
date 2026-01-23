@@ -1,0 +1,41 @@
+# Changelog
+
+This document serves as an history of the project, the actions done, and the global milestones if any.
+
+Here is the template for the changelog:
+
+Remember that changelogs should not be redundant with the code changes or tasks files. If a new task is created, a one liner for the task should be enough (and a link to the task file).
+
+Be as concise as possible in this changelog. Do not list modified files for no reason (we have git for that).
+
+```md
+## X. YYYY-MM-DD
+
+Summary of the session:
+1. Can list done tasks
+2. Should list takeways without being redundant with the tasks themselves (modified files, code changes, etc are listed in the task)
+3. Can list key decisions made
+4. Can list breaking changes
+
+
+Project management:
+- Created **Task xxx**: xxx (Meta)
+- Completed **Task yyy**: yyy (Meta)
+
+New features:
+- List of new features
+
+Bug fixes:
+- List of bug fixes
+
+Breaking changes:
+- List of breaking changes
+
+Key architectural and technical decisions:
+- List of architecture and technical decisions if any
+- Include the rationale for the decisions
+```
+
+Entries should be added in reverse chronological order (the most recent on top).
+
+---

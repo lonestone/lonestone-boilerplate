@@ -210,15 +210,29 @@ It includes the following jobs:
 
 For more information, see the [GitHub Workflows README](.github/README.md).
 
+### AI Agents good practice
+When working with an AI Agent (such as Copilot, Cursor or Claude), please follow these guidelines:
+
+- Do not add rules to the repo. You are encouraged to create your own so that it benefits several projects.
+- If the agent needs markdown documents (like specifications or TODO task), write them in a dedicated folder in docs/features
+- Make the agent write each changes in docs/CHANGELOG.md
+
 ## 📚 Documentation
 
 Project documentation is available in the `docs/` folder and in app `README`s. It contains information about architecture, coding conventions, and development guides.
 
 This documentation is also used by our custom cursor rules.
 
+- [General Guidelines](apps/documentation/src/content/docs/references/general.mdx)
 - [Frontend Guidelines](apps/documentation/src/content/docs/references/frontend.mdx)
 - [Backend Guidelines](apps/documentation/src/content/docs/references/backend.mdx)
+- [Mobile Guidelines](apps/documentation/src/content/docs/references/mobile.mdx)
 - [API Readme](apps/api/README.md)
+- [Frontend Readme](apps/web-spa/README.md)
+
+The `CHANGELOG.md` keeps track of every changes made to the project. Any session should be written as a new entry in it.
+
+The `docs/features` directory should contain a list of folder for each new features. In those you can write specification document and TODO tasks for a feature you are implementing. Feature specefications can can also point toward README.md files inside the packages' features, that should provide more details about the implementation within the scope of the package.
 
 ## 🔍 Tracing Architecture
 
