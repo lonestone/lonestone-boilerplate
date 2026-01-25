@@ -6,9 +6,11 @@ When the developer decides to update the PNPM or Node version, we need to ensure
 
 For that, check the diff or previous commits and do a search on the codebase on the previous version of PNPM and Node.
 
+Do a global search on the codebase for the previous version of PNPM and Node.
+
 Then propose an update for the files that were not updated correctly.
 
-## Files to include (non limited to the ones listed here)
+## At minimum, ensure the following files are updated:
 
 Package.json files:
 - ./package.json
