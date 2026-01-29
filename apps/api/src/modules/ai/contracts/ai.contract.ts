@@ -1,5 +1,6 @@
+import type { Tool } from 'ai'
 import type { ModelId } from '../ai.config'
-import { Tool } from 'ai'
+import { registerSchema } from '@lonestone/nzoth/server'
 import { z } from 'zod'
 import { modelConfigBase } from '../ai.config'
 
@@ -16,6 +17,7 @@ export const aiGenerateOptionsSchema = z.object({
     functionId: z.string().optional(),
     langfuseOriginalPrompt: z.string().optional().describe('The original prompt that was used to generate the response. (Use prompt.toJSON())'),
   }).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 }).meta({
   title: 'AiGenerateOptions',
   description: 'Options for an AI generation',
@@ -33,7 +35,7 @@ export const coreMessageSchema = z.object({
 
 export type CoreMessage = z.infer<typeof coreMessageSchema>
 
-export const aiGenerateInputSchema = z.object({
+const aiGenerateInputBaseSchema = z.object({
   prompt: z.string().min(1).optional(),
   messages: z.array(coreMessageSchema).optional(),
   model: z.custom<ModelId>(val => typeof val === 'string').optional(),
@@ -41,7 +43,9 @@ export const aiGenerateInputSchema = z.object({
   schema: z.custom<z.ZodType>(val => val && typeof val === 'object').optional(),
   tools: z.custom<Record<string, Tool>>(val => val && typeof val === 'object').optional(),
   signal: z.custom<AbortSignal>(val => val instanceof AbortSignal).optional(),
-}).refine(
+})
+
+export const aiGenerateInputSchema = aiGenerateInputBaseSchema.refine(
   data => data.prompt || (data.messages && data.messages.length > 0),
   {
     message: 'Either prompt or messages must be provided',
@@ -148,3 +152,117 @@ export const chatResponseSchema = z.discriminatedUnion('type', [
 })
 
 export type ChatResponse = z.infer<typeof chatResponseSchema>
+
+export const streamRequestSchema = z.object({
+  prompt: z.string().min(1).optional(),
+  messages: z.array(coreMessageSchema).optional(),
+  model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
+  options: aiGenerateOptionsSchema.optional(),
+}).refine(
+  data => data.prompt || (data.messages && data.messages.length > 0),
+  {
+    message: 'Either prompt or messages must be provided',
+    path: ['prompt', 'messages'],
+  },
+).meta({
+  title: 'StreamRequest',
+  description: 'Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided.',
+})
+
+export type StreamRequest = z.infer<typeof streamRequestSchema>
+
+export const aiStreamInputSchema = aiGenerateInputBaseSchema.omit({ schema: true }).refine(
+  data => data.prompt || (data.messages && data.messages.length > 0),
+  {
+    message: 'Either prompt or messages must be provided',
+    path: ['prompt', 'messages'],
+  },
+).meta({
+  title: 'AiStreamInput',
+  description: 'Input for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided. Schema is not supported for streaming.',
+})
+
+export type AiStreamInput = z.infer<typeof aiStreamInputSchema>
+
+// SSE Event schemas for streaming
+export const streamTextChunkEventSchema = z.object({
+  type: z.literal('chunk'),
+  text: z.string(),
+}).meta({
+  title: 'StreamTextChunkEvent',
+  description: 'A text chunk event during streaming',
+})
+
+export type StreamTextChunkEvent = z.infer<typeof streamTextChunkEventSchema>
+
+export const streamToolCallEventSchema = z.object({
+  type: z.literal('tool-call'),
+  toolCallId: z.string(),
+  toolName: z.string(),
+  args: z.record(z.string(), z.unknown()),
+}).meta({
+  title: 'StreamToolCallEvent',
+  description: 'Event when a tool is being called during streaming',
+})
+
+export type StreamToolCallEvent = z.infer<typeof streamToolCallEventSchema>
+
+export const streamToolResultEventSchema = z.object({
+  type: z.literal('tool-result'),
+  toolCallId: z.string(),
+  toolName: z.string(),
+  result: z.unknown(),
+}).meta({
+  title: 'StreamToolResultEvent',
+  description: 'Event when a tool returns a result during streaming',
+})
+
+export type StreamToolResultEvent = z.infer<typeof streamToolResultEventSchema>
+
+export const streamUsageSchema = z.object({
+  promptTokens: z.number(),
+  completionTokens: z.number(),
+  totalTokens: z.number(),
+}).meta({
+  title: 'StreamUsage',
+  description: 'Token usage information for the stream',
+})
+
+export type StreamUsage = z.infer<typeof streamUsageSchema>
+
+export const streamDoneEventSchema = z.object({
+  type: z.literal('done'),
+  fullText: z.string(),
+  usage: streamUsageSchema.optional(),
+  finishReason: z.string().optional(),
+}).meta({
+  title: 'StreamDoneEvent',
+  description: 'Final event when streaming is complete',
+})
+
+export type StreamDoneEvent = z.infer<typeof streamDoneEventSchema>
+
+export const streamErrorEventSchema = z.object({
+  type: z.literal('error'),
+  message: z.string(),
+}).meta({
+  title: 'StreamErrorEvent',
+  description: 'Error event during streaming',
+})
+
+export type StreamErrorEvent = z.infer<typeof streamErrorEventSchema>
+
+export const streamEventSchema = z.discriminatedUnion('type', [
+  streamTextChunkEventSchema,
+  streamToolCallEventSchema,
+  streamToolResultEventSchema,
+  streamDoneEventSchema,
+  streamErrorEventSchema,
+]).meta({
+  title: 'StreamEvent',
+  description: 'SSE event for AI text streaming with tool support',
+})
+
+export type StreamEvent = z.infer<typeof streamEventSchema>
+
+registerSchema(streamEventSchema)

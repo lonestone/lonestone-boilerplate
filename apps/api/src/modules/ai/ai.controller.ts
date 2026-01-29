@@ -1,10 +1,11 @@
-import type { ChatRequest, ChatResponse, ChatSchemaType } from './contracts/ai.contract'
+import type { ChatRequest, ChatResponse, ChatSchemaType, StreamEvent, StreamRequest } from './contracts/ai.contract'
 import { TypedBody, TypedController, TypedRoute } from '@lonestone/nzoth/server'
-import { UseGuards } from '@nestjs/common'
+import { Logger, MessageEvent, Sse, UseGuards } from '@nestjs/common'
+import { Observable } from 'rxjs'
 import { z } from 'zod'
 import { AuthGuard } from '../auth/auth.guard'
 import { AiService } from './ai.service'
-import { chatRequestSchema, chatResponseSchema } from './contracts/ai.contract'
+import { chatRequestSchema, chatResponseSchema, streamRequestSchema } from './contracts/ai.contract'
 import { LangfuseService } from './langfuse.service'
 import { createCoingeckoMCPClient, getCryptoPriceTool } from './tools/coingecko.tools'
 
@@ -36,7 +37,8 @@ const testSchemas: Record<Exclude<ChatSchemaType, 'none'>, z.ZodType> = {
 @UseGuards(AuthGuard)
 @TypedController('ai')
 export class AiController {
-  constructor(private readonly aiService: AiService, private readonly langfuseService: LangfuseService) {}
+  private readonly logger = new Logger(AiController.name)
+  constructor(private readonly aiService: AiService, private readonly langfuseService: LangfuseService) { }
 
   @TypedRoute.Post('chat', chatResponseSchema)
   async chat(@TypedBody(chatRequestSchema) body: ChatRequest): Promise<ChatResponse> {
@@ -114,5 +116,67 @@ export class AiController {
         toolResults: result.toolResults,
       }
     }
+  }
+
+  @TypedRoute.Post('stream')
+  @Sse('stream')
+  stream(@TypedBody(streamRequestSchema) body: StreamRequest): Observable<MessageEvent> {
+    return new Observable((subscriber) => {
+      let abortController: AbortController | null = null
+
+      const runStream = async () => {
+        try {
+          const coingeckoMCPClient = await createCoingeckoMCPClient()
+          const mcpTools = await coingeckoMCPClient.tools()
+
+          const tools = {
+            ...mcpTools,
+            getCryptoPrice: getCryptoPriceTool,
+          }
+
+          abortController = new AbortController()
+
+          for await (const event of this.aiService.streamTextGenerator({
+            ...body,
+            tools,
+            options: {
+              ...body.options,
+              telemetry: {
+                traceName: `stream-at-time-${Date.now()}`,
+                functionId: 'stream',
+              },
+            },
+          }, abortController.signal)) {
+            if (subscriber.closed) {
+              break
+            }
+            subscriber.next(new MessageEvent('message', { data: JSON.stringify(event) }))
+          }
+          if (!subscriber.closed) {
+            subscriber.complete()
+          }
+        }
+        catch (error) {
+          if (subscriber.closed) {
+            return
+          }
+          this.logger.error('Stream error', error)
+          const errorEvent: StreamEvent = {
+            type: 'error',
+            message: error instanceof Error ? error.message : 'Unknown error',
+          }
+          subscriber.next(new MessageEvent('message', { data: JSON.stringify(errorEvent) }))
+          subscriber.complete()
+        }
+      }
+
+      runStream()
+
+      return () => {
+        if (abortController) {
+          abortController.abort()
+        }
+      }
+    })
   }
 }
