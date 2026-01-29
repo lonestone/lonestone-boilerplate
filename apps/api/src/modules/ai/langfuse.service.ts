@@ -1,18 +1,18 @@
+import { LangfuseClient } from '@langfuse/client'
 import { getActiveSpanId, getActiveTraceId, startActiveObservation, updateActiveTrace } from '@langfuse/tracing'
 import { Injectable, Logger } from '@nestjs/common'
 import { generateText } from 'ai'
-import Langfuse from 'langfuse'
-import { AiGenerateOptions } from 'src/modules/ai/contracts/ai.contract'
 import { config } from '../../config/env.config'
+import { AiGenerateOptions } from './contracts/ai.contract'
 
 @Injectable()
 export class LangfuseService {
   private readonly logger = new Logger(LangfuseService.name)
-  private readonly langfuseClient: Langfuse | null = null
+  private readonly langfuseClient: LangfuseClient | null = null
 
   constructor() {
     if (config.langfuse.secretKey) {
-      this.langfuseClient = new Langfuse({
+      this.langfuseClient = new LangfuseClient({
         secretKey: config.langfuse.secretKey,
         publicKey: config.langfuse.publicKey,
         baseUrl: config.langfuse.host,
@@ -30,8 +30,12 @@ export class LangfuseService {
   }
 
   async getLangfusePrompt(promptName: string, promptLabel?: string, version?: number) {
-    return this.langfuseClient?.getPrompt(promptName, version, {
-      label: promptLabel,
+    const isProduction = config.env === 'production'
+    const promptLabelToUse = promptLabel || (isProduction ? 'production' : 'latest')
+
+    return this.langfuseClient?.prompt.get(promptName, {
+      version,
+      label: promptLabelToUse,
     })
   }
 

@@ -4,7 +4,6 @@
     "target": "esnext",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "baseUrl": "./",
     "moduleResolution": "nodenext",
     "resolveJsonModule": true,
     "strict": true,
