@@ -15,7 +15,7 @@ export class MinimalSeeder extends Seeder {
     user.name = 'Test User'
     user.email = 'test@example.com'
     user.emailVerified = true
-    await em.persistAndFlush(user)
+    await em.persist(user).flush()
 
     // Create account with password
     const account = new Account()
@@ -23,13 +23,13 @@ export class MinimalSeeder extends Seeder {
     account.providerId = 'credential'
     account.accountId = crypto.randomUUID()
     account.password = await hashPassword('Password123!')
-    await em.persistAndFlush(account)
+    await em.persist(account).flush()
 
     // Create post
     const post = new Post()
     post.user = user
     post.createdAt = new Date()
-    await em.persistAndFlush(post)
+    await em.persist(post).flush()
 
     // Create post version
     const postVersion = new PostVersion()
@@ -42,15 +42,15 @@ export class MinimalSeeder extends Seeder {
         data: 'This is a test post content.',
       },
     ]
-    await em.persistAndFlush(postVersion)
+    await em.persist(postVersion).flush()
     post.versions.add(postVersion)
-    await em.persistAndFlush(post)
+    await em.persist(post).flush()
 
     // Create comment
     const comment = new Comment()
     comment.post = post
     comment.user = user
     comment.content = 'This is a test comment.'
-    await em.persistAndFlush(comment)
+    await em.persist(comment).flush()
   }
 }

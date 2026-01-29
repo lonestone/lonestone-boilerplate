@@ -61,15 +61,15 @@
     "check-translations": "tsx ./src/i18n-sync.ts"
   },
   "dependencies": {
-    "glob": "^10.5.0",
-    "i18next": "^25.7.4",
+    "glob": "^13.0.0",
+    "i18next": "^25.8.0",
     "persist-and-sync": "^1.2.3",
-    "react-i18next": "^15.7.4"
+    "react-i18next": "^16.5.4"
   },
   "devDependencies": {
-    "@types/glob": "^8.1.0",
-    "@types/node": "^24.10.7",
-    "@types/react": "^19.2.8",
+    "@types/glob": "^9.0.0",
+    "@types/node": "^25.1.0",
+    "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"

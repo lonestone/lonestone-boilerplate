@@ -2,24 +2,17 @@ import type { LanguageModel, Tool } from 'ai'
 import * as langfuseTracing from '@langfuse/tracing'
 import { Test, TestingModule } from '@nestjs/testing'
 import { generateText } from 'ai'
-import { LangfuseService } from 'src/modules/ai/langfuse.service'
 import { z } from 'zod'
 import { modelRegistry } from '../ai.config'
 import { AiService } from '../ai.service'
 import { getDefaultModel, getModel, sanitizeAiJson } from '../ai.utils'
+import { LangfuseService } from '../langfuse.service'
 
 // Mock dependencies
 jest.mock('ai', () => ({
   generateText: jest.fn(),
   stepCountIs: jest.fn((count: number) => () => count),
 }))
-
-jest.mock('langfuse', () => {
-  return jest.fn().mockImplementation(() => ({
-    trace: jest.fn(),
-    getPrompt: jest.fn(),
-  }))
-})
 
 jest.mock('@langfuse/tracing', () => {
   const createTraceIdMock = jest.fn().mockResolvedValue('test-trace-id')

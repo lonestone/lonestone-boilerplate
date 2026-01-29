@@ -1,11 +1,11 @@
 import type { ChatRequest, ChatResponse, ChatSchemaType } from './contracts/ai.contract'
 import { TypedBody, TypedController, TypedRoute } from '@lonestone/nzoth/server'
 import { UseGuards } from '@nestjs/common'
-import { LangfuseService } from 'src/modules/ai/langfuse.service'
 import { z } from 'zod'
 import { AuthGuard } from '../auth/auth.guard'
 import { AiService } from './ai.service'
 import { chatRequestSchema, chatResponseSchema } from './contracts/ai.contract'
+import { LangfuseService } from './langfuse.service'
 import { createCoingeckoMCPClient, getCryptoPriceTool } from './tools/coingecko.tools'
 
 const testSchemas: Record<Exclude<ChatSchemaType, 'none'>, z.ZodType> = {

@@ -17,7 +17,7 @@ export async function createUserData(em: EntityManager, overrides?: Partial<User
     updatedAt: new Date(),
     ...overrides,
   })
-  await em.persistAndFlush(user)
+  await em.persist(user).flush()
 
   const account = new Account()
   account.user = user
@@ -25,7 +25,7 @@ export async function createUserData(em: EntityManager, overrides?: Partial<User
   account.accountId = crypto.randomUUID()
   // Store the password directly
   account.password = await hashPassword(password ?? 'Password123!')
-  await em.persistAndFlush(account)
+  await em.persist(account).flush()
 
   return user
 }

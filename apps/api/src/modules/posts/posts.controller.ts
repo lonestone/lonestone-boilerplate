@@ -11,7 +11,10 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common'
-import { LoggedInBetterAuthSession } from 'src/config/better-auth.config'
+import { z } from 'zod'
+import { LoggedInBetterAuthSession } from '../../config/better-auth.config'
+import { Session } from '../auth/auth.decorator'
+import { AuthGuard } from '../auth/auth.guard'
 import {
   CreatePostInput,
   createPostSchema,
@@ -28,10 +31,7 @@ import {
   UserPost,
   userPostSchema,
   userPostsSchema,
-} from 'src/modules/posts/contracts/posts.contract'
-import { z } from 'zod'
-import { Session } from '../auth/auth.decorator'
-import { AuthGuard } from '../auth/auth.guard'
+} from './contracts/posts.contract'
 import { PostService } from './posts.service'
 
 @TypedController('admin/posts', undefined, {

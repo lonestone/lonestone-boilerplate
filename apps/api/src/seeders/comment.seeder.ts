@@ -2,9 +2,9 @@ import { faker } from '@faker-js/faker'
 
 import { Dictionary, EntityManager } from '@mikro-orm/core'
 import { Seeder } from '@mikro-orm/seeder'
-import { User } from 'src/modules/auth/auth.entity'
-import { Post } from 'src/modules/posts/posts.entity'
+import { User } from '../modules/auth/auth.entity'
 import { Comment } from '../modules/comments/comments.entity'
+import { Post } from '../modules/posts/posts.entity'
 
 function generateNumberOfComments(max: number) {
   return faker.number.int({ min: 0, max })
@@ -28,7 +28,7 @@ async function createComment(post: Post, users: User[], em: EntityManager, paren
     comment.parent = parentComment
   }
 
-  await em.persistAndFlush(comment)
+  await em.persist(comment).flush()
 
   // Generate child comments with decreasing probability based on depth
   if (depth < maxDepth) {

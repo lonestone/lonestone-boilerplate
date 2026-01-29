@@ -27,7 +27,7 @@ export class AuthSeeder extends Seeder {
       user.name = userData.name
       user.email = userData.email.toLowerCase()
       user.emailVerified = true
-      await em.persistAndFlush(user)
+      await em.persist(user).flush()
       context.users.push(user)
 
       // Create account with password
@@ -38,7 +38,7 @@ export class AuthSeeder extends Seeder {
       // Store the password directly
       account.password = await hashPassword(userData.password)
 
-      await em.persistAndFlush(account)
+      await em.persist(account).flush()
     }
   }
 }

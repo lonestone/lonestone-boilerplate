@@ -38,7 +38,7 @@ export class PostSeeder extends Seeder {
         const post = new Post()
         post.user = user.id
         post.createdAt = createdAt
-        await em.persistAndFlush(post)
+        await em.persist(post).flush()
 
         // Create post versions
         for (let i = 0; i < faker.number.int({ min: 1, max: 3 }); i++) {
@@ -53,7 +53,7 @@ export class PostSeeder extends Seeder {
               data: faker.lorem.paragraph(),
             },
           ]
-          await em.persistAndFlush(postVersion)
+          await em.persist(postVersion).flush()
           post.versions.add(postVersion)
         }
         // Add post to the list
@@ -68,7 +68,7 @@ export class PostSeeder extends Seeder {
       if (post.publishedAt) {
         post.slug = computeSlug(post)
       }
-      await em.persistAndFlush(post)
+      await em.persist(post).flush()
     }
     context.posts = posts
   }
