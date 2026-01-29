@@ -1,4 +1,6 @@
 import type { LanguageModel } from 'ai'
+import { createAnthropic as createAnthropicProvider } from '@ai-sdk/anthropic'
+import { createGoogleGenerativeAI as createGoogleGenerativeAIProvider } from '@ai-sdk/google'
 import { createMistral as createMistralProvider } from '@ai-sdk/mistral'
 import { createOpenAI as createOpenAIProvider } from '@ai-sdk/openai'
 
@@ -10,8 +12,7 @@ const anthropicProviderCache: Map<string, ProviderInstance> = new Map()
 async function loadGoogleProvider(apiKey: string): Promise<ProviderInstance> {
   if (!googleProviderCache.has(apiKey)) {
     try {
-      const { createGoogleGenerativeAI } = await import('@ai-sdk/google')
-      const provider = createGoogleGenerativeAI({ apiKey })
+      const provider = createGoogleGenerativeAIProvider({ apiKey })
       googleProviderCache.set(apiKey, provider)
     }
     catch (error) {
@@ -27,8 +28,7 @@ async function loadGoogleProvider(apiKey: string): Promise<ProviderInstance> {
 async function loadAnthropicProvider(apiKey: string): Promise<ProviderInstance> {
   if (!anthropicProviderCache.has(apiKey)) {
     try {
-      const { createAnthropic } = await import('@ai-sdk/anthropic')
-      const provider = createAnthropic({ apiKey })
+      const provider = createAnthropicProvider({ apiKey })
       anthropicProviderCache.set(apiKey, provider)
     }
     catch (error) {

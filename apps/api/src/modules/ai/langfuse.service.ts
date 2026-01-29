@@ -1,5 +1,5 @@
 import { LangfuseClient } from '@langfuse/client'
-import { getActiveSpanId, getActiveTraceId, startActiveObservation, updateActiveTrace } from '@langfuse/tracing'
+import { createTraceId, getActiveSpanId, getActiveTraceId, startActiveObservation, updateActiveTrace } from '@langfuse/tracing'
 import { Injectable, Logger } from '@nestjs/common'
 import { generateText, streamText } from 'ai'
 import { config } from '../../config/env.config'
@@ -25,7 +25,6 @@ export class LangfuseService {
   }
 
   static async createTraceId(seed: string): Promise<string> {
-    const { createTraceId } = await import('@langfuse/tracing')
     return createTraceId(seed)
   }
 

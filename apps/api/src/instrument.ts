@@ -1,3 +1,4 @@
+import { LangfuseSpanProcessor } from '@langfuse/otel'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import * as Sentry from '@sentry/nestjs'
 import {
@@ -7,14 +8,12 @@ import {
 } from '@sentry/opentelemetry'
 import { config } from './config/env.config'
 
-// Option A: Shared TracerProvider (Recommended by Langfuse)
-// This gives distributed tracing across both Sentry and Langfuse
-// Option B is simpler, but I could not get it to work reliably.
-// See: https://langfuse.com/faq/all/existing-sentry-setup
-// And: https://langfuse.com/faq/all/existing-otel-setup#no-traces-in-langfuse
+// Step 1: Initialize Sentry WITHOUT automatic OTEL setup, to be compatible with Langfuse.
+// REASONNING:
+// Option A: Shared TracerProvider (Recommended by Langfuse) - This gives distributed tracing across both Sentry and Langfuse, but it means Langfuse traces will appear in Sentry.
+// Option B: Add the Tracer to Langfuse manually. On paper, it is simpler, but we could not get it to work reliably.
+// See: https://langfuse.com/faq/all/existing-sentry-setup and https://langfuse.com/faq/all/existing-otel-setup#no-traces-in-langfuse
 // ⚠️ This means Langfuse traces will appear in Sentry.
-
-// Step 1: Initialize Sentry WITHOUT automatic OTEL setup
 const sentryClient = Sentry.init({
   debug: config.env !== 'production',
   environment: config.env,
@@ -40,9 +39,7 @@ const sentryClient = Sentry.init({
 console.warn('Sentry initialized')
 
 // Step 2 & 3: Create shared TracerProvider with both processors (async due to ESM-only packages in CJS)
-async function initSharedTracerProvider(): Promise<void> {
-  const { LangfuseSpanProcessor } = await import('@langfuse/otel')
-
+function initSharedTracerProvider(): void {
   if (!config.sentry.dsn) {
     console.warn('Sentry DSN not configured. Tracing will be disabled.')
     return

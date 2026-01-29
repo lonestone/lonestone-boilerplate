@@ -12,7 +12,7 @@ const PREFIX = '/api'
 
 async function bootstrap() {
   // Init tracing
-  await initSharedTracerProvider()
+  initSharedTracerProvider()
 
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
