@@ -3,6 +3,10 @@
 import type { Client, Options as Options2, TDataShape } from "./client";
 import { client } from "./client.gen";
 import type {
+  AiControllerChatData,
+  AiControllerChatResponses,
+  AiControllerStreamData,
+  AiControllerStreamResponses,
   AppControllerGetHelloData,
   AppControllerGetHelloResponses,
   CommentsControllerCreateCommentData,
@@ -165,6 +169,38 @@ export const publicPostControllerGetPosts = <
     unknown,
     ThrowOnError
   >({ url: "/api/public/posts", ...options });
+
+export const aiControllerChat = <ThrowOnError extends boolean = false>(
+  options: Options<AiControllerChatData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AiControllerChatResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/ai/chat",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const aiControllerStream = <ThrowOnError extends boolean = false>(
+  options: Options<AiControllerStreamData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AiControllerStreamResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/ai/stream",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const commentsControllerGetComments = <
   ThrowOnError extends boolean = false,

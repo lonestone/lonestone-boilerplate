@@ -153,7 +153,7 @@ export const chatResponseSchema = z.discriminatedUnion('type', [
 
 export type ChatResponse = z.infer<typeof chatResponseSchema>
 
-export const streamRequestSchema = z.object({
+export const aiStreamRequestSchema = z.object({
   prompt: z.string().min(1).optional(),
   messages: z.array(coreMessageSchema).optional(),
   model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
@@ -165,11 +165,11 @@ export const streamRequestSchema = z.object({
     path: ['prompt', 'messages'],
   },
 ).meta({
-  title: 'StreamRequest',
+  title: 'AiStreamRequest',
   description: 'Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided.',
 })
 
-export type StreamRequest = z.infer<typeof streamRequestSchema>
+export type AiStreamRequest = z.infer<typeof aiStreamRequestSchema>
 
 export const aiStreamInputSchema = aiGenerateInputBaseSchema.omit({ schema: true }).refine(
   data => data.prompt || (data.messages && data.messages.length > 0),
@@ -185,84 +185,84 @@ export const aiStreamInputSchema = aiGenerateInputBaseSchema.omit({ schema: true
 export type AiStreamInput = z.infer<typeof aiStreamInputSchema>
 
 // SSE Event schemas for streaming
-export const streamTextChunkEventSchema = z.object({
+export const aiStreamTextChunkEventSchema = z.object({
   type: z.literal('chunk'),
   text: z.string(),
 }).meta({
-  title: 'StreamTextChunkEvent',
+  title: 'AiStreamTextChunkEvent',
   description: 'A text chunk event during streaming',
 })
 
-export type StreamTextChunkEvent = z.infer<typeof streamTextChunkEventSchema>
+export type AiStreamTextChunkEvent = z.infer<typeof aiStreamTextChunkEventSchema>
 
-export const streamToolCallEventSchema = z.object({
+export const aiStreamToolCallEventSchema = z.object({
   type: z.literal('tool-call'),
   toolCallId: z.string(),
   toolName: z.string(),
   args: z.record(z.string(), z.unknown()),
 }).meta({
-  title: 'StreamToolCallEvent',
+  title: 'AiStreamToolCallEvent',
   description: 'Event when a tool is being called during streaming',
 })
 
-export type StreamToolCallEvent = z.infer<typeof streamToolCallEventSchema>
+export type AiStreamToolCallEvent = z.infer<typeof aiStreamToolCallEventSchema>
 
-export const streamToolResultEventSchema = z.object({
+export const aiStreamToolResultEventSchema = z.object({
   type: z.literal('tool-result'),
   toolCallId: z.string(),
   toolName: z.string(),
   result: z.unknown(),
 }).meta({
-  title: 'StreamToolResultEvent',
+  title: 'AiStreamToolResultEvent',
   description: 'Event when a tool returns a result during streaming',
 })
 
-export type StreamToolResultEvent = z.infer<typeof streamToolResultEventSchema>
+export type AiStreamToolResultEvent = z.infer<typeof aiStreamToolResultEventSchema>
 
-export const streamUsageSchema = z.object({
+export const aiStreamUsageSchema = z.object({
   promptTokens: z.number(),
   completionTokens: z.number(),
   totalTokens: z.number(),
 }).meta({
-  title: 'StreamUsage',
+  title: 'AiStreamUsage',
   description: 'Token usage information for the stream',
 })
 
-export type StreamUsage = z.infer<typeof streamUsageSchema>
+export type AiStreamUsage = z.infer<typeof aiStreamUsageSchema>
 
-export const streamDoneEventSchema = z.object({
+export const aiStreamDoneEventSchema = z.object({
   type: z.literal('done'),
   fullText: z.string(),
-  usage: streamUsageSchema.optional(),
+  usage: aiStreamUsageSchema.optional(),
   finishReason: z.string().optional(),
 }).meta({
-  title: 'StreamDoneEvent',
+  title: 'AiStreamDoneEvent',
   description: 'Final event when streaming is complete',
 })
 
-export type StreamDoneEvent = z.infer<typeof streamDoneEventSchema>
+export type AiStreamDoneEvent = z.infer<typeof aiStreamDoneEventSchema>
 
-export const streamErrorEventSchema = z.object({
+export const aiStreamErrorEventSchema = z.object({
   type: z.literal('error'),
   message: z.string(),
 }).meta({
-  title: 'StreamErrorEvent',
+  title: 'AiStreamErrorEvent',
   description: 'Error event during streaming',
 })
 
-export type StreamErrorEvent = z.infer<typeof streamErrorEventSchema>
+export type AiStreamErrorEvent = z.infer<typeof aiStreamErrorEventSchema>
 
-export const streamEventSchema = z.discriminatedUnion('type', [
-  streamTextChunkEventSchema,
-  streamToolCallEventSchema,
-  streamToolResultEventSchema,
-  streamDoneEventSchema,
-  streamErrorEventSchema,
+export const aiStreamEventSchema = z.discriminatedUnion('type', [
+  aiStreamTextChunkEventSchema,
+  aiStreamToolCallEventSchema,
+  aiStreamToolResultEventSchema,
+  aiStreamDoneEventSchema,
+  aiStreamErrorEventSchema,
 ]).meta({
-  title: 'StreamEvent',
+  title: 'AiStreamEvent',
   description: 'SSE event for AI text streaming with tool support',
 })
 
-export type StreamEvent = z.infer<typeof streamEventSchema>
+export type AiStreamEvent = z.infer<typeof aiStreamEventSchema>
 
-registerSchema(streamEventSchema)
+registerSchema(aiStreamEventSchema)

@@ -7,8 +7,8 @@ import {
   PrimaryKey,
   Property,
 } from '@mikro-orm/core'
-import { User } from '../auth/auth.entity'
-import { Post } from '../posts/posts.entity'
+import { User } from '../../auth/auth.entity'
+import { Post } from '../../example/posts/posts.entity'
 
 @Entity({ tableName: 'comment' })
 export class Comment {

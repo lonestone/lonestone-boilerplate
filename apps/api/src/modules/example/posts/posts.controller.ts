@@ -12,9 +12,9 @@ import {
   UseGuards,
 } from '@nestjs/common'
 import { z } from 'zod'
-import { LoggedInBetterAuthSession } from '../../config/better-auth.config'
-import { Session } from '../auth/auth.decorator'
-import { AuthGuard } from '../auth/auth.guard'
+import { LoggedInBetterAuthSession } from '../../../config/better-auth.config'
+import { Session } from '../../auth/auth.decorator'
+import { AuthGuard } from '../../auth/auth.guard'
 import {
   CreatePostInput,
   createPostSchema,

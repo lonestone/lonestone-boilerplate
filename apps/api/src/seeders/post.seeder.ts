@@ -3,7 +3,7 @@ import { Dictionary, EntityManager } from '@mikro-orm/core'
 import { Seeder } from '@mikro-orm/seeder'
 import { addDays } from 'date-fns'
 import slugify from 'slugify'
-import { Post, PostVersion } from '../modules/posts/posts.entity'
+import { Post, PostVersion } from '../modules/example/posts/posts.entity'
 
 function generateDatePublished(post: Post) {
   if (post.versions.getItems().length === 1) {

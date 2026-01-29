@@ -2,8 +2,8 @@ import { EntityManager } from '@mikro-orm/core'
 import { Seeder } from '@mikro-orm/seeder'
 import { hashPassword } from 'better-auth/crypto'
 import { Account, User } from '../modules/auth/auth.entity'
-import { Comment } from '../modules/comments/comments.entity'
-import { Post, PostVersion } from '../modules/posts/posts.entity'
+import { Comment } from '../modules/example/comments/comments.entity'
+import { Post, PostVersion } from '../modules/example/posts/posts.entity'
 
 /**
  * MinimalSeeder creates just a single user with a single post for quick testing

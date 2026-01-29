@@ -1,7 +1,7 @@
 import { EntityManager, FilterQuery, QueryOrderMap } from '@mikro-orm/core'
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
-import { User } from '../auth/auth.entity'
-import { Post } from '../posts/posts.entity'
+import { User } from '../../auth/auth.entity'
+import { Post } from '../../example/posts/posts.entity'
 import { Comment } from './comments.entity'
 import {
   CommentFiltering,

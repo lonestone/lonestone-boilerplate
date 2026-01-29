@@ -5,6 +5,40 @@ export type ClientOptions = {
 };
 
 /**
+ * ChatRequest
+ *
+ * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided.
+ */
+export type ChatRequest = {
+  message?: string;
+  messages?: Array<CoreMessage>;
+  conversationId?: string;
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "MISTRAL_SMALL";
+  options?: AiGenerateOptions;
+  schemaType?: ChatSchemaType;
+};
+
+/**
+ * AiStreamRequest
+ *
+ * Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided.
+ */
+export type AiStreamRequest = {
+  prompt?: string;
+  messages?: Array<CoreMessage>;
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "MISTRAL_SMALL";
+  options?: AiGenerateOptions;
+};
+
+/**
  * CreateCommentSchema
  *
  * Schema for creating a comment
@@ -33,6 +67,67 @@ export type UpdatePostSchema = {
   title?: string;
   content?: Array<PostContentSchema>;
 };
+
+/**
+ * ChatResponse
+ *
+ * Response from AI chat
+ */
+export type ChatResponse =
+  | {
+      error?: string;
+      usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
+      finishReason?: string;
+      messages?: Array<{
+        role: "user" | "assistant" | "system" | "tool";
+        content: string;
+      }>;
+      toolCalls?: Array<{
+        toolCallId: string;
+        toolName: string;
+        args: {
+          [key: string]: unknown;
+        };
+      }>;
+      toolResults?: Array<{
+        toolCallId: string;
+        toolName: string;
+        result: unknown;
+      }>;
+      type: "text";
+      result: string;
+    }
+  | {
+      error?: string;
+      usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
+      finishReason?: string;
+      messages?: Array<{
+        role: "user" | "assistant" | "system" | "tool";
+        content: string;
+      }>;
+      toolCalls?: Array<{
+        toolCallId: string;
+        toolName: string;
+        args: {
+          [key: string]: unknown;
+        };
+      }>;
+      toolResults?: Array<{
+        toolCallId: string;
+        toolName: string;
+        result: unknown;
+      }>;
+      type: "object";
+      result: unknown;
+    };
 
 /**
  * CommentSchema
@@ -177,6 +272,109 @@ export type PublicPostsSchema = {
     hasMore: boolean;
   };
 };
+
+/**
+ * AiStreamEvent
+ *
+ * SSE event for AI text streaming with tool support
+ */
+export type AiStreamEvent =
+  | {
+      type: "chunk";
+      text: string;
+    }
+  | {
+      type: "tool-call";
+      toolCallId: string;
+      toolName: string;
+      args: {
+        [key: string]: unknown;
+      };
+    }
+  | {
+      type: "tool-result";
+      toolCallId: string;
+      toolName: string;
+      result: unknown;
+    }
+  | {
+      type: "done";
+      fullText: string;
+      /**
+       * AiStreamUsage
+       *
+       * Token usage information for the stream
+       */
+      usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
+      finishReason?: string;
+    }
+  | {
+      type: "error";
+      message: string;
+    };
+
+/**
+ * CoreMessage
+ *
+ * A message in the conversation history following Vercel AI SDK patterns
+ */
+export type CoreMessage = {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+};
+
+/**
+ * AiGenerateOptions
+ *
+ * Options for an AI generation
+ */
+export type AiGenerateOptions = {
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  maxSteps?: number;
+  stopWhen?: number;
+  telemetry?: {
+    /**
+     * Merges LLM calls with the same traceName into the same trace.
+     */
+    traceName: string;
+    functionId?: string;
+    /**
+     * The original prompt that was used to generate the response. (Use prompt.toJSON())
+     */
+    langfuseOriginalPrompt?: string;
+  };
+  metadata?: {
+    [key: string]: unknown;
+  };
+};
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing
+ */
+export const ChatSchemaType = {
+  USER_PROFILE: "userProfile",
+  TASK: "task",
+  PRODUCT: "product",
+  NONE: "none",
+} as const;
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing
+ */
+export type ChatSchemaType =
+  (typeof ChatSchemaType)[keyof typeof ChatSchemaType];
 
 /**
  * PaginationQuerySchema
@@ -558,6 +756,129 @@ export type PublicPostControllerGetPostsResponses = {
 
 export type PublicPostControllerGetPostsResponse =
   PublicPostControllerGetPostsResponses[keyof PublicPostControllerGetPostsResponses];
+
+export type AiControllerChatData = {
+  /**
+   * ChatRequest
+   *
+   * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided.
+   */
+  body: {
+    message?: string;
+    messages?: Array<{
+      role: "user" | "assistant" | "system" | "tool";
+      content: string;
+    }>;
+    conversationId?: string;
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "MISTRAL_SMALL";
+    /**
+     * AiGenerateOptions
+     *
+     * Options for an AI generation
+     */
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+      maxSteps?: number;
+      stopWhen?: number;
+      telemetry?: {
+        /**
+         * Merges LLM calls with the same traceName into the same trace.
+         */
+        traceName: string;
+        functionId?: string;
+        /**
+         * The original prompt that was used to generate the response. (Use prompt.toJSON())
+         */
+        langfuseOriginalPrompt?: string;
+      };
+      metadata?: {
+        [key: string]: unknown;
+      };
+    };
+    /**
+     * ChatSchemaType
+     *
+     * Predefined schema types for testing
+     */
+    schemaType?: "userProfile" | "task" | "product" | "none";
+  };
+  path?: never;
+  query?: never;
+  url: "/api/ai/chat";
+};
+
+export type AiControllerChatResponses = {
+  /**
+   * Response from AI chat
+   */
+  200: ChatResponse;
+};
+
+export type AiControllerChatResponse =
+  AiControllerChatResponses[keyof AiControllerChatResponses];
+
+export type AiControllerStreamData = {
+  /**
+   * AiStreamRequest
+   *
+   * Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided.
+   */
+  body: {
+    prompt?: string;
+    messages?: Array<{
+      role: "user" | "assistant" | "system" | "tool";
+      content: string;
+    }>;
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "MISTRAL_SMALL";
+    /**
+     * AiGenerateOptions
+     *
+     * Options for an AI generation
+     */
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+      maxSteps?: number;
+      stopWhen?: number;
+      telemetry?: {
+        /**
+         * Merges LLM calls with the same traceName into the same trace.
+         */
+        traceName: string;
+        functionId?: string;
+        /**
+         * The original prompt that was used to generate the response. (Use prompt.toJSON())
+         */
+        langfuseOriginalPrompt?: string;
+      };
+      metadata?: {
+        [key: string]: unknown;
+      };
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/ai/stream";
+};
+
+export type AiControllerStreamResponses = {
+  201: unknown;
+};
 
 export type CommentsControllerGetCommentsData = {
   body?: never;

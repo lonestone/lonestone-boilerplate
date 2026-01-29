@@ -12,8 +12,8 @@ import {
   UseGuards,
 } from '@nestjs/common'
 import { z } from 'zod'
-import { Session } from '../auth/auth.decorator'
-import { AuthGuard } from '../auth/auth.guard'
+import { Session } from '../../auth/auth.decorator'
+import { AuthGuard } from '../../auth/auth.guard'
 import { CommentsService } from './comments.service'
 import {
   CommentFiltering,

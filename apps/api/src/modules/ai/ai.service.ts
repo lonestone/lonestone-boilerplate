@@ -1,6 +1,16 @@
 import type { LanguageModel, LanguageModelUsage, ModelMessage, Tool } from 'ai'
 import type { ModelId } from './ai.config'
-import type { AiGenerateInput, AiGenerateInputWithoutSchema, AiGenerateInputWithSchema, AiGenerateOptions, AiGenerateOutputObject, AiGenerateOutputText, CoreMessage, StreamEvent, StreamRequest } from './contracts/ai.contract'
+import type {
+  AiGenerateInput,
+  AiGenerateInputWithoutSchema,
+  AiGenerateInputWithSchema,
+  AiGenerateOptions,
+  AiGenerateOutputObject,
+  AiGenerateOutputText,
+  AiStreamEvent,
+  AiStreamRequest,
+  CoreMessage,
+} from './contracts/ai.contract'
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { generateText, stepCountIs, streamText } from 'ai'
 import z from 'zod'
@@ -8,7 +18,7 @@ import { modelConfigBase, modelRegistry } from './ai.config'
 import { getDefaultModel, getModel, sanitizeAiJson } from './ai.utils'
 import { LangfuseService } from './langfuse.service'
 
-export interface StreamGeneratorInput extends StreamRequest {
+export interface StreamGeneratorInput extends AiStreamRequest {
   tools?: Record<string, Tool>
 }
 
@@ -264,7 +274,7 @@ export class AiService implements OnModuleInit {
     model,
     options,
     tools,
-  }: StreamGeneratorInput, signal?: AbortSignal): AsyncGenerator<StreamEvent> {
+  }: StreamGeneratorInput, signal?: AbortSignal): AsyncGenerator<AiStreamEvent> {
     const abortController = signal ? undefined : new AbortController()
     const abortSignal = signal || abortController!.signal
 

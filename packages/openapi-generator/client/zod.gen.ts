@@ -19,6 +19,92 @@ export const zCreateCommentSchema = z.object({
 });
 
 /**
+ * ChatResponse
+ *
+ * Response from AI chat
+ */
+export const zChatResponse = z.union([
+  z.object({
+    error: z.optional(z.string()),
+    usage: z.optional(
+      z.object({
+        promptTokens: z.number(),
+        completionTokens: z.number(),
+        totalTokens: z.number(),
+      }),
+    ),
+    finishReason: z.optional(z.string()),
+    messages: z.optional(
+      z.array(
+        z.object({
+          role: z.enum(["user", "assistant", "system", "tool"]),
+          content: z.string(),
+        }),
+      ),
+    ),
+    toolCalls: z.optional(
+      z.array(
+        z.object({
+          toolCallId: z.string(),
+          toolName: z.string(),
+          args: z.record(z.string(), z.unknown()),
+        }),
+      ),
+    ),
+    toolResults: z.optional(
+      z.array(
+        z.object({
+          toolCallId: z.string(),
+          toolName: z.string(),
+          result: z.unknown(),
+        }),
+      ),
+    ),
+    type: z.literal("text"),
+    result: z.string(),
+  }),
+  z.object({
+    error: z.optional(z.string()),
+    usage: z.optional(
+      z.object({
+        promptTokens: z.number(),
+        completionTokens: z.number(),
+        totalTokens: z.number(),
+      }),
+    ),
+    finishReason: z.optional(z.string()),
+    messages: z.optional(
+      z.array(
+        z.object({
+          role: z.enum(["user", "assistant", "system", "tool"]),
+          content: z.string(),
+        }),
+      ),
+    ),
+    toolCalls: z.optional(
+      z.array(
+        z.object({
+          toolCallId: z.string(),
+          toolName: z.string(),
+          args: z.record(z.string(), z.unknown()),
+        }),
+      ),
+    ),
+    toolResults: z.optional(
+      z.array(
+        z.object({
+          toolCallId: z.string(),
+          toolName: z.string(),
+          result: z.unknown(),
+        }),
+      ),
+    ),
+    type: z.literal("object"),
+    result: z.unknown(),
+  }),
+]);
+
+/**
  * CommentSchema
  *
  * Schema for a comment
@@ -223,6 +309,131 @@ export const zPublicPostsSchema = z.object({
     itemCount: z.number(),
     hasMore: z.boolean(),
   }),
+});
+
+/**
+ * AiStreamEvent
+ *
+ * SSE event for AI text streaming with tool support
+ */
+export const zAiStreamEvent = z.union([
+  z.object({
+    type: z.literal("chunk"),
+    text: z.string(),
+  }),
+  z.object({
+    type: z.literal("tool-call"),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.record(z.string(), z.unknown()),
+  }),
+  z.object({
+    type: z.literal("tool-result"),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    result: z.unknown(),
+  }),
+  z.object({
+    type: z.literal("done"),
+    fullText: z.string(),
+    usage: z.optional(
+      z.object({
+        promptTokens: z.number(),
+        completionTokens: z.number(),
+        totalTokens: z.number(),
+      }),
+    ),
+    finishReason: z.optional(z.string()),
+  }),
+  z.object({
+    type: z.literal("error"),
+    message: z.string(),
+  }),
+]);
+
+/**
+ * CoreMessage
+ *
+ * A message in the conversation history following Vercel AI SDK patterns
+ */
+export const zCoreMessage = z.object({
+  role: z.enum(["user", "assistant", "system", "tool"]),
+  content: z.string(),
+});
+
+/**
+ * AiGenerateOptions
+ *
+ * Options for an AI generation
+ */
+export const zAiGenerateOptions = z.object({
+  temperature: z.optional(z.number().gte(0).lte(2)),
+  maxTokens: z.optional(z.number().gt(0)),
+  topP: z.optional(z.number().gte(0).lte(1)),
+  frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+  presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+  maxSteps: z.optional(z.number().gt(0)),
+  stopWhen: z.optional(z.number().gt(0)),
+  telemetry: z.optional(
+    z.object({
+      traceName: z.string(),
+      functionId: z.optional(z.string()),
+      langfuseOriginalPrompt: z.optional(z.string()),
+    }),
+  ),
+  metadata: z.optional(z.record(z.string(), z.unknown())),
+});
+
+/**
+ * AiStreamRequest
+ *
+ * Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided.
+ */
+export const zAiStreamRequest = z.object({
+  prompt: z.optional(z.string().min(1)),
+  messages: z.optional(z.array(zCoreMessage)),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+});
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing
+ */
+export const zChatSchemaType = z.enum([
+  "userProfile",
+  "task",
+  "product",
+  "none",
+]);
+
+/**
+ * ChatRequest
+ *
+ * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided.
+ */
+export const zChatRequest = z.object({
+  message: z.optional(z.string().min(1)),
+  messages: z.optional(z.array(zCoreMessage)),
+  conversationId: z.optional(z.string()),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+  schemaType: z.optional(zChatSchemaType),
 });
 
 /**
@@ -510,6 +721,99 @@ export const zPublicPostControllerGetPostsData = z.object({
  * A list of public posts
  */
 export const zPublicPostControllerGetPostsResponse = zPublicPostsSchema;
+
+export const zAiControllerChatData = z.object({
+  body: z.object({
+    message: z.optional(z.string().min(1)),
+    messages: z.optional(
+      z.array(
+        z.object({
+          role: z.enum(["user", "assistant", "system", "tool"]),
+          content: z.string(),
+        }),
+      ),
+    ),
+    conversationId: z.optional(z.string()),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "MISTRAL_SMALL",
+      ]),
+    ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            traceName: z.string(),
+            functionId: z.optional(z.string()),
+            langfuseOriginalPrompt: z.optional(z.string()),
+          }),
+        ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
+    ),
+    schemaType: z.optional(z.enum(["userProfile", "task", "product", "none"])),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Response from AI chat
+ */
+export const zAiControllerChatResponse = zChatResponse;
+
+export const zAiControllerStreamData = z.object({
+  body: z.object({
+    prompt: z.optional(z.string().min(1)),
+    messages: z.optional(
+      z.array(
+        z.object({
+          role: z.enum(["user", "assistant", "system", "tool"]),
+          content: z.string(),
+        }),
+      ),
+    ),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "MISTRAL_SMALL",
+      ]),
+    ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            traceName: z.string(),
+            functionId: z.optional(z.string()),
+            langfuseOriginalPrompt: z.optional(z.string()),
+          }),
+        ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
+    ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
 
 export const zCommentsControllerGetCommentsData = z.object({
   body: z.optional(z.never()),

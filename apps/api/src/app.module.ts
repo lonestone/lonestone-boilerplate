@@ -3,11 +3,12 @@ import { Module } from '@nestjs/common'
 import { ConfigModule as NestConfigModule } from '@nestjs/config'
 import { LoggerModule } from 'nestjs-pino'
 import { AppController } from './app.controller'
+import { AiModule } from './modules/ai/ai.module'
 import { AuthModule } from './modules/auth/auth.module'
-import { CommentsModule } from './modules/comments/comments.module'
 import { DbModule } from './modules/db/db.module'
 import { EmailModule } from './modules/email/email.module'
-import { PostModule } from './modules/posts/posts.module'
+import { CommentsModule } from './modules/example/comments/comments.module'
+import { PostModule } from './modules/example/posts/posts.module'
 
 // Interface étendue pour les requêtes Express
 interface ExpressRequest extends IncomingMessage {
@@ -89,6 +90,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     AuthModule.forRootAsync(),
     EmailModule,
     PostModule,
+    AiModule,
     CommentsModule,
     NestConfigModule,
   ],

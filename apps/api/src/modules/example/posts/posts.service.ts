@@ -1,8 +1,8 @@
 import { EntityManager, FilterQuery } from '@mikro-orm/core'
 import { Injectable, NotFoundException } from '@nestjs/common'
 import slugify from 'slugify'
-import { User } from '../auth/auth.entity'
-import { Comment } from '../comments/comments.entity'
+import { User } from '../../auth/auth.entity'
+import { Comment } from '../../example/comments/comments.entity'
 import {
   CreatePostInput,
   PostFiltering,

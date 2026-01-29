@@ -8,8 +8,8 @@ import {
   Property,
   Unique,
 } from '@mikro-orm/core'
-import { User } from '../auth/auth.entity'
-import { Comment } from '../comments/comments.entity'
+import { User } from '../../auth/auth.entity'
+import { Comment } from '../../example/comments/comments.entity'
 
 export interface Content {
   type: 'text' | 'image' | 'video'

@@ -504,6 +504,301 @@
         }
       }
     },
+    "/api/ai/chat": {
+      "post": {
+        "operationId": "AiController_chat",
+        "tags": [
+          "Ai"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant",
+                            "system",
+                            "tool"
+                          ]
+                        },
+                        "content": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "role",
+                        "content"
+                      ],
+                      "additionalProperties": false,
+                      "title": "CoreMessage",
+                      "description": "A message in the conversation history following Vercel AI SDK patterns"
+                    }
+                  },
+                  "conversationId": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "traceName": {
+                            "type": "string",
+                            "description": "Merges LLM calls with the same traceName into the same trace."
+                          },
+                          "functionId": {
+                            "type": "string"
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "traceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  },
+                  "schemaType": {
+                    "type": "string",
+                    "enum": [
+                      "userProfile",
+                      "task",
+                      "product",
+                      "none"
+                    ],
+                    "title": "ChatSchemaType",
+                    "description": "Predefined schema types for testing"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "ChatRequest",
+                "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response from AI chat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/stream": {
+      "post": {
+        "operationId": "AiController_stream",
+        "tags": [
+          "Ai"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant",
+                            "system",
+                            "tool"
+                          ]
+                        },
+                        "content": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "role",
+                        "content"
+                      ],
+                      "additionalProperties": false,
+                      "title": "CoreMessage",
+                      "description": "A message in the conversation history following Vercel AI SDK patterns"
+                    }
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "traceName": {
+                            "type": "string",
+                            "description": "Merges LLM calls with the same traceName into the same trace."
+                          },
+                          "functionId": {
+                            "type": "string"
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "traceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "AiStreamRequest",
+                "description": "Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided."
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/posts/{postSlug}/comments": {
       "post": {
         "operationId": "CommentsController_createComment",
@@ -767,6 +1062,72 @@
   },
   "components": {
     "schemas": {
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoreMessage"
+            }
+          },
+          "conversationId": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          },
+          "schemaType": {
+            "$ref": "#/components/schemas/ChatSchemaType"
+          }
+        },
+        "additionalProperties": false,
+        "title": "ChatRequest",
+        "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided."
+      },
+      "AiStreamRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoreMessage"
+            }
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "additionalProperties": false,
+        "title": "AiStreamRequest",
+        "description": "Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided."
+      },
       "CreateCommentSchema": {
         "type": "object",
         "properties": {
@@ -827,6 +1188,249 @@
         "additionalProperties": false,
         "title": "UpdatePostSchema",
         "description": "Schema for updating a post"
+      },
+      "ChatResponse": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string"
+              },
+              "usage": {
+                "type": "object",
+                "properties": {
+                  "promptTokens": {
+                    "type": "number"
+                  },
+                  "completionTokens": {
+                    "type": "number"
+                  },
+                  "totalTokens": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "promptTokens",
+                  "completionTokens",
+                  "totalTokens"
+                ],
+                "additionalProperties": false
+              },
+              "finishReason": {
+                "type": "string"
+              },
+              "messages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "assistant",
+                        "system",
+                        "tool"
+                      ]
+                    },
+                    "content": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "role",
+                    "content"
+                  ],
+                  "additionalProperties": false,
+                  "title": "CoreMessage",
+                  "description": "A message in the conversation history following Vercel AI SDK patterns"
+                }
+              },
+              "toolCalls": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "toolCallId": {
+                      "type": "string"
+                    },
+                    "toolName": {
+                      "type": "string"
+                    },
+                    "args": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "toolCallId",
+                    "toolName",
+                    "args"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "toolResults": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "toolCallId": {
+                      "type": "string"
+                    },
+                    "toolName": {
+                      "type": "string"
+                    },
+                    "result": {}
+                  },
+                  "required": [
+                    "toolCallId",
+                    "toolName",
+                    "result"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "type": {
+                "type": "string",
+                "const": "text"
+              },
+              "result": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "result"
+            ],
+            "additionalProperties": false,
+            "title": "AiGenerateOutputText",
+            "description": "Text output from an AI generation"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string"
+              },
+              "usage": {
+                "type": "object",
+                "properties": {
+                  "promptTokens": {
+                    "type": "number"
+                  },
+                  "completionTokens": {
+                    "type": "number"
+                  },
+                  "totalTokens": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "promptTokens",
+                  "completionTokens",
+                  "totalTokens"
+                ],
+                "additionalProperties": false
+              },
+              "finishReason": {
+                "type": "string"
+              },
+              "messages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "assistant",
+                        "system",
+                        "tool"
+                      ]
+                    },
+                    "content": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "role",
+                    "content"
+                  ],
+                  "additionalProperties": false,
+                  "title": "CoreMessage",
+                  "description": "A message in the conversation history following Vercel AI SDK patterns"
+                }
+              },
+              "toolCalls": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "toolCallId": {
+                      "type": "string"
+                    },
+                    "toolName": {
+                      "type": "string"
+                    },
+                    "args": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "toolCallId",
+                    "toolName",
+                    "args"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "toolResults": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "toolCallId": {
+                      "type": "string"
+                    },
+                    "toolName": {
+                      "type": "string"
+                    },
+                    "result": {}
+                  },
+                  "required": [
+                    "toolCallId",
+                    "toolName",
+                    "result"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "type": {
+                "type": "string",
+                "const": "object"
+              },
+              "result": {}
+            },
+            "required": [
+              "type",
+              "result"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "title": "ChatResponse",
+        "description": "Response from AI chat",
+        "type": "object"
       },
       "CommentSchema": {
         "type": "object",
@@ -1322,6 +1926,253 @@
         "additionalProperties": false,
         "title": "PublicPostsSchema",
         "description": "A list of public posts"
+      },
+      "AiStreamEvent": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "chunk"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "text"
+            ],
+            "additionalProperties": false,
+            "title": "AiStreamTextChunkEvent",
+            "description": "A text chunk event during streaming"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "tool-call"
+              },
+              "toolCallId": {
+                "type": "string"
+              },
+              "toolName": {
+                "type": "string"
+              },
+              "args": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "type",
+              "toolCallId",
+              "toolName",
+              "args"
+            ],
+            "additionalProperties": false,
+            "title": "AiStreamToolCallEvent",
+            "description": "Event when a tool is being called during streaming"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "tool-result"
+              },
+              "toolCallId": {
+                "type": "string"
+              },
+              "toolName": {
+                "type": "string"
+              },
+              "result": {}
+            },
+            "required": [
+              "type",
+              "toolCallId",
+              "toolName",
+              "result"
+            ],
+            "additionalProperties": false,
+            "title": "AiStreamToolResultEvent",
+            "description": "Event when a tool returns a result during streaming"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "done"
+              },
+              "fullText": {
+                "type": "string"
+              },
+              "usage": {
+                "type": "object",
+                "properties": {
+                  "promptTokens": {
+                    "type": "number"
+                  },
+                  "completionTokens": {
+                    "type": "number"
+                  },
+                  "totalTokens": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "promptTokens",
+                  "completionTokens",
+                  "totalTokens"
+                ],
+                "additionalProperties": false,
+                "title": "AiStreamUsage",
+                "description": "Token usage information for the stream"
+              },
+              "finishReason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "fullText"
+            ],
+            "additionalProperties": false,
+            "title": "AiStreamDoneEvent",
+            "description": "Final event when streaming is complete"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "error"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "additionalProperties": false,
+            "title": "AiStreamErrorEvent",
+            "description": "Error event during streaming"
+          }
+        ],
+        "title": "AiStreamEvent",
+        "description": "SSE event for AI text streaming with tool support",
+        "type": "object"
+      },
+      "CoreMessage": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "system",
+              "tool"
+            ]
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "additionalProperties": false,
+        "title": "CoreMessage",
+        "description": "A message in the conversation history following Vercel AI SDK patterns"
+      },
+      "AiGenerateOptions": {
+        "type": "object",
+        "properties": {
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "maxTokens": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "topP": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "frequencyPenalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "presencePenalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "maxSteps": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "stopWhen": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "telemetry": {
+            "type": "object",
+            "properties": {
+              "traceName": {
+                "type": "string",
+                "description": "Merges LLM calls with the same traceName into the same trace."
+              },
+              "functionId": {
+                "type": "string"
+              },
+              "langfuseOriginalPrompt": {
+                "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                "type": "string"
+              }
+            },
+            "required": [
+              "traceName"
+            ],
+            "additionalProperties": false
+          },
+          "metadata": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "additionalProperties": false,
+        "title": "AiGenerateOptions",
+        "description": "Options for an AI generation"
+      },
+      "ChatSchemaType": {
+        "type": "string",
+        "enum": [
+          "userProfile",
+          "task",
+          "product",
+          "none"
+        ],
+        "title": "ChatSchemaType",
+        "description": "Predefined schema types for testing"
       },
       "PaginationQuerySchema": {
         "type": "object",

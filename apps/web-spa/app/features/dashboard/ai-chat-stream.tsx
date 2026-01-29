@@ -1,4 +1,4 @@
-import type { aiControllerChat, CoreMessage, StreamEvent } from '@boilerstone/openapi-generator'
+import type { aiControllerChat, AiStreamEvent, CoreMessage } from '@boilerstone/openapi-generator'
 import { createSseClient } from '@boilerstone/openapi-generator'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
@@ -122,7 +122,7 @@ export function AiChatStream() {
         model,
       }
 
-      const { stream } = createSseClient<StreamEvent>({
+      const { stream } = createSseClient<AiStreamEvent>({
         url: `${apiUrl}/api/ai/stream`,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -131,7 +131,7 @@ export function AiChatStream() {
         signal: controller.signal,
       })
 
-      for await (const event of stream as AsyncGenerator<StreamEvent>) {
+      for await (const event of stream as AsyncGenerator<AiStreamEvent>) {
         if (event.type === 'chunk') {
           setMessages(prev => prev.map(msg =>
             msg.id === assistantMessageId

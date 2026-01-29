@@ -3,8 +3,8 @@ import { faker } from '@faker-js/faker'
 import { Dictionary, EntityManager } from '@mikro-orm/core'
 import { Seeder } from '@mikro-orm/seeder'
 import { User } from '../modules/auth/auth.entity'
-import { Comment } from '../modules/comments/comments.entity'
-import { Post } from '../modules/posts/posts.entity'
+import { Comment } from '../modules/example/comments/comments.entity'
+import { Post } from '../modules/example/posts/posts.entity'
 
 function generateNumberOfComments(max: number) {
   return faker.number.int({ min: 0, max })

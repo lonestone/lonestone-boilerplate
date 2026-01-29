@@ -1,11 +1,11 @@
-import type { ChatRequest, ChatResponse, ChatSchemaType, StreamEvent, StreamRequest } from './contracts/ai.contract'
+import type { AiStreamEvent, AiStreamRequest, ChatRequest, ChatResponse, ChatSchemaType } from './contracts/ai.contract'
 import { TypedBody, TypedController, TypedRoute } from '@lonestone/nzoth/server'
 import { Logger, MessageEvent, Sse, UseGuards } from '@nestjs/common'
 import { Observable } from 'rxjs'
 import { z } from 'zod'
 import { AuthGuard } from '../auth/auth.guard'
 import { AiService } from './ai.service'
-import { chatRequestSchema, chatResponseSchema, streamRequestSchema } from './contracts/ai.contract'
+import { aiStreamRequestSchema, chatRequestSchema, chatResponseSchema } from './contracts/ai.contract'
 import { LangfuseService } from './langfuse.service'
 import { createCoingeckoMCPClient, getCryptoPriceTool } from './tools/coingecko.tools'
 
@@ -120,7 +120,7 @@ export class AiController {
 
   @TypedRoute.Post('stream')
   @Sse('stream')
-  stream(@TypedBody(streamRequestSchema) body: StreamRequest): Observable<MessageEvent> {
+  stream(@TypedBody(aiStreamRequestSchema) body: AiStreamRequest): Observable<MessageEvent> {
     return new Observable((subscriber) => {
       let abortController: AbortController | null = null
 
@@ -161,7 +161,7 @@ export class AiController {
             return
           }
           this.logger.error('Stream error', error)
-          const errorEvent: StreamEvent = {
+          const errorEvent: AiStreamEvent = {
             type: 'error',
             message: error instanceof Error ? error.message : 'Unknown error',
           }
