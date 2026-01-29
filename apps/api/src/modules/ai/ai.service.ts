@@ -1,12 +1,16 @@
-import type { LanguageModel, LanguageModelUsage, ModelMessage } from 'ai'
+import type { LanguageModel, LanguageModelUsage, ModelMessage, Tool } from 'ai'
 import type { ModelId } from './ai.config'
-import type { AiGenerateInput, AiGenerateInputWithoutSchema, AiGenerateInputWithSchema, AiGenerateOptions, AiGenerateOutputObject, AiGenerateOutputText, CoreMessage } from './contracts/ai.contract'
+import type { AiGenerateInput, AiGenerateInputWithoutSchema, AiGenerateInputWithSchema, AiGenerateOptions, AiGenerateOutputObject, AiGenerateOutputText, CoreMessage, StreamEvent, StreamRequest } from './contracts/ai.contract'
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
-import { generateText, stepCountIs } from 'ai'
+import { generateText, stepCountIs, streamText } from 'ai'
 import z from 'zod'
 import { modelConfigBase, modelRegistry } from './ai.config'
 import { getDefaultModel, getModel, sanitizeAiJson } from './ai.utils'
 import { LangfuseService } from './langfuse.service'
+
+export interface StreamGeneratorInput extends StreamRequest {
+  tools?: Record<string, Tool>
+}
 
 const defaultStopWhen = 10
 
@@ -252,5 +256,125 @@ export class AiService implements OnModuleInit {
     }
 
     return generateText(generateOptions)
+  }
+
+  async* streamTextGenerator({
+    prompt,
+    messages,
+    model,
+    options,
+    tools,
+  }: StreamGeneratorInput, signal?: AbortSignal): AsyncGenerator<StreamEvent> {
+    const abortController = signal ? undefined : new AbortController()
+    const abortSignal = signal || abortController!.signal
+
+    const modelInstance = await this.getModelInstance(model)
+
+    // Build messages array - messages takes precedence over prompt
+    let conversationMessages: CoreMessage[] = []
+    let hasMessages = false
+
+    if (messages && messages.length > 0) {
+      conversationMessages = [...messages] as CoreMessage[]
+      hasMessages = true
+    }
+    else if (prompt) {
+      conversationMessages = [{ role: 'user', content: prompt }]
+    }
+    else {
+      throw new Error('Either prompt or messages must be provided')
+    }
+
+    const traceId = options?.telemetry ? await LangfuseService.createTraceId(options?.telemetry?.traceName) : undefined
+
+    const streamOptionsBase: Omit<Parameters<typeof streamText>[0], 'messages' | 'prompt'> = {
+      model: modelInstance,
+      abortSignal,
+      ...(options?.temperature !== undefined && { temperature: options.temperature }),
+      ...(options?.topP !== undefined && { topP: options.topP }),
+      ...(options?.frequencyPenalty !== undefined && { frequencyPenalty: options.frequencyPenalty }),
+      ...(options?.presencePenalty !== undefined && { presencePenalty: options.presencePenalty }),
+      ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
+      ...(tools && { tools }),
+      ...(options?.maxSteps !== undefined && { maxSteps: options.maxSteps }),
+      stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
+      experimental_telemetry: {
+        isEnabled: true,
+        recordInputs: true,
+        recordOutputs: true,
+        ...(options?.telemetry && {
+          traceName: options.telemetry.traceName || 'ai.streamText',
+          traceId,
+          functionId: options.telemetry.functionId || '',
+          originalPrompt: options.telemetry.langfuseOriginalPrompt || '',
+        }),
+      },
+    }
+
+    const streamOptions: Parameters<typeof streamText>[0] = hasMessages
+      ? {
+          ...streamOptionsBase,
+          messages: conversationMessages as ModelMessage[],
+        }
+      : {
+          ...streamOptionsBase,
+          prompt: conversationMessages[0]?.content || '',
+        }
+
+    const result = await this.executeStreaming(streamOptions, traceId, options)
+
+    let fullText = ''
+
+    // Use fullStream to capture all events including tool calls
+    for await (const part of result.fullStream) {
+      if (part.type === 'text-delta') {
+        fullText += part.text
+        yield { type: 'chunk' as const, text: part.text }
+      }
+      else if (part.type === 'tool-call') {
+        yield {
+          type: 'tool-call' as const,
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          args: part.input as Record<string, unknown>,
+        }
+      }
+      else if (part.type === 'tool-result') {
+        yield {
+          type: 'tool-result' as const,
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          result: part.output,
+        }
+      }
+    }
+
+    const usage = await result.usage
+    const finishReason = await result.finishReason
+
+    const final = {
+      type: 'done' as const,
+      fullText,
+      usage: usage
+        ? {
+            promptTokens: usage.inputTokens ?? 0,
+            completionTokens: usage.outputTokens ?? 0,
+            totalTokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
+          }
+        : undefined,
+      finishReason,
+    }
+
+    yield final
+
+    return final
+  }
+
+  private async executeStreaming(streamOptions: Parameters<typeof streamText>[0], traceId?: string, options?: AiGenerateOptions) {
+    if (traceId) {
+      return this.langfuseService.executeTracedStreaming(streamOptions, options)
+    }
+
+    return streamText(streamOptions)
   }
 }

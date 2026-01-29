@@ -1,7 +1,7 @@
 import { LangfuseClient } from '@langfuse/client'
 import { getActiveSpanId, getActiveTraceId, startActiveObservation, updateActiveTrace } from '@langfuse/tracing'
 import { Injectable, Logger } from '@nestjs/common'
-import { generateText } from 'ai'
+import { generateText, streamText } from 'ai'
 import { config } from '../../config/env.config'
 import { AiGenerateOptions } from './contracts/ai.contract'
 
@@ -72,6 +72,57 @@ export class LangfuseService {
           ...(generateOptions.model && { model: generateOptions.model }),
         })
 
+        return result
+      },
+      {
+        parentSpanContext: {
+          traceId: getActiveTraceId() ?? '',
+          spanId: getActiveSpanId() ?? '',
+          traceFlags: 1,
+        },
+      },
+    )
+  }
+
+  async executeTracedStreaming(streamOptions: Parameters<typeof streamText>[0], options?: AiGenerateOptions): Promise<ReturnType<typeof streamText>> {
+    const traceName = options?.telemetry?.traceName ?? 'ai.streamText'
+
+    return startActiveObservation(
+      options?.telemetry?.functionId ?? traceName,
+      async (generation) => {
+        updateActiveTrace({
+          name: traceName,
+          ...(streamOptions.model && { model: streamOptions.model }),
+        })
+
+        const result = streamText(streamOptions)
+
+        // Update trace asynchronously when stream completes
+        // Use promise-based properties that resolve when streaming finishes
+        Promise.all([
+          result.text,
+          result.usage,
+          result.finishReason,
+        ]).then(([fullText, usage]) => {
+          const inputTokens = usage?.inputTokens ?? 0
+          const outputTokens = usage?.outputTokens ?? 0
+          const totalTokens = usage?.totalTokens ?? (inputTokens + outputTokens)
+
+          updateActiveTrace({
+            input: streamOptions.prompt || streamOptions.messages,
+            output: fullText,
+            ...(usage && {
+              usage: {
+                input: inputTokens ?? 0,
+                output: outputTokens ?? 0,
+                total: totalTokens ?? 0,
+              },
+            }),
+          })
+          generation.end()
+        }).catch((error) => {
+          this.logger.error('Error updating trace for streaming', error)
+        })
         return result
       },
       {
