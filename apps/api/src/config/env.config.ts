@@ -72,7 +72,7 @@ export const configValidationSchema = z.object({
   // Langfuse
   LANGFUSE_SECRET_KEY: z.string().optional(),
   LANGFUSE_PUBLIC_KEY: z.string().optional(), // Optional
-  LANGFUSE_HOST: z.string().optional(), // Optional, defaults to cloud
+  LANGFUSE_BASE_URL: z.string().optional(), // Optional, defaults to cloud
 
   // Sentry
   SENTRY_DSN: z.string().optional(),
@@ -131,7 +131,7 @@ export const config = {
   langfuse: {
     secretKey: configParsed.data.LANGFUSE_SECRET_KEY,
     publicKey: configParsed.data.LANGFUSE_PUBLIC_KEY,
-    host: configParsed.data.LANGFUSE_HOST,
+    host: configParsed.data.LANGFUSE_BASE_URL,
   },
   ai: {
     providers: {
