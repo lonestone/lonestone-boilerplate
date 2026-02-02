@@ -151,13 +151,8 @@ export class AiService implements OnModuleInit {
     const generateOptionsBase: Omit<Parameters<typeof generateText>[0], 'messages' | 'prompt'> = {
       model: modelInstance,
       abortSignal,
-      ...(options?.temperature !== undefined && { temperature: options.temperature }),
-      ...(options?.topP !== undefined && { topP: options.topP }),
-      ...(options?.frequencyPenalty !== undefined && { frequencyPenalty: options.frequencyPenalty }),
-      ...(options?.presencePenalty !== undefined && { presencePenalty: options.presencePenalty }),
-      ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
-      ...(tools && { tools }),
-      ...(options?.maxSteps !== undefined && { maxSteps: options.maxSteps }),
+      ...options,
+      ...tools,
       stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
       experimental_telemetry: {
         isEnabled: true,
@@ -300,13 +295,8 @@ export class AiService implements OnModuleInit {
     const streamOptionsBase: Omit<Parameters<typeof streamText>[0], 'messages' | 'prompt'> = {
       model: modelInstance,
       abortSignal,
-      ...(options?.temperature !== undefined && { temperature: options.temperature }),
-      ...(options?.topP !== undefined && { topP: options.topP }),
-      ...(options?.frequencyPenalty !== undefined && { frequencyPenalty: options.frequencyPenalty }),
-      ...(options?.presencePenalty !== undefined && { presencePenalty: options.presencePenalty }),
-      ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
-      ...(tools && { tools }),
-      ...(options?.maxSteps !== undefined && { maxSteps: options.maxSteps }),
+      ...options,
+      ...tools,
       stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
       experimental_telemetry: {
         isEnabled: true,

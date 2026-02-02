@@ -8,7 +8,7 @@ import {
 } from '@sentry/opentelemetry'
 import { config } from './config/env.config'
 
-// Step 1: Initialize Sentry WITHOUT automatic OTEL setup, to be compatible with Langfuse.
+// Step 1: Initialize Sentry WITHOUT automatic OTEL setup, to be compatible with Langfuse (Option A described below)
 // REASONNING:
 // Option A: Shared TracerProvider (Recommended by Langfuse) - This gives distributed tracing across both Sentry and Langfuse, but it means Langfuse traces will appear in Sentry.
 // Option B: Add the Tracer to Langfuse manually. On paper, it is simpler, but we could not get it to work reliably.
