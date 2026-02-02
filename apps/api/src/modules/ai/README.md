@@ -147,6 +147,31 @@ const result = await this.aiService.generate({
 })
 ```
 
+### Using MCP (Model Context Protocol) Tools
+
+You can also use tools from MCP servers.
+
+```typescript
+import { GOOGLE_GEMINI_3_FLASH } from '../modules/ai/ai.config'
+import { createMCPClient, getCryptoPriceTool } from '../modules/ai/tools/your-mcp-server.tools'
+
+// Create MCP client
+const yourMCPClient = await createMCPClient()
+const mcpTools = await createMCPClient.tools()
+
+// Combine MCP tools with custom tools
+const tools = {
+  ...mcpTools, // Spread MCP tools
+  getCryptoPrice: getCryptoPriceTool, // Add custom tool
+}
+
+const result = await this.aiService.generate({
+  prompt: 'What is the current price of Bitcoin?',
+  model: GOOGLE_GEMINI_3_FLASH,
+  tools,
+})
+```
+
 ### `streamTextGenerator(input, signal?)`
 
 Streams AI text generation. Yields events: `chunk`, `tool-call`, `tool-result`, `done`, `error`.
