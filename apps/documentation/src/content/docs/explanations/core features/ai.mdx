@@ -3,53 +3,58 @@ title: AI
 description: AI explanation
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
 # ❓ How it works
 
-This brick is heavily opinionated. It combines Langfuse for prompts management (storage, versionning, combining, etc) and Vercel AI SDK for the LLMs calls.
+This brick is heavily opinionated. It combines:
+
+- [Langfuse](https://langfuse.com/) for prompts management (storage, versioning, combining, etc.) and trace management
+- [Vercel AI SDK](https://sdk.vercel.ai/) for the LLM calls
 
 ## Tracing Architecture - OpenTelemetry
 
-The project uses a **unified OpenTelemetry tracing architecture** that integrates both Sentry and Langfuse through a shared TracerProvider. This provides:
-
-- **Distributed Tracing**: Traces are automatically propagated across services, allowing you to see the full request flow from API calls through AI generation
-- **Dual Export**: LLM spans are exported to both Langfuse (for prompt management) and Sentry (for full request context)
-- **Automatic Instrumentation**: All AI calls are automatically traced without manual code
+The **Vercel AI SDK is OpenTelemetry compatible** and automatically emits spans for all LLM calls. Both Sentry and Langfuse simply pick up these spans through the shared TracerProvider—no additional instrumentation is required.
 
 The tracing system is initialized in `apps/api/src/instrument.ts` before the NestJS application starts. The shared TracerProvider uses:
 - **LangfuseSpanProcessor**: Filters and exports only LLM-related spans (instrumentation scope: `langfuse-sdk` or `ai`) to Langfuse
 - **SentrySpanProcessor**: Receives all spans for application monitoring in Sentry
 
-**Important**: Because of the shared TracerProvider, Langfuse traces will also appear in Sentry, allowing you to see AI calls in the context of full request traces.
+<Aside type="tip" title="AI Traces in Sentry">
+Because the Vercel AI SDK emits OTEL spans and both processors receive them, **AI traces appear in both Langfuse and Sentry**. This allows you to:
+- See AI calls in the context of full HTTP request traces
+- Correlate AI performance issues with other application metrics
+- Debug issues where AI calls are part of a larger workflow
+
+See the [Monitoring documentation](/lonestone-boilerplate/explanations/core%20features/monitoring) for details on the shared TracerProvider setup and how to optimize trace sampling in production.
+</Aside>
 
 ## Prompt management - Langfuse
 
-Langfuse uses OpenTelemetry to trace the calls to the LLMs (it plays well with Vercel SDK). The tracing setup uses a shared TracerProvider that integrates with Sentry. You can see how OpenTelemetry is setup in the [instrument file](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/src/instrument.ts) and how it's used in the [AI service file](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/src/modules/ai/ai.service.ts).
+Langfuse receives the OTEL spans emitted by the Vercel AI SDK through the shared TracerProvider. You can see how OpenTelemetry is set up in the [instrument file](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/src/instrument.ts) and how it's used in the [AI service file](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/src/modules/ai/ai.service.ts).
 
 Langfuse can be self hosted, and is entirely open source. See [their docs](https://langfuse.com/docs) for more advanced usage.
 
 ## LLM calls - Vercel AI SDK
 
-The Vercel SDK allows us to easily call the LLMs, and to use Langfuse for tracing. It is also quite easy to switch from one model to another.
-
-## Organizing Traces
-
-You can organize AI calls into meaningful traces using the `telemetry` option:
-
-- **`traceName`**: Groups multiple LLM calls with the same `traceName` into a single trace. A deterministic `traceId` is automatically generated from this value.
-- **`functionId`**: Identifies the specific function/operation within a trace.
-- **`langfuseOriginalPrompt`**: Preserves the original prompt before enhancements (useful for debugging).
-
-See the [AI Module documentation](/lonestone-boilerplate/addons/ai-module#organizing-traces-with-telemetry-options) for detailed examples and usage patterns.
-
-## Orchestration - TBD
-
-The boilerplate does not use any orchestration tool. You can use your own, like Mastra or XState.
+The Vercel AI SDK allows us to easily call LLMs accross providers and is natively OpenTelemetry compatible.
 
 # 📝 How to use
 
 - Create the Langfuse project in your Langfuse dashboard
 - Setup the necessary env variables (LANGFUSE_API_KEY, LANGFUSE_SECRET_KEY, OPENAI_API_KEY, etc) in the `api/.env` file.
 - You are good to go!
+
+## Organizing Traces
+
+You can organize AI calls into meaningful traces using the `telemetry` option:
+
+- **`langfuseTraceName`**: As we filter traces we send to Langfuse, AI calls will generally be orphaned which means the main trace in Langfuse will not have a name. Providing `langfuseTraceName` will setup this name, and you can use it accross several LLM calls to group them into a single trace (useful for several call for the same operation). Behind the hood, a deterministic `traceId` is automatically generated from this value.
+- **`functionId`**: Identifies the specific function/operation within a trace (used as Span name in Langfuse)
+- **`langfuseOriginalPrompt`**: Preserves the original prompt before enhancements (useful for debugging).
+
+See the [AI module README](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/src/modules/ai/README.md) for detailed API documentation and usage patterns.
+
 
 # 🧹 How to remove
 
