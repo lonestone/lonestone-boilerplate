@@ -90,6 +90,49 @@ export class AiService implements OnModuleInit {
     return schema.parse(parsed)
   }
 
+  /**
+   * Generates AI completion using the Vercel AI SDK.
+   * Supports both single-turn prompts and multi-turn conversations.
+   *
+   * @template T - The expected output type when using a Zod schema for structured output
+   *
+   * @param input - The generation input configuration
+   * @param input.prompt - Single-turn prompt string (mutually exclusive with messages)
+   * @param input.messages - Conversation history as CoreMessage[] (mutually exclusive with prompt)
+   * @param input.model - Optional model identifier. Falls back to the default configured model
+   * @param input.options - Generation options (temperature, maxTokens, telemetry, etc.)
+   * @param input.schema - Optional Zod schema for structured JSON output. When provided, the response is validated and parsed
+   * @param input.tools - Optional tools (functions) the model can call during generation
+   * @param input.signal - Optional AbortSignal for request cancellation. If not provided, an AbortController is created internally
+   *
+   * @returns When no schema is provided, returns {@link AiGenerateResultText} with the raw text result.
+   *          When a schema is provided, returns {@link AiGenerateResultObject} with the parsed and validated object.
+   *          Both include usage stats, finish reason, updated messages (for conversations), tool calls/results, and an optional AbortController.
+   *
+   * @throws Error if neither prompt nor messages is provided
+   * @throws Error if schema validation fails when a schema is specified
+   *
+   * @example
+   * // Simple text generation
+   * const result = await aiService.generate({ prompt: 'Hello, world!' })
+   * console.log(result.result) // string
+   *
+   * @example
+   * // Structured output with Zod schema
+   * const schema = z.object({ name: z.string(), age: z.number() })
+   * const result = await aiService.generate({ prompt: 'Generate a user', schema })
+   * console.log(result.result) // { name: string, age: number }
+   *
+   * @example
+   * // Multi-turn conversation
+   * const result = await aiService.generate({
+   *   messages: [
+   *     { role: 'system', content: 'You are a helpful assistant.' },
+   *     { role: 'user', content: 'What is TypeScript?' },
+   *   ],
+   * })
+   * console.log(result.messages) // Updated conversation with assistant response
+   */
   async generate(input: AiGenerateInputWithoutSchema): Promise<AiGenerateResultText>
   async generate<T>(input: AiGenerateInputWithSchema<T>): Promise<AiGenerateResultObject<T>>
   async generate<T>(input: AiGenerateInput<T>): Promise<AiGenerateResult<T>>
@@ -145,7 +188,8 @@ export class AiService implements OnModuleInit {
       }
     }
 
-    const traceId = options?.telemetry ? await LangfuseService.createTraceId(options?.telemetry?.traceName) : undefined
+    // Create trace id for telemetry if telemetry is enabled
+    const traceId = options?.telemetry ? await LangfuseService.createTraceId(options?.telemetry?.langfuseTraceName) : undefined
 
     // Build generate options - use separate branches for messages vs prompt to satisfy TypeScript
     const generateOptionsBase: Omit<Parameters<typeof generateText>[0], 'messages' | 'prompt'> = {
@@ -159,10 +203,10 @@ export class AiService implements OnModuleInit {
         recordInputs: true,
         recordOutputs: true,
         ...(options?.telemetry && {
-          traceName: options.telemetry.traceName || 'ai.generate',
+          langfuseTraceName: options.telemetry.langfuseTraceName || 'ai.generate',
           traceId,
           functionId: options.telemetry.functionId || '',
-          originalPrompt: options.telemetry.langfuseOriginalPrompt || '',
+          langfuseOriginalPrompt: options.telemetry.langfuseOriginalPrompt || '',
         }),
       },
     }
@@ -263,6 +307,39 @@ export class AiService implements OnModuleInit {
     return generateText(generateOptions)
   }
 
+  /**
+   * Streams AI text generation using the Vercel AI SDK.
+   * Yields {@link AiStreamEvent} items: text chunks, tool calls, tool results, and a final done event.
+   *
+   * @param input - The streaming input configuration
+   * @param input.prompt - Single-turn prompt string (mutually exclusive with messages)
+   * @param input.messages - Conversation history as CoreMessage[] (mutually exclusive with prompt)
+   * @param input.model - Optional model identifier. Falls back to the default configured model
+   * @param input.options - Generation options (temperature, maxTokens, telemetry, etc.)
+   * @param input.tools - Optional tools (functions) the model can call during streaming
+   * @param signal - Optional AbortSignal for cancelling the stream
+   *
+   * @yields {@link AiStreamEvent} - Discriminated union: `chunk` (text delta), `tool-call`, `tool-result`, `done` (with fullText, usage, finishReason), or `error`
+   *
+   * @throws Error if neither prompt nor messages is provided
+   *
+   * @example
+   * // Simple streaming
+   * for await (const event of aiService.streamTextGenerator({ prompt: 'Tell me a story' })) {
+   *   if (event.type === 'chunk') console.log(event.text)
+   *   if (event.type === 'done') console.log(event.fullText, event.usage)
+   * }
+   *
+   * @example
+   * // Multi-turn conversation with tools
+   * for await (const event of aiService.streamTextGenerator(
+   *   { messages: [{ role: 'user', content: 'Hello' }], tools: { search: searchTool } },
+   *   abortSignal
+   * )) {
+   *   if (event.type === 'tool-call') handleToolCall(event)
+   *   if (event.type === 'done') console.log(event.fullText)
+   * }
+   */
   async* streamTextGenerator({
     prompt,
     messages,
@@ -290,7 +367,7 @@ export class AiService implements OnModuleInit {
       throw new Error('Either prompt or messages must be provided')
     }
 
-    const traceId = options?.telemetry ? await LangfuseService.createTraceId(options?.telemetry?.traceName) : undefined
+    const traceId = options?.telemetry ? await LangfuseService.createTraceId(options?.telemetry?.langfuseTraceName) : undefined
 
     const streamOptionsBase: Omit<Parameters<typeof streamText>[0], 'messages' | 'prompt'> = {
       model: modelInstance,
@@ -303,10 +380,10 @@ export class AiService implements OnModuleInit {
         recordInputs: true,
         recordOutputs: true,
         ...(options?.telemetry && {
-          traceName: options.telemetry.traceName || 'ai.streamText',
+          langfuseTraceName: options.telemetry.langfuseTraceName || 'ai.streamText',
           traceId,
           functionId: options.telemetry.functionId || '',
-          originalPrompt: options.telemetry.langfuseOriginalPrompt || '',
+          langfuseOriginalPrompt: options.telemetry.langfuseOriginalPrompt || '',
         }),
       },
     }

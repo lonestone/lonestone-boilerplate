@@ -40,7 +40,7 @@ export class LangfuseService {
   }
 
   async executeTracedGeneration(generateOptions: Parameters<typeof generateText>[0], options?: AiGenerateOptions): Promise<ReturnType<typeof generateText>> {
-    const traceName = options?.telemetry?.traceName ?? 'ai.generate'
+    const traceName = options?.telemetry?.langfuseTraceName ?? 'ai.generate'
 
     return startActiveObservation(
       options?.telemetry?.functionId ?? traceName,
@@ -63,7 +63,7 @@ export class LangfuseService {
   }
 
   executeTracedStreaming(streamOptions: Parameters<typeof streamText>[0], options?: AiGenerateOptions): ReturnType<typeof streamText> {
-    const traceName = options?.telemetry?.traceName ?? 'ai.streamText'
+    const traceName = options?.telemetry?.langfuseTraceName ?? 'ai.streamText'
     const logger = this.logger
 
     const handleOnFinish: StreamTextOnFinishCallback<ToolSet> = async (event) => {

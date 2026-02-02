@@ -62,9 +62,9 @@ export class AiController {
           options: {
             ...body.options,
             telemetry: {
-              traceName: `chat-at-time-${Date.now()}`,
+              langfuseTraceName: `chat-at-time-${Date.now()}`,
               functionId: 'chat',
-              originalPrompt: prompt?.toJSON(),
+              langfuseOriginalPrompt: prompt?.toJSON(),
             },
           },
           schema,
@@ -76,9 +76,9 @@ export class AiController {
           options: {
             ...body.options,
             telemetry: {
-              traceName: `chat-at-time-${Date.now()}`,
+              langfuseTraceName: `chat-at-time-${Date.now()}`,
               functionId: 'chat',
-              originalPrompt: prompt?.toJSON(),
+              langfuseOriginalPrompt: prompt?.toJSON(),
             },
           },
           schema,
@@ -142,7 +142,7 @@ export class AiController {
             options: {
               ...body.options,
               telemetry: {
-                traceName: `stream-at-time-${Date.now()}`,
+                langfuseTraceName: `stream-at-time-${Date.now()}`,
                 functionId: 'stream',
               },
             },

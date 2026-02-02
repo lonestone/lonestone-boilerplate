@@ -13,9 +13,9 @@ export const aiGenerateOptionsSchema = z.object({
   maxSteps: z.number().positive().optional(),
   stopWhen: z.number().positive().optional(),
   telemetry: z.object({
-    traceName: z.string().describe('Merges LLM calls with the same traceName into the same trace.'),
-    functionId: z.string().optional(),
+    langfuseTraceName: z.string().describe('This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.'),
     langfuseOriginalPrompt: z.string().optional().describe('The original prompt that was used to generate the response. (Use prompt.toJSON())'),
+    functionId: z.string().optional().describe('This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.'),
   }).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 }).meta({
