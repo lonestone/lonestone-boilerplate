@@ -1,10 +1,10 @@
 import { z } from 'zod'
 import { modelConfigBase, ModelId } from '../../ai/ai.config'
 import {
+  aiCoreMessageSchema,
   aiGenerateOptionsSchema,
   aiGenerateOutputTextSchema,
   aiGenerateResultBaseSchema,
-  aiCoreMessageSchema,
 } from '../../ai/contracts/ai.contract'
 
 export const chatSchemaTypeSchema = z.enum(['userProfile', 'task', 'product', 'none']).meta({

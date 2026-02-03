@@ -38,7 +38,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: 🔍 Check Peer dependencies
-        run: pnpm install --resolution-only
+        run: pnpm install --resolution-only --no-frozen-lockfile
 
       - name: 📚 Install dependencies
         run: pnpm install
