@@ -11,7 +11,7 @@ export type ClientOptions = {
  */
 export type ChatRequest = {
   message?: string;
-  messages?: Array<CoreMessage>;
+  messages?: Array<AiCoreMessage>;
   conversationId?: string;
   model?:
     | "OPENAI_GPT_5_NANO"
@@ -29,7 +29,7 @@ export type ChatRequest = {
  */
 export type AiStreamRequest = {
   prompt?: string;
-  messages?: Array<CoreMessage>;
+  messages?: Array<AiCoreMessage>;
   model?:
     | "OPENAI_GPT_5_NANO"
     | "GOOGLE_GEMINI_3_FLASH"
@@ -274,6 +274,16 @@ export type PublicPostsSchema = {
 };
 
 /**
+ * AiCoreMessage
+ *
+ * A message in the conversation history following Vercel AI SDK patterns
+ */
+export type AiCoreMessage = {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+};
+
+/**
  * AiStreamEvent
  *
  * SSE event for AI text streaming with tool support
@@ -318,16 +328,6 @@ export type AiStreamEvent =
     };
 
 /**
- * CoreMessage
- *
- * A message in the conversation history following Vercel AI SDK patterns
- */
-export type CoreMessage = {
-  role: "user" | "assistant" | "system" | "tool";
-  content: string;
-};
-
-/**
  * AiGenerateOptions
  *
  * Options for an AI generation
@@ -342,14 +342,17 @@ export type AiGenerateOptions = {
   stopWhen?: number;
   telemetry?: {
     /**
-     * Merges LLM calls with the same traceName into the same trace.
+     * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
      */
-    traceName: string;
-    functionId?: string;
+    langfuseTraceName: string;
     /**
      * The original prompt that was used to generate the response. (Use prompt.toJSON())
      */
     langfuseOriginalPrompt?: string;
+    /**
+     * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
+     */
+    functionId?: string;
   };
   metadata?: {
     [key: string]: unknown;
@@ -410,6 +413,43 @@ export type FilterQueryStringSchema = string;
 
 export type CommentsControllerPostSlug = string;
 
+export type CommentsControllerGetCommentsFilterItem = {
+  property: "content";
+  rule:
+    | "eq"
+    | "neq"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "like"
+    | "nlike"
+    | "in"
+    | "nin"
+    | "isnull"
+    | "isnotnull";
+  value?: string;
+};
+
+export type CommentsControllerGetCommentsFilterArray =
+  Array<CommentsControllerGetCommentsFilterItem>;
+
+export type CommentsControllerGetCommentsSortItem = {
+  property: "createdAt" | "authorName";
+  direction: "asc" | "desc";
+};
+
+export type CommentsControllerGetCommentsSortArray =
+  Array<CommentsControllerGetCommentsSortItem>;
+
+export type CommentsControllerGetCommentRepliesSortItem = {
+  property: "createdAt" | "authorName";
+  direction: "asc" | "desc";
+};
+
+export type CommentsControllerGetCommentRepliesSortArray =
+  Array<CommentsControllerGetCommentRepliesSortItem>;
+
 export type PostControllerGetUserPostsFilterItem = {
   property: "title";
   rule:
@@ -468,43 +508,6 @@ export type PublicPostControllerGetPostsSortItem = {
 export type PublicPostControllerGetPostsSortArray =
   Array<PublicPostControllerGetPostsSortItem>;
 
-export type CommentsControllerGetCommentsFilterItem = {
-  property: "content";
-  rule:
-    | "eq"
-    | "neq"
-    | "gt"
-    | "gte"
-    | "lt"
-    | "lte"
-    | "like"
-    | "nlike"
-    | "in"
-    | "nin"
-    | "isnull"
-    | "isnotnull";
-  value?: string;
-};
-
-export type CommentsControllerGetCommentsFilterArray =
-  Array<CommentsControllerGetCommentsFilterItem>;
-
-export type CommentsControllerGetCommentsSortItem = {
-  property: "createdAt" | "authorName";
-  direction: "asc" | "desc";
-};
-
-export type CommentsControllerGetCommentsSortArray =
-  Array<CommentsControllerGetCommentsSortItem>;
-
-export type CommentsControllerGetCommentRepliesSortItem = {
-  property: "createdAt" | "authorName";
-  direction: "asc" | "desc";
-};
-
-export type CommentsControllerGetCommentRepliesSortArray =
-  Array<CommentsControllerGetCommentRepliesSortItem>;
-
 export type AppControllerGetHelloData = {
   body?: never;
   path?: never;
@@ -513,6 +516,131 @@ export type AppControllerGetHelloData = {
 };
 
 export type AppControllerGetHelloResponses = {
+  200: unknown;
+};
+
+export type CommentsControllerGetCommentsData = {
+  body?: never;
+  path: {
+    postSlug: string;
+  };
+  query: {
+    /**
+     * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
+     * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
+     * <br> Available properties: content
+     */
+    filter?: CommentsControllerGetCommentsFilterArray;
+    /**
+     * Schema for sorting items
+     */
+    sort?: CommentsControllerGetCommentsSortArray;
+    /**
+     * Starting position of the query
+     */
+    offset: number;
+    /**
+     * Number of items to return
+     */
+    pageSize: number;
+  };
+  url: "/api/posts/{postSlug}/comments";
+};
+
+export type CommentsControllerGetCommentsResponses = {
+  /**
+   * Schema for a paginated list of comments
+   */
+  200: CommentsSchema;
+};
+
+export type CommentsControllerGetCommentsResponse =
+  CommentsControllerGetCommentsResponses[keyof CommentsControllerGetCommentsResponses];
+
+export type CommentsControllerCreateCommentData = {
+  /**
+   * CreateCommentSchema
+   *
+   * Schema for creating a comment
+   */
+  body: {
+    content: string;
+    parentId?: string;
+  };
+  path: {
+    postSlug: string;
+  };
+  query?: never;
+  url: "/api/posts/{postSlug}/comments";
+};
+
+export type CommentsControllerCreateCommentResponses = {
+  /**
+   * Schema for a comment
+   */
+  200: CommentSchema;
+};
+
+export type CommentsControllerCreateCommentResponse =
+  CommentsControllerCreateCommentResponses[keyof CommentsControllerCreateCommentResponses];
+
+export type CommentsControllerGetCommentCountData = {
+  body?: never;
+  path: {
+    postSlug: string;
+  };
+  query?: never;
+  url: "/api/posts/{postSlug}/comments/count";
+};
+
+export type CommentsControllerGetCommentCountResponses = {
+  200: unknown;
+};
+
+export type CommentsControllerGetCommentRepliesData = {
+  body?: never;
+  path: {
+    commentId: string;
+    postSlug: string;
+  };
+  query: {
+    /**
+     * Schema for sorting items
+     */
+    sort?: CommentsControllerGetCommentRepliesSortArray;
+    /**
+     * Starting position of the query
+     */
+    offset: number;
+    /**
+     * Number of items to return
+     */
+    pageSize: number;
+  };
+  url: "/api/posts/{postSlug}/comments/{commentId}/replies";
+};
+
+export type CommentsControllerGetCommentRepliesResponses = {
+  /**
+   * Schema for a paginated list of comments
+   */
+  200: CommentsSchema;
+};
+
+export type CommentsControllerGetCommentRepliesResponse =
+  CommentsControllerGetCommentRepliesResponses[keyof CommentsControllerGetCommentRepliesResponses];
+
+export type CommentsControllerDeleteCommentData = {
+  body?: never;
+  path: {
+    commentId: string;
+    postSlug: string;
+  };
+  query?: never;
+  url: "/api/posts/{postSlug}/comments/{commentId}";
+};
+
+export type CommentsControllerDeleteCommentResponses = {
   200: unknown;
 };
 
@@ -757,7 +885,7 @@ export type PublicPostControllerGetPostsResponses = {
 export type PublicPostControllerGetPostsResponse =
   PublicPostControllerGetPostsResponses[keyof PublicPostControllerGetPostsResponses];
 
-export type AiControllerChatData = {
+export type AiExampleControllerChatData = {
   /**
    * ChatRequest
    *
@@ -790,14 +918,17 @@ export type AiControllerChatData = {
       stopWhen?: number;
       telemetry?: {
         /**
-         * Merges LLM calls with the same traceName into the same trace.
+         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
          */
-        traceName: string;
-        functionId?: string;
+        langfuseTraceName: string;
         /**
          * The original prompt that was used to generate the response. (Use prompt.toJSON())
          */
         langfuseOriginalPrompt?: string;
+        /**
+         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
+         */
+        functionId?: string;
       };
       metadata?: {
         [key: string]: unknown;
@@ -815,17 +946,17 @@ export type AiControllerChatData = {
   url: "/api/ai/chat";
 };
 
-export type AiControllerChatResponses = {
+export type AiExampleControllerChatResponses = {
   /**
    * Response from AI chat
    */
   200: ChatResponse;
 };
 
-export type AiControllerChatResponse =
-  AiControllerChatResponses[keyof AiControllerChatResponses];
+export type AiExampleControllerChatResponse =
+  AiExampleControllerChatResponses[keyof AiExampleControllerChatResponses];
 
-export type AiControllerStreamData = {
+export type AiExampleControllerStreamData = {
   /**
    * AiStreamRequest
    *
@@ -857,14 +988,17 @@ export type AiControllerStreamData = {
       stopWhen?: number;
       telemetry?: {
         /**
-         * Merges LLM calls with the same traceName into the same trace.
+         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
          */
-        traceName: string;
-        functionId?: string;
+        langfuseTraceName: string;
         /**
          * The original prompt that was used to generate the response. (Use prompt.toJSON())
          */
         langfuseOriginalPrompt?: string;
+        /**
+         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
+         */
+        functionId?: string;
       };
       metadata?: {
         [key: string]: unknown;
@@ -876,131 +1010,6 @@ export type AiControllerStreamData = {
   url: "/api/ai/stream";
 };
 
-export type AiControllerStreamResponses = {
+export type AiExampleControllerStreamResponses = {
   201: unknown;
-};
-
-export type CommentsControllerGetCommentsData = {
-  body?: never;
-  path: {
-    postSlug: string;
-  };
-  query: {
-    /**
-     * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
-     * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
-     * <br> Available properties: content
-     */
-    filter?: CommentsControllerGetCommentsFilterArray;
-    /**
-     * Schema for sorting items
-     */
-    sort?: CommentsControllerGetCommentsSortArray;
-    /**
-     * Starting position of the query
-     */
-    offset: number;
-    /**
-     * Number of items to return
-     */
-    pageSize: number;
-  };
-  url: "/api/posts/{postSlug}/comments";
-};
-
-export type CommentsControllerGetCommentsResponses = {
-  /**
-   * Schema for a paginated list of comments
-   */
-  200: CommentsSchema;
-};
-
-export type CommentsControllerGetCommentsResponse =
-  CommentsControllerGetCommentsResponses[keyof CommentsControllerGetCommentsResponses];
-
-export type CommentsControllerCreateCommentData = {
-  /**
-   * CreateCommentSchema
-   *
-   * Schema for creating a comment
-   */
-  body: {
-    content: string;
-    parentId?: string;
-  };
-  path: {
-    postSlug: string;
-  };
-  query?: never;
-  url: "/api/posts/{postSlug}/comments";
-};
-
-export type CommentsControllerCreateCommentResponses = {
-  /**
-   * Schema for a comment
-   */
-  200: CommentSchema;
-};
-
-export type CommentsControllerCreateCommentResponse =
-  CommentsControllerCreateCommentResponses[keyof CommentsControllerCreateCommentResponses];
-
-export type CommentsControllerGetCommentCountData = {
-  body?: never;
-  path: {
-    postSlug: string;
-  };
-  query?: never;
-  url: "/api/posts/{postSlug}/comments/count";
-};
-
-export type CommentsControllerGetCommentCountResponses = {
-  200: unknown;
-};
-
-export type CommentsControllerGetCommentRepliesData = {
-  body?: never;
-  path: {
-    commentId: string;
-    postSlug: string;
-  };
-  query: {
-    /**
-     * Schema for sorting items
-     */
-    sort?: CommentsControllerGetCommentRepliesSortArray;
-    /**
-     * Starting position of the query
-     */
-    offset: number;
-    /**
-     * Number of items to return
-     */
-    pageSize: number;
-  };
-  url: "/api/posts/{postSlug}/comments/{commentId}/replies";
-};
-
-export type CommentsControllerGetCommentRepliesResponses = {
-  /**
-   * Schema for a paginated list of comments
-   */
-  200: CommentsSchema;
-};
-
-export type CommentsControllerGetCommentRepliesResponse =
-  CommentsControllerGetCommentRepliesResponses[keyof CommentsControllerGetCommentRepliesResponses];
-
-export type CommentsControllerDeleteCommentData = {
-  body?: never;
-  path: {
-    commentId: string;
-    postSlug: string;
-  };
-  query?: never;
-  url: "/api/posts/{postSlug}/comments/{commentId}";
-};
-
-export type CommentsControllerDeleteCommentResponses = {
-  200: unknown;
 };

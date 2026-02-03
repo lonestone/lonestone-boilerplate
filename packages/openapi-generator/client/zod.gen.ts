@@ -312,6 +312,16 @@ export const zPublicPostsSchema = z.object({
 });
 
 /**
+ * AiCoreMessage
+ *
+ * A message in the conversation history following Vercel AI SDK patterns
+ */
+export const zAiCoreMessage = z.object({
+  role: z.enum(["user", "assistant", "system", "tool"]),
+  content: z.string(),
+});
+
+/**
  * AiStreamEvent
  *
  * SSE event for AI text streaming with tool support
@@ -352,16 +362,6 @@ export const zAiStreamEvent = z.union([
 ]);
 
 /**
- * CoreMessage
- *
- * A message in the conversation history following Vercel AI SDK patterns
- */
-export const zCoreMessage = z.object({
-  role: z.enum(["user", "assistant", "system", "tool"]),
-  content: z.string(),
-});
-
-/**
  * AiGenerateOptions
  *
  * Options for an AI generation
@@ -376,9 +376,9 @@ export const zAiGenerateOptions = z.object({
   stopWhen: z.optional(z.number().gt(0)),
   telemetry: z.optional(
     z.object({
-      traceName: z.string(),
-      functionId: z.optional(z.string()),
+      langfuseTraceName: z.string(),
       langfuseOriginalPrompt: z.optional(z.string()),
+      functionId: z.optional(z.string()),
     }),
   ),
   metadata: z.optional(z.record(z.string(), z.unknown())),
@@ -391,7 +391,7 @@ export const zAiGenerateOptions = z.object({
  */
 export const zAiStreamRequest = z.object({
   prompt: z.optional(z.string().min(1)),
-  messages: z.optional(z.array(zCoreMessage)),
+  messages: z.optional(z.array(zAiCoreMessage)),
   model: z.optional(
     z.enum([
       "OPENAI_GPT_5_NANO",
@@ -422,7 +422,7 @@ export const zChatSchemaType = z.enum([
  */
 export const zChatRequest = z.object({
   message: z.optional(z.string().min(1)),
-  messages: z.optional(z.array(zCoreMessage)),
+  messages: z.optional(z.array(zAiCoreMessage)),
   conversationId: z.optional(z.string()),
   model: z.optional(
     z.enum([
@@ -463,6 +463,47 @@ export const zSortingQueryStringSchema = z.string();
 export const zFilterQueryStringSchema = z.string();
 
 export const zCommentsControllerPostSlug = z.string();
+
+export const zCommentsControllerGetCommentsFilterItem = z.object({
+  property: z.literal("content"),
+  rule: z.enum([
+    "eq",
+    "neq",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "like",
+    "nlike",
+    "in",
+    "nin",
+    "isnull",
+    "isnotnull",
+  ]),
+  value: z.optional(z.string()),
+});
+
+export const zCommentsControllerGetCommentsFilterArray = z.array(
+  zCommentsControllerGetCommentsFilterItem,
+);
+
+export const zCommentsControllerGetCommentsSortItem = z.object({
+  property: z.union([z.literal("createdAt"), z.literal("authorName")]),
+  direction: z.enum(["asc", "desc"]),
+});
+
+export const zCommentsControllerGetCommentsSortArray = z.array(
+  zCommentsControllerGetCommentsSortItem,
+);
+
+export const zCommentsControllerGetCommentRepliesSortItem = z.object({
+  property: z.union([z.literal("createdAt"), z.literal("authorName")]),
+  direction: z.enum(["asc", "desc"]),
+});
+
+export const zCommentsControllerGetCommentRepliesSortArray = z.array(
+  zCommentsControllerGetCommentRepliesSortItem,
+);
 
 export const zPostControllerGetUserPostsFilterItem = z.object({
   property: z.literal("title"),
@@ -528,50 +569,84 @@ export const zPublicPostControllerGetPostsSortArray = z.array(
   zPublicPostControllerGetPostsSortItem,
 );
 
-export const zCommentsControllerGetCommentsFilterItem = z.object({
-  property: z.literal("content"),
-  rule: z.enum([
-    "eq",
-    "neq",
-    "gt",
-    "gte",
-    "lt",
-    "lte",
-    "like",
-    "nlike",
-    "in",
-    "nin",
-    "isnull",
-    "isnotnull",
-  ]),
-  value: z.optional(z.string()),
-});
-
-export const zCommentsControllerGetCommentsFilterArray = z.array(
-  zCommentsControllerGetCommentsFilterItem,
-);
-
-export const zCommentsControllerGetCommentsSortItem = z.object({
-  property: z.union([z.literal("createdAt"), z.literal("authorName")]),
-  direction: z.enum(["asc", "desc"]),
-});
-
-export const zCommentsControllerGetCommentsSortArray = z.array(
-  zCommentsControllerGetCommentsSortItem,
-);
-
-export const zCommentsControllerGetCommentRepliesSortItem = z.object({
-  property: z.union([z.literal("createdAt"), z.literal("authorName")]),
-  direction: z.enum(["asc", "desc"]),
-});
-
-export const zCommentsControllerGetCommentRepliesSortArray = z.array(
-  zCommentsControllerGetCommentRepliesSortItem,
-);
-
 export const zAppControllerGetHelloData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCommentsControllerGetCommentsData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    postSlug: z.string(),
+  }),
+  query: z.object({
+    filter: z.optional(zCommentsControllerGetCommentsFilterArray),
+    sort: z.optional(zCommentsControllerGetCommentsSortArray),
+    offset: z.int().gte(0).lte(9007199254740991).default(0),
+    pageSize: z.int().gte(1).lte(100).default(20),
+  }),
+});
+
+/**
+ * Schema for a paginated list of comments
+ */
+export const zCommentsControllerGetCommentsResponse = zCommentsSchema;
+
+export const zCommentsControllerCreateCommentData = z.object({
+  body: z.object({
+    content: z.string().min(1).max(1000),
+    parentId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+  }),
+  path: z.object({
+    postSlug: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Schema for a comment
+ */
+export const zCommentsControllerCreateCommentResponse = zCommentSchema;
+
+export const zCommentsControllerGetCommentCountData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    postSlug: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCommentsControllerGetCommentRepliesData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    commentId: z.string(),
+    postSlug: z.string(),
+  }),
+  query: z.object({
+    sort: z.optional(zCommentsControllerGetCommentRepliesSortArray),
+    offset: z.int().gte(0).lte(9007199254740991).default(0),
+    pageSize: z.int().gte(1).lte(100).default(20),
+  }),
+});
+
+/**
+ * Schema for a paginated list of comments
+ */
+export const zCommentsControllerGetCommentRepliesResponse = zCommentsSchema;
+
+export const zCommentsControllerDeleteCommentData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    commentId: z.string(),
+    postSlug: z.string(),
+  }),
   query: z.optional(z.never()),
 });
 
@@ -722,7 +797,7 @@ export const zPublicPostControllerGetPostsData = z.object({
  */
 export const zPublicPostControllerGetPostsResponse = zPublicPostsSchema;
 
-export const zAiControllerChatData = z.object({
+export const zAiExampleControllerChatData = z.object({
   body: z.object({
     message: z.optional(z.string().min(1)),
     messages: z.optional(
@@ -753,9 +828,9 @@ export const zAiControllerChatData = z.object({
         stopWhen: z.optional(z.number().gt(0)),
         telemetry: z.optional(
           z.object({
-            traceName: z.string(),
-            functionId: z.optional(z.string()),
+            langfuseTraceName: z.string(),
             langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
           }),
         ),
         metadata: z.optional(z.record(z.string(), z.unknown())),
@@ -770,9 +845,9 @@ export const zAiControllerChatData = z.object({
 /**
  * Response from AI chat
  */
-export const zAiControllerChatResponse = zChatResponse;
+export const zAiExampleControllerChatResponse = zChatResponse;
 
-export const zAiControllerStreamData = z.object({
+export const zAiExampleControllerStreamData = z.object({
   body: z.object({
     prompt: z.optional(z.string().min(1)),
     messages: z.optional(
@@ -802,9 +877,9 @@ export const zAiControllerStreamData = z.object({
         stopWhen: z.optional(z.number().gt(0)),
         telemetry: z.optional(
           z.object({
-            traceName: z.string(),
-            functionId: z.optional(z.string()),
+            langfuseTraceName: z.string(),
             langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
           }),
         ),
         metadata: z.optional(z.record(z.string(), z.unknown())),
@@ -812,80 +887,5 @@ export const zAiControllerStreamData = z.object({
     ),
   }),
   path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zCommentsControllerGetCommentsData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    postSlug: z.string(),
-  }),
-  query: z.object({
-    filter: z.optional(zCommentsControllerGetCommentsFilterArray),
-    sort: z.optional(zCommentsControllerGetCommentsSortArray),
-    offset: z.int().gte(0).lte(9007199254740991).default(0),
-    pageSize: z.int().gte(1).lte(100).default(20),
-  }),
-});
-
-/**
- * Schema for a paginated list of comments
- */
-export const zCommentsControllerGetCommentsResponse = zCommentsSchema;
-
-export const zCommentsControllerCreateCommentData = z.object({
-  body: z.object({
-    content: z.string().min(1).max(1000),
-    parentId: z.optional(
-      z
-        .uuid()
-        .regex(
-          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-        ),
-    ),
-  }),
-  path: z.object({
-    postSlug: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-/**
- * Schema for a comment
- */
-export const zCommentsControllerCreateCommentResponse = zCommentSchema;
-
-export const zCommentsControllerGetCommentCountData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    postSlug: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zCommentsControllerGetCommentRepliesData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    commentId: z.string(),
-    postSlug: z.string(),
-  }),
-  query: z.object({
-    sort: z.optional(zCommentsControllerGetCommentRepliesSortArray),
-    offset: z.int().gte(0).lte(9007199254740991).default(0),
-    pageSize: z.int().gte(1).lte(100).default(20),
-  }),
-});
-
-/**
- * Schema for a paginated list of comments
- */
-export const zCommentsControllerGetCommentRepliesResponse = zCommentsSchema;
-
-export const zCommentsControllerDeleteCommentData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    commentId: z.string(),
-    postSlug: z.string(),
-  }),
   query: z.optional(z.never()),
 });

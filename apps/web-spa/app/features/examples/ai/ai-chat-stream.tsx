@@ -1,4 +1,4 @@
-import type { aiControllerChat, AiStreamEvent, CoreMessage } from '@boilerstone/openapi-generator'
+import type { AiCoreMessage, aiExampleControllerChat, AiStreamEvent } from '@boilerstone/openapi-generator'
 import { createSseClient } from '@boilerstone/openapi-generator'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
@@ -23,7 +23,7 @@ interface ToolUsage {
   result?: unknown
 }
 
-interface Message extends CoreMessage {
+interface Message extends AiCoreMessage {
   id: string
   timestamp: Date
   isStreaming?: boolean
@@ -37,7 +37,7 @@ interface Message extends CoreMessage {
   finishReason?: string
 }
 
-function convertMessagesToCoreMessages(messages: Message[]): CoreMessage[] {
+function convertMessagesToCoreMessages(messages: Message[]): AiCoreMessage[] {
   return messages
     .filter(msg => msg.role === 'user' || msg.role === 'assistant')
     .map(msg => ({
@@ -78,7 +78,7 @@ export function AiChatStream() {
   const [isStreaming, setIsStreaming] = React.useState(false)
   const [abortController, setAbortController] = React.useState<AbortController | null>(null)
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
-  const [model, setModel] = React.useState<Parameters<typeof aiControllerChat>[0]['body']['model']>('GOOGLE_GEMINI_3_FLASH')
+  const [model, setModel] = React.useState<Parameters<typeof aiExampleControllerChat>[0]['body']['model']>('GOOGLE_GEMINI_3_FLASH')
 
   const scrollToBottom = React.useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -88,7 +88,7 @@ export function AiChatStream() {
     scrollToBottom()
   }, [messages, scrollToBottom])
 
-  const handleStreamMessage = React.useCallback(async (messageText: string, conversationHistory: CoreMessage[]) => {
+  const handleStreamMessage = React.useCallback(async (messageText: string, conversationHistory: AiCoreMessage[]) => {
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -362,7 +362,7 @@ export function AiChatStream() {
           <div className="flex gap-2 items-end">
             <div className="flex-1 space-y-1">
               <Label htmlFor="model-select" className="text-xs">Model</Label>
-              <Select value={model} onValueChange={value => setModel(value as Parameters<typeof aiControllerChat>[0]['body']['model'])}>
+              <Select value={model} onValueChange={value => setModel(value as Parameters<typeof aiExampleControllerChat>[0]['body']['model'])}>
                 <SelectTrigger id="model-select" className="w-full">
                   <SelectValue placeholder="Select a model" />
                 </SelectTrigger>

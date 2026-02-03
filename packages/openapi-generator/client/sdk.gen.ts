@@ -3,10 +3,10 @@
 import type { Client, Options as Options2, TDataShape } from "./client";
 import { client } from "./client.gen";
 import type {
-  AiControllerChatData,
-  AiControllerChatResponses,
-  AiControllerStreamData,
-  AiControllerStreamResponses,
+  AiExampleControllerChatData,
+  AiExampleControllerChatResponses,
+  AiExampleControllerStreamData,
+  AiExampleControllerStreamResponses,
   AppControllerGetHelloData,
   AppControllerGetHelloResponses,
   CommentsControllerCreateCommentData,
@@ -64,6 +64,68 @@ export const appControllerGetHello = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({ url: "/api", ...options });
+
+export const commentsControllerGetComments = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CommentsControllerGetCommentsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    CommentsControllerGetCommentsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/posts/{postSlug}/comments", ...options });
+
+export const commentsControllerCreateComment = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CommentsControllerCreateCommentData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CommentsControllerCreateCommentResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/posts/{postSlug}/comments",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const commentsControllerGetCommentCount = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CommentsControllerGetCommentCountData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    CommentsControllerGetCommentCountResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/posts/{postSlug}/comments/count", ...options });
+
+export const commentsControllerGetCommentReplies = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CommentsControllerGetCommentRepliesData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    CommentsControllerGetCommentRepliesResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/posts/{postSlug}/comments/{commentId}/replies", ...options });
+
+export const commentsControllerDeleteComment = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CommentsControllerDeleteCommentData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    CommentsControllerDeleteCommentResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/posts/{postSlug}/comments/{commentId}", ...options });
 
 export const postControllerGetUserPosts = <
   ThrowOnError extends boolean = false,
@@ -170,11 +232,11 @@ export const publicPostControllerGetPosts = <
     ThrowOnError
   >({ url: "/api/public/posts", ...options });
 
-export const aiControllerChat = <ThrowOnError extends boolean = false>(
-  options: Options<AiControllerChatData, ThrowOnError>,
+export const aiExampleControllerChat = <ThrowOnError extends boolean = false>(
+  options: Options<AiExampleControllerChatData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    AiControllerChatResponses,
+    AiExampleControllerChatResponses,
     unknown,
     ThrowOnError
   >({
@@ -186,11 +248,11 @@ export const aiControllerChat = <ThrowOnError extends boolean = false>(
     },
   });
 
-export const aiControllerStream = <ThrowOnError extends boolean = false>(
-  options: Options<AiControllerStreamData, ThrowOnError>,
+export const aiExampleControllerStream = <ThrowOnError extends boolean = false>(
+  options: Options<AiExampleControllerStreamData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    AiControllerStreamResponses,
+    AiExampleControllerStreamResponses,
     unknown,
     ThrowOnError
   >({
@@ -201,65 +263,3 @@ export const aiControllerStream = <ThrowOnError extends boolean = false>(
       ...options.headers,
     },
   });
-
-export const commentsControllerGetComments = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<CommentsControllerGetCommentsData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    CommentsControllerGetCommentsResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/posts/{postSlug}/comments", ...options });
-
-export const commentsControllerCreateComment = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<CommentsControllerCreateCommentData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    CommentsControllerCreateCommentResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/posts/{postSlug}/comments",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const commentsControllerGetCommentCount = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<CommentsControllerGetCommentCountData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    CommentsControllerGetCommentCountResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/posts/{postSlug}/comments/count", ...options });
-
-export const commentsControllerGetCommentReplies = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<CommentsControllerGetCommentRepliesData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    CommentsControllerGetCommentRepliesResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/posts/{postSlug}/comments/{commentId}/replies", ...options });
-
-export const commentsControllerDeleteComment = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<CommentsControllerDeleteCommentData, ThrowOnError>,
-) =>
-  (options.client ?? client).delete<
-    CommentsControllerDeleteCommentResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/posts/{postSlug}/comments/{commentId}", ...options });

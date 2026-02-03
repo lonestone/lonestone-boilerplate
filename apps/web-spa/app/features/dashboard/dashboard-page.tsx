@@ -8,7 +8,6 @@ import { Link, Outlet, useNavigate } from 'react-router'
 import useTheme from '@/hooks/useTheme'
 import { authClient } from '@/lib/auth-client'
 import { useI18nStore } from '@/lib/i18n/i18n-client'
-import { AiChatStream } from './ai-chat-stream'
 
 export default function DashboardPage() {
   const { t, i18n } = useTranslation()
@@ -106,7 +105,6 @@ export default function DashboardPage() {
       </Header>
       <main className="container mx-auto py-8 px-4 space-y-6">
         <h1 className="text-3xl font-bold">{t('dashboard.title')}</h1>
-        <AiChatStream />
         <Outlet />
       </main>
     </>

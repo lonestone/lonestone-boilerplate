@@ -1,6 +1,7 @@
 import type { LanguageModel, LanguageModelUsage, ModelMessage, Tool } from 'ai'
 import type { ModelId } from './ai.config'
 import type {
+  AiCoreMessage,
   AiGenerateInput,
   AiGenerateInputWithoutSchema,
   AiGenerateInputWithSchema,
@@ -9,7 +10,6 @@ import type {
   AiGenerateOutputText,
   AiStreamEvent,
   AiStreamRequest,
-  CoreMessage,
 } from './contracts/ai.contract'
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { generateText, stepCountIs, streamText } from 'ai'
@@ -151,12 +151,12 @@ export class AiService implements OnModuleInit {
     const modelInstance = await this.getModelInstance(model)
 
     // Build messages array - messages takes precedence over prompt
-    let conversationMessages: CoreMessage[] = []
+    let conversationMessages: AiCoreMessage[] = []
     let hasMessages = false
 
     if (messages && messages.length > 0) {
       // Use provided messages (conversation history)
-      conversationMessages = [...messages] as CoreMessage[]
+      conversationMessages = [...messages] as AiCoreMessage[]
       hasMessages = true
     }
     else if (prompt) {
@@ -234,7 +234,7 @@ export class AiService implements OnModuleInit {
       }
     }
 
-    const updatedMessages: CoreMessage[] | undefined = hasMessages && conversationMessages
+    const updatedMessages: AiCoreMessage[] | undefined = hasMessages && conversationMessages
       ? [
           ...conversationMessages,
           { role: 'assistant', content: result.text },
@@ -353,11 +353,11 @@ export class AiService implements OnModuleInit {
     const modelInstance = await this.getModelInstance(model)
 
     // Build messages array - messages takes precedence over prompt
-    let conversationMessages: CoreMessage[] = []
+    let conversationMessages: AiCoreMessage[] = []
     let hasMessages = false
 
     if (messages && messages.length > 0) {
-      conversationMessages = [...messages] as CoreMessage[]
+      conversationMessages = [...messages] as AiCoreMessage[]
       hasMessages = true
     }
     else if (prompt) {

@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, PlusCircleIcon, SearchIcon } from 'lucide-re
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
-import { UserPostCard } from '@/features/user-posts/user-post-card'
+import { UserPostCard } from '@/features/examples/user-posts/user-post-card'
 
 const PAGE_SIZE = 12
 

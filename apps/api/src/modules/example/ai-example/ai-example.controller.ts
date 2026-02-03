@@ -1,12 +1,19 @@
-import type { AiStreamEvent, AiStreamRequest, ChatRequest, ChatResponse, ChatSchemaType } from './contracts/ai.contract'
+import type {
+  AiStreamEvent,
+  AiStreamRequest,
+} from '../../ai/contracts/ai.contract'
+import type { ChatRequest, ChatResponse, ChatSchemaType } from './ai-example.contract'
 import { TypedBody, TypedController, TypedRoute } from '@lonestone/nzoth/server'
 import { Logger, MessageEvent, Sse, UseGuards } from '@nestjs/common'
 import { Observable } from 'rxjs'
 import { z } from 'zod'
-import { AuthGuard } from '../auth/auth.guard'
-import { AiService } from './ai.service'
-import { aiStreamRequestSchema, chatRequestSchema, chatResponseSchema } from './contracts/ai.contract'
-import { LangfuseService } from './langfuse.service'
+import { AiService } from '../../ai/ai.service'
+import {
+  aiStreamRequestSchema,
+} from '../../ai/contracts/ai.contract'
+import { LangfuseService } from '../../ai/langfuse.service'
+import { AuthGuard } from '../../auth/auth.guard'
+import { chatRequestSchema, chatResponseSchema } from './ai-example.contract'
 import { createCoingeckoMCPClient, getCryptoPriceTool } from './tools/coingecko.tools'
 
 const testSchemas: Record<Exclude<ChatSchemaType, 'none'>, z.ZodType> = {
@@ -36,8 +43,8 @@ const testSchemas: Record<Exclude<ChatSchemaType, 'none'>, z.ZodType> = {
 
 @UseGuards(AuthGuard)
 @TypedController('ai')
-export class AiController {
-  private readonly logger = new Logger(AiController.name)
+export class AiExampleController {
+  private readonly logger = new Logger(AiExampleController.name)
   constructor(private readonly aiService: AiService, private readonly langfuseService: LangfuseService) { }
 
   @TypedRoute.Post('chat', chatResponseSchema)

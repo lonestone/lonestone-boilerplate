@@ -10,8 +10,7 @@ import { AiModule } from './modules/ai/ai.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { DbModule } from './modules/db/db.module'
 import { EmailModule } from './modules/email/email.module'
-import { CommentsModule } from './modules/example/comments/comments.module'
-import { PostModule } from './modules/example/posts/posts.module'
+import { ExampleModule } from './modules/example/example.module'
 
 // Interface étendue pour les requêtes Express
 interface ExpressRequest extends IncomingMessage {
@@ -94,10 +93,9 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     DbModule,
     AuthModule.forRootAsync(),
     EmailModule,
-    PostModule,
     AiModule,
-    CommentsModule,
     NestConfigModule,
+    ExampleModule,
   ],
   controllers: [AppController],
   providers: [{

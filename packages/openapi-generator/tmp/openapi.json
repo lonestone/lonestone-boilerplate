@@ -28,6 +28,266 @@
         }
       }
     },
+    "/api/posts/{postSlug}/comments": {
+      "post": {
+        "operationId": "CommentsController_createComment",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Schema for creating a comment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "parentId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "content"
+                ],
+                "additionalProperties": false,
+                "title": "CreateCommentSchema",
+                "description": "Schema for creating a comment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema for a comment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentSchema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "CommentsController_getComments",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CommentsController_getComments_filterArray"
+            },
+            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: content",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CommentsController_getComments_sortArray"
+            },
+            "description": "Schema for sorting items",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "description": "Starting position of the query",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "description": "Number of items to return",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema for a paginated list of comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentsSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/posts/{postSlug}/comments/count": {
+      "get": {
+        "operationId": "CommentsController_getCommentCount",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/posts/{postSlug}/comments/{commentId}/replies": {
+      "get": {
+        "operationId": "CommentsController_getCommentReplies",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortArray"
+            },
+            "description": "Schema for sorting items",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "description": "Starting position of the query",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "description": "Number of items to return",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema for a paginated list of comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentsSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/posts/{postSlug}/comments/{commentId}": {
+      "delete": {
+        "operationId": "CommentsController_deleteComment",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/posts": {
       "post": {
         "operationId": "PostController_createPost",
@@ -506,9 +766,9 @@
     },
     "/api/ai/chat": {
       "post": {
-        "operationId": "AiController_chat",
+        "operationId": "AiExampleController_chat",
         "tags": [
-          "Ai"
+          "AiExample"
         ],
         "parameters": [],
         "requestBody": {
@@ -546,7 +806,7 @@
                         "content"
                       ],
                       "additionalProperties": false,
-                      "title": "CoreMessage",
+                      "title": "AiCoreMessage",
                       "description": "A message in the conversation history following Vercel AI SDK patterns"
                     }
                   },
@@ -600,20 +860,21 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "traceName": {
+                          "langfuseTraceName": {
                             "type": "string",
-                            "description": "Merges LLM calls with the same traceName into the same trace."
-                          },
-                          "functionId": {
-                            "type": "string"
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
                           }
                         },
                         "required": [
-                          "traceName"
+                          "langfuseTraceName"
                         ],
                         "additionalProperties": false
                       },
@@ -664,9 +925,9 @@
     },
     "/api/ai/stream": {
       "post": {
-        "operationId": "AiController_stream",
+        "operationId": "AiExampleController_stream",
         "tags": [
-          "Ai"
+          "AiExample"
         ],
         "parameters": [],
         "requestBody": {
@@ -704,7 +965,7 @@
                         "content"
                       ],
                       "additionalProperties": false,
-                      "title": "CoreMessage",
+                      "title": "AiCoreMessage",
                       "description": "A message in the conversation history following Vercel AI SDK patterns"
                     }
                   },
@@ -755,20 +1016,21 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "traceName": {
+                          "langfuseTraceName": {
                             "type": "string",
-                            "description": "Merges LLM calls with the same traceName into the same trace."
-                          },
-                          "functionId": {
-                            "type": "string"
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
                           }
                         },
                         "required": [
-                          "traceName"
+                          "langfuseTraceName"
                         ],
                         "additionalProperties": false
                       },
@@ -798,266 +1060,6 @@
           }
         }
       }
-    },
-    "/api/posts/{postSlug}/comments": {
-      "post": {
-        "operationId": "CommentsController_createComment",
-        "tags": [
-          "Comments"
-        ],
-        "parameters": [
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "Schema for creating a comment",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "content": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 1000
-                  },
-                  "parentId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                  }
-                },
-                "required": [
-                  "content"
-                ],
-                "additionalProperties": false,
-                "title": "CreateCommentSchema",
-                "description": "Schema for creating a comment"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Schema for a comment",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CommentSchema"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "operationId": "CommentsController_getComments",
-        "tags": [
-          "Comments"
-        ],
-        "parameters": [
-          {
-            "name": "filter",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/CommentsController_getComments_filterArray"
-            },
-            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: content",
-            "style": "form",
-            "explode": false
-          },
-          {
-            "name": "sort",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/CommentsController_getComments_sortArray"
-            },
-            "description": "Schema for sorting items",
-            "style": "form",
-            "explode": false
-          },
-          {
-            "name": "offset",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "default": 0,
-              "description": "Starting position of the query",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 9007199254740991
-            }
-          },
-          {
-            "name": "pageSize",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "default": 20,
-              "description": "Number of items to return",
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
-            }
-          },
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Schema for a paginated list of comments",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CommentsSchema"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/posts/{postSlug}/comments/count": {
-      "get": {
-        "operationId": "CommentsController_getCommentCount",
-        "tags": [
-          "Comments"
-        ],
-        "parameters": [
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/posts/{postSlug}/comments/{commentId}/replies": {
-      "get": {
-        "operationId": "CommentsController_getCommentReplies",
-        "tags": [
-          "Comments"
-        ],
-        "parameters": [
-          {
-            "name": "sort",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortArray"
-            },
-            "description": "Schema for sorting items",
-            "style": "form",
-            "explode": false
-          },
-          {
-            "name": "offset",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "default": 0,
-              "description": "Starting position of the query",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 9007199254740991
-            }
-          },
-          {
-            "name": "pageSize",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "default": 20,
-              "description": "Number of items to return",
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
-            }
-          },
-          {
-            "name": "commentId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Schema for a paginated list of comments",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CommentsSchema"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/posts/{postSlug}/comments/{commentId}": {
-      "delete": {
-        "operationId": "CommentsController_deleteComment",
-        "tags": [
-          "Comments"
-        ],
-        "parameters": [
-          {
-            "name": "commentId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
     }
   },
   "components": {
@@ -1072,7 +1074,7 @@
           "messages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CoreMessage"
+              "$ref": "#/components/schemas/AiCoreMessage"
             }
           },
           "conversationId": {
@@ -1108,7 +1110,7 @@
           "messages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CoreMessage"
+              "$ref": "#/components/schemas/AiCoreMessage"
             }
           },
           "model": {
@@ -1243,7 +1245,7 @@
                     "content"
                   ],
                   "additionalProperties": false,
-                  "title": "CoreMessage",
+                  "title": "AiCoreMessage",
                   "description": "A message in the conversation history following Vercel AI SDK patterns"
                 }
               },
@@ -1363,7 +1365,7 @@
                     "content"
                   ],
                   "additionalProperties": false,
-                  "title": "CoreMessage",
+                  "title": "AiCoreMessage",
                   "description": "A message in the conversation history following Vercel AI SDK patterns"
                 }
               },
@@ -1927,6 +1929,30 @@
         "title": "PublicPostsSchema",
         "description": "A list of public posts"
       },
+      "AiCoreMessage": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "system",
+              "tool"
+            ]
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "additionalProperties": false,
+        "title": "AiCoreMessage",
+        "description": "A message in the conversation history following Vercel AI SDK patterns"
+      },
       "AiStreamEvent": {
         "oneOf": [
           {
@@ -2072,30 +2098,6 @@
         "description": "SSE event for AI text streaming with tool support",
         "type": "object"
       },
-      "CoreMessage": {
-        "type": "object",
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": [
-              "user",
-              "assistant",
-              "system",
-              "tool"
-            ]
-          },
-          "content": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "role",
-          "content"
-        ],
-        "additionalProperties": false,
-        "title": "CoreMessage",
-        "description": "A message in the conversation history following Vercel AI SDK patterns"
-      },
       "AiGenerateOptions": {
         "type": "object",
         "properties": {
@@ -2134,20 +2136,21 @@
           "telemetry": {
             "type": "object",
             "properties": {
-              "traceName": {
+              "langfuseTraceName": {
                 "type": "string",
-                "description": "Merges LLM calls with the same traceName into the same trace."
-              },
-              "functionId": {
-                "type": "string"
+                "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
               },
               "langfuseOriginalPrompt": {
                 "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                 "type": "string"
+              },
+              "functionId": {
+                "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                "type": "string"
               }
             },
             "required": [
-              "traceName"
+              "langfuseTraceName"
             ],
             "additionalProperties": false
           },
@@ -2287,6 +2290,120 @@
       },
       "CommentsController_postSlug": {
         "type": "string"
+      },
+      "CommentsController_getComments_filterItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "content"
+              }
+            ]
+          },
+          "rule": {
+            "type": "string",
+            "enum": [
+              "eq",
+              "neq",
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "like",
+              "nlike",
+              "in",
+              "nin",
+              "isnull",
+              "isnotnull"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "property",
+          "rule"
+        ],
+        "additionalProperties": false
+      },
+      "CommentsController_getComments_filterArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CommentsController_getComments_filterItem"
+        }
+      },
+      "CommentsController_getComments_sortItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "createdAt"
+              },
+              {
+                "type": "string",
+                "const": "authorName"
+              }
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "property",
+          "direction"
+        ],
+        "additionalProperties": false
+      },
+      "CommentsController_getComments_sortArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CommentsController_getComments_sortItem"
+        }
+      },
+      "CommentsController_getCommentReplies_sortItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "createdAt"
+              },
+              {
+                "type": "string",
+                "const": "authorName"
+              }
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "property",
+          "direction"
+        ],
+        "additionalProperties": false
+      },
+      "CommentsController_getCommentReplies_sortArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortItem"
+        }
       },
       "PostController_getUserPosts_filterItem": {
         "type": "object",
@@ -2444,120 +2561,6 @@
         "type": "array",
         "items": {
           "$ref": "#/components/schemas/PublicPostController_getPosts_sortItem"
-        }
-      },
-      "CommentsController_getComments_filterItem": {
-        "type": "object",
-        "properties": {
-          "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "content"
-              }
-            ]
-          },
-          "rule": {
-            "type": "string",
-            "enum": [
-              "eq",
-              "neq",
-              "gt",
-              "gte",
-              "lt",
-              "lte",
-              "like",
-              "nlike",
-              "in",
-              "nin",
-              "isnull",
-              "isnotnull"
-            ]
-          },
-          "value": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "property",
-          "rule"
-        ],
-        "additionalProperties": false
-      },
-      "CommentsController_getComments_filterArray": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/CommentsController_getComments_filterItem"
-        }
-      },
-      "CommentsController_getComments_sortItem": {
-        "type": "object",
-        "properties": {
-          "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "createdAt"
-              },
-              {
-                "type": "string",
-                "const": "authorName"
-              }
-            ]
-          },
-          "direction": {
-            "type": "string",
-            "enum": [
-              "asc",
-              "desc"
-            ]
-          }
-        },
-        "required": [
-          "property",
-          "direction"
-        ],
-        "additionalProperties": false
-      },
-      "CommentsController_getComments_sortArray": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/CommentsController_getComments_sortItem"
-        }
-      },
-      "CommentsController_getCommentReplies_sortItem": {
-        "type": "object",
-        "properties": {
-          "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "createdAt"
-              },
-              {
-                "type": "string",
-                "const": "authorName"
-              }
-            ]
-          },
-          "direction": {
-            "type": "string",
-            "enum": [
-              "asc",
-              "desc"
-            ]
-          }
-        },
-        "required": [
-          "property",
-          "direction"
-        ],
-        "additionalProperties": false
-      },
-      "CommentsController_getCommentReplies_sortArray": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortItem"
         }
       }
     }
