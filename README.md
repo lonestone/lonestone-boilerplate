@@ -216,8 +216,8 @@ Project documentation is available in the `docs/` folder and in app `README`s. I
 
 This documentation is also used by our custom cursor rules.
 
-- [Frontend Guidelines](docs/frontend-guidelines.md)
-- [Backend Guidelines](docs/backend-guidelines.md)
+- [Frontend Guidelines](apps/documentation/src/content/docs/guidelines/frontend.mdx)
+- [Backend Guidelines](apps/documentation/src/content/docs/guidelines/backend.mdx)
 - [API Readme](apps/api/README.md)
 
 ## 🔍 Tracing Architecture
@@ -229,7 +229,7 @@ The project uses a unified OpenTelemetry tracing architecture that integrates bo
 - **AI Tracing**: All AI/LLM calls are automatically traced in Langfuse with full prompt visibility, token usage, and latency metrics
 - **Application Tracing**: All application spans (controllers, services, database queries) are traced in Sentry for performance monitoring and error tracking
 
-The tracing system is initialized in `apps/api/src/instrument.ts` and automatically started when the API server boots. See the [AI module documentation](apps/api/src/modules/ai/README.md) and [tracing documentation](apps/documentation/src/content/docs/addons/tracing-sentry.mdx) for more details.
+The tracing system is initialized in `apps/api/src/instrument.ts` and automatically started when the API server boots. See the [AI module documentation](apps/api/src/modules/ai/README.md) and [tracing documentation](apps/documentation/src/content/docs/core-features/2_monitoring.mdx) for more details.
 
 ## 🚀 Deployment
 

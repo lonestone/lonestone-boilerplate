@@ -108,7 +108,7 @@ Unhandled exceptions are automatically captured and sent to Sentry with:
 
 Traces show the full request flow through your application:
 
-![Sentry traces](../../../../assets/sentry_traces.png)
+![Sentry traces](../../../assets/sentry_traces.png)
 
 ### Adding granular tracing
 
@@ -124,7 +124,7 @@ export class UserService {
 }
 ```
 
-![Sentry traces with Traceable](../../../../assets/sentry_traces_traceable.png)
+![Sentry traces with Traceable](../../../assets/sentry_traces_traceable.png)
 
 On the left, you can see the added granularity (service methods are now visible), which makes performance analysis much easier.
 
@@ -132,7 +132,7 @@ On the left, you can see the added granularity (service methods are now visible)
 
 Structured logs from Pino are automatically sent to Sentry:
 
-![Sentry logs](../../../../assets/sentry_logs.png)
+![Sentry logs](../../../assets/sentry_logs.png)
 
 <Aside type="note">
 Ensure your `pino`, `pino-http`, and `pino-pretty` packages are up to date. Older versions may not work correctly with Sentry. The minimum required versions are already configured in the API `package.json`.

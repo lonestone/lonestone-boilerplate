@@ -15,7 +15,8 @@ import { config } from './config/env.config'
 // See: https://langfuse.com/faq/all/existing-sentry-setup and https://langfuse.com/faq/all/existing-otel-setup#no-traces-in-langfuse
 // ⚠️ This means Langfuse traces will appear in Sentry.
 const sentryClient = Sentry.init({
-  debug: config.env !== 'production',
+  // Uncomment this to enable debug mode (which is REALLY verbose)
+  // debug: config.env !== 'production',
   environment: config.env,
   release: config.version,
 

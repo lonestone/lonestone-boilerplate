@@ -1,6 +1,7 @@
 import starlight from '@astrojs/starlight'
 // @ts-check
 import { defineConfig } from 'astro/config'
+import starlightLinksValidator from 'starlight-links-validator'
 
 // https://astro.build/config
 export default defineConfig({
@@ -8,6 +9,9 @@ export default defineConfig({
   base: '/lonestone-boilerplate',
   integrations: [
     starlight({
+      plugins: [starlightLinksValidator(
+        { errorOnLocalLinks: false },
+      )],
       title: 'Boilerstone Documentation',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/lonestone/lonestone-boilerplate' }],
       sidebar: [
@@ -17,19 +21,23 @@ export default defineConfig({
           autogenerate: { directory: 'explanations' },
         },
         {
-          label: 'Tutorials',
-          autogenerate: { directory: 'tutorials' },
+          label: 'Core Features',
+          autogenerate: { directory: 'core-features' },
+        },
+        {
+          label: 'Adding features',
+          autogenerate: { directory: 'addons' },
         },
         {
           label: 'Guides',
           autogenerate: { directory: 'guides' },
         },
         {
-          label: 'Addons',
-          autogenerate: { directory: 'addons' },
+          label: 'Tutorials',
+          autogenerate: { directory: 'tutorials' },
         },
         {
-          label: 'Guidelines',
+          label: 'References',
           autogenerate: { directory: 'guidelines' },
         },
       ],

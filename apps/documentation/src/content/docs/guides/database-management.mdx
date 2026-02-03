@@ -45,7 +45,7 @@ And... that's it! You can deploy this version.
 :::note[What about the snapshot file?]
 MikroORM will create a snapshot file when you run the initial migration. This file is used to track the state of the database, and needs to be committed to Git.
 
-See the [Database Migrations](/lonestone-boilerplate/explanations/3_database_migrations) page for more details.
+See the [Database Migrations](/lonestone-boilerplate/explanations/6_database_migrations) page for more details.
 :::
 
 ### Working with migrations
@@ -71,4 +71,4 @@ When several PRs are opened and are making changes to the database, it's a good 
 
 When you are ready to deploy your changes, just push your changes and your container / launch command should run the migrations via `pnpm db:migrate:up`.
 
-Remember to respect the production safety rules described in the [Database Migrations](/lonestone-boilerplate/explanations/3_database_migrations) page.
+Remember to respect the production safety rules described in the [Database Migrations](/lonestone-boilerplate/explanations/6_database_migrations) page.
