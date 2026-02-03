@@ -34,7 +34,7 @@
     "@langfuse/client": "^4.5.1",
     "@langfuse/otel": "^4.5.1",
     "@langfuse/tracing": "^4.5.1",
-    "@lonestone/nzoth": "^1.1.6",
+    "@lonestone/nzoth": "^1.1.7",
     "@mikro-orm/cli": "6.6.5",
     "@mikro-orm/core": "6.6.5",
     "@mikro-orm/migrations": "6.6.5",
@@ -55,7 +55,7 @@
     "@sentry/opentelemetry": "^10.37.0",
     "@testcontainers/postgresql": "^11.11.0",
     "ai": "^6.0.59",
-    "better-auth": "^1.4.18",
+    "better-auth": "catalog:auth",
     "better-auth-mikro-orm": "^0.4.3",
     "date-fns": "^4.1.0",
     "nestjs-pino": "4.5.0",
@@ -67,8 +67,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "slugify": "^1.6.6",
-    "zod": "4.3.6",
-    "zod-openapi": "^5.4.6"
+    "zod": "catalog:validation",
+    "zod-openapi": "catalog:validation"
   },
   "devDependencies": {
     "@nestjs/schematics": "^11.0.9",
@@ -76,7 +76,7 @@
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/lodash": "^4.17.23",
-    "@types/node": "^25.1.0",
+    "@types/node": "catalog:build",
     "@types/nodemailer": "^7.0.9",
     "@types/pg": "^8.16.0",
     "@types/supertest": "^6.0.3",
@@ -86,7 +86,7 @@
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
-    "typescript": "5.9.3"
+    "typescript": "catalog:build"
   },
   "mikro-orm": {
     "useTsNode": true,

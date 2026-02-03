@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@boilerstone/openapi-generator": "workspace:*",
-    "@hookform/resolvers": "^5.2.2",
+    "@hookform/resolvers": "catalog:frontend",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-label": "^2.1.8",
@@ -28,18 +28,18 @@
     "cmdk": "1.1.1",
     "lucide-react": "^0.563.0",
     "next-themes": "^0.4.6",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-hook-form": "^7.71.1",
+    "react": "catalog:frontend",
+    "react-dom": "catalog:frontend",
+    "react-hook-form": "catalog:frontend",
     "react-intersection-observer": "^10.0.2",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.4.0",
-    "tailwindcss": "^4.1.18",
-    "tailwindcss-animate": "^1.0.7",
-    "zod": "4.3.6"
+    "tailwind-merge": "catalog:frontend",
+    "tailwindcss": "catalog:frontend",
+    "tailwindcss-animate": "catalog:frontend",
+    "zod": "catalog:validation"
   },
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.19",
-    "typescript": "^5.9.3"
+    "@tailwindcss/typography": "catalog:frontend",
+    "typescript": "catalog:build"
   }
 }

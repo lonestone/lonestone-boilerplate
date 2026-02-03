@@ -62,16 +62,16 @@
   },
   "dependencies": {
     "glob": "^13.0.0",
-    "i18next": "^25.8.0",
+    "i18next": "catalog:frontend",
     "persist-and-sync": "^1.2.3",
-    "react-i18next": "^16.5.4"
+    "react-i18next": "catalog:frontend"
   },
   "devDependencies": {
     "@types/glob": "^9.0.0",
-    "@types/node": "^25.1.0",
-    "@types/react": "^19.2.10",
-    "@types/react-dom": "^19.2.3",
+    "@types/node": "catalog:build",
+    "@types/react": "catalog:frontend",
+    "@types/react-dom": "catalog:frontend",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "catalog:build"
   }
 }
