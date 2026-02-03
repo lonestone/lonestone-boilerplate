@@ -37,6 +37,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
+      - name: 🔍 Check Peer dependencies
+        run: pnpm install --resolution-only
+
       - name: 📚 Install dependencies
         run: pnpm install
 
