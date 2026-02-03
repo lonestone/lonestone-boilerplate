@@ -196,7 +196,7 @@ export class AiService implements OnModuleInit {
       model: modelInstance,
       abortSignal,
       ...options,
-      ...tools,
+      tools,
       stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
       experimental_telemetry: {
         isEnabled: true,
@@ -373,7 +373,7 @@ export class AiService implements OnModuleInit {
       model: modelInstance,
       abortSignal,
       ...options,
-      ...tools,
+      tools,
       stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
       experimental_telemetry: {
         isEnabled: true,

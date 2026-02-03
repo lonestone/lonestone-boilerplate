@@ -1,13 +1,13 @@
 import { EntityManager, MikroORM } from '@mikro-orm/core'
 import { INestApplication } from '@nestjs/common'
-import { createUserData } from '../../../factories/user.factory'
+import { createUserData } from '../../../../factories/user.factory'
+import { User } from '../../../../modules/auth/auth.entity'
 import {
   closeTestApp,
   initializeTestApp,
   initRequestWithAuth,
   TestAppContext,
-} from '../../../test/test.utils'
-import { User } from '../../auth/auth.entity'
+} from '../../../../test/test.utils'
 import { CreatePostInput } from '../contracts/posts.contract'
 import { PostModule } from '../posts.module'
 
