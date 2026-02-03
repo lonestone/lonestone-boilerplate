@@ -34,7 +34,7 @@
     "@langfuse/client": "^4.5.1",
     "@langfuse/otel": "^4.5.1",
     "@langfuse/tracing": "^4.5.1",
-    "@lonestone/nzoth": "^1.1.7",
+    "@lonestone/nzoth": "^1.2.0",
     "@mikro-orm/cli": "6.6.5",
     "@mikro-orm/core": "6.6.5",
     "@mikro-orm/migrations": "6.6.5",
