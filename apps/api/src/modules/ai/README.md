@@ -56,36 +56,56 @@ export class MyService {
   constructor(private readonly aiService: AiService) {}
 
   async generateContent() {
-    const result = await this.aiService.generate({
+    // Simple text generation
+    const result = await this.aiService.generateText({
       prompt: 'Write a haiku about TypeScript',
       model: OPENAI_GPT_4O,
     })
-
-    if (result.type === 'text') {
-      console.log(result.result) // string
-    }
+    console.log(result.result) // string
   }
 }
 ```
 
 ## API Reference
 
-### `generate(input)`
+The AI service provides three specialized methods for different use cases:
 
-Generates AI completion. Supports single-turn prompts and multi-turn conversations.
+### `generateText(input)`
+
+Simple text generation from a prompt.
 
 **Parameters:**
-- `prompt` - Single-turn prompt string (or use `messages` for conversations)
-- `messages` - Conversation history as `CoreMessage[]`
-- `model` - Model identifier
-- `schema` - Optional Zod schema for structured JSON output (throws on validation failure)
-- `tools` - Optional tools the model can call
+- `prompt` - The prompt string to generate text from
+- `model` - Optional model identifier (falls back to default)
 - `options` - Generation options: `temperature`, `maxTokens`, `topP`, `frequencyPenalty`, `presencePenalty`, `telemetry`
 - `signal` - Optional AbortSignal for cancellation
 
-**Returns:** `AiGenerateResultText` (no schema) or `AiGenerateResultObject<T>` (with schema)
+**Returns:** `GenerateTextResult` with `result` (string), `usage`, and `finishReason`
 
-#### With Schema Validation
+```typescript
+const result = await this.aiService.generateText({
+  prompt: 'Write a haiku about TypeScript',
+  model: OPENAI_GPT_4O,
+})
+
+console.log(result.result) // string
+console.log(result.usage)  // { promptTokens, completionTokens, totalTokens }
+```
+
+### `generateObject<T>(input)`
+
+Generates structured output validated against a Zod schema.
+
+**Parameters:**
+- `prompt` - The prompt describing what to generate
+- `schema` - Zod schema for structured JSON output validation
+- `model` - Optional model identifier
+- `options` - Generation options
+- `signal` - Optional AbortSignal for cancellation
+
+**Returns:** `GenerateObjectResult<T>` with typed `result`, `usage`, and `finishReason`
+
+**Throws:** Error if schema validation fails
 
 ```typescript
 import { z } from 'zod'
@@ -96,31 +116,45 @@ const userSchema = z.object({
   email: z.string().email(),
 })
 
-const result = await this.aiService.generate({
+const result = await this.aiService.generateObject({
   prompt: 'Generate a user profile for a software developer',
-  model: OPENAI_GPT_4O,
   schema: userSchema,
+  model: OPENAI_GPT_4O,
 })
 
-console.log(result.result.name) // Typed as { name: string, age: number, email: string }
+console.log(result.result.name)  // Typed as string
+console.log(result.result.age)   // Typed as number
+console.log(result.result.email) // Typed as string
 ```
 
-#### With Conversation History
+### `chat(input)`
+
+Handles multi-turn conversations with optional tool support.
+
+**Parameters:**
+- `messages` - Conversation history as `AiCoreMessage[]`
+- `tools` - Optional tools the model can call
+- `model` - Optional model identifier
+- `options` - Generation options
+- `signal` - Optional AbortSignal for cancellation
+
+**Returns:** `ChatResult` with `result` (string), `messages` (updated conversation), `usage`, `finishReason`, `toolCalls`, and `toolResults`
 
 ```typescript
-import type { CoreMessage } from './modules/ai/contracts/ai.contract'
+import type { AiCoreMessage } from './modules/ai/contracts/ai.contract'
 
-const messages: CoreMessage[] = [
+const messages: AiCoreMessage[] = [
   { role: 'system', content: 'You are a helpful assistant.' },
   { role: 'user', content: 'What is the capital of France?' },
 ]
 
-const result = await this.aiService.generate({
+const result = await this.aiService.chat({
   messages,
   model: OPENAI_GPT_4O,
 })
 
-// result.messages contains the updated conversation with assistant response
+console.log(result.result)   // Assistant's response
+console.log(result.messages) // Updated conversation with assistant response
 ```
 
 #### With Tools
@@ -140,16 +174,19 @@ const weatherTool = tool({
   },
 })
 
-const result = await this.aiService.generate({
-  prompt: 'What is the weather in Paris?',
-  model: OPENAI_GPT_4O,
+const result = await this.aiService.chat({
+  messages: [{ role: 'user', content: 'What is the weather in Paris?' }],
   tools: { weather: weatherTool },
+  model: OPENAI_GPT_4O,
 })
+
+console.log(result.toolCalls)   // Tools called by the model
+console.log(result.toolResults) // Results from tool executions
 ```
 
 ### Using MCP (Model Context Protocol) Tools
 
-You can also use tools from MCP servers.
+You can use tools from MCP servers with the `chat()` method.
 
 ```typescript
 import { GOOGLE_GEMINI_3_FLASH } from '../modules/ai/ai.config'
@@ -157,18 +194,18 @@ import { createMCPClient, getCryptoPriceTool } from '../modules/ai/tools/your-mc
 
 // Create MCP client
 const yourMCPClient = await createMCPClient()
-const mcpTools = await createMCPClient.tools()
+const mcpTools = await yourMCPClient.tools()
 
 // Combine MCP tools with custom tools
 const tools = {
-  ...mcpTools, // Spread MCP tools
-  getCryptoPrice: getCryptoPriceTool, // Add custom tool
+  ...mcpTools,
+  getCryptoPrice: getCryptoPriceTool,
 }
 
-const result = await this.aiService.generate({
-  prompt: 'What is the current price of Bitcoin?',
-  model: GOOGLE_GEMINI_3_FLASH,
+const result = await this.aiService.chat({
+  messages: [{ role: 'user', content: 'What is the current price of Bitcoin?' }],
   tools,
+  model: GOOGLE_GEMINI_3_FLASH,
 })
 ```
 
@@ -190,3 +227,12 @@ for await (const event of this.aiService.streamTextGenerator({
 }
 ```
 
+## Method Selection Guide
+
+| Use Case | Method |
+|----------|--------|
+| Simple text generation | `generateText()` |
+| Structured/typed output | `generateObject()` |
+| Multi-turn conversation | `chat()` |
+| Conversation with tools | `chat()` with `tools` |
+| Real-time streaming | `streamTextGenerator()` |

@@ -4,6 +4,10 @@ import { registerSchema } from '@lonestone/nzoth/server'
 import { z } from 'zod'
 import { modelConfigBase } from '../ai.config'
 
+// ============================================================================
+// Shared Schemas
+// ============================================================================
+
 export const aiGenerateOptionsSchema = z.object({
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().positive().optional(),
@@ -37,83 +41,132 @@ export type AiCoreMessage = z.infer<typeof aiCoreMessageSchema>
 
 registerSchema(aiCoreMessageSchema)
 
-const aiGenerateInputBaseSchema = z.object({
-  prompt: z.string().min(1).optional(),
-  messages: z.array(aiCoreMessageSchema).optional(),
+// ============================================================================
+// Base Schemas (shared fields)
+// ============================================================================
+
+export const aiBaseInputSchema = z.object({
   model: z.custom<ModelId>(val => typeof val === 'string').optional(),
   options: aiGenerateOptionsSchema.optional(),
-  schema: z.custom<z.ZodType>(val => val && typeof val === 'object').optional(),
-  tools: z.custom<Record<string, Tool>>(val => val && typeof val === 'object').optional(),
   signal: z.custom<AbortSignal>(val => val instanceof AbortSignal).optional(),
 })
 
-export const aiGenerateInputSchema = aiGenerateInputBaseSchema.refine(
-  data => data.prompt || (data.messages && data.messages.length > 0),
-  {
-    message: 'Either prompt or messages must be provided',
-    path: ['prompt', 'messages'],
-  },
-).meta({
-  title: 'AiGenerateInput',
-  description: 'Input for an AI generation. Either prompt (single turn) or messages (conversation history) must be provided.',
+export const tokenUsageSchema = z.object({
+  promptTokens: z.number(),
+  completionTokens: z.number(),
+  totalTokens: z.number(),
+}).meta({
+  title: 'TokenUsage',
+  description: 'Token usage information for an AI generation',
 })
 
-export type AiGenerateInputWithoutSchema = Omit<z.infer<typeof aiGenerateInputSchema>, 'schema'> & { schema?: undefined }
-export type AiGenerateInputWithSchema<T> = Omit<z.infer<typeof aiGenerateInputSchema>, 'schema'> & { schema: z.ZodType<T> }
-export type AiGenerateInput<T = string> = AiGenerateInputWithoutSchema | AiGenerateInputWithSchema<T>
+export type TokenUsage = z.infer<typeof tokenUsageSchema>
 
-export const aiGenerateResultBaseSchema = z.object({
-  error: z.string().optional(),
-  usage: z
-    .object({
-      promptTokens: z.number(),
-      completionTokens: z.number(),
-      totalTokens: z.number(),
-    })
-    .optional(),
+export const aiBaseResultSchema = z.object({
+  usage: tokenUsageSchema.optional(),
   finishReason: z.string().optional(),
-  messages: z.array(aiCoreMessageSchema).optional(),
-  toolCalls: z
-    .array(
-      z.object({
-        toolCallId: z.string(),
-        toolName: z.string(),
-        args: z.record(z.string(), z.unknown()),
-      }),
-    )
-    .optional(),
-  toolResults: z
-    .array(
-      z.object({
-        toolCallId: z.string(),
-        toolName: z.string(),
-        result: z.unknown(),
-      }),
-    )
-    .optional(),
 })
 
-export const aiGenerateOutputTextSchema = aiGenerateResultBaseSchema.extend({
-  type: z.literal('text'),
+export const toolCallSchema = z.object({
+  toolCallId: z.string(),
+  toolName: z.string(),
+  args: z.record(z.string(), z.unknown()),
+}).meta({
+  title: 'ToolCall',
+  description: 'A tool call made by the AI',
+})
+
+export type ToolCall = z.infer<typeof toolCallSchema>
+
+export const toolResultSchema = z.object({
+  toolCallId: z.string(),
+  toolName: z.string(),
+  result: z.unknown(),
+}).meta({
+  title: 'ToolResult',
+  description: 'The result of a tool call',
+})
+
+export type ToolResult = z.infer<typeof toolResultSchema>
+
+// ============================================================================
+// generateText() - Simple text generation
+// ============================================================================
+
+export const generateTextInputSchema = aiBaseInputSchema.extend({
+  prompt: z.string().min(1),
+}).meta({
+  title: 'GenerateTextInput',
+  description: 'Input for simple text generation',
+})
+
+export type GenerateTextInput = z.infer<typeof generateTextInputSchema>
+
+export const generateTextResultSchema = aiBaseResultSchema.extend({
   result: z.string(),
 }).meta({
-  title: 'AiGenerateOutputText',
-  description: 'Text output from an AI generation',
+  title: 'GenerateTextResult',
+  description: 'Result of simple text generation',
 })
 
-export function makeAiGenerateOutputObjectSchema<T>(schema: z.ZodType<T>) {
-  return aiGenerateResultBaseSchema.extend({
-    type: z.literal('object'),
+export type GenerateTextResult = z.infer<typeof generateTextResultSchema>
+
+// ============================================================================
+// generateObject<T>() - Structured output generation
+// ============================================================================
+
+export const generateObjectInputSchema = aiBaseInputSchema.extend({
+  prompt: z.string().min(1),
+  schema: z.custom<z.ZodType>(val => val && typeof val === 'object'),
+}).meta({
+  title: 'GenerateObjectInput',
+  description: 'Input for structured object generation with schema validation',
+})
+
+export type GenerateObjectInput<T> = Omit<z.infer<typeof generateObjectInputSchema>, 'schema'> & {
+  schema: z.ZodType<T>
+}
+
+export function makeGenerateObjectResultSchema<T>(schema: z.ZodType<T>) {
+  return aiBaseResultSchema.extend({
     result: schema,
   }).meta({
-    title: 'AiGenerateOutputObject',
-    description: 'Object output from an AI generation',
+    title: 'GenerateObjectResult',
+    description: 'Result of structured object generation',
   })
 }
 
-export type AiGenerateOutputText = z.infer<typeof aiGenerateOutputTextSchema>
-export type AiGenerateOutputObject<T> = z.infer<ReturnType<typeof makeAiGenerateOutputObjectSchema<T>>>
-export type AiGenerateOutput<T = string> = AiGenerateOutputText | AiGenerateOutputObject<T>
+export type GenerateObjectResult<T> = z.infer<ReturnType<typeof makeGenerateObjectResultSchema<T>>>
+
+// ============================================================================
+// chat() - Multi-turn conversation with tools (no schema support)
+// ============================================================================
+
+export const chatInputSchema = aiBaseInputSchema.extend({
+  messages: z.array(aiCoreMessageSchema).min(1),
+  tools: z.custom<Record<string, Tool>>(val => val && typeof val === 'object').optional(),
+}).meta({
+  title: 'ChatInput',
+  description: 'Input for multi-turn conversation with optional tools',
+})
+
+export type ChatInput = z.infer<typeof chatInputSchema>
+
+export const chatResultSchema = aiBaseResultSchema.extend({
+  result: z.string(),
+  messages: z.array(aiCoreMessageSchema),
+  toolCalls: z.array(toolCallSchema).optional(),
+  toolResults: z.array(toolResultSchema).optional(),
+}).meta({
+  title: 'ChatResult',
+  description: 'Result of a chat conversation',
+})
+
+export type ChatResult = z.infer<typeof chatResultSchema>
+
+// ============================================================================
+// Streaming Schemas
+// ============================================================================
 
 export const aiStreamRequestSchema = z.object({
   prompt: z.string().min(1).optional(),
@@ -133,20 +186,6 @@ export const aiStreamRequestSchema = z.object({
 
 export type AiStreamRequest = z.infer<typeof aiStreamRequestSchema>
 
-export const aiStreamInputSchema = aiGenerateInputBaseSchema.omit({ schema: true }).refine(
-  data => data.prompt || (data.messages && data.messages.length > 0),
-  {
-    message: 'Either prompt or messages must be provided',
-    path: ['prompt', 'messages'],
-  },
-).meta({
-  title: 'AiStreamInput',
-  description: 'Input for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided. Schema is not supported for streaming.',
-})
-
-export type AiStreamInput = z.infer<typeof aiStreamInputSchema>
-
-// SSE Event schemas for streaming
 export const aiStreamTextChunkEventSchema = z.object({
   type: z.literal('chunk'),
   text: z.string(),

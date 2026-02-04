@@ -121,8 +121,8 @@ describe('aiService', () => {
     })
   })
 
-  describe('generate - text generation', () => {
-    it('should generate text without schema', async () => {
+  describe('generateText', () => {
+    it('should generate text from prompt', async () => {
       const mockResult = {
         text: 'Hello, world!',
         usage: {
@@ -136,11 +136,10 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      const result = await service.generate({
+      const result = await service.generateText({
         prompt: 'Say hello',
       })
 
-      expect(result.type).toBe('text')
       expect(result.result).toBe('Hello, world!')
       expect(result.usage).toEqual({
         promptTokens: 10,
@@ -170,7 +169,7 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      const result = await service.generate({
+      const result = await service.generateText({
         prompt: 'Test prompt',
         options: {
           temperature: 0.7,
@@ -179,7 +178,7 @@ describe('aiService', () => {
         },
       })
 
-      expect(result.type).toBe('text')
+      expect(result.result).toBe('Test response')
       expect(generateText).toHaveBeenCalledWith(
         expect.objectContaining({
           temperature: 0.7,
@@ -199,7 +198,7 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      await service.generate({
+      await service.generateText({
         prompt: 'Test',
       })
 
@@ -216,7 +215,7 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      await service.generate({
+      await service.generateText({
         prompt: 'Test',
         model: 'OPENAI_GPT_5_NANO',
       })
@@ -228,7 +227,7 @@ describe('aiService', () => {
       ;(getDefaultModel as jest.Mock).mockResolvedValue(null)
 
       await expect(
-        service.generate({
+        service.generateText({
           prompt: 'Test',
         }),
       ).rejects.toThrow('No default model configured. Please specify a model or configure a default model.')
@@ -247,7 +246,7 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      await service.generate({
+      const result = await service.generateText({
         prompt: 'Test',
         signal,
       })
@@ -257,9 +256,11 @@ describe('aiService', () => {
           abortSignal: signal,
         }),
       )
+      // When signal is provided, abortController should be undefined
+      expect(result.abortController).toBeUndefined()
     })
 
-    it('should create abort controller when signal is not provided', async () => {
+    it('should create and return abort controller when signal is not provided', async () => {
       const mockResult = {
         text: 'Response',
         usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
@@ -269,15 +270,33 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      const result = await service.generate({
+      const result = await service.generateText({
         prompt: 'Test',
       })
 
       expect(result.abortController).toBeDefined()
+      expect(result.abortController).toBeInstanceOf(AbortController)
+    })
+
+    it('should handle missing usage data', async () => {
+      const mockResult = {
+        text: 'Response',
+        usage: undefined,
+        finishReason: 'stop',
+        steps: [],
+      }
+
+      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+
+      const result = await service.generateText({
+        prompt: 'Test',
+      })
+
+      expect(result.usage).toBeUndefined()
     })
   })
 
-  describe('generate - object generation with schema', () => {
+  describe('generateObject', () => {
     it('should generate object with schema', async () => {
       const schema = z.object({
         name: z.string(),
@@ -298,13 +317,17 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      const result = await service.generate({
+      const result = await service.generateObject({
         prompt: 'Create a person',
         schema,
       })
 
-      expect(result.type).toBe('object')
       expect(result.result).toEqual({ name: 'John', age: 30 })
+      expect(result.usage).toEqual({
+        promptTokens: 20,
+        completionTokens: 10,
+        totalTokens: 30,
+      })
       expect(generateText).toHaveBeenCalled()
     })
 
@@ -329,16 +352,73 @@ describe('aiService', () => {
       })
 
       await expect(
-        service.generate({
+        service.generateObject({
           prompt: 'Create a person',
           schema,
         }),
       ).rejects.toThrow('Schema validation failed')
     })
+
+    it('should use specified model', async () => {
+      // Reset sanitizeAiJson mock from previous test
+      ;(sanitizeAiJson as jest.Mock).mockImplementation((text: string) => JSON.parse(text))
+
+      const schema = z.object({ name: z.string() })
+      const mockResult = {
+        text: '{"name": "Test"}',
+        usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
+        finishReason: 'stop',
+        steps: [],
+      }
+
+      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+
+      await service.generateObject({
+        prompt: 'Test',
+        schema,
+        model: 'OPENAI_GPT_5_NANO',
+      })
+
+      expect(getModel).toHaveBeenCalledWith('OPENAI_GPT_5_NANO')
+    })
   })
 
-  describe('generate - with tools', () => {
-    it('should generate with tools', async () => {
+  describe('chat', () => {
+    it('should chat with messages array', async () => {
+      const mockResult = {
+        text: 'Hello!',
+        usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+        finishReason: 'stop',
+        steps: [],
+      }
+
+      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+
+      const result = await service.chat({
+        messages: [
+          { role: 'user', content: 'Hello' },
+        ],
+      })
+
+      expect(result.result).toBe('Hello!')
+      expect(result.messages).toBeDefined()
+      expect(result.messages).toHaveLength(2)
+      expect(result.messages[0].role).toBe('user')
+      expect(result.messages[1].role).toBe('assistant')
+      expect(result.messages[1].content).toBe('Hello!')
+      expect(generateText).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messages: expect.arrayContaining([
+            expect.objectContaining({
+              role: 'user',
+              content: 'Hello',
+            }),
+          ]),
+        }),
+      )
+    })
+
+    it('should chat with tools', async () => {
       const mockTool: Tool = {
         description: 'Test tool',
         inputSchema: z.object({}),
@@ -371,8 +451,8 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      const result = await service.generate({
-        prompt: 'Use a tool',
+      const result = await service.chat({
+        messages: [{ role: 'user', content: 'Use a tool' }],
         tools: {
           testTool: mockTool,
         },
@@ -420,8 +500,8 @@ describe('aiService', () => {
         execute: jest.fn(),
       } as Tool
 
-      const result = await service.generate({
-        prompt: 'Use a tool',
+      const result = await service.chat({
+        messages: [{ role: 'user', content: 'Use a tool' }],
         tools: {
           testTool: mockEmptyTool,
         },
@@ -430,35 +510,71 @@ describe('aiService', () => {
       expect(result.toolCalls).toBeDefined()
       expect(result.toolResults).toBeUndefined()
     })
+
+    it('should use specified model', async () => {
+      const mockResult = {
+        text: 'Response',
+        usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
+        finishReason: 'stop',
+        steps: [],
+      }
+
+      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+
+      await service.chat({
+        messages: [{ role: 'user', content: 'Test' }],
+        model: 'OPENAI_GPT_5_NANO',
+      })
+
+      expect(getModel).toHaveBeenCalledWith('OPENAI_GPT_5_NANO')
+    })
+
+    it('should create and return abort controller when signal is not provided', async () => {
+      const mockResult = {
+        text: 'Response',
+        usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
+        finishReason: 'stop',
+        steps: [],
+      }
+
+      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+
+      const result = await service.chat({
+        messages: [{ role: 'user', content: 'Test' }],
+      })
+
+      expect(result.abortController).toBeDefined()
+      expect(result.abortController).toBeInstanceOf(AbortController)
+    })
   })
 
-  describe('generate - error handling', () => {
-    it('should handle AbortError', async () => {
+  describe('error handling', () => {
+    it('should handle AbortError in generateText', async () => {
       const abortError = new Error('Aborted')
       abortError.name = 'AbortError'
 
       ;(generateText as jest.Mock).mockRejectedValue(abortError)
 
       await expect(
-        service.generate({
+        service.generateText({
           prompt: 'Test',
         }),
       ).rejects.toThrow('Aborted')
     })
 
-    it('should handle general errors', async () => {
+    it('should handle general errors in generateText', async () => {
       const error = new Error('Generation failed')
       ;(generateText as jest.Mock).mockRejectedValue(error)
 
       await expect(
-        service.generate({
+        service.generateText({
           prompt: 'Test',
         }),
       ).rejects.toThrow('Generation failed')
     })
   })
 
-  describe('generate - Langfuse integration', () => {
+  describe('langfuse integration', () => {
     it('should use generateText directly when telemetry is not provided', async () => {
       const mockResult = {
         text: 'Response',
@@ -469,7 +585,7 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      await service.generate({
+      await service.generateText({
         prompt: 'Test',
       })
 
@@ -478,24 +594,7 @@ describe('aiService', () => {
     })
   })
 
-  describe('generate - usage tracking', () => {
-    it('should handle missing usage data', async () => {
-      const mockResult = {
-        text: 'Response',
-        usage: undefined,
-        finishReason: 'stop',
-        steps: [],
-      }
-
-      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
-
-      const result = await service.generate({
-        prompt: 'Test',
-      })
-
-      expect(result.usage).toBeUndefined()
-    })
-
+  describe('usage tracking', () => {
     it('should calculate total tokens when not provided', async () => {
       const mockResult = {
         text: 'Response',
@@ -509,7 +608,7 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      const result = await service.generate({
+      const result = await service.generateText({
         prompt: 'Test',
       })
 
@@ -517,85 +616,7 @@ describe('aiService', () => {
     })
   })
 
-  describe('generate - messages support', () => {
-    it('should generate with messages array', async () => {
-      const mockResult = {
-        text: 'Hello!',
-        usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
-        finishReason: 'stop',
-        steps: [],
-      }
-
-      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
-
-      const result = await service.generate({
-        messages: [
-          { role: 'user', content: 'Hello' },
-        ],
-      })
-
-      expect(result.type).toBe('text')
-      expect(result.result).toBe('Hello!')
-      expect(result.messages).toBeDefined()
-      expect(result.messages).toHaveLength(2)
-      expect(result.messages![0].role).toBe('user')
-      expect(result.messages![1].role).toBe('assistant')
-      expect(generateText).toHaveBeenCalledWith(
-        expect.objectContaining({
-          messages: expect.arrayContaining([
-            expect.objectContaining({
-              role: 'user',
-              content: 'Hello',
-            }),
-          ]),
-        }),
-      )
-    })
-
-    it('should prioritize messages over prompt', async () => {
-      const mockResult = {
-        text: 'Response',
-        usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
-        finishReason: 'stop',
-        steps: [],
-      }
-
-      ;(generateText as jest.Mock).mockResolvedValue(mockResult)
-
-      await service.generate({
-        prompt: 'This should be ignored',
-        messages: [
-          { role: 'user', content: 'This should be used' },
-        ],
-      })
-
-      expect(generateText).toHaveBeenCalledWith(
-        expect.objectContaining({
-          messages: expect.arrayContaining([
-            expect.objectContaining({
-              content: 'This should be used',
-            }),
-          ]),
-        }),
-      )
-      expect(generateText).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          prompt: 'This should be ignored',
-        }),
-      )
-    })
-
-    it('should throw error when neither prompt nor messages are provided', async () => {
-      await expect(
-        service.generate({
-          prompt: undefined,
-          messages: undefined,
-        } as { prompt?: string, messages?: undefined }),
-      ).rejects.toThrow('Either prompt or messages must be provided')
-    })
-  })
-
-  describe('generate - options', () => {
+  describe('options', () => {
     it('should pass all options to generateText', async () => {
       const mockResult = {
         text: 'Response',
@@ -606,7 +627,7 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      await service.generate({
+      await service.generateText({
         prompt: 'Test',
         options: {
           temperature: 0.7,

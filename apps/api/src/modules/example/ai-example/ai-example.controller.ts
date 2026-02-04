@@ -61,67 +61,67 @@ export class AiExampleController {
 
     const prompt = await this.langfuseService.getLangfusePrompt('Boilerplate tests')
 
-    // Build generate input - prefer messages over message for conversation history
-    const generateInput = body.messages && body.messages.length > 0
-      ? {
-          messages: body.messages,
-          model: body.model,
-          options: {
-            ...body.options,
-            telemetry: {
-              langfuseTraceName: `chat-at-time-${Date.now()}`,
-              functionId: 'chat',
-              langfuseOriginalPrompt: prompt?.toJSON(),
-            },
-          },
-          schema,
-          tools,
-        }
-      : {
-          prompt: body.message!,
-          model: body.model,
-          options: {
-            ...body.options,
-            telemetry: {
-              langfuseTraceName: `chat-at-time-${Date.now()}`,
-              functionId: 'chat',
-              langfuseOriginalPrompt: prompt?.toJSON(),
-            },
-          },
-          schema,
-          tools,
-        }
+    const telemetryOptions = {
+      langfuseTraceName: `chat-at-time-${Date.now()}`,
+      functionId: 'chat',
+      langfuseOriginalPrompt: prompt?.toJSON(),
+    }
 
-    if (schema) {
-      const result = await this.aiService.generate({
-        ...generateInput,
+    // Case 1: Structured output with schema (single message only)
+    if (schema && body.message) {
+      const result = await this.aiService.generateObject({
+        prompt: body.message,
         schema,
+        model: body.model,
+        options: {
+          ...body.options,
+          telemetry: telemetryOptions,
+        },
       })
 
       return {
         result: result.result,
-        error: result.error,
-        type: result.type,
         usage: result.usage,
         finishReason: result.finishReason,
+      }
+    }
+
+    // Case 2: Multi-turn conversation (no schema support)
+    if (body.messages && body.messages.length > 0) {
+      const result = await this.aiService.chat({
+        messages: body.messages,
+        tools,
+        model: body.model,
+        options: {
+          ...body.options,
+          telemetry: telemetryOptions,
+        },
+      })
+
+      return {
+        result: result.result,
         messages: result.messages,
+        usage: result.usage,
+        finishReason: result.finishReason,
         toolCalls: result.toolCalls,
         toolResults: result.toolResults,
       }
     }
-    else {
-      const result = await this.aiService.generate(generateInput)
 
-      return {
-        result: result.result as string,
-        error: result.error,
-        type: result.type,
-        usage: result.usage,
-        finishReason: result.finishReason,
-        messages: result.messages,
-        toolCalls: result.toolCalls,
-        toolResults: result.toolResults,
-      }
+    // Case 3: Simple text generation (single message, no schema)
+    const result = await this.aiService.generateText({
+      prompt: body.message!,
+      model: body.model,
+      options: {
+        ...body.options,
+        telemetry: telemetryOptions,
+      },
+    })
+
+    return {
+      result: result.result,
+      usage: result.usage,
+      finishReason: result.finishReason,
     }
   }
 
@@ -133,11 +133,11 @@ export class AiExampleController {
 
       const runStream = async () => {
         try {
-          const coingeckoMCPClient = await createCoingeckoMCPClient()
-          const mcpTools = await coingeckoMCPClient.tools()
+          // const coingeckoMCPClient = await createCoingeckoMCPClient()
+          // const mcpTools = await coingeckoMCPClient.tools()
 
           const tools = {
-            ...mcpTools,
+            // ...mcpTools,
             getCryptoPrice: getCryptoPriceTool,
           }
 
