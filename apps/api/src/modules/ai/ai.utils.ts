@@ -1,8 +1,11 @@
-import type { LanguageModel } from 'ai'
+import type { generateText, LanguageModel } from 'ai'
+import type { z } from 'zod'
 import type { ModelId } from './ai.config'
+import type { ToolResult } from './contracts/ai.contract'
 import { Logger } from '@nestjs/common'
 import { wrapWithRetryAfter } from './ai-rate-limit.middleware'
 import { modelRegistry, providers } from './ai.config'
+import { ToolCall } from './contracts/ai.contract'
 
 const logger = new Logger('AiUtils')
 
@@ -30,6 +33,17 @@ export async function getDefaultModel(): Promise<LanguageModel | null> {
     return null
   }
   return getModel(defaultModelId)
+}
+
+export async function getModelInstance(modelId?: ModelId): Promise<LanguageModel> {
+  if (modelId) {
+    return getModel(modelId)
+  }
+  const defaultModel = await getDefaultModel()
+  if (!defaultModel) {
+    throw new Error('No default model configured. Please specify a model or configure a default model.')
+  }
+  return defaultModel
 }
 
 export function sanitizeAiJson(aiOutput: string) {
@@ -80,4 +94,53 @@ export function sanitizeAiJson(aiOutput: string) {
 
   // 7️⃣ Attempt parsing safely
   return JSON.parse(jsonStr)
+}
+
+export function validateAndParse<T>(text: string, schema: z.ZodType<T>): T {
+  const parsed = sanitizeAiJson(text)
+  return schema.parse(parsed)
+}
+
+export function extractToolCalls(steps: Awaited<ReturnType<typeof generateText>>['steps'] | undefined): ToolCall[] | undefined {
+  const toolCalls = steps?.flatMap(step =>
+    (step.toolCalls || []).map(tc => ({
+      toolCallId: tc.toolCallId,
+      toolName: tc.toolName,
+      args: tc.input as Record<string, unknown>,
+    })),
+  )
+  return toolCalls && toolCalls.length > 0 ? toolCalls : undefined
+}
+
+export function extractToolResults(steps: Awaited<ReturnType<typeof generateText>>['steps'] | undefined): ToolResult[] | undefined {
+  const toolResults = steps?.flatMap(step =>
+    (step.toolResults || []).map(tr => ({
+      toolCallId: tr.toolCallId,
+      toolName: tr.toolName,
+      result: tr.output,
+    })),
+  )
+  return toolResults && toolResults.length > 0 ? toolResults : undefined
+}
+
+export function createSchemaPromptCommand(schema: z.ZodType): string {
+  return `
+  
+  IMPORTANT: You must respond with valid JSON that matches the expected schema structure.
+  Your response must be valid JSON only, with no additional text, markdown formatting, or explanation before or after the JSON. Return only the JSON object or array.
+  
+  The schema is:
+  ${JSON.stringify(schema.toJSONSchema(), null, 2)}
+  `
+}
+
+export function createSchemaPromptCommandForChat(schema: z.ZodType): string {
+  return `
+  IMPORTANT: You must respond to the previous user message with valid JSON that matches the expected schema structure.
+  Your response must be valid JSON only, with no additional text, markdown formatting, or explanation before or after the JSON. Return only the JSON object or array.
+  Respect this rule only once. Afterward, go back to your normal behavior except if asked by the user or provided with a new schema.
+  
+  The schema is:
+  ${JSON.stringify(schema.toJSONSchema(), null, 2)}
+  `
 }

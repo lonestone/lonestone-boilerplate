@@ -1,4 +1,4 @@
-import type { LanguageModel, LanguageModelUsage, ModelMessage, Tool } from 'ai'
+import type { ModelMessage, Tool } from 'ai'
 import type { ModelId } from './ai.config'
 import type {
   AiCoreMessage,
@@ -11,16 +11,20 @@ import type {
   GenerateObjectResult,
   GenerateTextInput,
   GenerateTextResult,
-  TokenUsage,
-  ToolCall,
-  ToolResult,
 } from './contracts/ai.contract'
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { generateText, stepCountIs, streamText } from 'ai'
-import z from 'zod'
 import { modelConfigBase, modelRegistry } from './ai.config'
-import { getDefaultModel, getModel, sanitizeAiJson } from './ai.utils'
+import {
+  createSchemaPromptCommand,
+  createSchemaPromptCommandForChat,
+  extractToolCalls,
+  extractToolResults,
+  getModelInstance,
+  validateAndParse,
+} from './ai.utils'
 import { LangfuseService } from './langfuse.service'
+import { buildTelemetryOptions, buildTraceId, buildUsageStats } from './telemetry.utils'
 
 export interface StreamGeneratorInput extends AiStreamRequest {
   tools?: Record<string, Tool>
@@ -39,18 +43,7 @@ export type ChatServiceResult = ChatResult & {
   abortController?: AbortController
 }
 
-const defaultStopWhen = 10
-
-function createSchemaPromptCommand(schema: z.ZodType): string {
-  return `
-  
-  IMPORTANT: You must respond with valid JSON that matches the expected schema structure.
-  Your response must be valid JSON only, with no additional text, markdown formatting, or explanation before or after the JSON. Return only the JSON object or array.
-  
-  The schema is:
-  ${JSON.stringify(schema.toJSONSchema(), null, 2)}
-  `
-}
+const DEFAULT_STOPWHEN = 10
 
 @Injectable()
 export class AiService implements OnModuleInit {
@@ -62,97 +55,11 @@ export class AiService implements OnModuleInit {
     this.registerDefaultModels()
   }
 
-  static async createTraceId(seed: string): Promise<string> {
-    return LangfuseService.createTraceId(seed)
-  }
-
-  async getLangfusePrompt(promptName: string, promptLabel?: string, version?: number) {
-    return this.langfuseService.getLangfusePrompt(promptName, promptLabel, version)
-  }
-
   private registerDefaultModels() {
     for (const [modelId, modelConfig] of Object.entries(modelConfigBase)) {
       modelRegistry.register(modelId as ModelId, modelConfig)
       this.logger.log(`Registered model: ${modelId}`)
     }
-  }
-
-  // ============================================================================
-  // Shared Private Methods
-  // ============================================================================
-
-  private async getModelInstance(modelId?: ModelId): Promise<LanguageModel> {
-    if (modelId) {
-      return getModel(modelId)
-    }
-    const defaultModel = await getDefaultModel()
-    if (!defaultModel) {
-      throw new Error('No default model configured. Please specify a model or configure a default model.')
-    }
-    return defaultModel
-  }
-
-  private createSchemaPrompt(schema: z.ZodType): string {
-    return createSchemaPromptCommand(schema)
-  }
-
-  private validateAndParse<T>(text: string, schema: z.ZodType<T>): T {
-    const parsed = sanitizeAiJson(text)
-    return schema.parse(parsed)
-  }
-
-  private async buildTraceId(options?: AiGenerateOptions): Promise<string | undefined> {
-    if (!options?.telemetry) {
-      return undefined
-    }
-    return LangfuseService.createTraceId(options.telemetry.langfuseTraceName)
-  }
-
-  private buildTelemetryOptions(options?: AiGenerateOptions, traceId?: string, defaultTraceName = 'ai.generate') {
-    return {
-      isEnabled: true,
-      recordInputs: true,
-      recordOutputs: true,
-      ...(options?.telemetry && {
-        langfuseTraceName: options.telemetry.langfuseTraceName || defaultTraceName,
-        traceId,
-        functionId: options.telemetry.functionId || '',
-        langfuseOriginalPrompt: options.telemetry.langfuseOriginalPrompt || '',
-      }),
-    }
-  }
-
-  private buildUsageStats(usage: LanguageModelUsage | undefined): TokenUsage | undefined {
-    if (!usage) {
-      return undefined
-    }
-    return {
-      promptTokens: usage.inputTokens ?? 0,
-      completionTokens: usage.outputTokens ?? 0,
-      totalTokens: usage.totalTokens ?? (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),
-    }
-  }
-
-  private extractToolCalls(steps: Awaited<ReturnType<typeof generateText>>['steps'] | undefined): ToolCall[] | undefined {
-    const toolCalls = steps?.flatMap(step =>
-      (step.toolCalls || []).map(tc => ({
-        toolCallId: tc.toolCallId,
-        toolName: tc.toolName,
-        args: tc.input as Record<string, unknown>,
-      })),
-    )
-    return toolCalls && toolCalls.length > 0 ? toolCalls : undefined
-  }
-
-  private extractToolResults(steps: Awaited<ReturnType<typeof generateText>>['steps'] | undefined): ToolResult[] | undefined {
-    const toolResults = steps?.flatMap(step =>
-      (step.toolResults || []).map(tr => ({
-        toolCallId: tr.toolCallId,
-        toolName: tr.toolName,
-        result: tr.output,
-      })),
-    )
-    return toolResults && toolResults.length > 0 ? toolResults : undefined
   }
 
   private async executeGeneration(generateOptions: Parameters<typeof generateText>[0], traceId?: string, options?: AiGenerateOptions) {
@@ -168,10 +75,6 @@ export class AiService implements OnModuleInit {
     }
     return streamText(streamOptions)
   }
-
-  // ============================================================================
-  // generateText() - Simple text generation
-  // ============================================================================
 
   /**
    * Generates simple text completion using the Vercel AI SDK.
@@ -198,31 +101,27 @@ export class AiService implements OnModuleInit {
   }: GenerateTextInput): Promise<GenerateTextServiceResult> {
     const abortController = signal ? undefined : new AbortController()
     const abortSignal = signal || abortController!.signal
-    const modelInstance = await this.getModelInstance(model)
-    const traceId = await this.buildTraceId(options)
+    const modelInstance = await getModelInstance(model)
+    const traceId = await buildTraceId(options)
 
     const generateOptions: Parameters<typeof generateText>[0] = {
       model: modelInstance,
       prompt,
       abortSignal,
       ...options,
-      stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
-      experimental_telemetry: this.buildTelemetryOptions(options, traceId, 'ai.generateText'),
+      stopWhen: stepCountIs(options?.stopWhen ?? DEFAULT_STOPWHEN),
+      experimental_telemetry: buildTelemetryOptions(options, traceId, 'ai.generateText'),
     }
 
     const result = await this.executeGeneration(generateOptions, traceId, options)
 
     return {
       result: result.text,
-      usage: this.buildUsageStats(result.usage),
+      usage: buildUsageStats(result.usage),
       finishReason: result.finishReason,
       abortController,
     }
   }
-
-  // ============================================================================
-  // generateObject<T>() - Structured output generation
-  // ============================================================================
 
   /**
    * Generates structured output validated against a Zod schema.
@@ -262,10 +161,10 @@ export class AiService implements OnModuleInit {
   }: GenerateObjectInput<T>): Promise<GenerateObjectServiceResult<T>> {
     const abortController = signal ? undefined : new AbortController()
     const abortSignal = signal || abortController!.signal
-    const modelInstance = await this.getModelInstance(model)
-    const traceId = await this.buildTraceId(options)
+    const modelInstance = await getModelInstance(model)
+    const traceId = await buildTraceId(options)
 
-    const schemaPrompt = this.createSchemaPrompt(schema)
+    const schemaPrompt = createSchemaPromptCommand(schema)
     const fullPrompt = `${prompt}\n${schemaPrompt}`
 
     const generateOptions: Parameters<typeof generateText>[0] = {
@@ -273,15 +172,15 @@ export class AiService implements OnModuleInit {
       prompt: fullPrompt,
       abortSignal,
       ...options,
-      stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
-      experimental_telemetry: this.buildTelemetryOptions(options, traceId, 'ai.generateObject'),
+      stopWhen: stepCountIs(options?.stopWhen ?? DEFAULT_STOPWHEN),
+      experimental_telemetry: buildTelemetryOptions(options, traceId, 'ai.generateObject'),
     }
 
     const result = await this.executeGeneration(generateOptions, traceId, options)
 
     let parsed: T
     try {
-      parsed = this.validateAndParse(result.text, schema)
+      parsed = validateAndParse(result.text, schema)
     }
     catch (error) {
       this.logger.error('Schema validation failed', error)
@@ -290,27 +189,32 @@ export class AiService implements OnModuleInit {
 
     return {
       result: parsed,
-      usage: this.buildUsageStats(result.usage),
+      usage: buildUsageStats(result.usage),
       finishReason: result.finishReason,
       abortController,
     }
   }
 
-  // ============================================================================
-  // chat() - Multi-turn conversation with tools
-  // ============================================================================
-
   /**
-   * Handles multi-turn conversations with optional tool support.
+   * Handles multi-turn conversations with optional tool and schema support.
+   *
+   * When a schema is provided:
+   * - A system message with schema instructions is appended to the messages
+   * - The LLM response is validated against the schema (throws if invalid)
+   * - The result is still returned as a string (JSON); parsing is the caller's responsibility
+   * - The schema instruction message IS kept in the returned messages for traceability
    *
    * @param input - The chat input configuration
    * @param input.messages - Conversation history as AiCoreMessage[]
+   * @param input.schema - Optional Zod schema for response validation
    * @param input.tools - Optional tools (functions) the model can call during generation
    * @param input.model - Optional model identifier. Falls back to the default configured model
    * @param input.options - Generation options (temperature, maxTokens, telemetry, etc.)
    * @param input.signal - Optional AbortSignal for request cancellation
    *
    * @returns {@link ChatServiceResult} with the response text, updated messages, and tool call information
+   *
+   * @throws Error if schema validation fails
    *
    * @example
    * const result = await aiService.chat({
@@ -323,6 +227,16 @@ export class AiService implements OnModuleInit {
    * console.log(result.messages) // Updated conversation history
    *
    * @example
+   * // With schema validation
+   * const userSchema = z.object({ name: z.string(), age: z.number() })
+   * const result = await aiService.chat({
+   *   messages: [{ role: 'user', content: 'Generate a user profile' }],
+   *   schema: userSchema,
+   * })
+   * // result.result is a JSON string, validated against userSchema
+   * // result.messages includes the schema instruction for traceability
+   *
+   * @example
    * // With tools
    * const result = await aiService.chat({
    *   messages: [{ role: 'user', content: 'What is the weather in Paris?' }],
@@ -332,6 +246,7 @@ export class AiService implements OnModuleInit {
    */
   async chat({
     messages,
+    schema,
     tools,
     model,
     options,
@@ -339,40 +254,53 @@ export class AiService implements OnModuleInit {
   }: ChatInput): Promise<ChatServiceResult> {
     const abortController = signal ? undefined : new AbortController()
     const abortSignal = signal || abortController!.signal
-    const modelInstance = await this.getModelInstance(model)
-    const traceId = await this.buildTraceId(options)
+    const modelInstance = await getModelInstance(model)
+    const traceId = await buildTraceId(options)
+
+    // If schema provided, append schema instruction as user message (system messages can only be at the start of the conversation)
+    const messagesForLLM: AiCoreMessage[] = schema
+      ? [...messages, { role: 'assistant' as const, content: createSchemaPromptCommandForChat(schema), metadata: { isConsideredSystemMessage: true } }]
+      : [...messages]
 
     const generateOptions: Parameters<typeof generateText>[0] = {
       model: modelInstance,
-      messages: messages as ModelMessage[],
+      messages: messagesForLLM as ModelMessage[],
       abortSignal,
       ...options,
       tools,
-      stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
-      experimental_telemetry: this.buildTelemetryOptions(options, traceId, 'ai.chat'),
+      stopWhen: stepCountIs(options?.stopWhen ?? DEFAULT_STOPWHEN),
+      experimental_telemetry: buildTelemetryOptions(options, traceId, 'ai.chat'),
     }
 
     const result = await this.executeGeneration(generateOptions, traceId, options)
 
+    // Validate response if schema provided (throws on invalid)
+    if (schema) {
+      try {
+        validateAndParse(result.text, schema)
+      }
+      catch (error) {
+        this.logger.error('Schema validation failed in chat', error)
+        throw new Error(`Schema validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
+    }
+
+    // Build updated messages (includes schema instruction for traceability)
     const updatedMessages: AiCoreMessage[] = [
-      ...messages,
+      ...messagesForLLM,
       { role: 'assistant', content: result.text },
     ]
 
     return {
       result: result.text,
       messages: updatedMessages,
-      usage: this.buildUsageStats(result.usage),
+      usage: buildUsageStats(result.usage),
       finishReason: result.finishReason,
-      toolCalls: this.extractToolCalls(result.steps),
-      toolResults: this.extractToolResults(result.steps),
+      toolCalls: extractToolCalls(result.steps),
+      toolResults: extractToolResults(result.steps),
       abortController,
     }
   }
-
-  // ============================================================================
-  // streamTextGenerator() - Streaming text generation
-  // ============================================================================
 
   /**
    * Streams AI text generation using the Vercel AI SDK.
@@ -417,7 +345,7 @@ export class AiService implements OnModuleInit {
     const abortController = signal ? undefined : new AbortController()
     const abortSignal = signal || abortController!.signal
 
-    const modelInstance = await this.getModelInstance(model)
+    const modelInstance = await getModelInstance(model)
 
     // Build messages array - messages takes precedence over prompt
     let conversationMessages: AiCoreMessage[] = []
@@ -434,15 +362,15 @@ export class AiService implements OnModuleInit {
       throw new Error('Either prompt or messages must be provided')
     }
 
-    const traceId = await this.buildTraceId(options)
+    const traceId = await buildTraceId(options)
 
     const streamOptionsBase: Omit<Parameters<typeof streamText>[0], 'messages' | 'prompt'> = {
       model: modelInstance,
       abortSignal,
       ...options,
       tools,
-      stopWhen: stepCountIs(options?.stopWhen ?? defaultStopWhen),
-      experimental_telemetry: this.buildTelemetryOptions(options, traceId, 'ai.streamText'),
+      stopWhen: stepCountIs(options?.stopWhen ?? DEFAULT_STOPWHEN),
+      experimental_telemetry: buildTelemetryOptions(options, traceId, 'ai.streamText'),
     }
 
     const streamOptions: Parameters<typeof streamText>[0] = hasMessages

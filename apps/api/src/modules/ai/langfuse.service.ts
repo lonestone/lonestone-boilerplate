@@ -21,7 +21,7 @@ export class LangfuseService {
       this.logger.log('Langfuse client initialized')
     }
     else {
-      this.logger.warn('Langfuse secret key not configured. Telemetry will be disabled.')
+      this.logger.warn('Langfuse secret key not configured. All Langfuse services will be disabled')
     }
   }
 
