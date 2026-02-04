@@ -773,7 +773,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided.",
+          "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages.",
           "content": {
             "application/json": {
               "schema": {
@@ -899,12 +899,12 @@
                       "none"
                     ],
                     "title": "ChatSchemaType",
-                    "description": "Predefined schema types for testing"
+                    "description": "Predefined schema types for testing structured output (only works with single message, not conversation)"
                   }
                 },
                 "additionalProperties": false,
                 "title": "ChatRequest",
-                "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided."
+                "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages."
               }
             }
           }
@@ -1098,7 +1098,7 @@
         },
         "additionalProperties": false,
         "title": "ChatRequest",
-        "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided."
+        "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages."
       },
       "AiStreamRequest": {
         "type": "object",
@@ -1192,247 +1192,132 @@
         "description": "Schema for updating a post"
       },
       "ChatResponse": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "error": {
-                "type": "string"
-              },
-              "usage": {
-                "type": "object",
-                "properties": {
-                  "promptTokens": {
-                    "type": "number"
-                  },
-                  "completionTokens": {
-                    "type": "number"
-                  },
-                  "totalTokens": {
-                    "type": "number"
-                  }
-                },
-                "required": [
-                  "promptTokens",
-                  "completionTokens",
-                  "totalTokens"
-                ],
-                "additionalProperties": false
-              },
-              "finishReason": {
-                "type": "string"
-              },
-              "messages": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "role": {
-                      "type": "string",
-                      "enum": [
-                        "user",
-                        "assistant",
-                        "system",
-                        "tool"
-                      ]
-                    },
-                    "content": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "role",
-                    "content"
-                  ],
-                  "additionalProperties": false,
-                  "title": "AiCoreMessage",
-                  "description": "A message in the conversation history following Vercel AI SDK patterns"
-                }
-              },
-              "toolCalls": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "toolCallId": {
-                      "type": "string"
-                    },
-                    "toolName": {
-                      "type": "string"
-                    },
-                    "args": {
-                      "type": "object",
-                      "propertyNames": {
-                        "type": "string"
-                      },
-                      "additionalProperties": {}
-                    }
-                  },
-                  "required": [
-                    "toolCallId",
-                    "toolName",
-                    "args"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "toolResults": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "toolCallId": {
-                      "type": "string"
-                    },
-                    "toolName": {
-                      "type": "string"
-                    },
-                    "result": {}
-                  },
-                  "required": [
-                    "toolCallId",
-                    "toolName",
-                    "result"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "type": {
-                "type": "string",
-                "const": "text"
-              },
-              "result": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "type",
-              "result"
-            ],
-            "additionalProperties": false,
-            "title": "AiGenerateOutputText",
-            "description": "Text output from an AI generation"
+        "type": "object",
+        "properties": {
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
           },
-          {
-            "type": "object",
-            "properties": {
-              "error": {
-                "type": "string"
-              },
-              "usage": {
-                "type": "object",
-                "properties": {
-                  "promptTokens": {
-                    "type": "number"
-                  },
-                  "completionTokens": {
-                    "type": "number"
-                  },
-                  "totalTokens": {
-                    "type": "number"
-                  }
-                },
-                "required": [
-                  "promptTokens",
-                  "completionTokens",
-                  "totalTokens"
-                ],
-                "additionalProperties": false
-              },
-              "finishReason": {
-                "type": "string"
-              },
-              "messages": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "role": {
-                      "type": "string",
-                      "enum": [
-                        "user",
-                        "assistant",
-                        "system",
-                        "tool"
-                      ]
-                    },
-                    "content": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "role",
-                    "content"
-                  ],
-                  "additionalProperties": false,
-                  "title": "AiCoreMessage",
-                  "description": "A message in the conversation history following Vercel AI SDK patterns"
-                }
-              },
-              "toolCalls": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "toolCallId": {
-                      "type": "string"
-                    },
-                    "toolName": {
-                      "type": "string"
-                    },
-                    "args": {
-                      "type": "object",
-                      "propertyNames": {
-                        "type": "string"
-                      },
-                      "additionalProperties": {}
-                    }
-                  },
-                  "required": [
-                    "toolCallId",
-                    "toolName",
-                    "args"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "toolResults": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "toolCallId": {
-                      "type": "string"
-                    },
-                    "toolName": {
-                      "type": "string"
-                    },
-                    "result": {}
-                  },
-                  "required": [
-                    "toolCallId",
-                    "toolName",
-                    "result"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "type": {
-                "type": "string",
-                "const": "object"
-              },
-              "result": {}
-            },
-            "required": [
-              "type",
-              "result"
-            ],
-            "additionalProperties": false
+          "finishReason": {
+            "type": "string"
+          },
+          "result": {},
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCoreMessage"
+            }
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "toolResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolResult"
+            }
           }
+        },
+        "required": [
+          "result"
         ],
+        "additionalProperties": false,
         "title": "ChatResponse",
-        "description": "Response from AI chat",
-        "type": "object"
+        "description": "Response from AI chat"
+      },
+      "TokenUsage": {
+        "type": "object",
+        "properties": {
+          "promptTokens": {
+            "type": "number"
+          },
+          "completionTokens": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "promptTokens",
+          "completionTokens",
+          "totalTokens"
+        ],
+        "additionalProperties": false,
+        "title": "TokenUsage",
+        "description": "Token usage information for an AI generation"
+      },
+      "AiCoreMessage": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "system",
+              "tool"
+            ]
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "additionalProperties": false,
+        "title": "AiCoreMessage",
+        "description": "A message in the conversation history following Vercel AI SDK patterns"
+      },
+      "ToolCall": {
+        "type": "object",
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "args": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "toolCallId",
+          "toolName",
+          "args"
+        ],
+        "additionalProperties": false,
+        "title": "ToolCall",
+        "description": "A tool call made by the AI"
+      },
+      "ToolResult": {
+        "type": "object",
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "result": {}
+        },
+        "required": [
+          "toolCallId",
+          "toolName",
+          "result"
+        ],
+        "additionalProperties": false,
+        "title": "ToolResult",
+        "description": "The result of a tool call"
       },
       "CommentSchema": {
         "type": "object",
@@ -1929,30 +1814,6 @@
         "title": "PublicPostsSchema",
         "description": "A list of public posts"
       },
-      "AiCoreMessage": {
-        "type": "object",
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": [
-              "user",
-              "assistant",
-              "system",
-              "tool"
-            ]
-          },
-          "content": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "role",
-          "content"
-        ],
-        "additionalProperties": false,
-        "title": "AiCoreMessage",
-        "description": "A message in the conversation history following Vercel AI SDK patterns"
-      },
       "AiStreamEvent": {
         "oneOf": [
           {
@@ -2175,7 +2036,7 @@
           "none"
         ],
         "title": "ChatSchemaType",
-        "description": "Predefined schema types for testing"
+        "description": "Predefined schema types for testing structured output (only works with single message, not conversation)"
       },
       "PaginationQuerySchema": {
         "type": "object",

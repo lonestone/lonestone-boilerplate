@@ -7,7 +7,7 @@ export type ClientOptions = {
 /**
  * ChatRequest
  *
- * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided.
+ * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages.
  */
 export type ChatRequest = {
   message?: string;
@@ -73,61 +73,59 @@ export type UpdatePostSchema = {
  *
  * Response from AI chat
  */
-export type ChatResponse =
-  | {
-      error?: string;
-      usage?: {
-        promptTokens: number;
-        completionTokens: number;
-        totalTokens: number;
-      };
-      finishReason?: string;
-      messages?: Array<{
-        role: "user" | "assistant" | "system" | "tool";
-        content: string;
-      }>;
-      toolCalls?: Array<{
-        toolCallId: string;
-        toolName: string;
-        args: {
-          [key: string]: unknown;
-        };
-      }>;
-      toolResults?: Array<{
-        toolCallId: string;
-        toolName: string;
-        result: unknown;
-      }>;
-      type: "text";
-      result: string;
-    }
-  | {
-      error?: string;
-      usage?: {
-        promptTokens: number;
-        completionTokens: number;
-        totalTokens: number;
-      };
-      finishReason?: string;
-      messages?: Array<{
-        role: "user" | "assistant" | "system" | "tool";
-        content: string;
-      }>;
-      toolCalls?: Array<{
-        toolCallId: string;
-        toolName: string;
-        args: {
-          [key: string]: unknown;
-        };
-      }>;
-      toolResults?: Array<{
-        toolCallId: string;
-        toolName: string;
-        result: unknown;
-      }>;
-      type: "object";
-      result: unknown;
-    };
+export type ChatResponse = {
+  usage?: TokenUsage;
+  finishReason?: string;
+  result: unknown;
+  messages?: Array<AiCoreMessage>;
+  toolCalls?: Array<ToolCall>;
+  toolResults?: Array<ToolResult>;
+};
+
+/**
+ * TokenUsage
+ *
+ * Token usage information for an AI generation
+ */
+export type TokenUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+};
+
+/**
+ * AiCoreMessage
+ *
+ * A message in the conversation history following Vercel AI SDK patterns
+ */
+export type AiCoreMessage = {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+};
+
+/**
+ * ToolCall
+ *
+ * A tool call made by the AI
+ */
+export type ToolCall = {
+  toolCallId: string;
+  toolName: string;
+  args: {
+    [key: string]: unknown;
+  };
+};
+
+/**
+ * ToolResult
+ *
+ * The result of a tool call
+ */
+export type ToolResult = {
+  toolCallId: string;
+  toolName: string;
+  result: unknown;
+};
 
 /**
  * CommentSchema
@@ -274,16 +272,6 @@ export type PublicPostsSchema = {
 };
 
 /**
- * AiCoreMessage
- *
- * A message in the conversation history following Vercel AI SDK patterns
- */
-export type AiCoreMessage = {
-  role: "user" | "assistant" | "system" | "tool";
-  content: string;
-};
-
-/**
  * AiStreamEvent
  *
  * SSE event for AI text streaming with tool support
@@ -362,7 +350,7 @@ export type AiGenerateOptions = {
 /**
  * ChatSchemaType
  *
- * Predefined schema types for testing
+ * Predefined schema types for testing structured output (only works with single message, not conversation)
  */
 export const ChatSchemaType = {
   USER_PROFILE: "userProfile",
@@ -374,7 +362,7 @@ export const ChatSchemaType = {
 /**
  * ChatSchemaType
  *
- * Predefined schema types for testing
+ * Predefined schema types for testing structured output (only works with single message, not conversation)
  */
 export type ChatSchemaType =
   (typeof ChatSchemaType)[keyof typeof ChatSchemaType];
@@ -889,7 +877,7 @@ export type AiExampleControllerChatData = {
   /**
    * ChatRequest
    *
-   * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided.
+   * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages.
    */
   body: {
     message?: string;
@@ -937,7 +925,7 @@ export type AiExampleControllerChatData = {
     /**
      * ChatSchemaType
      *
-     * Predefined schema types for testing
+     * Predefined schema types for testing structured output (only works with single message, not conversation)
      */
     schemaType?: "userProfile" | "task" | "product" | "none";
   };

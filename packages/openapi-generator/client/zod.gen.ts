@@ -19,90 +19,61 @@ export const zCreateCommentSchema = z.object({
 });
 
 /**
+ * TokenUsage
+ *
+ * Token usage information for an AI generation
+ */
+export const zTokenUsage = z.object({
+  promptTokens: z.number(),
+  completionTokens: z.number(),
+  totalTokens: z.number(),
+});
+
+/**
+ * AiCoreMessage
+ *
+ * A message in the conversation history following Vercel AI SDK patterns
+ */
+export const zAiCoreMessage = z.object({
+  role: z.enum(["user", "assistant", "system", "tool"]),
+  content: z.string(),
+});
+
+/**
+ * ToolCall
+ *
+ * A tool call made by the AI
+ */
+export const zToolCall = z.object({
+  toolCallId: z.string(),
+  toolName: z.string(),
+  args: z.record(z.string(), z.unknown()),
+});
+
+/**
+ * ToolResult
+ *
+ * The result of a tool call
+ */
+export const zToolResult = z.object({
+  toolCallId: z.string(),
+  toolName: z.string(),
+  result: z.unknown(),
+});
+
+/**
  * ChatResponse
  *
  * Response from AI chat
  */
-export const zChatResponse = z.union([
-  z.object({
-    error: z.optional(z.string()),
-    usage: z.optional(
-      z.object({
-        promptTokens: z.number(),
-        completionTokens: z.number(),
-        totalTokens: z.number(),
-      }),
-    ),
-    finishReason: z.optional(z.string()),
-    messages: z.optional(
-      z.array(
-        z.object({
-          role: z.enum(["user", "assistant", "system", "tool"]),
-          content: z.string(),
-        }),
-      ),
-    ),
-    toolCalls: z.optional(
-      z.array(
-        z.object({
-          toolCallId: z.string(),
-          toolName: z.string(),
-          args: z.record(z.string(), z.unknown()),
-        }),
-      ),
-    ),
-    toolResults: z.optional(
-      z.array(
-        z.object({
-          toolCallId: z.string(),
-          toolName: z.string(),
-          result: z.unknown(),
-        }),
-      ),
-    ),
-    type: z.literal("text"),
-    result: z.string(),
-  }),
-  z.object({
-    error: z.optional(z.string()),
-    usage: z.optional(
-      z.object({
-        promptTokens: z.number(),
-        completionTokens: z.number(),
-        totalTokens: z.number(),
-      }),
-    ),
-    finishReason: z.optional(z.string()),
-    messages: z.optional(
-      z.array(
-        z.object({
-          role: z.enum(["user", "assistant", "system", "tool"]),
-          content: z.string(),
-        }),
-      ),
-    ),
-    toolCalls: z.optional(
-      z.array(
-        z.object({
-          toolCallId: z.string(),
-          toolName: z.string(),
-          args: z.record(z.string(), z.unknown()),
-        }),
-      ),
-    ),
-    toolResults: z.optional(
-      z.array(
-        z.object({
-          toolCallId: z.string(),
-          toolName: z.string(),
-          result: z.unknown(),
-        }),
-      ),
-    ),
-    type: z.literal("object"),
-    result: z.unknown(),
-  }),
-]);
+export const zChatResponse = z.object({
+  usage: z.optional(zTokenUsage),
+  finishReason: z.optional(z.string()),
+  result: z.unknown(),
+  messages: z.optional(z.array(zAiCoreMessage)),
+  toolCalls: z.optional(z.array(zToolCall)),
+  toolResults: z.optional(z.array(zToolResult)),
+});
 
 /**
  * CommentSchema
@@ -312,16 +283,6 @@ export const zPublicPostsSchema = z.object({
 });
 
 /**
- * AiCoreMessage
- *
- * A message in the conversation history following Vercel AI SDK patterns
- */
-export const zAiCoreMessage = z.object({
-  role: z.enum(["user", "assistant", "system", "tool"]),
-  content: z.string(),
-});
-
-/**
  * AiStreamEvent
  *
  * SSE event for AI text streaming with tool support
@@ -406,7 +367,7 @@ export const zAiStreamRequest = z.object({
 /**
  * ChatSchemaType
  *
- * Predefined schema types for testing
+ * Predefined schema types for testing structured output (only works with single message, not conversation)
  */
 export const zChatSchemaType = z.enum([
   "userProfile",
@@ -418,7 +379,7 @@ export const zChatSchemaType = z.enum([
 /**
  * ChatRequest
  *
- * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided.
+ * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages.
  */
 export const zChatRequest = z.object({
   message: z.optional(z.string().min(1)),
