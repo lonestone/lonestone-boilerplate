@@ -2,6 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from "./client";
 import { client } from "./client.gen";
+import { aiExampleControllerChatResponseTransformer } from "./transformers.gen";
 import type {
   AiExampleControllerChatData,
   AiExampleControllerChatResponses,
@@ -240,6 +241,7 @@ export const aiExampleControllerChat = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({
+    responseTransformer: aiExampleControllerChatResponseTransformer,
     url: "/api/ai/chat",
     ...options,
     headers: {

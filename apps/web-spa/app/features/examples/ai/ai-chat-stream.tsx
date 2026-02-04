@@ -1,6 +1,6 @@
-import type { AiCoreMessage, aiExampleControllerChat, AiStreamEvent } from '@boilerstone/openapi-generator'
+import type { AiCoreMessage, aiExampleControllerChat, AiStreamEvent, ChatSchemaType } from '@boilerstone/openapi-generator'
+import type { ChatMessage } from './components/chat-bubble'
 import { createSseClient } from '@boilerstone/openapi-generator'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { Input } from '@boilerstone/ui/components/primitives/input'
@@ -13,60 +13,29 @@ import {
   SelectValue,
 } from '@boilerstone/ui/components/primitives/select'
 import * as React from 'react'
+import { ChatBubble } from './components/chat-bubble'
 
 const CONVERSATION_STORAGE_KEY = 'ai-chat-stream-conversation'
 
-interface ToolUsage {
-  toolCallId: string
-  toolName: string
-  args?: Record<string, unknown>
-  result?: unknown
-}
-
-interface Message extends AiCoreMessage {
-  id: string
-  timestamp: Date
-  isStreaming?: boolean
-  isUsingTool?: string
-  toolUsages?: ToolUsage[]
-  usage?: {
-    promptTokens: number
-    completionTokens: number
-    totalTokens: number
-  }
-  finishReason?: string
-  schemaType?: string
-}
-
-type SchemaType = 'none' | 'userProfile' | 'task' | 'product' | 'recipe'
-
-const schemaTypeLabels: Record<SchemaType, string> = {
-  none: 'No schema (text)',
-  userProfile: 'User Profile',
-  task: 'Task',
-  product: 'Product',
-  recipe: 'Recipe',
-}
-
-function convertMessagesToCoreMessages(messages: Message[]): AiCoreMessage[] {
+function convertMessagesToCoreMessages(messages: ChatMessage[]): AiCoreMessage[] {
   return messages
     .filter(msg => msg.role === 'user' || msg.role === 'assistant' || msg.role === 'system')
     .map(msg => ({
       role: msg.role as 'user' | 'assistant' | 'system',
       content: msg.content,
+      metadata: msg.metadata,
     }))
 }
 
-function loadConversationFromStorage(): Message[] {
+function loadConversationFromStorage(): ChatMessage[] {
   try {
     const stored = localStorage.getItem(CONVERSATION_STORAGE_KEY)
     if (!stored) {
       return []
     }
     const parsed = JSON.parse(stored)
-    return parsed.map((msg: Omit<Message, 'timestamp'> & { timestamp: string }) => ({
+    return parsed.map((msg: ChatMessage & { timestamp?: string }) => ({
       ...msg,
-      timestamp: new Date(msg.timestamp),
     }))
   }
   catch {
@@ -74,7 +43,7 @@ function loadConversationFromStorage(): Message[] {
   }
 }
 
-function saveConversationToStorage(messages: Message[]): void {
+function saveConversationToStorage(messages: ChatMessage[]): void {
   try {
     localStorage.setItem(CONVERSATION_STORAGE_KEY, JSON.stringify(messages))
   }
@@ -84,13 +53,13 @@ function saveConversationToStorage(messages: Message[]): void {
 }
 
 export function AiChatStream() {
-  const [messages, setMessages] = React.useState<Message[]>(() => loadConversationFromStorage())
+  const [messages, setMessages] = React.useState<ChatMessage[]>(() => loadConversationFromStorage())
   const [input, setInput] = React.useState('')
   const [isStreaming, setIsStreaming] = React.useState(false)
   const [abortController, setAbortController] = React.useState<AbortController | null>(null)
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
   const [model, setModel] = React.useState<Parameters<typeof aiExampleControllerChat>[0]['body']['model']>('GOOGLE_GEMINI_3_FLASH')
-  const [schemaType, setSchemaType] = React.useState<SchemaType>('none')
+  const [schemaType, setSchemaType] = React.useState<ChatSchemaType>('none')
 
   const scrollToBottom = React.useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -101,19 +70,20 @@ export function AiChatStream() {
   }, [messages, scrollToBottom])
 
   const handleStreamMessage = React.useCallback(async (messageText: string, conversationHistory: AiCoreMessage[]) => {
-    const userMessage: Message = {
+    const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
       content: messageText,
-      timestamp: new Date(),
+      metadata: {
+        timestamp: new Date(),
+      },
     }
 
     const assistantMessageId = `assistant-${Date.now()}`
-    const assistantMessage: Message = {
+    const assistantMessage: ChatMessage = {
       id: assistantMessageId,
       role: 'assistant',
       content: '',
-      timestamp: new Date(),
       isStreaming: true,
     }
 
@@ -185,8 +155,11 @@ export function AiChatStream() {
                     ...msg,
                     isStreaming: false,
                     isUsingTool: undefined,
-                    usage: event.usage,
-                    finishReason: event.finishReason,
+                    metadata: {
+                      ...msg.metadata,
+                      usage: event.usage,
+                      finishReason: event.finishReason,
+                    },
                   }
                 : msg,
             )
@@ -234,20 +207,21 @@ export function AiChatStream() {
     }
   }, [model])
 
-  const handleChatMessage = React.useCallback(async (messageText: string, conversationHistory: AiCoreMessage[], selectedSchemaType: SchemaType) => {
-    const userMessage: Message = {
+  const handleChatMessage = React.useCallback(async (messageText: string, conversationHistory: AiCoreMessage[], selectedSchemaType: ChatSchemaType) => {
+    const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
       content: messageText,
-      timestamp: new Date(),
+      metadata: {
+        timestamp: new Date(),
+      },
     }
 
     const assistantMessageId = `assistant-${Date.now()}`
-    const assistantMessage: Message = {
+    const assistantMessage: ChatMessage = {
       id: assistantMessageId,
       role: 'assistant',
       content: '',
-      timestamp: new Date(),
       isStreaming: true,
     }
 
@@ -283,21 +257,17 @@ export function AiChatStream() {
 
       const data = await response.json()
 
-      // Use the messages returned from the backend (includes schema instruction for traceability)
-      // but add our local metadata (id, timestamp, usage, etc.)
+      // The backend returns the full conversation history with metadata preserved.
+      // usage and finishReason are now in each message's metadata (added by backend).
       setMessages(() => {
-        const backendMessages = data.messages || []
-        const updated: Message[] = backendMessages.map((msg: AiCoreMessage & { schemaType?: string }, idx: number) => ({
+        const backendMessages: AiCoreMessage[] = data.messages || []
+
+        const updated: ChatMessage[] = backendMessages.map((msg, idx) => ({
           ...msg,
           id: `msg-${Date.now()}-${idx}`,
-          timestamp: new Date(),
-          ...(idx === backendMessages.length - 1 && msg.role === 'assistant'
-            ? {
-                usage: data.usage,
-                finishReason: data.finishReason,
-              }
-            : {}),
+
         }))
+
         saveConversationToStorage(updated)
         return updated
       })
@@ -394,98 +364,7 @@ export function AiChatStream() {
             </div>
           )}
           {messages.map(message => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : (message.role === 'system' || message.metadata?.isConsideredSystemMessage)
-                        ? 'bg-muted/70 text-muted-foreground border border-dashed text-xs'
-                        : 'bg-background border'
-                }`}
-              >
-                {(message.role === 'system' || message.metadata?.isConsideredSystemMessage) && (
-                  <Badge variant="secondary" className="mb-2 text-[10px]">
-                    System
-                  </Badge>
-                )}
-                {message.role === 'assistant' && message.isStreaming && (
-                  <div className="mb-2 flex gap-2">
-                    <Badge variant="secondary" className="animate-pulse">
-                      Streaming...
-                    </Badge>
-                    {message.isUsingTool && (
-                      <Badge variant="outline" className="animate-pulse">
-                        Using
-                        {' '}
-                        {message.isUsingTool}
-                        ...
-                      </Badge>
-                    )}
-                  </div>
-                )}
-                {message.toolUsages && message.toolUsages.length > 0 && (
-                  <div className="mb-2 text-xs text-muted-foreground border rounded p-2 bg-muted/30">
-                    <div className="font-medium mb-1">Tools used:</div>
-                    {message.toolUsages.map(tu => (
-                      <div key={tu.toolCallId} className="ml-2">
-                        •
-                        {' '}
-                        {tu.toolName}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {message.schemaType
-                  ? (
-                      <div className="text-sm">
-                        <Badge variant="outline" className="mb-2">
-                          {schemaTypeLabels[message.schemaType as SchemaType] || message.schemaType}
-                        </Badge>
-                        <pre className="whitespace-pre-wrap wrap-break-word bg-muted/50 rounded p-2 text-xs overflow-auto max-h-60">
-                          {message.content}
-                        </pre>
-                      </div>
-                    )
-                  : (
-                      <div className="text-sm whitespace-pre-wrap wrap-break-word">
-                        {message.content || (message.isStreaming ? '...' : '')}
-                        {message.isStreaming && (
-                          <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
-                        )}
-                      </div>
-                    )}
-                {message.usage && (
-                  <div className="mt-2 pt-2 border-t border-muted">
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <div className="flex gap-4">
-                        <span>
-                          Tokens:
-                          {message.usage.totalTokens}
-                        </span>
-                        <span>
-                          Prompt:
-                          {message.usage.promptTokens}
-                        </span>
-                        <span>
-                          Completion:
-                          {message.usage.completionTokens}
-                        </span>
-                      </div>
-                      {message.finishReason && (
-                        <div>
-                          Finish reason:
-                          {message.finishReason}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <ChatBubble key={message.id} message={message} />
           ))}
           <div ref={messagesEndRef} />
         </div>
@@ -507,7 +386,7 @@ export function AiChatStream() {
             </div>
             <div className="flex-1 space-y-1">
               <Label htmlFor="schema-select" className="text-xs">Structured Output</Label>
-              <Select value={schemaType} onValueChange={value => setSchemaType(value as SchemaType)}>
+              <Select value={schemaType} onValueChange={value => setSchemaType(value as ChatSchemaType)}>
                 <SelectTrigger id="schema-select" className="w-full">
                   <SelectValue placeholder="Select output format" />
                 </SelectTrigger>

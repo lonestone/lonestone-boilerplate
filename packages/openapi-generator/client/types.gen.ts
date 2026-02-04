@@ -103,9 +103,50 @@ export type ChatMessageWithSchemaType = {
   content: string;
   metadata?: {
     isConsideredSystemMessage?: boolean;
+    /**
+     * TokenUsage
+     *
+     * Token usage information for the message
+     */
+    usage?: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+    };
+    finishReason?: string;
+    /**
+     * ISO 8601 timestamp when the message was created
+     */
+    timestamp?: Date;
+    /**
+     * ChatSchemaType
+     *
+     * Predefined schema types for testing structured output
+     */
+    schemaType?: "userProfile" | "task" | "product" | "recipe" | "none";
   };
-  schemaType?: string;
 };
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing structured output
+ */
+export const ChatSchemaType = {
+  USER_PROFILE: "userProfile",
+  TASK: "task",
+  PRODUCT: "product",
+  RECIPE: "recipe",
+  NONE: "none",
+} as const;
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing structured output
+ */
+export type ChatSchemaType =
+  (typeof ChatSchemaType)[keyof typeof ChatSchemaType];
 
 /**
  * ToolCall
@@ -285,6 +326,21 @@ export type AiCoreMessage = {
   content: string;
   metadata?: {
     isConsideredSystemMessage?: boolean;
+    /**
+     * TokenUsage
+     *
+     * Token usage information for the message
+     */
+    usage?: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+    };
+    finishReason?: string;
+    /**
+     * ISO 8601 timestamp when the message was created
+     */
+    timestamp?: Date;
   };
 };
 
@@ -333,6 +389,66 @@ export type AiStreamEvent =
     };
 
 /**
+ * Task
+ *
+ * A task
+ */
+export type Task = {
+  title: string;
+  description: string;
+  priority: "low" | "medium" | "high";
+  dueDate?: string;
+  tags?: Array<string>;
+};
+
+/**
+ * Product
+ *
+ * A product
+ */
+export type Product = {
+  name: string;
+  price: number;
+  description: string;
+  category: string;
+  inStock: boolean;
+  features?: Array<string>;
+};
+
+/**
+ * Recipe
+ *
+ * A recipe
+ */
+export type Recipe = {
+  name: string;
+  description: string;
+  prepTime: string;
+  cookTime: string;
+  servings: number;
+  difficulty: "easy" | "medium" | "hard";
+  ingredients: Array<{
+    name: string;
+    quantity: string;
+  }>;
+  instructions: Array<string>;
+  tips?: Array<string>;
+};
+
+/**
+ * UserProfile
+ *
+ * A user profile
+ */
+export type UserProfile = {
+  name: string;
+  age: number;
+  email: string;
+  bio?: string;
+  skills?: Array<string>;
+};
+
+/**
  * AiGenerateOptions
  *
  * Options for an AI generation
@@ -363,27 +479,6 @@ export type AiGenerateOptions = {
     [key: string]: unknown;
   };
 };
-
-/**
- * ChatSchemaType
- *
- * Predefined schema types for testing structured output
- */
-export const ChatSchemaType = {
-  USER_PROFILE: "userProfile",
-  TASK: "task",
-  PRODUCT: "product",
-  RECIPE: "recipe",
-  NONE: "none",
-} as const;
-
-/**
- * ChatSchemaType
- *
- * Predefined schema types for testing structured output
- */
-export type ChatSchemaType =
-  (typeof ChatSchemaType)[keyof typeof ChatSchemaType];
 
 /**
  * PaginationQuerySchema
@@ -904,8 +999,28 @@ export type AiExampleControllerChatData = {
       content: string;
       metadata?: {
         isConsideredSystemMessage?: boolean;
+        /**
+         * TokenUsage
+         *
+         * Token usage information for the message
+         */
+        usage?: {
+          promptTokens: number;
+          completionTokens: number;
+          totalTokens: number;
+        };
+        finishReason?: string;
+        /**
+         * ISO 8601 timestamp when the message was created
+         */
+        timestamp?: Date;
+        /**
+         * ChatSchemaType
+         *
+         * Predefined schema types for testing structured output
+         */
+        schemaType?: "userProfile" | "task" | "product" | "recipe" | "none";
       };
-      schemaType?: string;
     }>;
     conversationId?: string;
     model?:
@@ -979,6 +1094,21 @@ export type AiExampleControllerStreamData = {
       content: string;
       metadata?: {
         isConsideredSystemMessage?: boolean;
+        /**
+         * TokenUsage
+         *
+         * Token usage information for the message
+         */
+        usage?: {
+          promptTokens: number;
+          completionTokens: number;
+          totalTokens: number;
+        };
+        finishReason?: string;
+        /**
+         * ISO 8601 timestamp when the message was created
+         */
+        timestamp?: Date;
       };
     }>;
     model?:

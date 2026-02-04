@@ -805,12 +805,52 @@
                           "properties": {
                             "isConsideredSystemMessage": {
                               "type": "boolean"
+                            },
+                            "usage": {
+                              "description": "Token usage information for the message",
+                              "type": "object",
+                              "properties": {
+                                "promptTokens": {
+                                  "type": "number"
+                                },
+                                "completionTokens": {
+                                  "type": "number"
+                                },
+                                "totalTokens": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "promptTokens",
+                                "completionTokens",
+                                "totalTokens"
+                              ],
+                              "additionalProperties": false,
+                              "title": "TokenUsage"
+                            },
+                            "finishReason": {
+                              "type": "string"
+                            },
+                            "timestamp": {
+                              "description": "ISO 8601 timestamp when the message was created",
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            },
+                            "schemaType": {
+                              "type": "string",
+                              "enum": [
+                                "userProfile",
+                                "task",
+                                "product",
+                                "recipe",
+                                "none"
+                              ],
+                              "title": "ChatSchemaType",
+                              "description": "Predefined schema types for testing structured output"
                             }
                           },
                           "additionalProperties": false
-                        },
-                        "schemaType": {
-                          "type": "string"
                         }
                       },
                       "required": [
@@ -977,6 +1017,37 @@
                           "properties": {
                             "isConsideredSystemMessage": {
                               "type": "boolean"
+                            },
+                            "usage": {
+                              "description": "Token usage information for the message",
+                              "type": "object",
+                              "properties": {
+                                "promptTokens": {
+                                  "type": "number"
+                                },
+                                "completionTokens": {
+                                  "type": "number"
+                                },
+                                "totalTokens": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "promptTokens",
+                                "completionTokens",
+                                "totalTokens"
+                              ],
+                              "additionalProperties": false,
+                              "title": "TokenUsage"
+                            },
+                            "finishReason": {
+                              "type": "string"
+                            },
+                            "timestamp": {
+                              "description": "ISO 8601 timestamp when the message was created",
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
                             }
                           },
                           "additionalProperties": false
@@ -1291,12 +1362,52 @@
             "properties": {
               "isConsideredSystemMessage": {
                 "type": "boolean"
+              },
+              "usage": {
+                "description": "Token usage information for the message",
+                "type": "object",
+                "properties": {
+                  "promptTokens": {
+                    "type": "number"
+                  },
+                  "completionTokens": {
+                    "type": "number"
+                  },
+                  "totalTokens": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "promptTokens",
+                  "completionTokens",
+                  "totalTokens"
+                ],
+                "additionalProperties": false,
+                "title": "TokenUsage"
+              },
+              "finishReason": {
+                "type": "string"
+              },
+              "timestamp": {
+                "description": "ISO 8601 timestamp when the message was created",
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "schemaType": {
+                "type": "string",
+                "enum": [
+                  "userProfile",
+                  "task",
+                  "product",
+                  "recipe",
+                  "none"
+                ],
+                "title": "ChatSchemaType",
+                "description": "Predefined schema types for testing structured output"
               }
             },
             "additionalProperties": false
-          },
-          "schemaType": {
-            "type": "string"
           }
         },
         "required": [
@@ -1306,6 +1417,18 @@
         "additionalProperties": false,
         "title": "ChatMessageWithSchemaType",
         "description": "A message with optional schemaType metadata for identifying structured output"
+      },
+      "ChatSchemaType": {
+        "type": "string",
+        "enum": [
+          "userProfile",
+          "task",
+          "product",
+          "recipe",
+          "none"
+        ],
+        "title": "ChatSchemaType",
+        "description": "Predefined schema types for testing structured output"
       },
       "ToolCall": {
         "type": "object",
@@ -1868,6 +1991,37 @@
             "properties": {
               "isConsideredSystemMessage": {
                 "type": "boolean"
+              },
+              "usage": {
+                "description": "Token usage information for the message",
+                "type": "object",
+                "properties": {
+                  "promptTokens": {
+                    "type": "number"
+                  },
+                  "completionTokens": {
+                    "type": "number"
+                  },
+                  "totalTokens": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "promptTokens",
+                  "completionTokens",
+                  "totalTokens"
+                ],
+                "additionalProperties": false,
+                "title": "TokenUsage"
+              },
+              "finishReason": {
+                "type": "string"
+              },
+              "timestamp": {
+                "description": "ISO 8601 timestamp when the message was created",
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
               }
             },
             "additionalProperties": false
@@ -2026,6 +2180,183 @@
         "description": "SSE event for AI text streaming with tool support",
         "type": "object"
       },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "dueDate": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "priority"
+        ],
+        "additionalProperties": false,
+        "title": "Task",
+        "description": "A task"
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "inStock": {
+            "type": "boolean"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "price",
+          "description",
+          "category",
+          "inStock"
+        ],
+        "additionalProperties": false,
+        "title": "Product",
+        "description": "A product"
+      },
+      "Recipe": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "prepTime": {
+            "type": "string"
+          },
+          "cookTime": {
+            "type": "string"
+          },
+          "servings": {
+            "type": "number"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "easy",
+              "medium",
+              "hard"
+            ]
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "quantity"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tips": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "prepTime",
+          "cookTime",
+          "servings",
+          "difficulty",
+          "ingredients",
+          "instructions"
+        ],
+        "additionalProperties": false,
+        "title": "Recipe",
+        "description": "A recipe"
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "age": {
+            "type": "number"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "age",
+          "email"
+        ],
+        "additionalProperties": false,
+        "title": "UserProfile",
+        "description": "A user profile"
+      },
       "AiGenerateOptions": {
         "type": "object",
         "properties": {
@@ -2093,18 +2424,6 @@
         "additionalProperties": false,
         "title": "AiGenerateOptions",
         "description": "Options for an AI generation"
-      },
-      "ChatSchemaType": {
-        "type": "string",
-        "enum": [
-          "userProfile",
-          "task",
-          "product",
-          "recipe",
-          "none"
-        ],
-        "title": "ChatSchemaType",
-        "description": "Predefined schema types for testing structured output"
       },
       "PaginationQuerySchema": {
         "type": "object",

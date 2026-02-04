@@ -40,10 +40,40 @@ export const zChatMessageWithSchemaType = z.object({
   metadata: z.optional(
     z.object({
       isConsideredSystemMessage: z.optional(z.boolean()),
+      usage: z.optional(
+        z.object({
+          promptTokens: z.number(),
+          completionTokens: z.number(),
+          totalTokens: z.number(),
+        }),
+      ),
+      finishReason: z.optional(z.string()),
+      timestamp: z.optional(
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+      ),
+      schemaType: z.optional(
+        z.enum(["userProfile", "task", "product", "recipe", "none"]),
+      ),
     }),
   ),
-  schemaType: z.optional(z.string()),
 });
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing structured output
+ */
+export const zChatSchemaType = z.enum([
+  "userProfile",
+  "task",
+  "product",
+  "recipe",
+  "none",
+]);
 
 /**
  * ToolCall
@@ -299,6 +329,21 @@ export const zAiCoreMessage = z.object({
   metadata: z.optional(
     z.object({
       isConsideredSystemMessage: z.optional(z.boolean()),
+      usage: z.optional(
+        z.object({
+          promptTokens: z.number(),
+          completionTokens: z.number(),
+          totalTokens: z.number(),
+        }),
+      ),
+      finishReason: z.optional(z.string()),
+      timestamp: z.optional(
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+      ),
     }),
   ),
 });
@@ -344,6 +389,72 @@ export const zAiStreamEvent = z.union([
 ]);
 
 /**
+ * Task
+ *
+ * A task
+ */
+export const zTask = z.object({
+  title: z.string(),
+  description: z.string(),
+  priority: z.enum(["low", "medium", "high"]),
+  dueDate: z.optional(z.string()),
+  tags: z.optional(z.array(z.string())),
+});
+
+/**
+ * Product
+ *
+ * A product
+ */
+export const zProduct = z.object({
+  name: z.string(),
+  price: z.number(),
+  description: z.string(),
+  category: z.string(),
+  inStock: z.boolean(),
+  features: z.optional(z.array(z.string())),
+});
+
+/**
+ * Recipe
+ *
+ * A recipe
+ */
+export const zRecipe = z.object({
+  name: z.string(),
+  description: z.string(),
+  prepTime: z.string(),
+  cookTime: z.string(),
+  servings: z.number(),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  ingredients: z.array(
+    z.object({
+      name: z.string(),
+      quantity: z.string(),
+    }),
+  ),
+  instructions: z.array(z.string()),
+  tips: z.optional(z.array(z.string())),
+});
+
+/**
+ * UserProfile
+ *
+ * A user profile
+ */
+export const zUserProfile = z.object({
+  name: z.string(),
+  age: z.number(),
+  email: z
+    .email()
+    .regex(
+      /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+    ),
+  bio: z.optional(z.string()),
+  skills: z.optional(z.array(z.string())),
+});
+
+/**
  * AiGenerateOptions
  *
  * Options for an AI generation
@@ -367,38 +478,6 @@ export const zAiGenerateOptions = z.object({
 });
 
 /**
- * AiStreamRequest
- *
- * Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided.
- */
-export const zAiStreamRequest = z.object({
-  prompt: z.optional(z.string().min(1)),
-  messages: z.optional(z.array(zAiCoreMessage)),
-  model: z.optional(
-    z.enum([
-      "OPENAI_GPT_5_NANO",
-      "GOOGLE_GEMINI_3_FLASH",
-      "CLAUDE_HAIKU_3_5",
-      "MISTRAL_SMALL",
-    ]),
-  ),
-  options: z.optional(zAiGenerateOptions),
-});
-
-/**
- * ChatSchemaType
- *
- * Predefined schema types for testing structured output
- */
-export const zChatSchemaType = z.enum([
-  "userProfile",
-  "task",
-  "product",
-  "recipe",
-  "none",
-]);
-
-/**
  * ChatRequest
  *
  * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output.
@@ -417,6 +496,25 @@ export const zChatRequest = z.object({
   ),
   options: z.optional(zAiGenerateOptions),
   schemaType: z.optional(zChatSchemaType),
+});
+
+/**
+ * AiStreamRequest
+ *
+ * Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided.
+ */
+export const zAiStreamRequest = z.object({
+  prompt: z.optional(z.string().min(1)),
+  messages: z.optional(z.array(zAiCoreMessage)),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
 });
 
 /**
@@ -791,9 +889,26 @@ export const zAiExampleControllerChatData = z.object({
           metadata: z.optional(
             z.object({
               isConsideredSystemMessage: z.optional(z.boolean()),
+              usage: z.optional(
+                z.object({
+                  promptTokens: z.number(),
+                  completionTokens: z.number(),
+                  totalTokens: z.number(),
+                }),
+              ),
+              finishReason: z.optional(z.string()),
+              timestamp: z.optional(
+                z.iso
+                  .datetime()
+                  .regex(
+                    /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+                  ),
+              ),
+              schemaType: z.optional(
+                z.enum(["userProfile", "task", "product", "recipe", "none"]),
+              ),
             }),
           ),
-          schemaType: z.optional(z.string()),
         }),
       ),
     ),
@@ -849,6 +964,21 @@ export const zAiExampleControllerStreamData = z.object({
           metadata: z.optional(
             z.object({
               isConsideredSystemMessage: z.optional(z.boolean()),
+              usage: z.optional(
+                z.object({
+                  promptTokens: z.number(),
+                  completionTokens: z.number(),
+                  totalTokens: z.number(),
+                }),
+              ),
+              finishReason: z.optional(z.string()),
+              timestamp: z.optional(
+                z.iso
+                  .datetime()
+                  .regex(
+                    /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+                  ),
+              ),
             }),
           ),
         }),
