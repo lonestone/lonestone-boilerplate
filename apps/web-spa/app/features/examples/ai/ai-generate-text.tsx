@@ -1,5 +1,5 @@
-import type { aiExampleControllerChat, AiStreamEvent, ChatResponse } from '@boilerstone/openapi-generator'
-import { createSseClient } from '@boilerstone/openapi-generator'
+import type { AiStreamEvent, GenerateTextResponse } from '@boilerstone/openapi-generator'
+import { aiExampleControllerGenerateText, createSseClient } from '@boilerstone/openapi-generator'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
@@ -28,11 +28,11 @@ interface StreamingState {
 
 export function AiGenerateText() {
   const [prompt, setPrompt] = React.useState('')
-  const [response, setResponse] = React.useState<ChatResponse | null>(null)
+  const [response, setResponse] = React.useState<GenerateTextResponse | null>(null)
   const [streamingState, setStreamingState] = React.useState<StreamingState | null>(null)
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-  const [model, setModel] = React.useState<Parameters<typeof aiExampleControllerChat>[0]['body']['model']>('GOOGLE_GEMINI_3_FLASH')
+  const [model, setModel] = React.useState<Parameters<typeof aiExampleControllerGenerateText>[0]['body']['model']>('GOOGLE_GEMINI_3_FLASH')
   const [useStreaming, setUseStreaming] = React.useState(false)
   const [abortController, setAbortController] = React.useState<AbortController | null>(null)
 
@@ -50,7 +50,7 @@ export function AiGenerateText() {
       }
 
       const { stream } = createSseClient<AiStreamEvent>({
-        url: `${apiUrl}/api/ai/stream`,
+        url: `${apiUrl}/api/ai/stream-text`,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -94,23 +94,18 @@ export function AiGenerateText() {
 
   const handleRegularSubmit = async (promptText: string) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || ''
-      const res = await fetch(`${apiUrl}/api/ai/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          message: promptText,
+      const { data, error: apiError } = await aiExampleControllerGenerateText({
+        body: {
+          prompt: promptText,
           model,
-        }),
+        },
       })
 
-      if (!res.ok) {
-        throw new Error(`Request failed with status ${res.status}`)
+      if (apiError) {
+        throw new Error('Request failed')
       }
 
-      const data: ChatResponse = await res.json()
-      setResponse(data)
+      setResponse(data ?? null)
     }
     catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -190,7 +185,7 @@ export function AiGenerateText() {
           <div className="flex gap-4">
             <div className="flex-1 space-y-1">
               <Label htmlFor="model-select-text">Model</Label>
-              <Select value={model} onValueChange={value => setModel(value as Parameters<typeof aiExampleControllerChat>[0]['body']['model'])}>
+              <Select value={model} onValueChange={value => setModel(value as Parameters<typeof aiExampleControllerGenerateText>[0]['body']['model'])}>
                 <SelectTrigger id="model-select-text" className="w-full">
                   <SelectValue placeholder="Select a model" />
                 </SelectTrigger>

@@ -105,7 +105,7 @@ export function AiChatStream() {
       }
 
       const { stream } = createSseClient<AiStreamEvent>({
-        url: `${apiUrl}/api/ai/stream`,
+        url: `${apiUrl}/api/ai/stream-chat`,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

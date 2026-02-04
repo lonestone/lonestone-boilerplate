@@ -6,8 +6,16 @@ import { aiExampleControllerChatResponseTransformer } from "./transformers.gen";
 import type {
   AiExampleControllerChatData,
   AiExampleControllerChatResponses,
-  AiExampleControllerStreamData,
-  AiExampleControllerStreamResponses,
+  AiExampleControllerGenerateObjectData,
+  AiExampleControllerGenerateObjectResponses,
+  AiExampleControllerGenerateTextData,
+  AiExampleControllerGenerateTextResponses,
+  AiExampleControllerStreamChatData,
+  AiExampleControllerStreamChatResponses,
+  AiExampleControllerStreamObjectData,
+  AiExampleControllerStreamObjectResponses,
+  AiExampleControllerStreamTextData,
+  AiExampleControllerStreamTextResponses,
   AppControllerGetHelloData,
   AppControllerGetHelloResponses,
   CommentsControllerCreateCommentData,
@@ -233,6 +241,42 @@ export const publicPostControllerGetPosts = <
     ThrowOnError
   >({ url: "/api/public/posts", ...options });
 
+export const aiExampleControllerGenerateText = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AiExampleControllerGenerateTextData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AiExampleControllerGenerateTextResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/ai/generate-text",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const aiExampleControllerGenerateObject = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AiExampleControllerGenerateObjectData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AiExampleControllerGenerateObjectResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/ai/generate-object",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const aiExampleControllerChat = <ThrowOnError extends boolean = false>(
   options: Options<AiExampleControllerChatData, ThrowOnError>,
 ) =>
@@ -250,15 +294,53 @@ export const aiExampleControllerChat = <ThrowOnError extends boolean = false>(
     },
   });
 
-export const aiExampleControllerStream = <ThrowOnError extends boolean = false>(
-  options: Options<AiExampleControllerStreamData, ThrowOnError>,
+export const aiExampleControllerStreamText = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AiExampleControllerStreamTextData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    AiExampleControllerStreamResponses,
+    AiExampleControllerStreamTextResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/ai/stream",
+    url: "/api/ai/stream-text",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const aiExampleControllerStreamObject = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AiExampleControllerStreamObjectData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AiExampleControllerStreamObjectResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/ai/stream-object",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const aiExampleControllerStreamChat = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AiExampleControllerStreamChatData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AiExampleControllerStreamChatResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/ai/stream-chat",
     ...options,
     headers: {
       "Content-Type": "application/json",

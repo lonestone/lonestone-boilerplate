@@ -764,6 +764,258 @@
         }
       }
     },
+    "/api/ai/generate-text": {
+      "post": {
+        "operationId": "AiExampleController_generateText",
+        "tags": [
+          "AiExample"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request for simple text generation with a single prompt",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "langfuseTraceName": {
+                            "type": "string",
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "langfuseTraceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  }
+                },
+                "required": [
+                  "prompt"
+                ],
+                "additionalProperties": false,
+                "title": "GenerateTextRequest",
+                "description": "Request for simple text generation with a single prompt"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response from text generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateTextResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/generate-object": {
+      "post": {
+        "operationId": "AiExampleController_generateObject",
+        "tags": [
+          "AiExample"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request for structured object generation with a predefined schema type",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "schemaType": {
+                    "type": "string",
+                    "enum": [
+                      "userProfile",
+                      "task",
+                      "product",
+                      "recipe"
+                    ]
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "langfuseTraceName": {
+                            "type": "string",
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "langfuseTraceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  }
+                },
+                "required": [
+                  "prompt",
+                  "schemaType"
+                ],
+                "additionalProperties": false,
+                "title": "GenerateObjectRequest",
+                "description": "Request for structured object generation with a predefined schema type"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response from structured object generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateObjectResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ai/chat": {
       "post": {
         "operationId": "AiExampleController_chat",
@@ -773,17 +1025,14 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output.",
+          "description": "Request for multi-turn AI conversation with message history",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "message": {
-                    "type": "string",
-                    "minLength": 1
-                  },
                   "messages": {
+                    "minItems": 1,
                     "type": "array",
                     "items": {
                       "type": "object",
@@ -862,8 +1111,126 @@
                       "description": "A message with optional schemaType metadata for identifying structured output"
                     }
                   },
-                  "conversationId": {
-                    "type": "string"
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "langfuseTraceName": {
+                            "type": "string",
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "langfuseTraceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  }
+                },
+                "required": [
+                  "messages"
+                ],
+                "additionalProperties": false,
+                "title": "ChatRequest",
+                "description": "Request for multi-turn AI conversation with message history"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response from AI chat conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/stream-text": {
+      "post": {
+        "operationId": "AiExampleController_streamText",
+        "tags": [
+          "AiExample"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request for streaming text generation with a single prompt",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
                   },
                   "model": {
                     "type": "string",
@@ -941,51 +1308,35 @@
                     "additionalProperties": false,
                     "title": "AiGenerateOptions",
                     "description": "Options for an AI generation"
-                  },
-                  "schemaType": {
-                    "type": "string",
-                    "enum": [
-                      "userProfile",
-                      "task",
-                      "product",
-                      "recipe",
-                      "none"
-                    ],
-                    "title": "ChatSchemaType",
-                    "description": "Predefined schema types for testing structured output"
                   }
                 },
+                "required": [
+                  "prompt"
+                ],
                 "additionalProperties": false,
-                "title": "ChatRequest",
-                "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output."
+                "title": "StreamTextRequest",
+                "description": "Request for streaming text generation with a single prompt"
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Response from AI chat. Messages may include schemaType metadata for structured output.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChatResponse"
-                }
-              }
-            }
+          "201": {
+            "description": ""
           }
         }
       }
     },
-    "/api/ai/stream": {
+    "/api/ai/stream-object": {
       "post": {
-        "operationId": "AiExampleController_stream",
+        "operationId": "AiExampleController_streamObject",
         "tags": [
           "AiExample"
         ],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided.",
+          "description": "Request for streaming structured object generation",
           "content": {
             "application/json": {
               "schema": {
@@ -995,7 +1346,128 @@
                     "type": "string",
                     "minLength": 1
                   },
+                  "schemaType": {
+                    "type": "string",
+                    "enum": [
+                      "userProfile",
+                      "task",
+                      "product",
+                      "recipe"
+                    ]
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "langfuseTraceName": {
+                            "type": "string",
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "langfuseTraceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  }
+                },
+                "required": [
+                  "prompt",
+                  "schemaType"
+                ],
+                "additionalProperties": false,
+                "title": "StreamObjectRequest",
+                "description": "Request for streaming structured object generation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/ai/stream-chat": {
+      "post": {
+        "operationId": "AiExampleController_streamChat",
+        "tags": [
+          "AiExample"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request for streaming multi-turn AI conversation",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
                   "messages": {
+                    "minItems": 1,
                     "type": "array",
                     "items": {
                       "type": "object",
@@ -1048,6 +1520,18 @@
                               "type": "string",
                               "format": "date-time",
                               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            },
+                            "schemaType": {
+                              "type": "string",
+                              "enum": [
+                                "userProfile",
+                                "task",
+                                "product",
+                                "recipe",
+                                "none"
+                              ],
+                              "title": "ChatSchemaType",
+                              "description": "Predefined schema types for testing structured output"
                             }
                           },
                           "additionalProperties": false
@@ -1058,8 +1542,8 @@
                         "content"
                       ],
                       "additionalProperties": false,
-                      "title": "AiCoreMessage",
-                      "description": "A message in the conversation history following Vercel AI SDK patterns"
+                      "title": "ChatMessageWithSchemaType",
+                      "description": "A message with optional schemaType metadata for identifying structured output"
                     }
                   },
                   "model": {
@@ -1140,9 +1624,12 @@
                     "description": "Options for an AI generation"
                   }
                 },
+                "required": [
+                  "messages"
+                ],
                 "additionalProperties": false,
-                "title": "AiStreamRequest",
-                "description": "Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided."
+                "title": "StreamChatRequest",
+                "description": "Request for streaming multi-turn AI conversation"
               }
             }
           }
@@ -1157,53 +1644,78 @@
   },
   "components": {
     "schemas": {
-      "ChatRequest": {
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string",
-            "minLength": 1
-          },
-          "messages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
-            }
-          },
-          "conversationId": {
-            "type": "string"
-          },
-          "model": {
-            "type": "string",
-            "enum": [
-              "OPENAI_GPT_5_NANO",
-              "GOOGLE_GEMINI_3_FLASH",
-              "CLAUDE_HAIKU_3_5",
-              "MISTRAL_SMALL"
-            ]
-          },
-          "options": {
-            "$ref": "#/components/schemas/AiGenerateOptions"
-          },
-          "schemaType": {
-            "$ref": "#/components/schemas/ChatSchemaType"
-          }
-        },
-        "additionalProperties": false,
-        "title": "ChatRequest",
-        "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output."
-      },
-      "AiStreamRequest": {
+      "GenerateTextRequest": {
         "type": "object",
         "properties": {
           "prompt": {
             "type": "string",
             "minLength": 1
           },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "title": "GenerateTextRequest",
+        "description": "Request for simple text generation with a single prompt"
+      },
+      "GenerateObjectRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schemaType": {
+            "type": "string",
+            "enum": [
+              "userProfile",
+              "task",
+              "product",
+              "recipe"
+            ]
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "prompt",
+          "schemaType"
+        ],
+        "additionalProperties": false,
+        "title": "GenerateObjectRequest",
+        "description": "Request for structured object generation with a predefined schema type"
+      },
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
           "messages": {
+            "minItems": 1,
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AiCoreMessage"
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
             }
           },
           "model": {
@@ -1219,9 +1731,106 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
+        "required": [
+          "messages"
+        ],
         "additionalProperties": false,
-        "title": "AiStreamRequest",
-        "description": "Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided."
+        "title": "ChatRequest",
+        "description": "Request for multi-turn AI conversation with message history"
+      },
+      "StreamTextRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "title": "StreamTextRequest",
+        "description": "Request for streaming text generation with a single prompt"
+      },
+      "StreamObjectRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schemaType": {
+            "type": "string",
+            "enum": [
+              "userProfile",
+              "task",
+              "product",
+              "recipe"
+            ]
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "prompt",
+          "schemaType"
+        ],
+        "additionalProperties": false,
+        "title": "StreamObjectRequest",
+        "description": "Request for streaming structured object generation"
+      },
+      "StreamChatRequest": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
+            }
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "additionalProperties": false,
+        "title": "StreamChatRequest",
+        "description": "Request for streaming multi-turn AI conversation"
       },
       "CreateCommentSchema": {
         "type": "object",
@@ -1284,7 +1893,7 @@
         "title": "UpdatePostSchema",
         "description": "Schema for updating a post"
       },
-      "ChatResponse": {
+      "GenerateTextResponse": {
         "type": "object",
         "properties": {
           "usage": {
@@ -1293,32 +1902,16 @@
           "finishReason": {
             "type": "string"
           },
-          "result": {},
-          "messages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
-            }
-          },
-          "toolCalls": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ToolCall"
-            }
-          },
-          "toolResults": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ToolResult"
-            }
+          "result": {
+            "type": "string"
           }
         },
         "required": [
           "result"
         ],
         "additionalProperties": false,
-        "title": "ChatResponse",
-        "description": "Response from AI chat. Messages may include schemaType metadata for structured output."
+        "title": "GenerateTextResponse",
+        "description": "Response from text generation"
       },
       "TokenUsage": {
         "type": "object",
@@ -1341,6 +1934,63 @@
         "additionalProperties": false,
         "title": "TokenUsage",
         "description": "Token usage information for an AI generation"
+      },
+      "GenerateObjectResponse": {
+        "type": "object",
+        "properties": {
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "finishReason": {
+            "type": "string"
+          },
+          "result": {}
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "title": "GenerateObjectResponse",
+        "description": "Response from structured object generation"
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "finishReason": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
+            }
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "toolResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolResult"
+            }
+          }
+        },
+        "required": [
+          "result",
+          "messages"
+        ],
+        "additionalProperties": false,
+        "title": "ChatResponse",
+        "description": "Response from AI chat conversation"
       },
       "ChatMessageWithSchemaType": {
         "type": "object",
@@ -1993,26 +2643,7 @@
                 "type": "boolean"
               },
               "usage": {
-                "description": "Token usage information for the message",
-                "type": "object",
-                "properties": {
-                  "promptTokens": {
-                    "type": "number"
-                  },
-                  "completionTokens": {
-                    "type": "number"
-                  },
-                  "totalTokens": {
-                    "type": "number"
-                  }
-                },
-                "required": [
-                  "promptTokens",
-                  "completionTokens",
-                  "totalTokens"
-                ],
-                "additionalProperties": false,
-                "title": "TokenUsage"
+                "$ref": "#/components/schemas/TokenUsage"
               },
               "finishReason": {
                 "type": "string"

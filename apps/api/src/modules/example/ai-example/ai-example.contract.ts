@@ -97,34 +97,125 @@ registerSchema(productSchema)
 registerSchema(recipeSchema)
 registerSchema(userProfileSchema)
 
+// ============================================================================
+// Generate Text - Single prompt text generation
+// ============================================================================
+
+export const generateTextRequestSchema = z.object({
+  prompt: z.string().min(1),
+  model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
+  options: aiGenerateOptionsSchema.optional(),
+}).meta({
+  title: 'GenerateTextRequest',
+  description: 'Request for simple text generation with a single prompt',
+})
+
+export type GenerateTextRequest = z.infer<typeof generateTextRequestSchema>
+
+export const generateTextResponseSchema = aiBaseResultSchema.extend({
+  result: z.string(),
+}).meta({
+  title: 'GenerateTextResponse',
+  description: 'Response from text generation',
+})
+
+export type GenerateTextResponse = z.infer<typeof generateTextResponseSchema>
+
+// ============================================================================
+// Generate Object - Structured output generation
+// ============================================================================
+
+export const generateObjectRequestSchema = z.object({
+  prompt: z.string().min(1),
+  schemaType: z.enum(['userProfile', 'task', 'product', 'recipe']),
+  model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
+  options: aiGenerateOptionsSchema.optional(),
+}).meta({
+  title: 'GenerateObjectRequest',
+  description: 'Request for structured object generation with a predefined schema type',
+})
+
+export type GenerateObjectRequest = z.infer<typeof generateObjectRequestSchema>
+
+export const generateObjectResponseSchema = aiBaseResultSchema.extend({
+  result: z.unknown(),
+}).meta({
+  title: 'GenerateObjectResponse',
+  description: 'Response from structured object generation',
+})
+
+export type GenerateObjectResponse = z.infer<typeof generateObjectResponseSchema>
+
+// ============================================================================
+// Chat - Multi-turn conversation
+// ============================================================================
+
 export const chatRequestSchema = z.object({
-  message: z.string().min(1).optional(),
-  messages: z.array(chatMessageWithSchemaTypeSchema).optional(),
-  conversationId: z.string().optional(),
+  messages: z.array(chatMessageWithSchemaTypeSchema).min(1),
   model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
   options: aiGenerateOptionsSchema.optional(),
   schemaType: chatSchemaTypeSchema.optional(),
-}).refine(
-  data => data.message || (data.messages && data.messages.length > 0),
-  {
-    message: 'Either message or messages must be provided',
-    path: ['message', 'messages'],
-  },
-).meta({
+}).meta({
   title: 'ChatRequest',
-  description: 'Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output.',
+  description: 'Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.',
 })
 
 export type ChatRequest = z.infer<typeof chatRequestSchema>
 
 export const chatResponseSchema = aiBaseResultSchema.extend({
-  result: z.unknown(),
-  messages: z.array(chatMessageWithSchemaTypeSchema).optional(),
+  result: z.string(),
+  messages: z.array(chatMessageWithSchemaTypeSchema),
   toolCalls: z.array(toolCallSchema).optional(),
   toolResults: z.array(toolResultSchema).optional(),
 }).meta({
   title: 'ChatResponse',
-  description: 'Response from AI chat. Messages may include schemaType metadata for structured output.',
+  description: 'Response from AI chat conversation',
 })
 
 export type ChatResponse = z.infer<typeof chatResponseSchema>
+
+// ============================================================================
+// Stream Text - Streaming text generation
+// ============================================================================
+
+export const streamTextRequestSchema = z.object({
+  prompt: z.string().min(1),
+  model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
+  options: aiGenerateOptionsSchema.optional(),
+}).meta({
+  title: 'StreamTextRequest',
+  description: 'Request for streaming text generation with a single prompt',
+})
+
+export type StreamTextRequest = z.infer<typeof streamTextRequestSchema>
+
+// ============================================================================
+// Stream Object - Streaming structured output generation
+// ============================================================================
+
+export const streamObjectRequestSchema = z.object({
+  prompt: z.string().min(1),
+  schemaType: z.enum(['userProfile', 'task', 'product', 'recipe']),
+  model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
+  options: aiGenerateOptionsSchema.optional(),
+}).meta({
+  title: 'StreamObjectRequest',
+  description: 'Request for streaming structured object generation',
+})
+
+export type StreamObjectRequest = z.infer<typeof streamObjectRequestSchema>
+
+// ============================================================================
+// Stream Chat - Streaming multi-turn conversation
+// ============================================================================
+
+export const streamChatRequestSchema = z.object({
+  messages: z.array(chatMessageWithSchemaTypeSchema).min(1),
+  model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
+  options: aiGenerateOptionsSchema.optional(),
+}).meta({
+  title: 'StreamChatRequest',
+  description: 'Request for streaming multi-turn AI conversation',
+})
+
+export type StreamChatRequest = z.infer<typeof streamChatRequestSchema>

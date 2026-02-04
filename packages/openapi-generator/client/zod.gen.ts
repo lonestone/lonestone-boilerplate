@@ -30,6 +30,28 @@ export const zTokenUsage = z.object({
 });
 
 /**
+ * GenerateTextResponse
+ *
+ * Response from text generation
+ */
+export const zGenerateTextResponse = z.object({
+  usage: z.optional(zTokenUsage),
+  finishReason: z.optional(z.string()),
+  result: z.string(),
+});
+
+/**
+ * GenerateObjectResponse
+ *
+ * Response from structured object generation
+ */
+export const zGenerateObjectResponse = z.object({
+  usage: z.optional(zTokenUsage),
+  finishReason: z.optional(z.string()),
+  result: z.unknown(),
+});
+
+/**
  * ChatMessageWithSchemaType
  *
  * A message with optional schemaType metadata for identifying structured output
@@ -100,13 +122,13 @@ export const zToolResult = z.object({
 /**
  * ChatResponse
  *
- * Response from AI chat. Messages may include schemaType metadata for structured output.
+ * Response from AI chat conversation
  */
 export const zChatResponse = z.object({
   usage: z.optional(zTokenUsage),
   finishReason: z.optional(z.string()),
-  result: z.unknown(),
-  messages: z.optional(z.array(zChatMessageWithSchemaType)),
+  result: z.string(),
+  messages: z.array(zChatMessageWithSchemaType),
   toolCalls: z.optional(z.array(zToolCall)),
   toolResults: z.optional(z.array(zToolResult)),
 });
@@ -329,13 +351,7 @@ export const zAiCoreMessage = z.object({
   metadata: z.optional(
     z.object({
       isConsideredSystemMessage: z.optional(z.boolean()),
-      usage: z.optional(
-        z.object({
-          promptTokens: z.number(),
-          completionTokens: z.number(),
-          totalTokens: z.number(),
-        }),
-      ),
+      usage: z.optional(zTokenUsage),
       finishReason: z.optional(z.string()),
       timestamp: z.optional(
         z.iso
@@ -478,14 +494,12 @@ export const zAiGenerateOptions = z.object({
 });
 
 /**
- * ChatRequest
+ * GenerateTextRequest
  *
- * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output.
+ * Request for simple text generation with a single prompt
  */
-export const zChatRequest = z.object({
-  message: z.optional(z.string().min(1)),
-  messages: z.optional(z.array(zChatMessageWithSchemaType)),
-  conversationId: z.optional(z.string()),
+export const zGenerateTextRequest = z.object({
+  prompt: z.string().min(1),
   model: z.optional(
     z.enum([
       "OPENAI_GPT_5_NANO",
@@ -495,17 +509,89 @@ export const zChatRequest = z.object({
     ]),
   ),
   options: z.optional(zAiGenerateOptions),
-  schemaType: z.optional(zChatSchemaType),
 });
 
 /**
- * AiStreamRequest
+ * GenerateObjectRequest
  *
- * Request for streaming AI text generation. Either prompt (single turn) or messages (conversation history) must be provided.
+ * Request for structured object generation with a predefined schema type
  */
-export const zAiStreamRequest = z.object({
-  prompt: z.optional(z.string().min(1)),
-  messages: z.optional(z.array(zAiCoreMessage)),
+export const zGenerateObjectRequest = z.object({
+  prompt: z.string().min(1),
+  schemaType: z.enum(["userProfile", "task", "product", "recipe"]),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+});
+
+/**
+ * ChatRequest
+ *
+ * Request for multi-turn AI conversation with message history
+ */
+export const zChatRequest = z.object({
+  messages: z.array(zChatMessageWithSchemaType).min(1),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+});
+
+/**
+ * StreamTextRequest
+ *
+ * Request for streaming text generation with a single prompt
+ */
+export const zStreamTextRequest = z.object({
+  prompt: z.string().min(1),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+});
+
+/**
+ * StreamObjectRequest
+ *
+ * Request for streaming structured object generation
+ */
+export const zStreamObjectRequest = z.object({
+  prompt: z.string().min(1),
+  schemaType: z.enum(["userProfile", "task", "product", "recipe"]),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+});
+
+/**
+ * StreamChatRequest
+ *
+ * Request for streaming multi-turn AI conversation
+ */
+export const zStreamChatRequest = z.object({
+  messages: z.array(zChatMessageWithSchemaType).min(1),
   model: z.optional(
     z.enum([
       "OPENAI_GPT_5_NANO",
@@ -878,41 +964,9 @@ export const zPublicPostControllerGetPostsData = z.object({
  */
 export const zPublicPostControllerGetPostsResponse = zPublicPostsSchema;
 
-export const zAiExampleControllerChatData = z.object({
+export const zAiExampleControllerGenerateTextData = z.object({
   body: z.object({
-    message: z.optional(z.string().min(1)),
-    messages: z.optional(
-      z.array(
-        z.object({
-          role: z.enum(["user", "assistant", "system", "tool"]),
-          content: z.string(),
-          metadata: z.optional(
-            z.object({
-              isConsideredSystemMessage: z.optional(z.boolean()),
-              usage: z.optional(
-                z.object({
-                  promptTokens: z.number(),
-                  completionTokens: z.number(),
-                  totalTokens: z.number(),
-                }),
-              ),
-              finishReason: z.optional(z.string()),
-              timestamp: z.optional(
-                z.iso
-                  .datetime()
-                  .regex(
-                    /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-                  ),
-              ),
-              schemaType: z.optional(
-                z.enum(["userProfile", "task", "product", "recipe", "none"]),
-              ),
-            }),
-          ),
-        }),
-      ),
-    ),
-    conversationId: z.optional(z.string()),
+    prompt: z.string().min(1),
     model: z.optional(
       z.enum([
         "OPENAI_GPT_5_NANO",
@@ -940,8 +994,46 @@ export const zAiExampleControllerChatData = z.object({
         metadata: z.optional(z.record(z.string(), z.unknown())),
       }),
     ),
-    schemaType: z.optional(
-      z.enum(["userProfile", "task", "product", "recipe", "none"]),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Response from text generation
+ */
+export const zAiExampleControllerGenerateTextResponse = zGenerateTextResponse;
+
+export const zAiExampleControllerGenerateObjectData = z.object({
+  body: z.object({
+    prompt: z.string().min(1),
+    schemaType: z.enum(["userProfile", "task", "product", "recipe"]),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "MISTRAL_SMALL",
+      ]),
+    ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            langfuseTraceName: z.string(),
+            langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
+          }),
+        ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
     ),
   }),
   path: z.optional(z.never()),
@@ -949,15 +1041,15 @@ export const zAiExampleControllerChatData = z.object({
 });
 
 /**
- * Response from AI chat. Messages may include schemaType metadata for structured output.
+ * Response from structured object generation
  */
-export const zAiExampleControllerChatResponse = zChatResponse;
+export const zAiExampleControllerGenerateObjectResponse =
+  zGenerateObjectResponse;
 
-export const zAiExampleControllerStreamData = z.object({
+export const zAiExampleControllerChatData = z.object({
   body: z.object({
-    prompt: z.optional(z.string().min(1)),
-    messages: z.optional(
-      z.array(
+    messages: z
+      .array(
         z.object({
           role: z.enum(["user", "assistant", "system", "tool"]),
           content: z.string(),
@@ -979,11 +1071,155 @@ export const zAiExampleControllerStreamData = z.object({
                     /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
                   ),
               ),
+              schemaType: z.optional(
+                z.enum(["userProfile", "task", "product", "recipe", "none"]),
+              ),
             }),
           ),
         }),
-      ),
+      )
+      .min(1),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "MISTRAL_SMALL",
+      ]),
     ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            langfuseTraceName: z.string(),
+            langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
+          }),
+        ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
+    ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Response from AI chat conversation
+ */
+export const zAiExampleControllerChatResponse = zChatResponse;
+
+export const zAiExampleControllerStreamTextData = z.object({
+  body: z.object({
+    prompt: z.string().min(1),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "MISTRAL_SMALL",
+      ]),
+    ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            langfuseTraceName: z.string(),
+            langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
+          }),
+        ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
+    ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAiExampleControllerStreamObjectData = z.object({
+  body: z.object({
+    prompt: z.string().min(1),
+    schemaType: z.enum(["userProfile", "task", "product", "recipe"]),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "MISTRAL_SMALL",
+      ]),
+    ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            langfuseTraceName: z.string(),
+            langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
+          }),
+        ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
+    ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAiExampleControllerStreamChatData = z.object({
+  body: z.object({
+    messages: z
+      .array(
+        z.object({
+          role: z.enum(["user", "assistant", "system", "tool"]),
+          content: z.string(),
+          metadata: z.optional(
+            z.object({
+              isConsideredSystemMessage: z.optional(z.boolean()),
+              usage: z.optional(
+                z.object({
+                  promptTokens: z.number(),
+                  completionTokens: z.number(),
+                  totalTokens: z.number(),
+                }),
+              ),
+              finishReason: z.optional(z.string()),
+              timestamp: z.optional(
+                z.iso
+                  .datetime()
+                  .regex(
+                    /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+                  ),
+              ),
+              schemaType: z.optional(
+                z.enum(["userProfile", "task", "product", "recipe", "none"]),
+              ),
+            }),
+          ),
+        }),
+      )
+      .min(1),
     model: z.optional(
       z.enum([
         "OPENAI_GPT_5_NANO",

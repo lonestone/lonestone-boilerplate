@@ -12,11 +12,9 @@ const chatMessageWithSchemaTypeSchemaResponseTransformer = (data: any) => {
 };
 
 const chatResponseSchemaResponseTransformer = (data: any) => {
-  if (data.messages) {
-    data.messages = data.messages.map((item: any) =>
-      chatMessageWithSchemaTypeSchemaResponseTransformer(item),
-    );
-  }
+  data.messages = data.messages.map((item: any) =>
+    chatMessageWithSchemaTypeSchemaResponseTransformer(item),
+  );
   return data;
 };
 
