@@ -546,6 +546,128 @@ describe('aiService', () => {
       expect(result.abortController).toBeDefined()
       expect(result.abortController).toBeInstanceOf(AbortController)
     })
+
+    describe('with schema support', () => {
+      const userSchema = z.object({
+        name: z.string(),
+        age: z.number(),
+      })
+
+      it('should append schema instruction as system message when schema is provided', async () => {
+        const mockResult = {
+          text: '{"name": "John", "age": 30}',
+          usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+          finishReason: 'stop',
+          steps: [],
+        }
+
+        ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+        ;(sanitizeAiJson as jest.Mock).mockImplementation((text: string) => JSON.parse(text))
+
+        await service.chat({
+          messages: [{ role: 'user', content: 'Generate a user profile' }],
+          schema: userSchema,
+        })
+
+        expect(generateText).toHaveBeenCalledWith(
+          expect.objectContaining({
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                role: 'user',
+                content: 'Generate a user profile',
+              }),
+              expect.objectContaining({
+                role: 'system',
+                content: expect.stringContaining('IMPORTANT: You must respond with valid JSON'),
+              }),
+            ]),
+          }),
+        )
+      })
+
+      it('should validate response against schema and return result as string', async () => {
+        const mockResult = {
+          text: '{"name": "Jane", "age": 25}',
+          usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+          finishReason: 'stop',
+          steps: [],
+        }
+
+        ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+        ;(sanitizeAiJson as jest.Mock).mockImplementation((text: string) => JSON.parse(text))
+
+        const result = await service.chat({
+          messages: [{ role: 'user', content: 'Generate a user profile' }],
+          schema: userSchema,
+        })
+
+        expect(result.result).toBe('{"name": "Jane", "age": 25}')
+        expect(typeof result.result).toBe('string')
+      })
+
+      it('should include schema instruction in returned messages for traceability', async () => {
+        const mockResult = {
+          text: '{"name": "Bob", "age": 35}',
+          usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+          finishReason: 'stop',
+          steps: [],
+        }
+
+        ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+        ;(sanitizeAiJson as jest.Mock).mockImplementation((text: string) => JSON.parse(text))
+
+        const result = await service.chat({
+          messages: [{ role: 'user', content: 'Generate a user profile' }],
+          schema: userSchema,
+        })
+
+        expect(result.messages).toHaveLength(3)
+        expect(result.messages[0].role).toBe('user')
+        expect(result.messages[1].role).toBe('system')
+        expect(result.messages[1].content).toContain('IMPORTANT: You must respond with valid JSON')
+        expect(result.messages[2].role).toBe('assistant')
+        expect(result.messages[2].content).toBe('{"name": "Bob", "age": 35}')
+      })
+
+      it('should throw error when schema validation fails', async () => {
+        const mockResult = {
+          text: '{"invalid": "data"}',
+          usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+          finishReason: 'stop',
+          steps: [],
+        }
+
+        ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+        ;(sanitizeAiJson as jest.Mock).mockImplementation((text: string) => JSON.parse(text))
+
+        await expect(
+          service.chat({
+            messages: [{ role: 'user', content: 'Generate a user profile' }],
+            schema: userSchema,
+          }),
+        ).rejects.toThrow('Schema validation failed')
+      })
+
+      it('should work without schema (backward compatibility)', async () => {
+        const mockResult = {
+          text: 'Hello, this is a normal response',
+          usage: { inputTokens: 5, outputTokens: 10, totalTokens: 15 },
+          finishReason: 'stop',
+          steps: [],
+        }
+
+        ;(generateText as jest.Mock).mockResolvedValue(mockResult)
+
+        const result = await service.chat({
+          messages: [{ role: 'user', content: 'Say hello' }],
+        })
+
+        expect(result.result).toBe('Hello, this is a normal response')
+        expect(result.messages).toHaveLength(2)
+        expect(result.messages[0].role).toBe('user')
+        expect(result.messages[1].role).toBe('assistant')
+      })
+    })
   })
 
   describe('error handling', () => {

@@ -29,23 +29,6 @@ export const aiGenerateOptionsSchema = z.object({
 
 export type AiGenerateOptions = z.infer<typeof aiGenerateOptionsSchema>
 
-export const aiCoreMessageMetadataSchema = z.object({
-  isConsideredSystemMessage: z.boolean().optional(),
-})
-
-export const aiCoreMessageSchema = z.object({
-  role: z.enum(['user', 'assistant', 'system', 'tool']),
-  content: z.string(),
-  metadata: aiCoreMessageMetadataSchema.optional(),
-}).meta({
-  title: 'AiCoreMessage',
-  description: 'A message in the conversation history following Vercel AI SDK patterns',
-})
-
-export type AiCoreMessage = z.infer<typeof aiCoreMessageSchema>
-
-registerSchema(aiCoreMessageSchema)
-
 // ============================================================================
 // Base Schemas (shared fields)
 // ============================================================================
@@ -93,6 +76,30 @@ export const toolResultSchema = z.object({
 })
 
 export type ToolResult = z.infer<typeof toolResultSchema>
+
+// ============================================================================
+// Core Message Schemas
+// ============================================================================
+
+export const aiCoreMessageMetadataSchema = z.object({
+  isConsideredSystemMessage: z.boolean().optional(),
+  usage: tokenUsageSchema.optional().describe('Token usage information for the message'),
+  finishReason: z.string().optional(),
+  timestamp: z.iso.datetime().optional().describe('ISO 8601 timestamp when the message was created'),
+})
+
+export const aiCoreMessageSchema = z.object({
+  role: z.enum(['user', 'assistant', 'system', 'tool']),
+  content: z.string(),
+  metadata: aiCoreMessageMetadataSchema.optional(),
+}).meta({
+  title: 'AiCoreMessage',
+  description: 'A message in the conversation history following Vercel AI SDK patterns',
+})
+
+export type AiCoreMessage = z.infer<typeof aiCoreMessageSchema>
+
+registerSchema(aiCoreMessageSchema)
 
 // ============================================================================
 // generateText() - Simple text generation

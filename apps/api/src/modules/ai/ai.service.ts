@@ -285,16 +285,19 @@ export class AiService implements OnModuleInit {
       }
     }
 
+    const usage = buildUsageStats(result.usage)
+
     // Build updated messages (includes schema instruction for traceability)
+    // We also add the metadata to the message itself
     const updatedMessages: AiCoreMessage[] = [
       ...messagesForLLM,
-      { role: 'assistant', content: result.text },
+      { role: 'assistant', content: result.text, metadata: { usage, finishReason: result.finishReason, timestamp: new Date().toISOString() } },
     ]
 
     return {
       result: result.text,
       messages: updatedMessages,
-      usage: buildUsageStats(result.usage),
+      usage,
       finishReason: result.finishReason,
       toolCalls: extractToolCalls(result.steps),
       toolResults: extractToolResults(result.steps),
