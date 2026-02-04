@@ -773,7 +773,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages.",
+          "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output.",
           "content": {
             "application/json": {
               "schema": {
@@ -799,6 +799,18 @@
                         },
                         "content": {
                           "type": "string"
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "properties": {
+                            "isConsideredSystemMessage": {
+                              "type": "boolean"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "schemaType": {
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -806,8 +818,8 @@
                         "content"
                       ],
                       "additionalProperties": false,
-                      "title": "AiCoreMessage",
-                      "description": "A message in the conversation history following Vercel AI SDK patterns"
+                      "title": "ChatMessageWithSchemaType",
+                      "description": "A message with optional schemaType metadata for identifying structured output"
                     }
                   },
                   "conversationId": {
@@ -896,22 +908,23 @@
                       "userProfile",
                       "task",
                       "product",
+                      "recipe",
                       "none"
                     ],
                     "title": "ChatSchemaType",
-                    "description": "Predefined schema types for testing structured output (only works with single message, not conversation)"
+                    "description": "Predefined schema types for testing structured output"
                   }
                 },
                 "additionalProperties": false,
                 "title": "ChatRequest",
-                "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages."
+                "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output."
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Response from AI chat",
+            "description": "Response from AI chat. Messages may include schemaType metadata for structured output.",
             "content": {
               "application/json": {
                 "schema": {
@@ -958,6 +971,15 @@
                         },
                         "content": {
                           "type": "string"
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "properties": {
+                            "isConsideredSystemMessage": {
+                              "type": "boolean"
+                            }
+                          },
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -1074,7 +1096,7 @@
           "messages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AiCoreMessage"
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
             }
           },
           "conversationId": {
@@ -1098,7 +1120,7 @@
         },
         "additionalProperties": false,
         "title": "ChatRequest",
-        "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages."
+        "description": "Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output."
       },
       "AiStreamRequest": {
         "type": "object",
@@ -1204,7 +1226,7 @@
           "messages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AiCoreMessage"
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
             }
           },
           "toolCalls": {
@@ -1225,7 +1247,7 @@
         ],
         "additionalProperties": false,
         "title": "ChatResponse",
-        "description": "Response from AI chat"
+        "description": "Response from AI chat. Messages may include schemaType metadata for structured output."
       },
       "TokenUsage": {
         "type": "object",
@@ -1249,7 +1271,7 @@
         "title": "TokenUsage",
         "description": "Token usage information for an AI generation"
       },
-      "AiCoreMessage": {
+      "ChatMessageWithSchemaType": {
         "type": "object",
         "properties": {
           "role": {
@@ -1263,6 +1285,18 @@
           },
           "content": {
             "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "isConsideredSystemMessage": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          },
+          "schemaType": {
+            "type": "string"
           }
         },
         "required": [
@@ -1270,8 +1304,8 @@
           "content"
         ],
         "additionalProperties": false,
-        "title": "AiCoreMessage",
-        "description": "A message in the conversation history following Vercel AI SDK patterns"
+        "title": "ChatMessageWithSchemaType",
+        "description": "A message with optional schemaType metadata for identifying structured output"
       },
       "ToolCall": {
         "type": "object",
@@ -1814,6 +1848,39 @@
         "title": "PublicPostsSchema",
         "description": "A list of public posts"
       },
+      "AiCoreMessage": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "system",
+              "tool"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "isConsideredSystemMessage": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "additionalProperties": false,
+        "title": "AiCoreMessage",
+        "description": "A message in the conversation history following Vercel AI SDK patterns"
+      },
       "AiStreamEvent": {
         "oneOf": [
           {
@@ -2033,10 +2100,11 @@
           "userProfile",
           "task",
           "product",
+          "recipe",
           "none"
         ],
         "title": "ChatSchemaType",
-        "description": "Predefined schema types for testing structured output (only works with single message, not conversation)"
+        "description": "Predefined schema types for testing structured output"
       },
       "PaginationQuerySchema": {
         "type": "object",

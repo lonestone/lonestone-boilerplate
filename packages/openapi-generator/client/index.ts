@@ -32,6 +32,7 @@ export {
   type AiStreamRequest,
   type AppControllerGetHelloData,
   type AppControllerGetHelloResponses,
+  type ChatMessageWithSchemaType,
   type ChatRequest,
   type ChatResponse,
   ChatSchemaType,

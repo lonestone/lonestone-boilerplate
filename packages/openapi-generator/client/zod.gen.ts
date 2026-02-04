@@ -30,13 +30,19 @@ export const zTokenUsage = z.object({
 });
 
 /**
- * AiCoreMessage
+ * ChatMessageWithSchemaType
  *
- * A message in the conversation history following Vercel AI SDK patterns
+ * A message with optional schemaType metadata for identifying structured output
  */
-export const zAiCoreMessage = z.object({
+export const zChatMessageWithSchemaType = z.object({
   role: z.enum(["user", "assistant", "system", "tool"]),
   content: z.string(),
+  metadata: z.optional(
+    z.object({
+      isConsideredSystemMessage: z.optional(z.boolean()),
+    }),
+  ),
+  schemaType: z.optional(z.string()),
 });
 
 /**
@@ -64,13 +70,13 @@ export const zToolResult = z.object({
 /**
  * ChatResponse
  *
- * Response from AI chat
+ * Response from AI chat. Messages may include schemaType metadata for structured output.
  */
 export const zChatResponse = z.object({
   usage: z.optional(zTokenUsage),
   finishReason: z.optional(z.string()),
   result: z.unknown(),
-  messages: z.optional(z.array(zAiCoreMessage)),
+  messages: z.optional(z.array(zChatMessageWithSchemaType)),
   toolCalls: z.optional(z.array(zToolCall)),
   toolResults: z.optional(z.array(zToolResult)),
 });
@@ -283,6 +289,21 @@ export const zPublicPostsSchema = z.object({
 });
 
 /**
+ * AiCoreMessage
+ *
+ * A message in the conversation history following Vercel AI SDK patterns
+ */
+export const zAiCoreMessage = z.object({
+  role: z.enum(["user", "assistant", "system", "tool"]),
+  content: z.string(),
+  metadata: z.optional(
+    z.object({
+      isConsideredSystemMessage: z.optional(z.boolean()),
+    }),
+  ),
+});
+
+/**
  * AiStreamEvent
  *
  * SSE event for AI text streaming with tool support
@@ -367,23 +388,24 @@ export const zAiStreamRequest = z.object({
 /**
  * ChatSchemaType
  *
- * Predefined schema types for testing structured output (only works with single message, not conversation)
+ * Predefined schema types for testing structured output
  */
 export const zChatSchemaType = z.enum([
   "userProfile",
   "task",
   "product",
+  "recipe",
   "none",
 ]);
 
 /**
  * ChatRequest
  *
- * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages.
+ * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output.
  */
 export const zChatRequest = z.object({
   message: z.optional(z.string().min(1)),
-  messages: z.optional(z.array(zAiCoreMessage)),
+  messages: z.optional(z.array(zChatMessageWithSchemaType)),
   conversationId: z.optional(z.string()),
   model: z.optional(
     z.enum([
@@ -766,6 +788,12 @@ export const zAiExampleControllerChatData = z.object({
         z.object({
           role: z.enum(["user", "assistant", "system", "tool"]),
           content: z.string(),
+          metadata: z.optional(
+            z.object({
+              isConsideredSystemMessage: z.optional(z.boolean()),
+            }),
+          ),
+          schemaType: z.optional(z.string()),
         }),
       ),
     ),
@@ -797,14 +825,16 @@ export const zAiExampleControllerChatData = z.object({
         metadata: z.optional(z.record(z.string(), z.unknown())),
       }),
     ),
-    schemaType: z.optional(z.enum(["userProfile", "task", "product", "none"])),
+    schemaType: z.optional(
+      z.enum(["userProfile", "task", "product", "recipe", "none"]),
+    ),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
 /**
- * Response from AI chat
+ * Response from AI chat. Messages may include schemaType metadata for structured output.
  */
 export const zAiExampleControllerChatResponse = zChatResponse;
 
@@ -816,6 +846,11 @@ export const zAiExampleControllerStreamData = z.object({
         z.object({
           role: z.enum(["user", "assistant", "system", "tool"]),
           content: z.string(),
+          metadata: z.optional(
+            z.object({
+              isConsideredSystemMessage: z.optional(z.boolean()),
+            }),
+          ),
         }),
       ),
     ),

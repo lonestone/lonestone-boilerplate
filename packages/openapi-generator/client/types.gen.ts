@@ -7,11 +7,11 @@ export type ClientOptions = {
 /**
  * ChatRequest
  *
- * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages.
+ * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output.
  */
 export type ChatRequest = {
   message?: string;
-  messages?: Array<AiCoreMessage>;
+  messages?: Array<ChatMessageWithSchemaType>;
   conversationId?: string;
   model?:
     | "OPENAI_GPT_5_NANO"
@@ -71,13 +71,13 @@ export type UpdatePostSchema = {
 /**
  * ChatResponse
  *
- * Response from AI chat
+ * Response from AI chat. Messages may include schemaType metadata for structured output.
  */
 export type ChatResponse = {
   usage?: TokenUsage;
   finishReason?: string;
   result: unknown;
-  messages?: Array<AiCoreMessage>;
+  messages?: Array<ChatMessageWithSchemaType>;
   toolCalls?: Array<ToolCall>;
   toolResults?: Array<ToolResult>;
 };
@@ -94,13 +94,17 @@ export type TokenUsage = {
 };
 
 /**
- * AiCoreMessage
+ * ChatMessageWithSchemaType
  *
- * A message in the conversation history following Vercel AI SDK patterns
+ * A message with optional schemaType metadata for identifying structured output
  */
-export type AiCoreMessage = {
+export type ChatMessageWithSchemaType = {
   role: "user" | "assistant" | "system" | "tool";
   content: string;
+  metadata?: {
+    isConsideredSystemMessage?: boolean;
+  };
+  schemaType?: string;
 };
 
 /**
@@ -272,6 +276,19 @@ export type PublicPostsSchema = {
 };
 
 /**
+ * AiCoreMessage
+ *
+ * A message in the conversation history following Vercel AI SDK patterns
+ */
+export type AiCoreMessage = {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+  metadata?: {
+    isConsideredSystemMessage?: boolean;
+  };
+};
+
+/**
  * AiStreamEvent
  *
  * SSE event for AI text streaming with tool support
@@ -350,19 +367,20 @@ export type AiGenerateOptions = {
 /**
  * ChatSchemaType
  *
- * Predefined schema types for testing structured output (only works with single message, not conversation)
+ * Predefined schema types for testing structured output
  */
 export const ChatSchemaType = {
   USER_PROFILE: "userProfile",
   TASK: "task",
   PRODUCT: "product",
+  RECIPE: "recipe",
   NONE: "none",
 } as const;
 
 /**
  * ChatSchemaType
  *
- * Predefined schema types for testing structured output (only works with single message, not conversation)
+ * Predefined schema types for testing structured output
  */
 export type ChatSchemaType =
   (typeof ChatSchemaType)[keyof typeof ChatSchemaType];
@@ -877,13 +895,17 @@ export type AiExampleControllerChatData = {
   /**
    * ChatRequest
    *
-   * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. Note: schemaType only works with message, not messages.
+   * Request for AI chat. Either message (single turn) or messages (conversation history) must be provided. schemaType can be used to request structured output.
    */
   body: {
     message?: string;
     messages?: Array<{
       role: "user" | "assistant" | "system" | "tool";
       content: string;
+      metadata?: {
+        isConsideredSystemMessage?: boolean;
+      };
+      schemaType?: string;
     }>;
     conversationId?: string;
     model?:
@@ -925,9 +947,9 @@ export type AiExampleControllerChatData = {
     /**
      * ChatSchemaType
      *
-     * Predefined schema types for testing structured output (only works with single message, not conversation)
+     * Predefined schema types for testing structured output
      */
-    schemaType?: "userProfile" | "task" | "product" | "none";
+    schemaType?: "userProfile" | "task" | "product" | "recipe" | "none";
   };
   path?: never;
   query?: never;
@@ -936,7 +958,7 @@ export type AiExampleControllerChatData = {
 
 export type AiExampleControllerChatResponses = {
   /**
-   * Response from AI chat
+   * Response from AI chat. Messages may include schemaType metadata for structured output.
    */
   200: ChatResponse;
 };
@@ -955,6 +977,9 @@ export type AiExampleControllerStreamData = {
     messages?: Array<{
       role: "user" | "assistant" | "system" | "tool";
       content: string;
+      metadata?: {
+        isConsideredSystemMessage?: boolean;
+      };
     }>;
     model?:
       | "OPENAI_GPT_5_NANO"

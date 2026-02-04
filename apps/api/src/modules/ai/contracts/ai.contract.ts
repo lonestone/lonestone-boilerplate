@@ -29,9 +29,14 @@ export const aiGenerateOptionsSchema = z.object({
 
 export type AiGenerateOptions = z.infer<typeof aiGenerateOptionsSchema>
 
+export const aiCoreMessageMetadataSchema = z.object({
+  isConsideredSystemMessage: z.boolean().optional(),
+})
+
 export const aiCoreMessageSchema = z.object({
   role: z.enum(['user', 'assistant', 'system', 'tool']),
   content: z.string(),
+  metadata: aiCoreMessageMetadataSchema.optional(),
 }).meta({
   title: 'AiCoreMessage',
   description: 'A message in the conversation history following Vercel AI SDK patterns',
@@ -139,15 +144,16 @@ export function makeGenerateObjectResultSchema<T>(schema: z.ZodType<T>) {
 export type GenerateObjectResult<T> = z.infer<ReturnType<typeof makeGenerateObjectResultSchema<T>>>
 
 // ============================================================================
-// chat() - Multi-turn conversation with tools (no schema support)
+// chat() - Multi-turn conversation with tools and optional schema validation
 // ============================================================================
 
 export const chatInputSchema = aiBaseInputSchema.extend({
   messages: z.array(aiCoreMessageSchema).min(1),
+  schema: z.custom<z.ZodType>(val => val && typeof val === 'object').optional(),
   tools: z.custom<Record<string, Tool>>(val => val && typeof val === 'object').optional(),
 }).meta({
   title: 'ChatInput',
-  description: 'Input for multi-turn conversation with optional tools',
+  description: 'Input for multi-turn conversation with optional tools and schema validation',
 })
 
 export type ChatInput = z.infer<typeof chatInputSchema>

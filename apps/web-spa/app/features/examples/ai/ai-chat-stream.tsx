@@ -35,13 +35,24 @@ interface Message extends AiCoreMessage {
     totalTokens: number
   }
   finishReason?: string
+  schemaType?: string
+}
+
+type SchemaType = 'none' | 'userProfile' | 'task' | 'product' | 'recipe'
+
+const schemaTypeLabels: Record<SchemaType, string> = {
+  none: 'No schema (text)',
+  userProfile: 'User Profile',
+  task: 'Task',
+  product: 'Product',
+  recipe: 'Recipe',
 }
 
 function convertMessagesToCoreMessages(messages: Message[]): AiCoreMessage[] {
   return messages
-    .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+    .filter(msg => msg.role === 'user' || msg.role === 'assistant' || msg.role === 'system')
     .map(msg => ({
-      role: msg.role as 'user' | 'assistant',
+      role: msg.role as 'user' | 'assistant' | 'system',
       content: msg.content,
     }))
 }
@@ -79,6 +90,7 @@ export function AiChatStream() {
   const [abortController, setAbortController] = React.useState<AbortController | null>(null)
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
   const [model, setModel] = React.useState<Parameters<typeof aiExampleControllerChat>[0]['body']['model']>('GOOGLE_GEMINI_3_FLASH')
+  const [schemaType, setSchemaType] = React.useState<SchemaType>('none')
 
   const scrollToBottom = React.useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -222,6 +234,101 @@ export function AiChatStream() {
     }
   }, [model])
 
+  const handleChatMessage = React.useCallback(async (messageText: string, conversationHistory: AiCoreMessage[], selectedSchemaType: SchemaType) => {
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: messageText,
+      timestamp: new Date(),
+    }
+
+    const assistantMessageId = `assistant-${Date.now()}`
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      isStreaming: true,
+    }
+
+    setMessages((prev) => {
+      const updated = [...prev, userMessage, assistantMessage]
+      saveConversationToStorage(updated.filter(msg => !msg.isStreaming))
+      return updated
+    })
+
+    const controller = new AbortController()
+    setAbortController(controller)
+    setIsStreaming(true)
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const requestBody = {
+        messages: [...conversationHistory, { role: 'user' as const, content: messageText }],
+        model,
+        schemaType: selectedSchemaType,
+      }
+
+      const response = await fetch(`${apiUrl}/api/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      // Use the messages returned from the backend (includes schema instruction for traceability)
+      // but add our local metadata (id, timestamp, usage, etc.)
+      setMessages(() => {
+        const backendMessages = data.messages || []
+        const updated: Message[] = backendMessages.map((msg: AiCoreMessage & { schemaType?: string }, idx: number) => ({
+          ...msg,
+          id: `msg-${Date.now()}-${idx}`,
+          timestamp: new Date(),
+          ...(idx === backendMessages.length - 1 && msg.role === 'assistant'
+            ? {
+                usage: data.usage,
+                finishReason: data.finishReason,
+              }
+            : {}),
+        }))
+        saveConversationToStorage(updated)
+        return updated
+      })
+    }
+    catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        setMessages((prev) => {
+          const updated = prev.filter(msg => msg.id !== assistantMessageId)
+          saveConversationToStorage(updated)
+          return updated
+        })
+      }
+      else {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to get response'
+        setMessages((prev) => {
+          const updated = prev.map(msg =>
+            msg.id === assistantMessageId
+              ? { ...msg, content: `Error: ${errorMessage}`, isStreaming: false }
+              : msg,
+          )
+          saveConversationToStorage(updated)
+          return updated
+        })
+      }
+    }
+    finally {
+      setIsStreaming(false)
+      setAbortController(null)
+    }
+  }, [model])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || isStreaming) {
@@ -232,7 +339,13 @@ export function AiChatStream() {
     setInput('')
 
     const conversationHistory = convertMessagesToCoreMessages(messages)
-    handleStreamMessage(messageText, conversationHistory)
+
+    if (schemaType !== 'none') {
+      handleChatMessage(messageText, conversationHistory, schemaType)
+    }
+    else {
+      handleStreamMessage(messageText, conversationHistory)
+    }
   }
 
   const handleStop = () => {
@@ -280,82 +393,100 @@ export function AiChatStream() {
               Start a conversation by sending a message
             </div>
           )}
-          {messages
-            .filter(message => message.role === 'user' || message.role === 'assistant')
-            .map(message => (
+          {messages.map(message => (
+            <div
+              key={message.id}
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
               <div
-                key={message.id}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                  message.role === 'user'
+                    ? 'bg-primary text-primary-foreground'
+                    : (message.role === 'system' || message.metadata?.isConsideredSystemMessage)
+                        ? 'bg-muted/70 text-muted-foreground border border-dashed text-xs'
+                        : 'bg-background border'
+                }`}
               >
-                <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-background border'
-                  }`}
-                >
-                  {message.role === 'assistant' && message.isStreaming && (
-                    <div className="mb-2 flex gap-2">
-                      <Badge variant="secondary" className="animate-pulse">
-                        Streaming...
+                {(message.role === 'system' || message.metadata?.isConsideredSystemMessage) && (
+                  <Badge variant="secondary" className="mb-2 text-[10px]">
+                    System
+                  </Badge>
+                )}
+                {message.role === 'assistant' && message.isStreaming && (
+                  <div className="mb-2 flex gap-2">
+                    <Badge variant="secondary" className="animate-pulse">
+                      Streaming...
+                    </Badge>
+                    {message.isUsingTool && (
+                      <Badge variant="outline" className="animate-pulse">
+                        Using
+                        {' '}
+                        {message.isUsingTool}
+                        ...
                       </Badge>
-                      {message.isUsingTool && (
-                        <Badge variant="outline" className="animate-pulse">
-                          Using
-                          {' '}
-                          {message.isUsingTool}
-                          ...
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                  {message.toolUsages && message.toolUsages.length > 0 && (
-                    <div className="mb-2 text-xs text-muted-foreground border rounded p-2 bg-muted/30">
-                      <div className="font-medium mb-1">Tools used:</div>
-                      {message.toolUsages.map(tu => (
-                        <div key={tu.toolCallId} className="ml-2">
-                          •
-                          {' '}
-                          {tu.toolName}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="text-sm whitespace-pre-wrap wrap-break-word">
-                    {message.content || (message.isStreaming ? '...' : '')}
-                    {message.isStreaming && (
-                      <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
                     )}
                   </div>
-                  {message.usage && (
-                    <div className="mt-2 pt-2 border-t border-muted">
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <div className="flex gap-4">
-                          <span>
-                            Tokens:
-                            {message.usage.totalTokens}
-                          </span>
-                          <span>
-                            Prompt:
-                            {message.usage.promptTokens}
-                          </span>
-                          <span>
-                            Completion:
-                            {message.usage.completionTokens}
-                          </span>
-                        </div>
-                        {message.finishReason && (
-                          <div>
-                            Finish reason:
-                            {message.finishReason}
-                          </div>
+                )}
+                {message.toolUsages && message.toolUsages.length > 0 && (
+                  <div className="mb-2 text-xs text-muted-foreground border rounded p-2 bg-muted/30">
+                    <div className="font-medium mb-1">Tools used:</div>
+                    {message.toolUsages.map(tu => (
+                      <div key={tu.toolCallId} className="ml-2">
+                        •
+                        {' '}
+                        {tu.toolName}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {message.schemaType
+                  ? (
+                      <div className="text-sm">
+                        <Badge variant="outline" className="mb-2">
+                          {schemaTypeLabels[message.schemaType as SchemaType] || message.schemaType}
+                        </Badge>
+                        <pre className="whitespace-pre-wrap wrap-break-word bg-muted/50 rounded p-2 text-xs overflow-auto max-h-60">
+                          {message.content}
+                        </pre>
+                      </div>
+                    )
+                  : (
+                      <div className="text-sm whitespace-pre-wrap wrap-break-word">
+                        {message.content || (message.isStreaming ? '...' : '')}
+                        {message.isStreaming && (
+                          <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
                         )}
                       </div>
+                    )}
+                {message.usage && (
+                  <div className="mt-2 pt-2 border-t border-muted">
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div className="flex gap-4">
+                        <span>
+                          Tokens:
+                          {message.usage.totalTokens}
+                        </span>
+                        <span>
+                          Prompt:
+                          {message.usage.promptTokens}
+                        </span>
+                        <span>
+                          Completion:
+                          {message.usage.completionTokens}
+                        </span>
+                      </div>
+                      {message.finishReason && (
+                        <div>
+                          Finish reason:
+                          {message.finishReason}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-            ))}
+            </div>
+          ))}
           <div ref={messagesEndRef} />
         </div>
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -371,6 +502,21 @@ export function AiChatStream() {
                   <SelectItem value="GOOGLE_GEMINI_3_FLASH">Google Gemini 3 Flash</SelectItem>
                   <SelectItem value="CLAUDE_HAIKU_3_5">Claude Haiku 3.5</SelectItem>
                   <SelectItem value="MISTRAL_SMALL">Mistral Small</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="schema-select" className="text-xs">Structured Output</Label>
+              <Select value={schemaType} onValueChange={value => setSchemaType(value as SchemaType)}>
+                <SelectTrigger id="schema-select" className="w-full">
+                  <SelectValue placeholder="Select output format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No schema (streaming)</SelectItem>
+                  <SelectItem value="userProfile">User Profile</SelectItem>
+                  <SelectItem value="task">Task</SelectItem>
+                  <SelectItem value="product">Product</SelectItem>
+                  <SelectItem value="recipe">Recipe</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -23,6 +23,8 @@ export class AiExampleController {
 
   @TypedRoute.Post('chat', chatResponseSchema)
   async chat(@TypedBody(chatRequestSchema) body: ChatRequest): Promise<ChatResponse> {
+    // In this example, the frontend provides the schemaType in the request body
+    // We could also use a LLM call to find the correct schemaType within a list, to let the LLM decide the schemaType based on the conversation history
     const schema = body.schemaType && body.schemaType !== 'none' ? chatSchemas[body.schemaType] : undefined
 
     // const coingeckoMCPClient = await createCoingeckoMCPClient()
@@ -60,10 +62,11 @@ export class AiExampleController {
       }
     }
 
-    // Case 2: Multi-turn conversation (no schema support)
+    // Case 2: Multi-turn conversation (with optional schema support)
     if (body.messages && body.messages.length > 0) {
       const result = await this.aiService.chat({
         messages: body.messages,
+        schema,
         tools,
         model: body.model,
         options: {
@@ -72,9 +75,18 @@ export class AiExampleController {
         },
       })
 
+      // Add schemaType to the last (assistant) message if schema was used
+      const schemaTypeValue = body.schemaType && body.schemaType !== 'none' ? body.schemaType : undefined
+      const messagesWithSchemaType = result.messages.map((msg, idx) => {
+        if (idx === result.messages.length - 1 && msg.role === 'assistant' && schemaTypeValue) {
+          return { ...msg, metadata: { ...msg.metadata, schemaType: schemaTypeValue || undefined } }
+        }
+        return msg
+      })
+
       return {
         result: result.result,
-        messages: result.messages,
+        messages: messagesWithSchemaType,
         usage: result.usage,
         finishReason: result.finishReason,
         toolCalls: result.toolCalls,
