@@ -5,7 +5,7 @@ import { generateText } from 'ai'
 import { z } from 'zod'
 import { modelRegistry } from '../ai.config'
 import { AiService } from '../ai.service'
-import { getDefaultModel, getModel, sanitizeAiJson } from '../ai.utils'
+import { getModelInstance, validateAndParse } from '../ai.utils'
 import { LangfuseService } from '../langfuse.service'
 
 // Mock dependencies
@@ -28,7 +28,34 @@ jest.mock('@langfuse/tracing', () => {
 jest.mock('../ai.utils', () => ({
   getModel: jest.fn(),
   getDefaultModel: jest.fn(),
+  getModelInstance: jest.fn(),
   sanitizeAiJson: jest.fn((text: string) => JSON.parse(text)),
+  validateAndParse: jest.fn((text: string, schema) => {
+    const parsed = JSON.parse(text)
+    return schema.parse(parsed)
+  }),
+  createSchemaPromptCommand: jest.fn(() => 'IMPORTANT: You must respond with valid JSON'),
+  createSchemaPromptCommandForChat: jest.fn(() => 'IMPORTANT: You must respond with valid JSON'),
+  extractToolCalls: jest.fn((steps) => {
+    const toolCalls = steps?.flatMap((step: { toolCalls?: Array<{ toolCallId: string, toolName: string, input: unknown }> }) =>
+      (step.toolCalls || []).map(tc => ({
+        toolCallId: tc.toolCallId,
+        toolName: tc.toolName,
+        args: tc.input as Record<string, unknown>,
+      })),
+    )
+    return toolCalls && toolCalls.length > 0 ? toolCalls : undefined
+  }),
+  extractToolResults: jest.fn((steps) => {
+    const toolResults = steps?.flatMap((step: { toolResults?: Array<{ toolCallId: string, toolName: string, output: unknown }> }) =>
+      (step.toolResults || []).map(tr => ({
+        toolCallId: tr.toolCallId,
+        toolName: tr.toolName,
+        result: tr.output,
+      })),
+    )
+    return toolResults && toolResults.length > 0 ? toolResults : undefined
+  }),
 }))
 
 jest.mock('../langfuse.service')
@@ -84,8 +111,7 @@ describe('aiService', () => {
     // Reset createTraceId mock
     ;(langfuseTracing.createTraceId as jest.Mock).mockResolvedValue('test-trace-id')
 
-    ;(getModel as jest.Mock).mockResolvedValue(mockModel)
-    ;(getDefaultModel as jest.Mock).mockResolvedValue(mockModel)
+    ;(getModelInstance as jest.Mock).mockResolvedValue(mockModel)
     ;(modelRegistry.get as jest.Mock).mockReturnValue({
       provider: 'openai',
       modelString: 'gpt-5-nano-2025-08-07',
@@ -202,7 +228,8 @@ describe('aiService', () => {
         prompt: 'Test',
       })
 
-      expect(getDefaultModel).toHaveBeenCalled()
+      // getModelInstance is called without a model parameter, which internally uses getDefaultModel
+      expect(getModelInstance).toHaveBeenCalledWith(undefined)
     })
 
     it('should use specified model when provided', async () => {
@@ -220,11 +247,13 @@ describe('aiService', () => {
         model: 'OPENAI_GPT_5_NANO',
       })
 
-      expect(getModel).toHaveBeenCalledWith('OPENAI_GPT_5_NANO')
+      expect(getModelInstance).toHaveBeenCalledWith('OPENAI_GPT_5_NANO')
     })
 
     it('should throw error when no default model is configured', async () => {
-      ;(getDefaultModel as jest.Mock).mockResolvedValue(null)
+      ;(getModelInstance as jest.Mock).mockRejectedValue(
+        new Error('No default model configured. Please specify a model or configure a default model.'),
+      )
 
       await expect(
         service.generateText({
@@ -346,8 +375,8 @@ describe('aiService', () => {
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
 
-      // Mock sanitizeAiJson to throw error
-      ;(sanitizeAiJson as jest.Mock).mockImplementation(() => {
+      // Mock validateAndParse to throw error
+      ;(validateAndParse as jest.Mock).mockImplementation(() => {
         throw new Error('Invalid JSON')
       })
 
@@ -360,8 +389,11 @@ describe('aiService', () => {
     })
 
     it('should use specified model', async () => {
-      // Reset sanitizeAiJson mock from previous test
-      ;(sanitizeAiJson as jest.Mock).mockImplementation((text: string) => JSON.parse(text))
+      // Reset validateAndParse mock from previous test
+      ;(validateAndParse as jest.Mock).mockImplementation((text: string, schema) => {
+        const parsed = JSON.parse(text)
+        return schema.parse(parsed)
+      })
 
       const schema = z.object({ name: z.string() })
       const mockResult = {
@@ -379,7 +411,7 @@ describe('aiService', () => {
         model: 'OPENAI_GPT_5_NANO',
       })
 
-      expect(getModel).toHaveBeenCalledWith('OPENAI_GPT_5_NANO')
+      expect(getModelInstance).toHaveBeenCalledWith('OPENAI_GPT_5_NANO')
     })
   })
 
@@ -390,6 +422,7 @@ describe('aiService', () => {
         usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
         finishReason: 'stop',
         steps: [],
+        totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
       }
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
@@ -447,6 +480,7 @@ describe('aiService', () => {
             ],
           },
         ],
+        totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
       }
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
@@ -490,6 +524,7 @@ describe('aiService', () => {
             ],
           },
         ],
+        totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
       }
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
@@ -517,6 +552,7 @@ describe('aiService', () => {
         usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
         finishReason: 'stop',
         steps: [],
+        totalUsage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
       }
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
@@ -526,7 +562,7 @@ describe('aiService', () => {
         model: 'OPENAI_GPT_5_NANO',
       })
 
-      expect(getModel).toHaveBeenCalledWith('OPENAI_GPT_5_NANO')
+      expect(getModelInstance).toHaveBeenCalledWith('OPENAI_GPT_5_NANO')
     })
 
     it('should create and return abort controller when signal is not provided', async () => {
@@ -535,6 +571,7 @@ describe('aiService', () => {
         usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
         finishReason: 'stop',
         steps: [],
+        totalUsage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
       }
 
       ;(generateText as jest.Mock).mockResolvedValue(mockResult)
@@ -553,16 +590,20 @@ describe('aiService', () => {
         age: z.number(),
       })
 
-      it('should append schema instruction as system message when schema is provided', async () => {
+      it('should append schema instruction as assistant message when schema is provided', async () => {
         const mockResult = {
           text: '{"name": "John", "age": 30}',
           usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
           finishReason: 'stop',
           steps: [],
+          totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
         }
 
         ;(generateText as jest.Mock).mockResolvedValue(mockResult)
-        ;(sanitizeAiJson as jest.Mock).mockImplementation((text: string) => JSON.parse(text))
+        ;(validateAndParse as jest.Mock).mockImplementation((text: string, schema) => {
+          const parsed = JSON.parse(text)
+          return schema.parse(parsed)
+        })
 
         await service.chat({
           messages: [{ role: 'user', content: 'Generate a user profile' }],
@@ -577,7 +618,7 @@ describe('aiService', () => {
                 content: 'Generate a user profile',
               }),
               expect.objectContaining({
-                role: 'system',
+                role: 'assistant',
                 content: expect.stringContaining('IMPORTANT: You must respond with valid JSON'),
               }),
             ]),
@@ -591,10 +632,14 @@ describe('aiService', () => {
           usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
           finishReason: 'stop',
           steps: [],
+          totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
         }
 
         ;(generateText as jest.Mock).mockResolvedValue(mockResult)
-        ;(sanitizeAiJson as jest.Mock).mockImplementation((text: string) => JSON.parse(text))
+        ;(validateAndParse as jest.Mock).mockImplementation((text: string, schema) => {
+          const parsed = JSON.parse(text)
+          return schema.parse(parsed)
+        })
 
         const result = await service.chat({
           messages: [{ role: 'user', content: 'Generate a user profile' }],
@@ -611,10 +656,14 @@ describe('aiService', () => {
           usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
           finishReason: 'stop',
           steps: [],
+          totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
         }
 
         ;(generateText as jest.Mock).mockResolvedValue(mockResult)
-        ;(sanitizeAiJson as jest.Mock).mockImplementation((text: string) => JSON.parse(text))
+        ;(validateAndParse as jest.Mock).mockImplementation((text: string, schema) => {
+          const parsed = JSON.parse(text)
+          return schema.parse(parsed)
+        })
 
         const result = await service.chat({
           messages: [{ role: 'user', content: 'Generate a user profile' }],
@@ -622,9 +671,9 @@ describe('aiService', () => {
         })
 
         expect(result.messages).toHaveLength(3)
-        expect(result.messages[0].role).toBe('user')
-        expect(result.messages[1].role).toBe('system')
-        expect(result.messages[1].content).toContain('IMPORTANT: You must respond with valid JSON')
+        expect(result.messages[0].role).toBe('assistant')
+        expect(result.messages[0].content).toContain('IMPORTANT: You must respond with valid JSON')
+        expect(result.messages[1].role).toBe('user')
         expect(result.messages[2].role).toBe('assistant')
         expect(result.messages[2].content).toBe('{"name": "Bob", "age": 35}')
       })
@@ -635,10 +684,13 @@ describe('aiService', () => {
           usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
           finishReason: 'stop',
           steps: [],
+          totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
         }
 
         ;(generateText as jest.Mock).mockResolvedValue(mockResult)
-        ;(sanitizeAiJson as jest.Mock).mockImplementation((text: string) => JSON.parse(text))
+        ;(validateAndParse as jest.Mock).mockImplementation(() => {
+          throw new Error('Validation failed')
+        })
 
         await expect(
           service.chat({
@@ -654,6 +706,7 @@ describe('aiService', () => {
           usage: { inputTokens: 5, outputTokens: 10, totalTokens: 15 },
           finishReason: 'stop',
           steps: [],
+          totalUsage: { inputTokens: 5, outputTokens: 10, totalTokens: 15 },
         }
 
         ;(generateText as jest.Mock).mockResolvedValue(mockResult)
