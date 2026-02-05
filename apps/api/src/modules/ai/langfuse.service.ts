@@ -30,10 +30,14 @@ export class LangfuseService {
   }
 
   async getLangfusePrompt(promptName: string, promptLabel?: string, version?: number) {
+    if (!this.langfuseClient) {
+      throw new Error('Langfuse client not initialized')
+    }
+
     const isProduction = config.env === 'production'
     const promptLabelToUse = promptLabel || (isProduction ? 'production' : 'latest')
 
-    return this.langfuseClient?.prompt.get(promptName, {
+    return this.langfuseClient.prompt.get(promptName, {
       version,
       label: promptLabelToUse,
     })
