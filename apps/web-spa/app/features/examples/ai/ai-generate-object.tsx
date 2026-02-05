@@ -1,4 +1,4 @@
-import type { AiStreamEvent, GenerateObjectResponse } from '@boilerstone/openapi-generator'
+import type { AiStreamEvent, GenerateObjectResponse, Recipe } from '@boilerstone/openapi-generator'
 import { aiExampleControllerGenerateObject, createSseClient } from '@boilerstone/openapi-generator'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
@@ -15,21 +15,6 @@ import {
 import { Switch } from '@boilerstone/ui/components/primitives/switch'
 import * as React from 'react'
 
-interface Recipe {
-  name: string
-  description: string
-  prepTime: string
-  cookTime: string
-  servings: number
-  difficulty: 'easy' | 'medium' | 'hard'
-  ingredients: Array<{
-    name: string
-    quantity: string
-  }>
-  instructions: string[]
-  tips?: string[]
-}
-
 interface StreamingState {
   text: string
   isStreaming: boolean
@@ -41,6 +26,11 @@ interface StreamingState {
   finishReason?: string
 }
 
+/**
+ * This component uses the API `generateObject` endpoint to generate a recipe.
+ * It can also use the API `streamObject` endpoint to stream the response, in which case the json is streamed chunk by chunk
+ * @returns JSX.Element
+ */
 export function AiGenerateObject() {
   const [prompt, setPrompt] = React.useState('')
   const [response, setResponse] = React.useState<GenerateObjectResponse | null>(null)
@@ -52,6 +42,7 @@ export function AiGenerateObject() {
   const [showJson, setShowJson] = React.useState(false)
   const [abortController, setAbortController] = React.useState<AbortController | null>(null)
 
+  // Core logic for streaming the response
   const handleStreamingSubmit = async (promptText: string) => {
     const controller = new AbortController()
     setAbortController(controller)
@@ -65,6 +56,7 @@ export function AiGenerateObject() {
         model,
       }
 
+      // Note that the OpenAPI generator won't generate methods for each SSE endpoints, so we need to create the client manually via the exposed createSseClient
       const { stream } = createSseClient<AiStreamEvent>({
         url: `${apiUrl}/api/ai/stream-object`,
         method: 'POST',
@@ -108,6 +100,7 @@ export function AiGenerateObject() {
     }
   }
 
+  // Core logic for regular submission
   const handleRegularSubmit = async (promptText: string) => {
     try {
       const { data, error: apiError } = await aiExampleControllerGenerateObject({

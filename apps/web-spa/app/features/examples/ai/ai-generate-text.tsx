@@ -26,6 +26,11 @@ interface StreamingState {
   finishReason?: string
 }
 
+/**
+ * This component uses the API `generateText` endpoint to generate a text.
+ * It can also use the API `streamText` endpoint to stream the response, in which case the text is streamed chunk by chunk
+ * @returns JSX.Element
+ */
 export function AiGenerateText() {
   const [prompt, setPrompt] = React.useState('')
   const [response, setResponse] = React.useState<GenerateTextResponse | null>(null)
@@ -36,6 +41,7 @@ export function AiGenerateText() {
   const [useStreaming, setUseStreaming] = React.useState(false)
   const [abortController, setAbortController] = React.useState<AbortController | null>(null)
 
+  // Core logic for streaming the response
   const handleStreamingSubmit = async (promptText: string) => {
     const controller = new AbortController()
     setAbortController(controller)
@@ -92,6 +98,7 @@ export function AiGenerateText() {
     }
   }
 
+  // Core logic for regular submission
   const handleRegularSubmit = async (promptText: string) => {
     try {
       const { data, error: apiError } = await aiExampleControllerGenerateText({

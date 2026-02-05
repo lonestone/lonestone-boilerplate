@@ -41,6 +41,11 @@ export class AiExampleController {
   // Synchronous Routes
   // ============================================================================
 
+  /**
+   * This endpoint uses the API `generateText` endpoint to generate a text. It returns a string, and does not accept a schema
+   * @param body
+   * @returns GenerateTextResponse
+   */
   @TypedRoute.Post('generate-text', generateTextResponseSchema)
   async generateText(@TypedBody(generateTextRequestSchema) body: GenerateTextRequest): Promise<GenerateTextResponse> {
     const prompt = await this.langfuseService.getLangfusePrompt('Boilerplate tests')
@@ -65,6 +70,13 @@ export class AiExampleController {
     }
   }
 
+  /**
+   * This endpoint uses the API `generateObject` endpoint to generate a structured output, and requires a schema via the schemaType query parameter
+   * 🚀 Improvement: Note that you could also let the client send a JSON representation of the schema, then convert it to a zod schema to pass it to aiService.generateObject
+   * This would allow a fully dynamic schema management, without the need for the SchemaType enum.
+   * @param body
+   * @returns GenerateObjectResponse
+   */
   @TypedRoute.Post('generate-object', generateObjectResponseSchema)
   async generateObject(@TypedBody(generateObjectRequestSchema) body: GenerateObjectRequest): Promise<GenerateObjectResponse> {
     const schema = chatSchemas[body.schemaType]
@@ -91,15 +103,34 @@ export class AiExampleController {
     }
   }
 
+  /**
+   * This endpoint uses the API `chat` endpoint to handle multi-turn conversations with optional tool support.
+   * The client is supposed to send the full conversation history, including system messages, user messages and assistant messages.
+   * Note that the client can send a schemaType, which will be used to validate the generated messages against the corresponding schema. This schema only applies to the last assistant message.
+   * ⚠️ Warning: if you strip some messages from the history, the LLM may misbehave.
+   * 🚀 Improvement: History management is tricky, and sending the whole history back and forth is not always practical.
+   * You may want to switch to a more efficient history management strategy, such as using a database to store the history (or a stateful approach with a server-side session).
+   * @param body
+   * @returns ChatResponse
+   */
   @TypedRoute.Post('chat', chatResponseSchema)
   async chat(@TypedBody(chatRequestSchema) body: ChatRequest): Promise<ChatResponse> {
     const schema = body.schemaType && body.schemaType !== 'none' ? chatSchemas[body.schemaType] : undefined
 
+    // 🔧 The chat API supports tools
     const tools = {
       getCryptoPrice: getCryptoPriceTool,
     }
 
     const prompt = await this.langfuseService.getLangfusePrompt('Boilerplate tests')
+
+    // 💡 Here we create a new traceName for each call. This means you will see a new trace in Langfuse UI for each message send by the client
+    // You may wish to generate a single trace name for a given "session" or "conversation", and re-use it for each new message. This would merge all the spans in a single trace, which may be more convenient.
+    const traceName = `chat-at-time-${Date.now()}`
+
+    // 💡 We don't customise the functionId, which will be used to name the "span" in Langfuse UI.
+    // If you merge multiple messages in a single trace, you may wish to use a custom functionId for each (e.g. `chat-message-1`, `chat-message-2`, etc.)
+    const functionId = 'chat'
 
     const result = await this.aiService.chat({
       messages: body.messages,
@@ -109,14 +140,15 @@ export class AiExampleController {
       options: {
         ...body.options,
         telemetry: {
-          langfuseTraceName: `chat-at-time-${Date.now()}`,
-          functionId: 'chat',
+          langfuseTraceName: traceName,
+          functionId,
           langfuseOriginalPrompt: prompt?.toJSON(),
         },
       },
     })
 
-    // Add schemaType to the last (assistant) message if schema was used
+    // 💡 The AI service does not add the schemaType to the messages metadata. This is to keep the Service agnostic (our use of a `schemaType` here is a single example of how you could use it)
+    // As we want to keep track of the schemaType — because we use it on the frontend for custom display— we add it to the last assistant message metadata.
     const schemaTypeValue = body.schemaType && body.schemaType !== 'none' ? body.schemaType : undefined
     const messagesWithSchemaType = result.messages.map((msg, idx) => {
       if (idx === result.messages.length - 1 && msg.role === 'assistant' && schemaTypeValue) {

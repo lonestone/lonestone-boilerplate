@@ -17,7 +17,13 @@ import { ChatBubble } from './components/chat-bubble'
 
 const CONVERSATION_STORAGE_KEY = 'ai-chat-stream-conversation'
 
-function convertMessagesToCoreMessages(messages: ChatMessage[]): AiCoreMessage[] {
+/**
+ * Convert our local messages to the format expected by the server.
+ * Be careful not to strip too much data. But in the end it's up to you to choose how you merge frontend-only data with server-side data.
+ * @param messages
+ * @returns AiCoreMessage[]
+ */
+function convertMessagesForServer(messages: ChatMessage[]): AiCoreMessage[] {
   return messages
     .filter(msg => msg.role === 'user' || msg.role === 'assistant' || msg.role === 'system')
     .map(msg => ({
@@ -27,6 +33,10 @@ function convertMessagesToCoreMessages(messages: ChatMessage[]): AiCoreMessage[]
     }))
 }
 
+/**
+ * Load the conversation from local storage.
+ * @returns ChatMessage[]
+ */
 function loadConversationFromStorage(): ChatMessage[] {
   try {
     const stored = localStorage.getItem(CONVERSATION_STORAGE_KEY)
@@ -43,6 +53,11 @@ function loadConversationFromStorage(): ChatMessage[] {
   }
 }
 
+/**
+ * Save the conversation to local storage.
+ * Silently fail if storage is unavailable -> you should handle this in your own way.
+ * @param messages
+ */
 function saveConversationToStorage(messages: ChatMessage[]): void {
   try {
     localStorage.setItem(CONVERSATION_STORAGE_KEY, JSON.stringify(messages))
@@ -52,6 +67,13 @@ function saveConversationToStorage(messages: ChatMessage[]): void {
   }
 }
 
+/**
+ * This components display a chat interface that uses the API chat streaming endpoint via SSE
+ * Structured output for messages: this allows the user to choose a pre-defined schema type for the output, the schema type is passed to the server as a query parameter.
+ * The server will pick it up and pass the correct zod schema to the LLM. It will also send back the schemaType in the last assistant message metadata, allowing us to customize the display via components.
+ * This chat displays all messages (system, user and assistant), even those marked as metadata.isConsideredSystemMessage. You can adapt this to your own needs.
+ * @returns JSX.Element
+ */
 export function AiChatStream() {
   const [messages, setMessages] = React.useState<ChatMessage[]>(() => loadConversationFromStorage())
   const [input, setInput] = React.useState('')
@@ -69,6 +91,7 @@ export function AiChatStream() {
     scrollToBottom()
   }, [messages, scrollToBottom])
 
+  // Core logic for message streaming
   const handleStreamMessage = React.useCallback(async (messageText: string, conversationHistory: AiCoreMessage[]) => {
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -207,6 +230,7 @@ export function AiChatStream() {
     }
   }, [model])
 
+  // Core logic for user message handling
   const handleChatMessage = React.useCallback(async (messageText: string, conversationHistory: AiCoreMessage[], selectedSchemaType: ChatSchemaType) => {
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -308,7 +332,7 @@ export function AiChatStream() {
     const messageText = input.trim()
     setInput('')
 
-    const conversationHistory = convertMessagesToCoreMessages(messages)
+    const conversationHistory = convertMessagesForServer(messages)
 
     if (schemaType !== 'none') {
       handleChatMessage(messageText, conversationHistory, schemaType)
