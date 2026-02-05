@@ -58,7 +58,7 @@ export class AiExampleController {
         telemetry: {
           langfuseTraceName: `generate-text-at-time-${Date.now()}`,
           functionId: 'generate-text',
-          langfuseOriginalPrompt: prompt?.toJSON(),
+          langfuseOriginalPrompt: prompt.toJSON(),
         },
       },
     })
@@ -91,7 +91,7 @@ export class AiExampleController {
         telemetry: {
           langfuseTraceName: `generate-object-at-time-${Date.now()}`,
           functionId: 'generate-object',
-          langfuseOriginalPrompt: prompt?.toJSON(),
+          langfuseOriginalPrompt: prompt.toJSON(),
         },
       },
     })
@@ -142,7 +142,7 @@ export class AiExampleController {
         telemetry: {
           langfuseTraceName: traceName,
           functionId,
-          langfuseOriginalPrompt: prompt?.toJSON(),
+          langfuseOriginalPrompt: prompt.toJSON(),
         },
       },
     })
