@@ -39,6 +39,11 @@ export const modelConfigBase = {
     provider: 'anthropic' as const satisfies ProviderName,
     isDefault: false,
   },
+  CLAUDE_OPUS_4_5: {
+    modelString: 'claude-opus-4-5',
+    provider: 'anthropic' as const satisfies ProviderName,
+    isDefault: false,
+  },
   MISTRAL_SMALL: {
     modelString: 'mistral-small-2506',
     provider: 'mistral' as const satisfies ProviderName,

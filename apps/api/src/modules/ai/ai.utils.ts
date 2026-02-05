@@ -1,11 +1,10 @@
 import type { generateText, LanguageModel } from 'ai'
 import type { z } from 'zod'
 import type { ModelId } from './ai.config'
-import type { ToolResult } from './contracts/ai.contract'
+import type { ToolCall, ToolResult } from './contracts/ai.contract'
 import { Logger } from '@nestjs/common'
 import { wrapWithRetryAfter } from './ai-rate-limit.middleware'
 import { modelRegistry, providers } from './ai.config'
-import { ToolCall } from './contracts/ai.contract'
 
 const logger = new Logger('AiUtils')
 
@@ -126,8 +125,8 @@ export function extractToolResults(steps: Awaited<ReturnType<typeof generateText
 export function createSchemaPromptCommand(schema: z.ZodType): string {
   return `
   
-  IMPORTANT: You must respond with valid JSON that matches the expected schema structure.
-  Your response must be valid JSON only, with no additional text, markdown formatting, or explanation before or after the JSON. Return only the JSON object or array.
+  IMPORTANT: I must respond with valid JSON that matches the expected schema structure.
+  If I need additional information to fulfill the user's request, I will use the available tools first. Then, I will return my response as valid JSON only, with no additional text, markdown formatting, or explanation before or after the JSON. Return only the JSON object or array.
   
   The schema is:
   ${JSON.stringify(schema.toJSONSchema(), null, 2)}
@@ -136,9 +135,9 @@ export function createSchemaPromptCommand(schema: z.ZodType): string {
 
 export function createSchemaPromptCommandForChat(schema: z.ZodType): string {
   return `
-  IMPORTANT: You must respond to the previous user message with valid JSON that matches the expected schema structure.
-  Your response must be valid JSON only, with no additional text, markdown formatting, or explanation before or after the JSON. Return only the JSON object or array.
-  Respect this rule only once. Afterward, go back to your normal behavior except if asked by the user or provided with a new schema.
+  IMPORTANT: I must respond to the next user message with valid JSON that matches the expected schema structure. If I need additional information to fulfill the user's request, I will use the available tools first.
+  My response must be valid JSON only, with no additional text, markdown formatting, or explanation before or after the JSON. I will return only the JSON object or array.
+  I will respect this rule only once. Afterward, I will go back to my normal behavior except if asked by the user or provided with a new schema.
   
   The schema is:
   ${JSON.stringify(schema.toJSONSchema(), null, 2)}

@@ -257,14 +257,19 @@ export class AiService implements OnModuleInit {
     const modelInstance = await getModelInstance(model)
     const traceId = await buildTraceId(options)
 
-    // If schema provided, append schema instruction as user message (system messages can only be at the start of the conversation)
-    const messagesForLLM: AiCoreMessage[] = schema
-      ? [...messages, { role: 'assistant' as const, content: createSchemaPromptCommandForChat(schema), metadata: { isConsideredSystemMessage: true } }]
+    // If schema provided, append schema instruction as assistant message
+    // (system messages can only be at the start of the conversation)
+    const newHistory: AiCoreMessage[] = schema
+      ? [
+          ...messages.slice(0, -1),
+          { role: 'assistant' as const, content: createSchemaPromptCommandForChat(schema), metadata: { isConsideredSystemMessage: true } },
+          ...messages.slice(-1),
+        ]
       : [...messages]
 
     const generateOptions: Parameters<typeof generateText>[0] = {
       model: modelInstance,
-      messages: messagesForLLM as ModelMessage[],
+      messages: newHistory as ModelMessage[],
       abortSignal,
       ...options,
       tools,
@@ -285,19 +290,25 @@ export class AiService implements OnModuleInit {
       }
     }
 
-    const usage = buildUsageStats(result.usage)
+    const lastStepUsage = buildUsageStats(result.totalUsage)
 
-    // Build updated messages (includes schema instruction for traceability)
-    // We also add the metadata to the message itself
+    // Build updated messages (includes schema instruction for traceability).We also add the metadata to the message itself
     const updatedMessages: AiCoreMessage[] = [
-      ...messagesForLLM,
-      { role: 'assistant', content: result.text, metadata: { usage, finishReason: result.finishReason, timestamp: new Date().toISOString() } },
+      ...newHistory,
+      { role: 'assistant', content: result.text, metadata:
+        {
+          usage: lastStepUsage,
+          finishReason: result.finishReason,
+          timestamp: new Date().toISOString(),
+          toolCalls: extractToolCalls(result.steps),
+          reasonning: result.reasoningText,
+        } },
     ]
 
     return {
       result: result.text,
       messages: updatedMessages,
-      usage,
+      usage: lastStepUsage,
       finishReason: result.finishReason,
       toolCalls: extractToolCalls(result.steps),
       toolResults: extractToolResults(result.steps),

@@ -77,11 +77,32 @@ export const zChatMessageWithSchemaType = z.object({
             /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
           ),
       ),
+      toolCalls: z.optional(
+        z.array(
+          z.object({
+            toolCallId: z.string(),
+            toolName: z.string(),
+            args: z.record(z.string(), z.unknown()),
+          }),
+        ),
+      ),
+      reasonning: z.optional(z.string()),
       schemaType: z.optional(
         z.enum(["userProfile", "task", "product", "recipe", "none"]),
       ),
     }),
   ),
+});
+
+/**
+ * ToolCall
+ *
+ * A tool call made by the AI
+ */
+export const zToolCall = z.object({
+  toolCallId: z.string(),
+  toolName: z.string(),
+  args: z.record(z.string(), z.unknown()),
 });
 
 /**
@@ -96,17 +117,6 @@ export const zChatSchemaType = z.enum([
   "recipe",
   "none",
 ]);
-
-/**
- * ToolCall
- *
- * A tool call made by the AI
- */
-export const zToolCall = z.object({
-  toolCallId: z.string(),
-  toolName: z.string(),
-  args: z.record(z.string(), z.unknown()),
-});
 
 /**
  * ToolResult
@@ -360,6 +370,8 @@ export const zAiCoreMessage = z.object({
             /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
           ),
       ),
+      toolCalls: z.optional(z.array(zToolCall)),
+      reasonning: z.optional(z.string()),
     }),
   ),
 });
@@ -505,6 +517,7 @@ export const zGenerateTextRequest = z.object({
       "OPENAI_GPT_5_NANO",
       "GOOGLE_GEMINI_3_FLASH",
       "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
       "MISTRAL_SMALL",
     ]),
   ),
@@ -524,6 +537,7 @@ export const zGenerateObjectRequest = z.object({
       "OPENAI_GPT_5_NANO",
       "GOOGLE_GEMINI_3_FLASH",
       "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
       "MISTRAL_SMALL",
     ]),
   ),
@@ -533,7 +547,7 @@ export const zGenerateObjectRequest = z.object({
 /**
  * ChatRequest
  *
- * Request for multi-turn AI conversation with message history
+ * Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.
  */
 export const zChatRequest = z.object({
   messages: z.array(zChatMessageWithSchemaType).min(1),
@@ -542,10 +556,12 @@ export const zChatRequest = z.object({
       "OPENAI_GPT_5_NANO",
       "GOOGLE_GEMINI_3_FLASH",
       "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
       "MISTRAL_SMALL",
     ]),
   ),
   options: z.optional(zAiGenerateOptions),
+  schemaType: z.optional(zChatSchemaType),
 });
 
 /**
@@ -560,6 +576,7 @@ export const zStreamTextRequest = z.object({
       "OPENAI_GPT_5_NANO",
       "GOOGLE_GEMINI_3_FLASH",
       "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
       "MISTRAL_SMALL",
     ]),
   ),
@@ -579,6 +596,7 @@ export const zStreamObjectRequest = z.object({
       "OPENAI_GPT_5_NANO",
       "GOOGLE_GEMINI_3_FLASH",
       "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
       "MISTRAL_SMALL",
     ]),
   ),
@@ -597,6 +615,7 @@ export const zStreamChatRequest = z.object({
       "OPENAI_GPT_5_NANO",
       "GOOGLE_GEMINI_3_FLASH",
       "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
       "MISTRAL_SMALL",
     ]),
   ),
@@ -972,6 +991,7 @@ export const zAiExampleControllerGenerateTextData = z.object({
         "OPENAI_GPT_5_NANO",
         "GOOGLE_GEMINI_3_FLASH",
         "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
         "MISTRAL_SMALL",
       ]),
     ),
@@ -1013,6 +1033,7 @@ export const zAiExampleControllerGenerateObjectData = z.object({
         "OPENAI_GPT_5_NANO",
         "GOOGLE_GEMINI_3_FLASH",
         "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
         "MISTRAL_SMALL",
       ]),
     ),
@@ -1071,6 +1092,16 @@ export const zAiExampleControllerChatData = z.object({
                     /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
                   ),
               ),
+              toolCalls: z.optional(
+                z.array(
+                  z.object({
+                    toolCallId: z.string(),
+                    toolName: z.string(),
+                    args: z.record(z.string(), z.unknown()),
+                  }),
+                ),
+              ),
+              reasonning: z.optional(z.string()),
               schemaType: z.optional(
                 z.enum(["userProfile", "task", "product", "recipe", "none"]),
               ),
@@ -1084,6 +1115,7 @@ export const zAiExampleControllerChatData = z.object({
         "OPENAI_GPT_5_NANO",
         "GOOGLE_GEMINI_3_FLASH",
         "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
         "MISTRAL_SMALL",
       ]),
     ),
@@ -1106,6 +1138,9 @@ export const zAiExampleControllerChatData = z.object({
         metadata: z.optional(z.record(z.string(), z.unknown())),
       }),
     ),
+    schemaType: z.optional(
+      z.enum(["userProfile", "task", "product", "recipe", "none"]),
+    ),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -1124,6 +1159,7 @@ export const zAiExampleControllerStreamTextData = z.object({
         "OPENAI_GPT_5_NANO",
         "GOOGLE_GEMINI_3_FLASH",
         "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
         "MISTRAL_SMALL",
       ]),
     ),
@@ -1160,6 +1196,7 @@ export const zAiExampleControllerStreamObjectData = z.object({
         "OPENAI_GPT_5_NANO",
         "GOOGLE_GEMINI_3_FLASH",
         "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
         "MISTRAL_SMALL",
       ]),
     ),
@@ -1212,6 +1249,16 @@ export const zAiExampleControllerStreamChatData = z.object({
                     /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
                   ),
               ),
+              toolCalls: z.optional(
+                z.array(
+                  z.object({
+                    toolCallId: z.string(),
+                    toolName: z.string(),
+                    args: z.record(z.string(), z.unknown()),
+                  }),
+                ),
+              ),
+              reasonning: z.optional(z.string()),
               schemaType: z.optional(
                 z.enum(["userProfile", "task", "product", "recipe", "none"]),
               ),
@@ -1225,6 +1272,7 @@ export const zAiExampleControllerStreamChatData = z.object({
         "OPENAI_GPT_5_NANO",
         "GOOGLE_GEMINI_3_FLASH",
         "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
         "MISTRAL_SMALL",
       ]),
     ),

@@ -83,9 +83,11 @@ export type ToolResult = z.infer<typeof toolResultSchema>
 
 export const aiCoreMessageMetadataSchema = z.object({
   isConsideredSystemMessage: z.boolean().optional(),
-  usage: tokenUsageSchema.optional().describe('Token usage information for the message'),
+  usage: tokenUsageSchema.optional().describe('Total token usage for the message, including tools calls and reasoning steps'),
   finishReason: z.string().optional(),
   timestamp: z.iso.datetime().optional().describe('ISO 8601 timestamp when the message was created'),
+  toolCalls: z.array(toolCallSchema).optional().describe('Tool calls made to generate the message'),
+  reasonning: z.string().optional().describe('Reasoning text for the message'),
 })
 
 export const aiCoreMessageSchema = z.object({

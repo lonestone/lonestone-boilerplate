@@ -789,6 +789,7 @@
                       "OPENAI_GPT_5_NANO",
                       "GOOGLE_GEMINI_3_FLASH",
                       "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
                       "MISTRAL_SMALL"
                     ]
                   },
@@ -919,6 +920,7 @@
                       "OPENAI_GPT_5_NANO",
                       "GOOGLE_GEMINI_3_FLASH",
                       "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
                       "MISTRAL_SMALL"
                     ]
                   },
@@ -1025,7 +1027,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Request for multi-turn AI conversation with message history",
+          "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.",
           "content": {
             "application/json": {
               "schema": {
@@ -1056,7 +1058,7 @@
                               "type": "boolean"
                             },
                             "usage": {
-                              "description": "Token usage information for the message",
+                              "description": "Total token usage for the message, including tools calls and reasoning steps",
                               "type": "object",
                               "properties": {
                                 "promptTokens": {
@@ -1085,6 +1087,40 @@
                               "type": "string",
                               "format": "date-time",
                               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            },
+                            "toolCalls": {
+                              "description": "Tool calls made to generate the message",
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "toolCallId": {
+                                    "type": "string"
+                                  },
+                                  "toolName": {
+                                    "type": "string"
+                                  },
+                                  "args": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  }
+                                },
+                                "required": [
+                                  "toolCallId",
+                                  "toolName",
+                                  "args"
+                                ],
+                                "additionalProperties": false,
+                                "title": "ToolCall",
+                                "description": "A tool call made by the AI"
+                              }
+                            },
+                            "reasonning": {
+                              "description": "Reasoning text for the message",
+                              "type": "string"
                             },
                             "schemaType": {
                               "type": "string",
@@ -1117,6 +1153,7 @@
                       "OPENAI_GPT_5_NANO",
                       "GOOGLE_GEMINI_3_FLASH",
                       "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
                       "MISTRAL_SMALL"
                     ]
                   },
@@ -1187,6 +1224,18 @@
                     "additionalProperties": false,
                     "title": "AiGenerateOptions",
                     "description": "Options for an AI generation"
+                  },
+                  "schemaType": {
+                    "type": "string",
+                    "enum": [
+                      "userProfile",
+                      "task",
+                      "product",
+                      "recipe",
+                      "none"
+                    ],
+                    "title": "ChatSchemaType",
+                    "description": "Predefined schema types for testing structured output"
                   }
                 },
                 "required": [
@@ -1194,7 +1243,7 @@
                 ],
                 "additionalProperties": false,
                 "title": "ChatRequest",
-                "description": "Request for multi-turn AI conversation with message history"
+                "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output."
               }
             }
           }
@@ -1238,6 +1287,7 @@
                       "OPENAI_GPT_5_NANO",
                       "GOOGLE_GEMINI_3_FLASH",
                       "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
                       "MISTRAL_SMALL"
                     ]
                   },
@@ -1361,6 +1411,7 @@
                       "OPENAI_GPT_5_NANO",
                       "GOOGLE_GEMINI_3_FLASH",
                       "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
                       "MISTRAL_SMALL"
                     ]
                   },
@@ -1491,7 +1542,7 @@
                               "type": "boolean"
                             },
                             "usage": {
-                              "description": "Token usage information for the message",
+                              "description": "Total token usage for the message, including tools calls and reasoning steps",
                               "type": "object",
                               "properties": {
                                 "promptTokens": {
@@ -1520,6 +1571,40 @@
                               "type": "string",
                               "format": "date-time",
                               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            },
+                            "toolCalls": {
+                              "description": "Tool calls made to generate the message",
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "toolCallId": {
+                                    "type": "string"
+                                  },
+                                  "toolName": {
+                                    "type": "string"
+                                  },
+                                  "args": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  }
+                                },
+                                "required": [
+                                  "toolCallId",
+                                  "toolName",
+                                  "args"
+                                ],
+                                "additionalProperties": false,
+                                "title": "ToolCall",
+                                "description": "A tool call made by the AI"
+                              }
+                            },
+                            "reasonning": {
+                              "description": "Reasoning text for the message",
+                              "type": "string"
                             },
                             "schemaType": {
                               "type": "string",
@@ -1552,6 +1637,7 @@
                       "OPENAI_GPT_5_NANO",
                       "GOOGLE_GEMINI_3_FLASH",
                       "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
                       "MISTRAL_SMALL"
                     ]
                   },
@@ -1657,6 +1743,7 @@
               "OPENAI_GPT_5_NANO",
               "GOOGLE_GEMINI_3_FLASH",
               "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
               "MISTRAL_SMALL"
             ]
           },
@@ -1693,6 +1780,7 @@
               "OPENAI_GPT_5_NANO",
               "GOOGLE_GEMINI_3_FLASH",
               "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
               "MISTRAL_SMALL"
             ]
           },
@@ -1724,11 +1812,15 @@
               "OPENAI_GPT_5_NANO",
               "GOOGLE_GEMINI_3_FLASH",
               "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
               "MISTRAL_SMALL"
             ]
           },
           "options": {
             "$ref": "#/components/schemas/AiGenerateOptions"
+          },
+          "schemaType": {
+            "$ref": "#/components/schemas/ChatSchemaType"
           }
         },
         "required": [
@@ -1736,7 +1828,7 @@
         ],
         "additionalProperties": false,
         "title": "ChatRequest",
-        "description": "Request for multi-turn AI conversation with message history"
+        "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output."
       },
       "StreamTextRequest": {
         "type": "object",
@@ -1751,6 +1843,7 @@
               "OPENAI_GPT_5_NANO",
               "GOOGLE_GEMINI_3_FLASH",
               "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
               "MISTRAL_SMALL"
             ]
           },
@@ -1787,6 +1880,7 @@
               "OPENAI_GPT_5_NANO",
               "GOOGLE_GEMINI_3_FLASH",
               "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
               "MISTRAL_SMALL"
             ]
           },
@@ -1818,6 +1912,7 @@
               "OPENAI_GPT_5_NANO",
               "GOOGLE_GEMINI_3_FLASH",
               "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
               "MISTRAL_SMALL"
             ]
           },
@@ -2014,7 +2109,7 @@
                 "type": "boolean"
               },
               "usage": {
-                "description": "Token usage information for the message",
+                "description": "Total token usage for the message, including tools calls and reasoning steps",
                 "type": "object",
                 "properties": {
                   "promptTokens": {
@@ -2044,6 +2139,40 @@
                 "format": "date-time",
                 "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
               },
+              "toolCalls": {
+                "description": "Tool calls made to generate the message",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "toolCallId": {
+                      "type": "string"
+                    },
+                    "toolName": {
+                      "type": "string"
+                    },
+                    "args": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "toolCallId",
+                    "toolName",
+                    "args"
+                  ],
+                  "additionalProperties": false,
+                  "title": "ToolCall",
+                  "description": "A tool call made by the AI"
+                }
+              },
+              "reasonning": {
+                "description": "Reasoning text for the message",
+                "type": "string"
+              },
               "schemaType": {
                 "type": "string",
                 "enum": [
@@ -2067,18 +2196,6 @@
         "additionalProperties": false,
         "title": "ChatMessageWithSchemaType",
         "description": "A message with optional schemaType metadata for identifying structured output"
-      },
-      "ChatSchemaType": {
-        "type": "string",
-        "enum": [
-          "userProfile",
-          "task",
-          "product",
-          "recipe",
-          "none"
-        ],
-        "title": "ChatSchemaType",
-        "description": "Predefined schema types for testing structured output"
       },
       "ToolCall": {
         "type": "object",
@@ -2105,6 +2222,18 @@
         "additionalProperties": false,
         "title": "ToolCall",
         "description": "A tool call made by the AI"
+      },
+      "ChatSchemaType": {
+        "type": "string",
+        "enum": [
+          "userProfile",
+          "task",
+          "product",
+          "recipe",
+          "none"
+        ],
+        "title": "ChatSchemaType",
+        "description": "Predefined schema types for testing structured output"
       },
       "ToolResult": {
         "type": "object",
@@ -2653,6 +2782,17 @@
                 "type": "string",
                 "format": "date-time",
                 "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "toolCalls": {
+                "description": "Tool calls made to generate the message",
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ToolCall"
+                }
+              },
+              "reasonning": {
+                "description": "Reasoning text for the message",
+                "type": "string"
               }
             },
             "additionalProperties": false

@@ -15,6 +15,7 @@ export type GenerateTextRequest = {
     | "OPENAI_GPT_5_NANO"
     | "GOOGLE_GEMINI_3_FLASH"
     | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
     | "MISTRAL_SMALL";
   options?: AiGenerateOptions;
 };
@@ -31,6 +32,7 @@ export type GenerateObjectRequest = {
     | "OPENAI_GPT_5_NANO"
     | "GOOGLE_GEMINI_3_FLASH"
     | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
     | "MISTRAL_SMALL";
   options?: AiGenerateOptions;
 };
@@ -38,7 +40,7 @@ export type GenerateObjectRequest = {
 /**
  * ChatRequest
  *
- * Request for multi-turn AI conversation with message history
+ * Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.
  */
 export type ChatRequest = {
   messages: Array<ChatMessageWithSchemaType>;
@@ -46,8 +48,10 @@ export type ChatRequest = {
     | "OPENAI_GPT_5_NANO"
     | "GOOGLE_GEMINI_3_FLASH"
     | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
     | "MISTRAL_SMALL";
   options?: AiGenerateOptions;
+  schemaType?: ChatSchemaType;
 };
 
 /**
@@ -61,6 +65,7 @@ export type StreamTextRequest = {
     | "OPENAI_GPT_5_NANO"
     | "GOOGLE_GEMINI_3_FLASH"
     | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
     | "MISTRAL_SMALL";
   options?: AiGenerateOptions;
 };
@@ -77,6 +82,7 @@ export type StreamObjectRequest = {
     | "OPENAI_GPT_5_NANO"
     | "GOOGLE_GEMINI_3_FLASH"
     | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
     | "MISTRAL_SMALL";
   options?: AiGenerateOptions;
 };
@@ -92,6 +98,7 @@ export type StreamChatRequest = {
     | "OPENAI_GPT_5_NANO"
     | "GOOGLE_GEMINI_3_FLASH"
     | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
     | "MISTRAL_SMALL";
   options?: AiGenerateOptions;
 };
@@ -186,7 +193,7 @@ export type ChatMessageWithSchemaType = {
     /**
      * TokenUsage
      *
-     * Token usage information for the message
+     * Total token usage for the message, including tools calls and reasoning steps
      */
     usage?: {
       promptTokens: number;
@@ -199,11 +206,38 @@ export type ChatMessageWithSchemaType = {
      */
     timestamp?: Date;
     /**
+     * Tool calls made to generate the message
+     */
+    toolCalls?: Array<{
+      toolCallId: string;
+      toolName: string;
+      args: {
+        [key: string]: unknown;
+      };
+    }>;
+    /**
+     * Reasoning text for the message
+     */
+    reasonning?: string;
+    /**
      * ChatSchemaType
      *
      * Predefined schema types for testing structured output
      */
     schemaType?: "userProfile" | "task" | "product" | "recipe" | "none";
+  };
+};
+
+/**
+ * ToolCall
+ *
+ * A tool call made by the AI
+ */
+export type ToolCall = {
+  toolCallId: string;
+  toolName: string;
+  args: {
+    [key: string]: unknown;
   };
 };
 
@@ -227,19 +261,6 @@ export const ChatSchemaType = {
  */
 export type ChatSchemaType =
   (typeof ChatSchemaType)[keyof typeof ChatSchemaType];
-
-/**
- * ToolCall
- *
- * A tool call made by the AI
- */
-export type ToolCall = {
-  toolCallId: string;
-  toolName: string;
-  args: {
-    [key: string]: unknown;
-  };
-};
 
 /**
  * ToolResult
@@ -412,6 +433,14 @@ export type AiCoreMessage = {
      * ISO 8601 timestamp when the message was created
      */
     timestamp?: Date;
+    /**
+     * Tool calls made to generate the message
+     */
+    toolCalls?: Array<ToolCall>;
+    /**
+     * Reasoning text for the message
+     */
+    reasonning?: string;
   };
 };
 
@@ -1069,6 +1098,7 @@ export type AiExampleControllerGenerateTextData = {
       | "OPENAI_GPT_5_NANO"
       | "GOOGLE_GEMINI_3_FLASH"
       | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
       | "MISTRAL_SMALL";
     /**
      * AiGenerateOptions
@@ -1130,6 +1160,7 @@ export type AiExampleControllerGenerateObjectData = {
       | "OPENAI_GPT_5_NANO"
       | "GOOGLE_GEMINI_3_FLASH"
       | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
       | "MISTRAL_SMALL";
     /**
      * AiGenerateOptions
@@ -1182,7 +1213,7 @@ export type AiExampleControllerChatData = {
   /**
    * ChatRequest
    *
-   * Request for multi-turn AI conversation with message history
+   * Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.
    */
   body: {
     messages: Array<{
@@ -1193,7 +1224,7 @@ export type AiExampleControllerChatData = {
         /**
          * TokenUsage
          *
-         * Token usage information for the message
+         * Total token usage for the message, including tools calls and reasoning steps
          */
         usage?: {
           promptTokens: number;
@@ -1206,6 +1237,20 @@ export type AiExampleControllerChatData = {
          */
         timestamp?: Date;
         /**
+         * Tool calls made to generate the message
+         */
+        toolCalls?: Array<{
+          toolCallId: string;
+          toolName: string;
+          args: {
+            [key: string]: unknown;
+          };
+        }>;
+        /**
+         * Reasoning text for the message
+         */
+        reasonning?: string;
+        /**
          * ChatSchemaType
          *
          * Predefined schema types for testing structured output
@@ -1217,6 +1262,7 @@ export type AiExampleControllerChatData = {
       | "OPENAI_GPT_5_NANO"
       | "GOOGLE_GEMINI_3_FLASH"
       | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
       | "MISTRAL_SMALL";
     /**
      * AiGenerateOptions
@@ -1249,6 +1295,12 @@ export type AiExampleControllerChatData = {
         [key: string]: unknown;
       };
     };
+    /**
+     * ChatSchemaType
+     *
+     * Predefined schema types for testing structured output
+     */
+    schemaType?: "userProfile" | "task" | "product" | "recipe" | "none";
   };
   path?: never;
   query?: never;
@@ -1277,6 +1329,7 @@ export type AiExampleControllerStreamTextData = {
       | "OPENAI_GPT_5_NANO"
       | "GOOGLE_GEMINI_3_FLASH"
       | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
       | "MISTRAL_SMALL";
     /**
      * AiGenerateOptions
@@ -1332,6 +1385,7 @@ export type AiExampleControllerStreamObjectData = {
       | "OPENAI_GPT_5_NANO"
       | "GOOGLE_GEMINI_3_FLASH"
       | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
       | "MISTRAL_SMALL";
     /**
      * AiGenerateOptions
@@ -1389,7 +1443,7 @@ export type AiExampleControllerStreamChatData = {
         /**
          * TokenUsage
          *
-         * Token usage information for the message
+         * Total token usage for the message, including tools calls and reasoning steps
          */
         usage?: {
           promptTokens: number;
@@ -1402,6 +1456,20 @@ export type AiExampleControllerStreamChatData = {
          */
         timestamp?: Date;
         /**
+         * Tool calls made to generate the message
+         */
+        toolCalls?: Array<{
+          toolCallId: string;
+          toolName: string;
+          args: {
+            [key: string]: unknown;
+          };
+        }>;
+        /**
+         * Reasoning text for the message
+         */
+        reasonning?: string;
+        /**
          * ChatSchemaType
          *
          * Predefined schema types for testing structured output
@@ -1413,6 +1481,7 @@ export type AiExampleControllerStreamChatData = {
       | "OPENAI_GPT_5_NANO"
       | "GOOGLE_GEMINI_3_FLASH"
       | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
       | "MISTRAL_SMALL";
     /**
      * AiGenerateOptions
