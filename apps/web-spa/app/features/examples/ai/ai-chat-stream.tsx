@@ -404,6 +404,7 @@ export function AiChatStream() {
                   <SelectItem value="OPENAI_GPT_5_NANO">OpenAI GPT-5 Nano</SelectItem>
                   <SelectItem value="GOOGLE_GEMINI_3_FLASH">Google Gemini 3 Flash</SelectItem>
                   <SelectItem value="CLAUDE_HAIKU_3_5">Claude Haiku 3.5</SelectItem>
+                  <SelectItem value="CLAUDE_OPUS_4_5">Claude Opus 4.5</SelectItem>
                   <SelectItem value="MISTRAL_SMALL">Mistral Small</SelectItem>
                 </SelectContent>
               </Select>

@@ -43,6 +43,7 @@ export function ProductDisplay({ product }: ProductDisplayProps) {
             <h4 className="font-semibold text-sm mb-2">Features</h4>
             <ul className="space-y-1 text-sm">
               {product.features.map((feature, idx) => (
+                // eslint-disable-next-line react/no-array-index-key
                 <li key={idx} className="flex items-start gap-2">
                   <span className="text-green-600">✓</span>
                   <span>{feature}</span>

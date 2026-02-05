@@ -327,8 +327,8 @@ export function AiGenerateObject() {
                     <div className="space-y-2">
                       <h4 className="font-medium">Ingredients</h4>
                       <ul className="list-disc list-inside text-sm space-y-1">
-                        {recipe.ingredients.map((ing, idx) => (
-                          <li key={idx}>
+                        {recipe.ingredients.map(ing => (
+                          <li key={`${ing.name}-${ing.quantity}`}>
                             {ing.quantity}
                             {' '}
                             {ing.name}
@@ -340,8 +340,8 @@ export function AiGenerateObject() {
                     <div className="space-y-2">
                       <h4 className="font-medium">Instructions</h4>
                       <ol className="list-decimal list-inside text-sm space-y-2">
-                        {recipe.instructions.map((step, idx) => (
-                          <li key={idx}>{step}</li>
+                        {recipe.instructions.map(step => (
+                          <li key={step}>{step}</li>
                         ))}
                       </ol>
                     </div>
@@ -350,8 +350,8 @@ export function AiGenerateObject() {
                       <div className="space-y-2">
                         <h4 className="font-medium">Tips</h4>
                         <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
-                          {recipe.tips.map((tip, idx) => (
-                            <li key={idx}>{tip}</li>
+                          {recipe.tips.map(tip => (
+                            <li key={tip}>{tip}</li>
                           ))}
                         </ul>
                       </div>

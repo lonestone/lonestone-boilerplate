@@ -48,8 +48,8 @@ export function RecipeDisplay({ recipe }: RecipeDisplayProps) {
         <div>
           <h4 className="font-semibold text-sm mb-2">Ingredients</h4>
           <ul className="space-y-1 text-sm">
-            {recipe.ingredients.map((ingredient, idx) => (
-              <li key={idx} className="flex gap-2">
+            {recipe.ingredients.map(ingredient => (
+              <li key={`${ingredient.name}-${ingredient.quantity}`} className="flex gap-2">
                 <span className="text-muted-foreground">{ingredient.quantity}</span>
                 <span>{ingredient.name}</span>
               </li>
@@ -60,8 +60,8 @@ export function RecipeDisplay({ recipe }: RecipeDisplayProps) {
         <div>
           <h4 className="font-semibold text-sm mb-2">Instructions</h4>
           <ol className="space-y-2 text-sm list-decimal list-inside">
-            {recipe.instructions.map((step, idx) => (
-              <li key={idx} className="text-muted-foreground">
+            {recipe.instructions.map(step => (
+              <li key={step} className="text-muted-foreground">
                 <span className="text-foreground">{step}</span>
               </li>
             ))}
@@ -72,8 +72,8 @@ export function RecipeDisplay({ recipe }: RecipeDisplayProps) {
           <div className="bg-muted/50 rounded-lg p-3">
             <h4 className="font-semibold text-sm mb-2">Tips</h4>
             <ul className="space-y-1 text-sm text-muted-foreground">
-              {recipe.tips.map((tip, idx) => (
-                <li key={idx}>
+              {recipe.tips.map(tip => (
+                <li key={tip}>
                   •
                   {tip}
                 </li>
