@@ -216,8 +216,8 @@ Project documentation is available in the `docs/` folder and in app `README`s. I
 
 This documentation is also used by our custom cursor rules.
 
-- [Frontend Guidelines](apps/documentation/src/content/docs/guidelines/frontend.mdx)
-- [Backend Guidelines](apps/documentation/src/content/docs/guidelines/backend.mdx)
+- [Frontend Guidelines](apps/documentation/src/content/docs/references/frontend.mdx)
+- [Backend Guidelines](apps/documentation/src/content/docs/references/backend.mdx)
 - [API Readme](apps/api/README.md)
 
 ## 🔍 Tracing Architecture

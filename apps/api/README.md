@@ -1,7 +1,7 @@
 # API Backend
 
 This API is built with NestJS and serves as the backend for frontend applications.
-[API Guidelines](../documentation/src/content/docs/guidelines/backend.mdx)
+[API Guidelines](../documentation/src/content/docs/references/backend.mdx)
 
 ## Architecture
 
