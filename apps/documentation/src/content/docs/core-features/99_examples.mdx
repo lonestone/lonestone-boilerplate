@@ -1,0 +1,31 @@
+---
+title: Examples
+description: Provided examples
+---
+
+The boilerplate provides a few examples to help you get started. Those are located in clearly separated folders, to help you remove them if not needed.
+
+## API Examples
+
+The API examples are located in the `apps/api/src/modules/example` folder. They are:
+- `ai-example`: Example of an AI chat application
+- `comments` and `posts`: Example of a comments and posts system, with basic CRUD operations, contracts, etc.
+
+## Web SPA Example
+
+The web-spa examples are located in the `apps/web-spa/features/examples` folder.
+
+They are:
+- `ai-chat-page`, available at `http://localhost:5173/ai-chat`: Example of an AI chat application
+- `user-posts-page`, available at `http://localhost:5173/dashboard`: Example of a posts system, with basic CRUD operations, contracts, etc.
+
+# 🧹 How to remove
+
+1. Delete `apps/api/src/modules/example`
+2. Remove the module import in `apps/api/src/app.module.ts`
+3. Delete `apps/web-spa/features/examples`
+4. Remove the routes in `apps/web-spa/app/routes.ts`
+5. Generate the types and SDKs again by running `pnpm generate`
+
+You should be good to go!
+

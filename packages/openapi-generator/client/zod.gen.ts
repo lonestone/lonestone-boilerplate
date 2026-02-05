@@ -19,6 +19,131 @@ export const zCreateCommentSchema = z.object({
 });
 
 /**
+ * TokenUsage
+ *
+ * Token usage information for an AI generation
+ */
+export const zTokenUsage = z.object({
+  promptTokens: z.number(),
+  completionTokens: z.number(),
+  totalTokens: z.number(),
+});
+
+/**
+ * GenerateTextResponse
+ *
+ * Response from text generation
+ */
+export const zGenerateTextResponse = z.object({
+  usage: z.optional(zTokenUsage),
+  finishReason: z.optional(z.string()),
+  result: z.string(),
+});
+
+/**
+ * GenerateObjectResponse
+ *
+ * Response from structured object generation
+ */
+export const zGenerateObjectResponse = z.object({
+  usage: z.optional(zTokenUsage),
+  finishReason: z.optional(z.string()),
+  result: z.unknown(),
+});
+
+/**
+ * ChatMessageWithSchemaType
+ *
+ * A message with optional schemaType metadata for identifying structured output
+ */
+export const zChatMessageWithSchemaType = z.object({
+  role: z.enum(["user", "assistant", "system", "tool"]),
+  content: z.string(),
+  metadata: z.optional(
+    z.object({
+      isConsideredSystemMessage: z.optional(z.boolean()),
+      usage: z.optional(
+        z.object({
+          promptTokens: z.number(),
+          completionTokens: z.number(),
+          totalTokens: z.number(),
+        }),
+      ),
+      finishReason: z.optional(z.string()),
+      timestamp: z.optional(
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+      ),
+      toolCalls: z.optional(
+        z.array(
+          z.object({
+            toolCallId: z.string(),
+            toolName: z.string(),
+            args: z.record(z.string(), z.unknown()),
+          }),
+        ),
+      ),
+      reasonning: z.optional(z.string()),
+      schemaType: z.optional(
+        z.enum(["userProfile", "task", "product", "recipe", "none"]),
+      ),
+    }),
+  ),
+});
+
+/**
+ * ToolCall
+ *
+ * A tool call made by the AI
+ */
+export const zToolCall = z.object({
+  toolCallId: z.string(),
+  toolName: z.string(),
+  args: z.record(z.string(), z.unknown()),
+});
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing structured output
+ */
+export const zChatSchemaType = z.enum([
+  "userProfile",
+  "task",
+  "product",
+  "recipe",
+  "none",
+]);
+
+/**
+ * ToolResult
+ *
+ * The result of a tool call
+ */
+export const zToolResult = z.object({
+  toolCallId: z.string(),
+  toolName: z.string(),
+  result: z.unknown(),
+});
+
+/**
+ * ChatResponse
+ *
+ * Response from AI chat conversation
+ */
+export const zChatResponse = z.object({
+  usage: z.optional(zTokenUsage),
+  finishReason: z.optional(z.string()),
+  result: z.string(),
+  messages: z.array(zChatMessageWithSchemaType),
+  toolCalls: z.optional(z.array(zToolCall)),
+  toolResults: z.optional(z.array(zToolResult)),
+});
+
+/**
  * CommentSchema
  *
  * Schema for a comment
@@ -226,6 +351,278 @@ export const zPublicPostsSchema = z.object({
 });
 
 /**
+ * AiCoreMessage
+ *
+ * A message in the conversation history following Vercel AI SDK patterns
+ */
+export const zAiCoreMessage = z.object({
+  role: z.enum(["user", "assistant", "system", "tool"]),
+  content: z.string(),
+  metadata: z.optional(
+    z.object({
+      isConsideredSystemMessage: z.optional(z.boolean()),
+      usage: z.optional(zTokenUsage),
+      finishReason: z.optional(z.string()),
+      timestamp: z.optional(
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+      ),
+      toolCalls: z.optional(z.array(zToolCall)),
+      reasonning: z.optional(z.string()),
+    }),
+  ),
+});
+
+/**
+ * AiStreamEvent
+ *
+ * SSE event for AI text streaming with tool support
+ */
+export const zAiStreamEvent = z.union([
+  z.object({
+    type: z.literal("chunk"),
+    text: z.string(),
+  }),
+  z.object({
+    type: z.literal("tool-call"),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.record(z.string(), z.unknown()),
+  }),
+  z.object({
+    type: z.literal("tool-result"),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    result: z.unknown(),
+  }),
+  z.object({
+    type: z.literal("done"),
+    fullText: z.string(),
+    usage: z.optional(
+      z.object({
+        promptTokens: z.number(),
+        completionTokens: z.number(),
+        totalTokens: z.number(),
+      }),
+    ),
+    finishReason: z.optional(z.string()),
+  }),
+  z.object({
+    type: z.literal("error"),
+    message: z.string(),
+  }),
+]);
+
+/**
+ * Task
+ *
+ * A task
+ */
+export const zTask = z.object({
+  title: z.string(),
+  description: z.string(),
+  priority: z.enum(["low", "medium", "high"]),
+  dueDate: z.optional(z.string()),
+  tags: z.optional(z.array(z.string())),
+});
+
+/**
+ * Product
+ *
+ * A product
+ */
+export const zProduct = z.object({
+  name: z.string(),
+  price: z.number(),
+  description: z.string(),
+  category: z.string(),
+  inStock: z.boolean(),
+  features: z.optional(z.array(z.string())),
+});
+
+/**
+ * Recipe
+ *
+ * A recipe
+ */
+export const zRecipe = z.object({
+  name: z.string(),
+  description: z.string(),
+  prepTime: z.string(),
+  cookTime: z.string(),
+  servings: z.number(),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  ingredients: z.array(
+    z.object({
+      name: z.string(),
+      quantity: z.string(),
+    }),
+  ),
+  instructions: z.array(z.string()),
+  tips: z.optional(z.array(z.string())),
+});
+
+/**
+ * UserProfile
+ *
+ * A user profile
+ */
+export const zUserProfile = z.object({
+  name: z.string(),
+  age: z.number(),
+  email: z
+    .email()
+    .regex(
+      /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+    ),
+  bio: z.optional(z.string()),
+  skills: z.optional(z.array(z.string())),
+});
+
+/**
+ * AiGenerateOptions
+ *
+ * Options for an AI generation
+ */
+export const zAiGenerateOptions = z.object({
+  temperature: z.optional(z.number().gte(0).lte(2)),
+  maxTokens: z.optional(z.number().gt(0)),
+  topP: z.optional(z.number().gte(0).lte(1)),
+  frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+  presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+  maxSteps: z.optional(z.number().gt(0)),
+  stopWhen: z.optional(z.number().gt(0)),
+  telemetry: z.optional(
+    z.object({
+      langfuseTraceName: z.string(),
+      langfuseOriginalPrompt: z.optional(z.string()),
+      functionId: z.optional(z.string()),
+    }),
+  ),
+  metadata: z.optional(z.record(z.string(), z.unknown())),
+});
+
+/**
+ * GenerateTextRequest
+ *
+ * Request for simple text generation with a single prompt
+ */
+export const zGenerateTextRequest = z.object({
+  prompt: z.string().min(1),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+});
+
+/**
+ * GenerateObjectRequest
+ *
+ * Request for structured object generation with a predefined schema type
+ */
+export const zGenerateObjectRequest = z.object({
+  prompt: z.string().min(1),
+  schemaType: z.enum(["userProfile", "task", "product", "recipe"]),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+});
+
+/**
+ * ChatRequest
+ *
+ * Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.
+ */
+export const zChatRequest = z.object({
+  messages: z.array(zChatMessageWithSchemaType).min(1),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+  schemaType: z.optional(zChatSchemaType),
+});
+
+/**
+ * StreamTextRequest
+ *
+ * Request for streaming text generation with a single prompt
+ */
+export const zStreamTextRequest = z.object({
+  prompt: z.string().min(1),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+});
+
+/**
+ * StreamObjectRequest
+ *
+ * Request for streaming structured object generation
+ */
+export const zStreamObjectRequest = z.object({
+  prompt: z.string().min(1),
+  schemaType: z.enum(["userProfile", "task", "product", "recipe"]),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+});
+
+/**
+ * StreamChatRequest
+ *
+ * Request for streaming multi-turn AI conversation
+ */
+export const zStreamChatRequest = z.object({
+  messages: z.array(zChatMessageWithSchemaType).min(1),
+  model: z.optional(
+    z.enum([
+      "OPENAI_GPT_5_NANO",
+      "GOOGLE_GEMINI_3_FLASH",
+      "CLAUDE_HAIKU_3_5",
+      "CLAUDE_OPUS_4_5",
+      "MISTRAL_SMALL",
+    ]),
+  ),
+  options: z.optional(zAiGenerateOptions),
+});
+
+/**
  * PaginationQuerySchema
  *
  * Schema for pagination query
@@ -252,6 +649,47 @@ export const zSortingQueryStringSchema = z.string();
 export const zFilterQueryStringSchema = z.string();
 
 export const zCommentsControllerPostSlug = z.string();
+
+export const zCommentsControllerGetCommentsFilterItem = z.object({
+  property: z.literal("content"),
+  rule: z.enum([
+    "eq",
+    "neq",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "like",
+    "nlike",
+    "in",
+    "nin",
+    "isnull",
+    "isnotnull",
+  ]),
+  value: z.optional(z.string()),
+});
+
+export const zCommentsControllerGetCommentsFilterArray = z.array(
+  zCommentsControllerGetCommentsFilterItem,
+);
+
+export const zCommentsControllerGetCommentsSortItem = z.object({
+  property: z.union([z.literal("createdAt"), z.literal("authorName")]),
+  direction: z.enum(["asc", "desc"]),
+});
+
+export const zCommentsControllerGetCommentsSortArray = z.array(
+  zCommentsControllerGetCommentsSortItem,
+);
+
+export const zCommentsControllerGetCommentRepliesSortItem = z.object({
+  property: z.union([z.literal("createdAt"), z.literal("authorName")]),
+  direction: z.enum(["asc", "desc"]),
+});
+
+export const zCommentsControllerGetCommentRepliesSortArray = z.array(
+  zCommentsControllerGetCommentRepliesSortItem,
+);
 
 export const zPostControllerGetUserPostsFilterItem = z.object({
   property: z.literal("title"),
@@ -317,50 +755,84 @@ export const zPublicPostControllerGetPostsSortArray = z.array(
   zPublicPostControllerGetPostsSortItem,
 );
 
-export const zCommentsControllerGetCommentsFilterItem = z.object({
-  property: z.literal("content"),
-  rule: z.enum([
-    "eq",
-    "neq",
-    "gt",
-    "gte",
-    "lt",
-    "lte",
-    "like",
-    "nlike",
-    "in",
-    "nin",
-    "isnull",
-    "isnotnull",
-  ]),
-  value: z.optional(z.string()),
-});
-
-export const zCommentsControllerGetCommentsFilterArray = z.array(
-  zCommentsControllerGetCommentsFilterItem,
-);
-
-export const zCommentsControllerGetCommentsSortItem = z.object({
-  property: z.union([z.literal("createdAt"), z.literal("authorName")]),
-  direction: z.enum(["asc", "desc"]),
-});
-
-export const zCommentsControllerGetCommentsSortArray = z.array(
-  zCommentsControllerGetCommentsSortItem,
-);
-
-export const zCommentsControllerGetCommentRepliesSortItem = z.object({
-  property: z.union([z.literal("createdAt"), z.literal("authorName")]),
-  direction: z.enum(["asc", "desc"]),
-});
-
-export const zCommentsControllerGetCommentRepliesSortArray = z.array(
-  zCommentsControllerGetCommentRepliesSortItem,
-);
-
 export const zAppControllerGetHelloData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCommentsControllerGetCommentsData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    postSlug: z.string(),
+  }),
+  query: z.object({
+    filter: z.optional(zCommentsControllerGetCommentsFilterArray),
+    sort: z.optional(zCommentsControllerGetCommentsSortArray),
+    offset: z.int().gte(0).lte(9007199254740991).default(0),
+    pageSize: z.int().gte(1).lte(100).default(20),
+  }),
+});
+
+/**
+ * Schema for a paginated list of comments
+ */
+export const zCommentsControllerGetCommentsResponse = zCommentsSchema;
+
+export const zCommentsControllerCreateCommentData = z.object({
+  body: z.object({
+    content: z.string().min(1).max(1000),
+    parentId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+  }),
+  path: z.object({
+    postSlug: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Schema for a comment
+ */
+export const zCommentsControllerCreateCommentResponse = zCommentSchema;
+
+export const zCommentsControllerGetCommentCountData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    postSlug: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCommentsControllerGetCommentRepliesData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    commentId: z.string(),
+    postSlug: z.string(),
+  }),
+  query: z.object({
+    sort: z.optional(zCommentsControllerGetCommentRepliesSortArray),
+    offset: z.int().gte(0).lte(9007199254740991).default(0),
+    pageSize: z.int().gte(1).lte(100).default(20),
+  }),
+});
+
+/**
+ * Schema for a paginated list of comments
+ */
+export const zCommentsControllerGetCommentRepliesResponse = zCommentsSchema;
+
+export const zCommentsControllerDeleteCommentData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    commentId: z.string(),
+    postSlug: z.string(),
+  }),
   query: z.optional(z.never()),
 });
 
@@ -511,77 +983,319 @@ export const zPublicPostControllerGetPostsData = z.object({
  */
 export const zPublicPostControllerGetPostsResponse = zPublicPostsSchema;
 
-export const zCommentsControllerGetCommentsData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    postSlug: z.string(),
-  }),
-  query: z.object({
-    filter: z.optional(zCommentsControllerGetCommentsFilterArray),
-    sort: z.optional(zCommentsControllerGetCommentsSortArray),
-    offset: z.int().gte(0).lte(9007199254740991).default(0),
-    pageSize: z.int().gte(1).lte(100).default(20),
-  }),
-});
-
-/**
- * Schema for a paginated list of comments
- */
-export const zCommentsControllerGetCommentsResponse = zCommentsSchema;
-
-export const zCommentsControllerCreateCommentData = z.object({
+export const zAiExampleControllerGenerateTextData = z.object({
   body: z.object({
-    content: z.string().min(1).max(1000),
-    parentId: z.optional(
-      z
-        .uuid()
-        .regex(
-          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    prompt: z.string().min(1),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
+        "MISTRAL_SMALL",
+      ]),
+    ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            langfuseTraceName: z.string(),
+            langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
+          }),
         ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
     ),
   }),
-  path: z.object({
-    postSlug: z.string(),
-  }),
+  path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
 /**
- * Schema for a comment
+ * Response from text generation
  */
-export const zCommentsControllerCreateCommentResponse = zCommentSchema;
+export const zAiExampleControllerGenerateTextResponse = zGenerateTextResponse;
 
-export const zCommentsControllerGetCommentCountData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    postSlug: z.string(),
+export const zAiExampleControllerGenerateObjectData = z.object({
+  body: z.object({
+    prompt: z.string().min(1),
+    schemaType: z.enum(["userProfile", "task", "product", "recipe"]),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
+        "MISTRAL_SMALL",
+      ]),
+    ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            langfuseTraceName: z.string(),
+            langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
+          }),
+        ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
+    ),
   }),
+  path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zCommentsControllerGetCommentRepliesData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    commentId: z.string(),
-    postSlug: z.string(),
+/**
+ * Response from structured object generation
+ */
+export const zAiExampleControllerGenerateObjectResponse =
+  zGenerateObjectResponse;
+
+export const zAiExampleControllerChatData = z.object({
+  body: z.object({
+    messages: z
+      .array(
+        z.object({
+          role: z.enum(["user", "assistant", "system", "tool"]),
+          content: z.string(),
+          metadata: z.optional(
+            z.object({
+              isConsideredSystemMessage: z.optional(z.boolean()),
+              usage: z.optional(
+                z.object({
+                  promptTokens: z.number(),
+                  completionTokens: z.number(),
+                  totalTokens: z.number(),
+                }),
+              ),
+              finishReason: z.optional(z.string()),
+              timestamp: z.optional(
+                z.iso
+                  .datetime()
+                  .regex(
+                    /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+                  ),
+              ),
+              toolCalls: z.optional(
+                z.array(
+                  z.object({
+                    toolCallId: z.string(),
+                    toolName: z.string(),
+                    args: z.record(z.string(), z.unknown()),
+                  }),
+                ),
+              ),
+              reasonning: z.optional(z.string()),
+              schemaType: z.optional(
+                z.enum(["userProfile", "task", "product", "recipe", "none"]),
+              ),
+            }),
+          ),
+        }),
+      )
+      .min(1),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
+        "MISTRAL_SMALL",
+      ]),
+    ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            langfuseTraceName: z.string(),
+            langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
+          }),
+        ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
+    ),
+    schemaType: z.optional(
+      z.enum(["userProfile", "task", "product", "recipe", "none"]),
+    ),
   }),
-  query: z.object({
-    sort: z.optional(zCommentsControllerGetCommentRepliesSortArray),
-    offset: z.int().gte(0).lte(9007199254740991).default(0),
-    pageSize: z.int().gte(1).lte(100).default(20),
-  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
 });
 
 /**
- * Schema for a paginated list of comments
+ * Response from AI chat conversation
  */
-export const zCommentsControllerGetCommentRepliesResponse = zCommentsSchema;
+export const zAiExampleControllerChatResponse = zChatResponse;
 
-export const zCommentsControllerDeleteCommentData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    commentId: z.string(),
-    postSlug: z.string(),
+export const zAiExampleControllerStreamTextData = z.object({
+  body: z.object({
+    prompt: z.string().min(1),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
+        "MISTRAL_SMALL",
+      ]),
+    ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            langfuseTraceName: z.string(),
+            langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
+          }),
+        ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
+    ),
   }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAiExampleControllerStreamObjectData = z.object({
+  body: z.object({
+    prompt: z.string().min(1),
+    schemaType: z.enum(["userProfile", "task", "product", "recipe"]),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
+        "MISTRAL_SMALL",
+      ]),
+    ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            langfuseTraceName: z.string(),
+            langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
+          }),
+        ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
+    ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAiExampleControllerStreamChatData = z.object({
+  body: z.object({
+    messages: z
+      .array(
+        z.object({
+          role: z.enum(["user", "assistant", "system", "tool"]),
+          content: z.string(),
+          metadata: z.optional(
+            z.object({
+              isConsideredSystemMessage: z.optional(z.boolean()),
+              usage: z.optional(
+                z.object({
+                  promptTokens: z.number(),
+                  completionTokens: z.number(),
+                  totalTokens: z.number(),
+                }),
+              ),
+              finishReason: z.optional(z.string()),
+              timestamp: z.optional(
+                z.iso
+                  .datetime()
+                  .regex(
+                    /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+                  ),
+              ),
+              toolCalls: z.optional(
+                z.array(
+                  z.object({
+                    toolCallId: z.string(),
+                    toolName: z.string(),
+                    args: z.record(z.string(), z.unknown()),
+                  }),
+                ),
+              ),
+              reasonning: z.optional(z.string()),
+              schemaType: z.optional(
+                z.enum(["userProfile", "task", "product", "recipe", "none"]),
+              ),
+            }),
+          ),
+        }),
+      )
+      .min(1),
+    model: z.optional(
+      z.enum([
+        "OPENAI_GPT_5_NANO",
+        "GOOGLE_GEMINI_3_FLASH",
+        "CLAUDE_HAIKU_3_5",
+        "CLAUDE_OPUS_4_5",
+        "MISTRAL_SMALL",
+      ]),
+    ),
+    options: z.optional(
+      z.object({
+        temperature: z.optional(z.number().gte(0).lte(2)),
+        maxTokens: z.optional(z.number().gt(0)),
+        topP: z.optional(z.number().gte(0).lte(1)),
+        frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+        presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+        maxSteps: z.optional(z.number().gt(0)),
+        stopWhen: z.optional(z.number().gt(0)),
+        telemetry: z.optional(
+          z.object({
+            langfuseTraceName: z.string(),
+            langfuseOriginalPrompt: z.optional(z.string()),
+            functionId: z.optional(z.string()),
+          }),
+        ),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+      }),
+    ),
+  }),
+  path: z.optional(z.never()),
   query: z.optional(z.never()),
 });

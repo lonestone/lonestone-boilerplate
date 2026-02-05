@@ -28,6 +28,266 @@
         }
       }
     },
+    "/api/posts/{postSlug}/comments": {
+      "post": {
+        "operationId": "CommentsController_createComment",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Schema for creating a comment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "parentId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "content"
+                ],
+                "additionalProperties": false,
+                "title": "CreateCommentSchema",
+                "description": "Schema for creating a comment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema for a comment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentSchema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "CommentsController_getComments",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CommentsController_getComments_filterArray"
+            },
+            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: content",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CommentsController_getComments_sortArray"
+            },
+            "description": "Schema for sorting items",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "description": "Starting position of the query",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "description": "Number of items to return",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema for a paginated list of comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentsSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/posts/{postSlug}/comments/count": {
+      "get": {
+        "operationId": "CommentsController_getCommentCount",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/posts/{postSlug}/comments/{commentId}/replies": {
+      "get": {
+        "operationId": "CommentsController_getCommentReplies",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortArray"
+            },
+            "description": "Schema for sorting items",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "description": "Starting position of the query",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "description": "Number of items to return",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema for a paginated list of comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentsSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/posts/{postSlug}/comments/{commentId}": {
+      "delete": {
+        "operationId": "CommentsController_deleteComment",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/posts": {
       "post": {
         "operationId": "PostController_createPost",
@@ -504,132 +764,121 @@
         }
       }
     },
-    "/api/posts/{postSlug}/comments": {
+    "/api/ai/generate-text": {
       "post": {
-        "operationId": "CommentsController_createComment",
+        "operationId": "AiExampleController_generateText",
         "tags": [
-          "Comments"
+          "AiExample"
         ],
-        "parameters": [
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Schema for creating a comment",
+          "description": "Request for simple text generation with a single prompt",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "content": {
+                  "prompt": {
                     "type": "string",
-                    "minLength": 1,
-                    "maxLength": 1000
+                    "minLength": 1
                   },
-                  "parentId": {
+                  "model": {
                     "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "langfuseTraceName": {
+                            "type": "string",
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "langfuseTraceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
                   }
                 },
                 "required": [
-                  "content"
+                  "prompt"
                 ],
                 "additionalProperties": false,
-                "title": "CreateCommentSchema",
-                "description": "Schema for creating a comment"
+                "title": "GenerateTextRequest",
+                "description": "Request for simple text generation with a single prompt"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Schema for a comment",
+            "description": "Response from text generation",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CommentSchema"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "operationId": "CommentsController_getComments",
-        "tags": [
-          "Comments"
-        ],
-        "parameters": [
-          {
-            "name": "filter",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/CommentsController_getComments_filterArray"
-            },
-            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: content",
-            "style": "form",
-            "explode": false
-          },
-          {
-            "name": "sort",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/CommentsController_getComments_sortArray"
-            },
-            "description": "Schema for sorting items",
-            "style": "form",
-            "explode": false
-          },
-          {
-            "name": "offset",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "default": 0,
-              "description": "Starting position of the query",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 9007199254740991
-            }
-          },
-          {
-            "name": "pageSize",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "default": 20,
-              "description": "Number of items to return",
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
-            }
-          },
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Schema for a paginated list of comments",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CommentsSchema"
+                  "$ref": "#/components/schemas/GenerateTextResponse"
                 }
               }
             }
@@ -637,128 +886,842 @@
         }
       }
     },
-    "/api/posts/{postSlug}/comments/count": {
-      "get": {
-        "operationId": "CommentsController_getCommentCount",
+    "/api/ai/generate-object": {
+      "post": {
+        "operationId": "AiExampleController_generateObject",
         "tags": [
-          "Comments"
+          "AiExample"
         ],
-        "parameters": [
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request for structured object generation with a predefined schema type",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "schemaType": {
+                    "type": "string",
+                    "enum": [
+                      "userProfile",
+                      "task",
+                      "product",
+                      "recipe"
+                    ]
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "langfuseTraceName": {
+                            "type": "string",
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "langfuseTraceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  }
+                },
+                "required": [
+                  "prompt",
+                  "schemaType"
+                ],
+                "additionalProperties": false,
+                "title": "GenerateObjectRequest",
+                "description": "Request for structured object generation with a predefined schema type"
+              }
             }
           }
-        ],
+        },
         "responses": {
           "200": {
+            "description": "Response from structured object generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateObjectResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/chat": {
+      "post": {
+        "operationId": "AiExampleController_chat",
+        "tags": [
+          "AiExample"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messages": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant",
+                            "system",
+                            "tool"
+                          ]
+                        },
+                        "content": {
+                          "type": "string"
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "properties": {
+                            "isConsideredSystemMessage": {
+                              "type": "boolean"
+                            },
+                            "usage": {
+                              "description": "Total token usage for the message, including tools calls and reasoning steps",
+                              "type": "object",
+                              "properties": {
+                                "promptTokens": {
+                                  "type": "number"
+                                },
+                                "completionTokens": {
+                                  "type": "number"
+                                },
+                                "totalTokens": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "promptTokens",
+                                "completionTokens",
+                                "totalTokens"
+                              ],
+                              "additionalProperties": false,
+                              "title": "TokenUsage"
+                            },
+                            "finishReason": {
+                              "type": "string"
+                            },
+                            "timestamp": {
+                              "description": "ISO 8601 timestamp when the message was created",
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            },
+                            "toolCalls": {
+                              "description": "Tool calls made to generate the message",
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "toolCallId": {
+                                    "type": "string"
+                                  },
+                                  "toolName": {
+                                    "type": "string"
+                                  },
+                                  "args": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  }
+                                },
+                                "required": [
+                                  "toolCallId",
+                                  "toolName",
+                                  "args"
+                                ],
+                                "additionalProperties": false,
+                                "title": "ToolCall",
+                                "description": "A tool call made by the AI"
+                              }
+                            },
+                            "reasonning": {
+                              "description": "Reasoning text for the message",
+                              "type": "string"
+                            },
+                            "schemaType": {
+                              "type": "string",
+                              "enum": [
+                                "userProfile",
+                                "task",
+                                "product",
+                                "recipe",
+                                "none"
+                              ],
+                              "title": "ChatSchemaType",
+                              "description": "Predefined schema types for testing structured output"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "role",
+                        "content"
+                      ],
+                      "additionalProperties": false,
+                      "title": "ChatMessageWithSchemaType",
+                      "description": "A message with optional schemaType metadata for identifying structured output"
+                    }
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "langfuseTraceName": {
+                            "type": "string",
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "langfuseTraceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  },
+                  "schemaType": {
+                    "type": "string",
+                    "enum": [
+                      "userProfile",
+                      "task",
+                      "product",
+                      "recipe",
+                      "none"
+                    ],
+                    "title": "ChatSchemaType",
+                    "description": "Predefined schema types for testing structured output"
+                  }
+                },
+                "required": [
+                  "messages"
+                ],
+                "additionalProperties": false,
+                "title": "ChatRequest",
+                "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response from AI chat conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/stream-text": {
+      "post": {
+        "operationId": "AiExampleController_streamText",
+        "tags": [
+          "AiExample"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request for streaming text generation with a single prompt",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "langfuseTraceName": {
+                            "type": "string",
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "langfuseTraceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  }
+                },
+                "required": [
+                  "prompt"
+                ],
+                "additionalProperties": false,
+                "title": "StreamTextRequest",
+                "description": "Request for streaming text generation with a single prompt"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": ""
           }
         }
       }
     },
-    "/api/posts/{postSlug}/comments/{commentId}/replies": {
-      "get": {
-        "operationId": "CommentsController_getCommentReplies",
+    "/api/ai/stream-object": {
+      "post": {
+        "operationId": "AiExampleController_streamObject",
         "tags": [
-          "Comments"
+          "AiExample"
         ],
-        "parameters": [
-          {
-            "name": "sort",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortArray"
-            },
-            "description": "Schema for sorting items",
-            "style": "form",
-            "explode": false
-          },
-          {
-            "name": "offset",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "default": 0,
-              "description": "Starting position of the query",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 9007199254740991
-            }
-          },
-          {
-            "name": "pageSize",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "default": 20,
-              "description": "Number of items to return",
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
-            }
-          },
-          {
-            "name": "commentId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Schema for a paginated list of comments",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CommentsSchema"
-                }
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request for streaming structured object generation",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "schemaType": {
+                    "type": "string",
+                    "enum": [
+                      "userProfile",
+                      "task",
+                      "product",
+                      "recipe"
+                    ]
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "langfuseTraceName": {
+                            "type": "string",
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "langfuseTraceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  }
+                },
+                "required": [
+                  "prompt",
+                  "schemaType"
+                ],
+                "additionalProperties": false,
+                "title": "StreamObjectRequest",
+                "description": "Request for streaming structured object generation"
               }
             }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
           }
         }
       }
     },
-    "/api/posts/{postSlug}/comments/{commentId}": {
-      "delete": {
-        "operationId": "CommentsController_deleteComment",
+    "/api/ai/stream-chat": {
+      "post": {
+        "operationId": "AiExampleController_streamChat",
         "tags": [
-          "Comments"
+          "AiExample"
         ],
-        "parameters": [
-          {
-            "name": "commentId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request for streaming multi-turn AI conversation",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messages": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant",
+                            "system",
+                            "tool"
+                          ]
+                        },
+                        "content": {
+                          "type": "string"
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "properties": {
+                            "isConsideredSystemMessage": {
+                              "type": "boolean"
+                            },
+                            "usage": {
+                              "description": "Total token usage for the message, including tools calls and reasoning steps",
+                              "type": "object",
+                              "properties": {
+                                "promptTokens": {
+                                  "type": "number"
+                                },
+                                "completionTokens": {
+                                  "type": "number"
+                                },
+                                "totalTokens": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "promptTokens",
+                                "completionTokens",
+                                "totalTokens"
+                              ],
+                              "additionalProperties": false,
+                              "title": "TokenUsage"
+                            },
+                            "finishReason": {
+                              "type": "string"
+                            },
+                            "timestamp": {
+                              "description": "ISO 8601 timestamp when the message was created",
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            },
+                            "toolCalls": {
+                              "description": "Tool calls made to generate the message",
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "toolCallId": {
+                                    "type": "string"
+                                  },
+                                  "toolName": {
+                                    "type": "string"
+                                  },
+                                  "args": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  }
+                                },
+                                "required": [
+                                  "toolCallId",
+                                  "toolName",
+                                  "args"
+                                ],
+                                "additionalProperties": false,
+                                "title": "ToolCall",
+                                "description": "A tool call made by the AI"
+                              }
+                            },
+                            "reasonning": {
+                              "description": "Reasoning text for the message",
+                              "type": "string"
+                            },
+                            "schemaType": {
+                              "type": "string",
+                              "enum": [
+                                "userProfile",
+                                "task",
+                                "product",
+                                "recipe",
+                                "none"
+                              ],
+                              "title": "ChatSchemaType",
+                              "description": "Predefined schema types for testing structured output"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "role",
+                        "content"
+                      ],
+                      "additionalProperties": false,
+                      "title": "ChatMessageWithSchemaType",
+                      "description": "A message with optional schemaType metadata for identifying structured output"
+                    }
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "langfuseTraceName": {
+                            "type": "string",
+                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          },
+                          "functionId": {
+                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "langfuseTraceName"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  }
+                },
+                "required": [
+                  "messages"
+                ],
+                "additionalProperties": false,
+                "title": "StreamChatRequest",
+                "description": "Request for streaming multi-turn AI conversation"
+              }
             }
           }
-        ],
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": ""
           }
         }
@@ -767,6 +1730,203 @@
   },
   "components": {
     "schemas": {
+      "GenerateTextRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "title": "GenerateTextRequest",
+        "description": "Request for simple text generation with a single prompt"
+      },
+      "GenerateObjectRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schemaType": {
+            "type": "string",
+            "enum": [
+              "userProfile",
+              "task",
+              "product",
+              "recipe"
+            ]
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "prompt",
+          "schemaType"
+        ],
+        "additionalProperties": false,
+        "title": "GenerateObjectRequest",
+        "description": "Request for structured object generation with a predefined schema type"
+      },
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
+            }
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          },
+          "schemaType": {
+            "$ref": "#/components/schemas/ChatSchemaType"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "additionalProperties": false,
+        "title": "ChatRequest",
+        "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output."
+      },
+      "StreamTextRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "title": "StreamTextRequest",
+        "description": "Request for streaming text generation with a single prompt"
+      },
+      "StreamObjectRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schemaType": {
+            "type": "string",
+            "enum": [
+              "userProfile",
+              "task",
+              "product",
+              "recipe"
+            ]
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "prompt",
+          "schemaType"
+        ],
+        "additionalProperties": false,
+        "title": "StreamObjectRequest",
+        "description": "Request for streaming structured object generation"
+      },
+      "StreamChatRequest": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
+            }
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "additionalProperties": false,
+        "title": "StreamChatRequest",
+        "description": "Request for streaming multi-turn AI conversation"
+      },
       "CreateCommentSchema": {
         "type": "object",
         "properties": {
@@ -827,6 +1987,273 @@
         "additionalProperties": false,
         "title": "UpdatePostSchema",
         "description": "Schema for updating a post"
+      },
+      "GenerateTextResponse": {
+        "type": "object",
+        "properties": {
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "finishReason": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "title": "GenerateTextResponse",
+        "description": "Response from text generation"
+      },
+      "TokenUsage": {
+        "type": "object",
+        "properties": {
+          "promptTokens": {
+            "type": "number"
+          },
+          "completionTokens": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "promptTokens",
+          "completionTokens",
+          "totalTokens"
+        ],
+        "additionalProperties": false,
+        "title": "TokenUsage",
+        "description": "Token usage information for an AI generation"
+      },
+      "GenerateObjectResponse": {
+        "type": "object",
+        "properties": {
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "finishReason": {
+            "type": "string"
+          },
+          "result": {}
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "title": "GenerateObjectResponse",
+        "description": "Response from structured object generation"
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "finishReason": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
+            }
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "toolResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolResult"
+            }
+          }
+        },
+        "required": [
+          "result",
+          "messages"
+        ],
+        "additionalProperties": false,
+        "title": "ChatResponse",
+        "description": "Response from AI chat conversation"
+      },
+      "ChatMessageWithSchemaType": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "system",
+              "tool"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "isConsideredSystemMessage": {
+                "type": "boolean"
+              },
+              "usage": {
+                "description": "Total token usage for the message, including tools calls and reasoning steps",
+                "type": "object",
+                "properties": {
+                  "promptTokens": {
+                    "type": "number"
+                  },
+                  "completionTokens": {
+                    "type": "number"
+                  },
+                  "totalTokens": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "promptTokens",
+                  "completionTokens",
+                  "totalTokens"
+                ],
+                "additionalProperties": false,
+                "title": "TokenUsage"
+              },
+              "finishReason": {
+                "type": "string"
+              },
+              "timestamp": {
+                "description": "ISO 8601 timestamp when the message was created",
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "toolCalls": {
+                "description": "Tool calls made to generate the message",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "toolCallId": {
+                      "type": "string"
+                    },
+                    "toolName": {
+                      "type": "string"
+                    },
+                    "args": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "toolCallId",
+                    "toolName",
+                    "args"
+                  ],
+                  "additionalProperties": false,
+                  "title": "ToolCall",
+                  "description": "A tool call made by the AI"
+                }
+              },
+              "reasonning": {
+                "description": "Reasoning text for the message",
+                "type": "string"
+              },
+              "schemaType": {
+                "type": "string",
+                "enum": [
+                  "userProfile",
+                  "task",
+                  "product",
+                  "recipe",
+                  "none"
+                ],
+                "title": "ChatSchemaType",
+                "description": "Predefined schema types for testing structured output"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "additionalProperties": false,
+        "title": "ChatMessageWithSchemaType",
+        "description": "A message with optional schemaType metadata for identifying structured output"
+      },
+      "ToolCall": {
+        "type": "object",
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "args": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "toolCallId",
+          "toolName",
+          "args"
+        ],
+        "additionalProperties": false,
+        "title": "ToolCall",
+        "description": "A tool call made by the AI"
+      },
+      "ChatSchemaType": {
+        "type": "string",
+        "enum": [
+          "userProfile",
+          "task",
+          "product",
+          "recipe",
+          "none"
+        ],
+        "title": "ChatSchemaType",
+        "description": "Predefined schema types for testing structured output"
+      },
+      "ToolResult": {
+        "type": "object",
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "result": {}
+        },
+        "required": [
+          "toolCallId",
+          "toolName",
+          "result"
+        ],
+        "additionalProperties": false,
+        "title": "ToolResult",
+        "description": "The result of a tool call"
       },
       "CommentSchema": {
         "type": "object",
@@ -1323,6 +2750,452 @@
         "title": "PublicPostsSchema",
         "description": "A list of public posts"
       },
+      "AiCoreMessage": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "system",
+              "tool"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "isConsideredSystemMessage": {
+                "type": "boolean"
+              },
+              "usage": {
+                "$ref": "#/components/schemas/TokenUsage"
+              },
+              "finishReason": {
+                "type": "string"
+              },
+              "timestamp": {
+                "description": "ISO 8601 timestamp when the message was created",
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "toolCalls": {
+                "description": "Tool calls made to generate the message",
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ToolCall"
+                }
+              },
+              "reasonning": {
+                "description": "Reasoning text for the message",
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "additionalProperties": false,
+        "title": "AiCoreMessage",
+        "description": "A message in the conversation history following Vercel AI SDK patterns"
+      },
+      "AiStreamEvent": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "chunk"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "text"
+            ],
+            "additionalProperties": false,
+            "title": "AiStreamTextChunkEvent",
+            "description": "A text chunk event during streaming"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "tool-call"
+              },
+              "toolCallId": {
+                "type": "string"
+              },
+              "toolName": {
+                "type": "string"
+              },
+              "args": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "type",
+              "toolCallId",
+              "toolName",
+              "args"
+            ],
+            "additionalProperties": false,
+            "title": "AiStreamToolCallEvent",
+            "description": "Event when a tool is being called during streaming"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "tool-result"
+              },
+              "toolCallId": {
+                "type": "string"
+              },
+              "toolName": {
+                "type": "string"
+              },
+              "result": {}
+            },
+            "required": [
+              "type",
+              "toolCallId",
+              "toolName",
+              "result"
+            ],
+            "additionalProperties": false,
+            "title": "AiStreamToolResultEvent",
+            "description": "Event when a tool returns a result during streaming"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "done"
+              },
+              "fullText": {
+                "type": "string"
+              },
+              "usage": {
+                "type": "object",
+                "properties": {
+                  "promptTokens": {
+                    "type": "number"
+                  },
+                  "completionTokens": {
+                    "type": "number"
+                  },
+                  "totalTokens": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "promptTokens",
+                  "completionTokens",
+                  "totalTokens"
+                ],
+                "additionalProperties": false,
+                "title": "AiStreamUsage",
+                "description": "Token usage information for the stream"
+              },
+              "finishReason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "fullText"
+            ],
+            "additionalProperties": false,
+            "title": "AiStreamDoneEvent",
+            "description": "Final event when streaming is complete"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "error"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "additionalProperties": false,
+            "title": "AiStreamErrorEvent",
+            "description": "Error event during streaming"
+          }
+        ],
+        "title": "AiStreamEvent",
+        "description": "SSE event for AI text streaming with tool support",
+        "type": "object"
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "dueDate": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "priority"
+        ],
+        "additionalProperties": false,
+        "title": "Task",
+        "description": "A task"
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "inStock": {
+            "type": "boolean"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "price",
+          "description",
+          "category",
+          "inStock"
+        ],
+        "additionalProperties": false,
+        "title": "Product",
+        "description": "A product"
+      },
+      "Recipe": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "prepTime": {
+            "type": "string"
+          },
+          "cookTime": {
+            "type": "string"
+          },
+          "servings": {
+            "type": "number"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "easy",
+              "medium",
+              "hard"
+            ]
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "quantity"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tips": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "prepTime",
+          "cookTime",
+          "servings",
+          "difficulty",
+          "ingredients",
+          "instructions"
+        ],
+        "additionalProperties": false,
+        "title": "Recipe",
+        "description": "A recipe"
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "age": {
+            "type": "number"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "age",
+          "email"
+        ],
+        "additionalProperties": false,
+        "title": "UserProfile",
+        "description": "A user profile"
+      },
+      "AiGenerateOptions": {
+        "type": "object",
+        "properties": {
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "maxTokens": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "topP": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "frequencyPenalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "presencePenalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "maxSteps": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "stopWhen": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "telemetry": {
+            "type": "object",
+            "properties": {
+              "langfuseTraceName": {
+                "type": "string",
+                "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+              },
+              "langfuseOriginalPrompt": {
+                "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                "type": "string"
+              },
+              "functionId": {
+                "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "langfuseTraceName"
+            ],
+            "additionalProperties": false
+          },
+          "metadata": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "additionalProperties": false,
+        "title": "AiGenerateOptions",
+        "description": "Options for an AI generation"
+      },
       "PaginationQuerySchema": {
         "type": "object",
         "properties": {
@@ -1436,6 +3309,120 @@
       },
       "CommentsController_postSlug": {
         "type": "string"
+      },
+      "CommentsController_getComments_filterItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "content"
+              }
+            ]
+          },
+          "rule": {
+            "type": "string",
+            "enum": [
+              "eq",
+              "neq",
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "like",
+              "nlike",
+              "in",
+              "nin",
+              "isnull",
+              "isnotnull"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "property",
+          "rule"
+        ],
+        "additionalProperties": false
+      },
+      "CommentsController_getComments_filterArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CommentsController_getComments_filterItem"
+        }
+      },
+      "CommentsController_getComments_sortItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "createdAt"
+              },
+              {
+                "type": "string",
+                "const": "authorName"
+              }
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "property",
+          "direction"
+        ],
+        "additionalProperties": false
+      },
+      "CommentsController_getComments_sortArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CommentsController_getComments_sortItem"
+        }
+      },
+      "CommentsController_getCommentReplies_sortItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "createdAt"
+              },
+              {
+                "type": "string",
+                "const": "authorName"
+              }
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "property",
+          "direction"
+        ],
+        "additionalProperties": false
+      },
+      "CommentsController_getCommentReplies_sortArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortItem"
+        }
       },
       "PostController_getUserPosts_filterItem": {
         "type": "object",
@@ -1593,120 +3580,6 @@
         "type": "array",
         "items": {
           "$ref": "#/components/schemas/PublicPostController_getPosts_sortItem"
-        }
-      },
-      "CommentsController_getComments_filterItem": {
-        "type": "object",
-        "properties": {
-          "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "content"
-              }
-            ]
-          },
-          "rule": {
-            "type": "string",
-            "enum": [
-              "eq",
-              "neq",
-              "gt",
-              "gte",
-              "lt",
-              "lte",
-              "like",
-              "nlike",
-              "in",
-              "nin",
-              "isnull",
-              "isnotnull"
-            ]
-          },
-          "value": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "property",
-          "rule"
-        ],
-        "additionalProperties": false
-      },
-      "CommentsController_getComments_filterArray": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/CommentsController_getComments_filterItem"
-        }
-      },
-      "CommentsController_getComments_sortItem": {
-        "type": "object",
-        "properties": {
-          "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "createdAt"
-              },
-              {
-                "type": "string",
-                "const": "authorName"
-              }
-            ]
-          },
-          "direction": {
-            "type": "string",
-            "enum": [
-              "asc",
-              "desc"
-            ]
-          }
-        },
-        "required": [
-          "property",
-          "direction"
-        ],
-        "additionalProperties": false
-      },
-      "CommentsController_getComments_sortArray": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/CommentsController_getComments_sortItem"
-        }
-      },
-      "CommentsController_getCommentReplies_sortItem": {
-        "type": "object",
-        "properties": {
-          "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "createdAt"
-              },
-              {
-                "type": "string",
-                "const": "authorName"
-              }
-            ]
-          },
-          "direction": {
-            "type": "string",
-            "enum": [
-              "asc",
-              "desc"
-            ]
-          }
-        },
-        "required": [
-          "property",
-          "direction"
-        ],
-        "additionalProperties": false
-      },
-      "CommentsController_getCommentReplies_sortArray": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortItem"
         }
       }
     }

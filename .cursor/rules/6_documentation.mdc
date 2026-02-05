@@ -1,0 +1,7 @@
+---
+description: Writing documentation
+alwaysApply: false
+---
+
+When writing documentation, always check the following files for guidelines: [apps/documentation/src/content/docs/references/0_documentation.mdx](../../apps/documentation/src/content/docs/references/0_documentation.mdx)
+

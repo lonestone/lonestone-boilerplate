@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Rules
 
-The most important document you need is [mobile.mdx](../../apps/documentation/src/content/docs/guidelines/mobile.mdx). Always read this file.
+The most important document you need is [mobile.mdx](../../apps/documentation/src/content/docs/references/mobile.mdx). Always read this file.
 
 ## Mobile Development Rules
 

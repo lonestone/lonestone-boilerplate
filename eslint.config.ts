@@ -23,6 +23,7 @@ export default antfu(
     rules: {
       'ts/no-explicit-any': 'error',
       'react-refresh/only-export-components': 'off',
+      'pnpm/json-enforce-catalog': 'off',
     },
   },
 

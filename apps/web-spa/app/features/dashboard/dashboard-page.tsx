@@ -1,7 +1,7 @@
 import { SUPPORTED_LOCALES } from '@boilerstone/i18n/config'
 import { Header } from '@boilerstone/ui/components/layout/Header'
 import { Navigation } from '@boilerstone/ui/components/layout/Navigation'
-import { Languages, LayoutDashboard, LogOut, MoonStar, PlusCircle, Settings, Sun, User } from 'lucide-react'
+import { Brain, Languages, LayoutDashboard, LogOut, MoonStar, PlusCircle, Settings, Sun, User } from 'lucide-react'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Outlet, useNavigate } from 'react-router'
@@ -59,6 +59,11 @@ export default function DashboardPage() {
             </Link>
           )}
           sections={[
+            {
+              items: [
+                { to: '/ai', label: t('dashboard.ai'), icon: <Brain className="h-4 w-4" /> },
+              ],
+            },
             {
               items: [
                 { to: '/dashboard/posts/new', label: t('dashboard.newPost'), icon: <PlusCircle className="h-4 w-4" /> },

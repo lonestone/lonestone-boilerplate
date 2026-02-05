@@ -5,6 +5,105 @@ export type ClientOptions = {
 };
 
 /**
+ * GenerateTextRequest
+ *
+ * Request for simple text generation with a single prompt
+ */
+export type GenerateTextRequest = {
+  prompt: string;
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
+    | "MISTRAL_SMALL";
+  options?: AiGenerateOptions;
+};
+
+/**
+ * GenerateObjectRequest
+ *
+ * Request for structured object generation with a predefined schema type
+ */
+export type GenerateObjectRequest = {
+  prompt: string;
+  schemaType: "userProfile" | "task" | "product" | "recipe";
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
+    | "MISTRAL_SMALL";
+  options?: AiGenerateOptions;
+};
+
+/**
+ * ChatRequest
+ *
+ * Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.
+ */
+export type ChatRequest = {
+  messages: Array<ChatMessageWithSchemaType>;
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
+    | "MISTRAL_SMALL";
+  options?: AiGenerateOptions;
+  schemaType?: ChatSchemaType;
+};
+
+/**
+ * StreamTextRequest
+ *
+ * Request for streaming text generation with a single prompt
+ */
+export type StreamTextRequest = {
+  prompt: string;
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
+    | "MISTRAL_SMALL";
+  options?: AiGenerateOptions;
+};
+
+/**
+ * StreamObjectRequest
+ *
+ * Request for streaming structured object generation
+ */
+export type StreamObjectRequest = {
+  prompt: string;
+  schemaType: "userProfile" | "task" | "product" | "recipe";
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
+    | "MISTRAL_SMALL";
+  options?: AiGenerateOptions;
+};
+
+/**
+ * StreamChatRequest
+ *
+ * Request for streaming multi-turn AI conversation
+ */
+export type StreamChatRequest = {
+  messages: Array<ChatMessageWithSchemaType>;
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
+    | "MISTRAL_SMALL";
+  options?: AiGenerateOptions;
+};
+
+/**
  * CreateCommentSchema
  *
  * Schema for creating a comment
@@ -32,6 +131,146 @@ export type CreatePostSchema = {
 export type UpdatePostSchema = {
   title?: string;
   content?: Array<PostContentSchema>;
+};
+
+/**
+ * GenerateTextResponse
+ *
+ * Response from text generation
+ */
+export type GenerateTextResponse = {
+  usage?: TokenUsage;
+  finishReason?: string;
+  result: string;
+};
+
+/**
+ * TokenUsage
+ *
+ * Token usage information for an AI generation
+ */
+export type TokenUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+};
+
+/**
+ * GenerateObjectResponse
+ *
+ * Response from structured object generation
+ */
+export type GenerateObjectResponse = {
+  usage?: TokenUsage;
+  finishReason?: string;
+  result: unknown;
+};
+
+/**
+ * ChatResponse
+ *
+ * Response from AI chat conversation
+ */
+export type ChatResponse = {
+  usage?: TokenUsage;
+  finishReason?: string;
+  result: string;
+  messages: Array<ChatMessageWithSchemaType>;
+  toolCalls?: Array<ToolCall>;
+  toolResults?: Array<ToolResult>;
+};
+
+/**
+ * ChatMessageWithSchemaType
+ *
+ * A message with optional schemaType metadata for identifying structured output
+ */
+export type ChatMessageWithSchemaType = {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+  metadata?: {
+    isConsideredSystemMessage?: boolean;
+    /**
+     * TokenUsage
+     *
+     * Total token usage for the message, including tools calls and reasoning steps
+     */
+    usage?: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+    };
+    finishReason?: string;
+    /**
+     * ISO 8601 timestamp when the message was created
+     */
+    timestamp?: Date;
+    /**
+     * Tool calls made to generate the message
+     */
+    toolCalls?: Array<{
+      toolCallId: string;
+      toolName: string;
+      args: {
+        [key: string]: unknown;
+      };
+    }>;
+    /**
+     * Reasoning text for the message
+     */
+    reasonning?: string;
+    /**
+     * ChatSchemaType
+     *
+     * Predefined schema types for testing structured output
+     */
+    schemaType?: "userProfile" | "task" | "product" | "recipe" | "none";
+  };
+};
+
+/**
+ * ToolCall
+ *
+ * A tool call made by the AI
+ */
+export type ToolCall = {
+  toolCallId: string;
+  toolName: string;
+  args: {
+    [key: string]: unknown;
+  };
+};
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing structured output
+ */
+export const ChatSchemaType = {
+  USER_PROFILE: "userProfile",
+  TASK: "task",
+  PRODUCT: "product",
+  RECIPE: "recipe",
+  NONE: "none",
+} as const;
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing structured output
+ */
+export type ChatSchemaType =
+  (typeof ChatSchemaType)[keyof typeof ChatSchemaType];
+
+/**
+ * ToolResult
+ *
+ * The result of a tool call
+ */
+export type ToolResult = {
+  toolCallId: string;
+  toolName: string;
+  result: unknown;
 };
 
 /**
@@ -179,6 +418,169 @@ export type PublicPostsSchema = {
 };
 
 /**
+ * AiCoreMessage
+ *
+ * A message in the conversation history following Vercel AI SDK patterns
+ */
+export type AiCoreMessage = {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+  metadata?: {
+    isConsideredSystemMessage?: boolean;
+    usage?: TokenUsage;
+    finishReason?: string;
+    /**
+     * ISO 8601 timestamp when the message was created
+     */
+    timestamp?: Date;
+    /**
+     * Tool calls made to generate the message
+     */
+    toolCalls?: Array<ToolCall>;
+    /**
+     * Reasoning text for the message
+     */
+    reasonning?: string;
+  };
+};
+
+/**
+ * AiStreamEvent
+ *
+ * SSE event for AI text streaming with tool support
+ */
+export type AiStreamEvent =
+  | {
+      type: "chunk";
+      text: string;
+    }
+  | {
+      type: "tool-call";
+      toolCallId: string;
+      toolName: string;
+      args: {
+        [key: string]: unknown;
+      };
+    }
+  | {
+      type: "tool-result";
+      toolCallId: string;
+      toolName: string;
+      result: unknown;
+    }
+  | {
+      type: "done";
+      fullText: string;
+      /**
+       * AiStreamUsage
+       *
+       * Token usage information for the stream
+       */
+      usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
+      finishReason?: string;
+    }
+  | {
+      type: "error";
+      message: string;
+    };
+
+/**
+ * Task
+ *
+ * A task
+ */
+export type Task = {
+  title: string;
+  description: string;
+  priority: "low" | "medium" | "high";
+  dueDate?: string;
+  tags?: Array<string>;
+};
+
+/**
+ * Product
+ *
+ * A product
+ */
+export type Product = {
+  name: string;
+  price: number;
+  description: string;
+  category: string;
+  inStock: boolean;
+  features?: Array<string>;
+};
+
+/**
+ * Recipe
+ *
+ * A recipe
+ */
+export type Recipe = {
+  name: string;
+  description: string;
+  prepTime: string;
+  cookTime: string;
+  servings: number;
+  difficulty: "easy" | "medium" | "hard";
+  ingredients: Array<{
+    name: string;
+    quantity: string;
+  }>;
+  instructions: Array<string>;
+  tips?: Array<string>;
+};
+
+/**
+ * UserProfile
+ *
+ * A user profile
+ */
+export type UserProfile = {
+  name: string;
+  age: number;
+  email: string;
+  bio?: string;
+  skills?: Array<string>;
+};
+
+/**
+ * AiGenerateOptions
+ *
+ * Options for an AI generation
+ */
+export type AiGenerateOptions = {
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  maxSteps?: number;
+  stopWhen?: number;
+  telemetry?: {
+    /**
+     * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+     */
+    langfuseTraceName: string;
+    /**
+     * The original prompt that was used to generate the response. (Use prompt.toJSON())
+     */
+    langfuseOriginalPrompt?: string;
+    /**
+     * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
+     */
+    functionId?: string;
+  };
+  metadata?: {
+    [key: string]: unknown;
+  };
+};
+
+/**
  * PaginationQuerySchema
  *
  * Schema for pagination query
@@ -211,6 +613,43 @@ export type SortingQueryStringSchema = string;
 export type FilterQueryStringSchema = string;
 
 export type CommentsControllerPostSlug = string;
+
+export type CommentsControllerGetCommentsFilterItem = {
+  property: "content";
+  rule:
+    | "eq"
+    | "neq"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "like"
+    | "nlike"
+    | "in"
+    | "nin"
+    | "isnull"
+    | "isnotnull";
+  value?: string;
+};
+
+export type CommentsControllerGetCommentsFilterArray =
+  Array<CommentsControllerGetCommentsFilterItem>;
+
+export type CommentsControllerGetCommentsSortItem = {
+  property: "createdAt" | "authorName";
+  direction: "asc" | "desc";
+};
+
+export type CommentsControllerGetCommentsSortArray =
+  Array<CommentsControllerGetCommentsSortItem>;
+
+export type CommentsControllerGetCommentRepliesSortItem = {
+  property: "createdAt" | "authorName";
+  direction: "asc" | "desc";
+};
+
+export type CommentsControllerGetCommentRepliesSortArray =
+  Array<CommentsControllerGetCommentRepliesSortItem>;
 
 export type PostControllerGetUserPostsFilterItem = {
   property: "title";
@@ -270,43 +709,6 @@ export type PublicPostControllerGetPostsSortItem = {
 export type PublicPostControllerGetPostsSortArray =
   Array<PublicPostControllerGetPostsSortItem>;
 
-export type CommentsControllerGetCommentsFilterItem = {
-  property: "content";
-  rule:
-    | "eq"
-    | "neq"
-    | "gt"
-    | "gte"
-    | "lt"
-    | "lte"
-    | "like"
-    | "nlike"
-    | "in"
-    | "nin"
-    | "isnull"
-    | "isnotnull";
-  value?: string;
-};
-
-export type CommentsControllerGetCommentsFilterArray =
-  Array<CommentsControllerGetCommentsFilterItem>;
-
-export type CommentsControllerGetCommentsSortItem = {
-  property: "createdAt" | "authorName";
-  direction: "asc" | "desc";
-};
-
-export type CommentsControllerGetCommentsSortArray =
-  Array<CommentsControllerGetCommentsSortItem>;
-
-export type CommentsControllerGetCommentRepliesSortItem = {
-  property: "createdAt" | "authorName";
-  direction: "asc" | "desc";
-};
-
-export type CommentsControllerGetCommentRepliesSortArray =
-  Array<CommentsControllerGetCommentRepliesSortItem>;
-
 export type AppControllerGetHelloData = {
   body?: never;
   path?: never;
@@ -315,6 +717,131 @@ export type AppControllerGetHelloData = {
 };
 
 export type AppControllerGetHelloResponses = {
+  200: unknown;
+};
+
+export type CommentsControllerGetCommentsData = {
+  body?: never;
+  path: {
+    postSlug: string;
+  };
+  query: {
+    /**
+     * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
+     * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
+     * <br> Available properties: content
+     */
+    filter?: CommentsControllerGetCommentsFilterArray;
+    /**
+     * Schema for sorting items
+     */
+    sort?: CommentsControllerGetCommentsSortArray;
+    /**
+     * Starting position of the query
+     */
+    offset: number;
+    /**
+     * Number of items to return
+     */
+    pageSize: number;
+  };
+  url: "/api/posts/{postSlug}/comments";
+};
+
+export type CommentsControllerGetCommentsResponses = {
+  /**
+   * Schema for a paginated list of comments
+   */
+  200: CommentsSchema;
+};
+
+export type CommentsControllerGetCommentsResponse =
+  CommentsControllerGetCommentsResponses[keyof CommentsControllerGetCommentsResponses];
+
+export type CommentsControllerCreateCommentData = {
+  /**
+   * CreateCommentSchema
+   *
+   * Schema for creating a comment
+   */
+  body: {
+    content: string;
+    parentId?: string;
+  };
+  path: {
+    postSlug: string;
+  };
+  query?: never;
+  url: "/api/posts/{postSlug}/comments";
+};
+
+export type CommentsControllerCreateCommentResponses = {
+  /**
+   * Schema for a comment
+   */
+  200: CommentSchema;
+};
+
+export type CommentsControllerCreateCommentResponse =
+  CommentsControllerCreateCommentResponses[keyof CommentsControllerCreateCommentResponses];
+
+export type CommentsControllerGetCommentCountData = {
+  body?: never;
+  path: {
+    postSlug: string;
+  };
+  query?: never;
+  url: "/api/posts/{postSlug}/comments/count";
+};
+
+export type CommentsControllerGetCommentCountResponses = {
+  200: unknown;
+};
+
+export type CommentsControllerGetCommentRepliesData = {
+  body?: never;
+  path: {
+    commentId: string;
+    postSlug: string;
+  };
+  query: {
+    /**
+     * Schema for sorting items
+     */
+    sort?: CommentsControllerGetCommentRepliesSortArray;
+    /**
+     * Starting position of the query
+     */
+    offset: number;
+    /**
+     * Number of items to return
+     */
+    pageSize: number;
+  };
+  url: "/api/posts/{postSlug}/comments/{commentId}/replies";
+};
+
+export type CommentsControllerGetCommentRepliesResponses = {
+  /**
+   * Schema for a paginated list of comments
+   */
+  200: CommentsSchema;
+};
+
+export type CommentsControllerGetCommentRepliesResponse =
+  CommentsControllerGetCommentRepliesResponses[keyof CommentsControllerGetCommentRepliesResponses];
+
+export type CommentsControllerDeleteCommentData = {
+  body?: never;
+  path: {
+    commentId: string;
+    postSlug: string;
+  };
+  query?: never;
+  url: "/api/posts/{postSlug}/comments/{commentId}";
+};
+
+export type CommentsControllerDeleteCommentResponses = {
   200: unknown;
 };
 
@@ -559,127 +1086,440 @@ export type PublicPostControllerGetPostsResponses = {
 export type PublicPostControllerGetPostsResponse =
   PublicPostControllerGetPostsResponses[keyof PublicPostControllerGetPostsResponses];
 
-export type CommentsControllerGetCommentsData = {
-  body?: never;
-  path: {
-    postSlug: string;
-  };
-  query: {
-    /**
-     * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
-     * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
-     * <br> Available properties: content
-     */
-    filter?: CommentsControllerGetCommentsFilterArray;
-    /**
-     * Schema for sorting items
-     */
-    sort?: CommentsControllerGetCommentsSortArray;
-    /**
-     * Starting position of the query
-     */
-    offset: number;
-    /**
-     * Number of items to return
-     */
-    pageSize: number;
-  };
-  url: "/api/posts/{postSlug}/comments";
-};
-
-export type CommentsControllerGetCommentsResponses = {
+export type AiExampleControllerGenerateTextData = {
   /**
-   * Schema for a paginated list of comments
-   */
-  200: CommentsSchema;
-};
-
-export type CommentsControllerGetCommentsResponse =
-  CommentsControllerGetCommentsResponses[keyof CommentsControllerGetCommentsResponses];
-
-export type CommentsControllerCreateCommentData = {
-  /**
-   * CreateCommentSchema
+   * GenerateTextRequest
    *
-   * Schema for creating a comment
+   * Request for simple text generation with a single prompt
    */
   body: {
-    content: string;
-    parentId?: string;
+    prompt: string;
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
+      | "MISTRAL_SMALL";
+    /**
+     * AiGenerateOptions
+     *
+     * Options for an AI generation
+     */
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+      maxSteps?: number;
+      stopWhen?: number;
+      telemetry?: {
+        /**
+         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         */
+        langfuseTraceName: string;
+        /**
+         * The original prompt that was used to generate the response. (Use prompt.toJSON())
+         */
+        langfuseOriginalPrompt?: string;
+        /**
+         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
+         */
+        functionId?: string;
+      };
+      metadata?: {
+        [key: string]: unknown;
+      };
+    };
   };
-  path: {
-    postSlug: string;
-  };
+  path?: never;
   query?: never;
-  url: "/api/posts/{postSlug}/comments";
+  url: "/api/ai/generate-text";
 };
 
-export type CommentsControllerCreateCommentResponses = {
+export type AiExampleControllerGenerateTextResponses = {
   /**
-   * Schema for a comment
+   * Response from text generation
    */
-  200: CommentSchema;
+  200: GenerateTextResponse;
 };
 
-export type CommentsControllerCreateCommentResponse =
-  CommentsControllerCreateCommentResponses[keyof CommentsControllerCreateCommentResponses];
+export type AiExampleControllerGenerateTextResponse =
+  AiExampleControllerGenerateTextResponses[keyof AiExampleControllerGenerateTextResponses];
 
-export type CommentsControllerGetCommentCountData = {
-  body?: never;
-  path: {
-    postSlug: string;
-  };
-  query?: never;
-  url: "/api/posts/{postSlug}/comments/count";
-};
-
-export type CommentsControllerGetCommentCountResponses = {
-  200: unknown;
-};
-
-export type CommentsControllerGetCommentRepliesData = {
-  body?: never;
-  path: {
-    commentId: string;
-    postSlug: string;
-  };
-  query: {
-    /**
-     * Schema for sorting items
-     */
-    sort?: CommentsControllerGetCommentRepliesSortArray;
-    /**
-     * Starting position of the query
-     */
-    offset: number;
-    /**
-     * Number of items to return
-     */
-    pageSize: number;
-  };
-  url: "/api/posts/{postSlug}/comments/{commentId}/replies";
-};
-
-export type CommentsControllerGetCommentRepliesResponses = {
+export type AiExampleControllerGenerateObjectData = {
   /**
-   * Schema for a paginated list of comments
+   * GenerateObjectRequest
+   *
+   * Request for structured object generation with a predefined schema type
    */
-  200: CommentsSchema;
-};
-
-export type CommentsControllerGetCommentRepliesResponse =
-  CommentsControllerGetCommentRepliesResponses[keyof CommentsControllerGetCommentRepliesResponses];
-
-export type CommentsControllerDeleteCommentData = {
-  body?: never;
-  path: {
-    commentId: string;
-    postSlug: string;
+  body: {
+    prompt: string;
+    schemaType: "userProfile" | "task" | "product" | "recipe";
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
+      | "MISTRAL_SMALL";
+    /**
+     * AiGenerateOptions
+     *
+     * Options for an AI generation
+     */
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+      maxSteps?: number;
+      stopWhen?: number;
+      telemetry?: {
+        /**
+         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         */
+        langfuseTraceName: string;
+        /**
+         * The original prompt that was used to generate the response. (Use prompt.toJSON())
+         */
+        langfuseOriginalPrompt?: string;
+        /**
+         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
+         */
+        functionId?: string;
+      };
+      metadata?: {
+        [key: string]: unknown;
+      };
+    };
   };
+  path?: never;
   query?: never;
-  url: "/api/posts/{postSlug}/comments/{commentId}";
+  url: "/api/ai/generate-object";
 };
 
-export type CommentsControllerDeleteCommentResponses = {
-  200: unknown;
+export type AiExampleControllerGenerateObjectResponses = {
+  /**
+   * Response from structured object generation
+   */
+  200: GenerateObjectResponse;
+};
+
+export type AiExampleControllerGenerateObjectResponse =
+  AiExampleControllerGenerateObjectResponses[keyof AiExampleControllerGenerateObjectResponses];
+
+export type AiExampleControllerChatData = {
+  /**
+   * ChatRequest
+   *
+   * Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.
+   */
+  body: {
+    messages: Array<{
+      role: "user" | "assistant" | "system" | "tool";
+      content: string;
+      metadata?: {
+        isConsideredSystemMessage?: boolean;
+        /**
+         * TokenUsage
+         *
+         * Total token usage for the message, including tools calls and reasoning steps
+         */
+        usage?: {
+          promptTokens: number;
+          completionTokens: number;
+          totalTokens: number;
+        };
+        finishReason?: string;
+        /**
+         * ISO 8601 timestamp when the message was created
+         */
+        timestamp?: Date;
+        /**
+         * Tool calls made to generate the message
+         */
+        toolCalls?: Array<{
+          toolCallId: string;
+          toolName: string;
+          args: {
+            [key: string]: unknown;
+          };
+        }>;
+        /**
+         * Reasoning text for the message
+         */
+        reasonning?: string;
+        /**
+         * ChatSchemaType
+         *
+         * Predefined schema types for testing structured output
+         */
+        schemaType?: "userProfile" | "task" | "product" | "recipe" | "none";
+      };
+    }>;
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
+      | "MISTRAL_SMALL";
+    /**
+     * AiGenerateOptions
+     *
+     * Options for an AI generation
+     */
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+      maxSteps?: number;
+      stopWhen?: number;
+      telemetry?: {
+        /**
+         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         */
+        langfuseTraceName: string;
+        /**
+         * The original prompt that was used to generate the response. (Use prompt.toJSON())
+         */
+        langfuseOriginalPrompt?: string;
+        /**
+         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
+         */
+        functionId?: string;
+      };
+      metadata?: {
+        [key: string]: unknown;
+      };
+    };
+    /**
+     * ChatSchemaType
+     *
+     * Predefined schema types for testing structured output
+     */
+    schemaType?: "userProfile" | "task" | "product" | "recipe" | "none";
+  };
+  path?: never;
+  query?: never;
+  url: "/api/ai/chat";
+};
+
+export type AiExampleControllerChatResponses = {
+  /**
+   * Response from AI chat conversation
+   */
+  200: ChatResponse;
+};
+
+export type AiExampleControllerChatResponse =
+  AiExampleControllerChatResponses[keyof AiExampleControllerChatResponses];
+
+export type AiExampleControllerStreamTextData = {
+  /**
+   * StreamTextRequest
+   *
+   * Request for streaming text generation with a single prompt
+   */
+  body: {
+    prompt: string;
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
+      | "MISTRAL_SMALL";
+    /**
+     * AiGenerateOptions
+     *
+     * Options for an AI generation
+     */
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+      maxSteps?: number;
+      stopWhen?: number;
+      telemetry?: {
+        /**
+         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         */
+        langfuseTraceName: string;
+        /**
+         * The original prompt that was used to generate the response. (Use prompt.toJSON())
+         */
+        langfuseOriginalPrompt?: string;
+        /**
+         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
+         */
+        functionId?: string;
+      };
+      metadata?: {
+        [key: string]: unknown;
+      };
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/ai/stream-text";
+};
+
+export type AiExampleControllerStreamTextResponses = {
+  201: unknown;
+};
+
+export type AiExampleControllerStreamObjectData = {
+  /**
+   * StreamObjectRequest
+   *
+   * Request for streaming structured object generation
+   */
+  body: {
+    prompt: string;
+    schemaType: "userProfile" | "task" | "product" | "recipe";
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
+      | "MISTRAL_SMALL";
+    /**
+     * AiGenerateOptions
+     *
+     * Options for an AI generation
+     */
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+      maxSteps?: number;
+      stopWhen?: number;
+      telemetry?: {
+        /**
+         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         */
+        langfuseTraceName: string;
+        /**
+         * The original prompt that was used to generate the response. (Use prompt.toJSON())
+         */
+        langfuseOriginalPrompt?: string;
+        /**
+         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
+         */
+        functionId?: string;
+      };
+      metadata?: {
+        [key: string]: unknown;
+      };
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/ai/stream-object";
+};
+
+export type AiExampleControllerStreamObjectResponses = {
+  201: unknown;
+};
+
+export type AiExampleControllerStreamChatData = {
+  /**
+   * StreamChatRequest
+   *
+   * Request for streaming multi-turn AI conversation
+   */
+  body: {
+    messages: Array<{
+      role: "user" | "assistant" | "system" | "tool";
+      content: string;
+      metadata?: {
+        isConsideredSystemMessage?: boolean;
+        /**
+         * TokenUsage
+         *
+         * Total token usage for the message, including tools calls and reasoning steps
+         */
+        usage?: {
+          promptTokens: number;
+          completionTokens: number;
+          totalTokens: number;
+        };
+        finishReason?: string;
+        /**
+         * ISO 8601 timestamp when the message was created
+         */
+        timestamp?: Date;
+        /**
+         * Tool calls made to generate the message
+         */
+        toolCalls?: Array<{
+          toolCallId: string;
+          toolName: string;
+          args: {
+            [key: string]: unknown;
+          };
+        }>;
+        /**
+         * Reasoning text for the message
+         */
+        reasonning?: string;
+        /**
+         * ChatSchemaType
+         *
+         * Predefined schema types for testing structured output
+         */
+        schemaType?: "userProfile" | "task" | "product" | "recipe" | "none";
+      };
+    }>;
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
+      | "MISTRAL_SMALL";
+    /**
+     * AiGenerateOptions
+     *
+     * Options for an AI generation
+     */
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+      maxSteps?: number;
+      stopWhen?: number;
+      telemetry?: {
+        /**
+         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         */
+        langfuseTraceName: string;
+        /**
+         * The original prompt that was used to generate the response. (Use prompt.toJSON())
+         */
+        langfuseOriginalPrompt?: string;
+        /**
+         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
+         */
+        functionId?: string;
+      };
+      metadata?: {
+        [key: string]: unknown;
+      };
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/ai/stream-chat";
+};
+
+export type AiExampleControllerStreamChatResponses = {
+  201: unknown;
 };

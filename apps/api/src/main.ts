@@ -6,10 +6,14 @@ import * as express from 'express'
 import { Logger, LoggerErrorInterceptor } from 'nestjs-pino'
 import { AppModule } from './app.module'
 import { config } from './config/env.config'
+import { initSharedTracerProvider } from './instrument'
 
 const PREFIX = '/api'
 
 async function bootstrap() {
+  // Init tracing
+  initSharedTracerProvider()
+
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
   })

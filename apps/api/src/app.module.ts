@@ -1,13 +1,16 @@
 import { IncomingMessage, ServerResponse } from 'node:http'
+import { OpenTelemetryModule } from '@amplication/opentelemetry-nestjs'
 import { Module } from '@nestjs/common'
 import { ConfigModule as NestConfigModule } from '@nestjs/config'
+import { APP_FILTER } from '@nestjs/core'
+import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup'
 import { LoggerModule } from 'nestjs-pino'
 import { AppController } from './app.controller'
+import { AiModule } from './modules/ai/ai.module'
 import { AuthModule } from './modules/auth/auth.module'
-import { CommentsModule } from './modules/comments/comments.module'
 import { DbModule } from './modules/db/db.module'
 import { EmailModule } from './modules/email/email.module'
-import { PostModule } from './modules/posts/posts.module'
+import { ExampleModule } from './modules/example/example.module'
 
 // Interface étendue pour les requêtes Express
 interface ExpressRequest extends IncomingMessage {
@@ -21,6 +24,8 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
 
 @Module({
   imports: [
+    OpenTelemetryModule.forRoot(),
+    SentryModule.forRoot(),
     LoggerModule.forRoot({
       pinoHttp: {
         transport: {
@@ -88,11 +93,14 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     DbModule,
     AuthModule.forRootAsync(),
     EmailModule,
-    PostModule,
-    CommentsModule,
+    AiModule,
     NestConfigModule,
+    ExampleModule,
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [{
+    provide: APP_FILTER,
+    useClass: SentryGlobalFilter,
+  }],
 })
 export class AppModule {}

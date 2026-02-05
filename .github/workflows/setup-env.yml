@@ -9,7 +9,7 @@ on:
         type: string
       pnpm-version:
         required: false
-        default: 10.28.0
+        default: 10.28.2
         type: string
 
 jobs:

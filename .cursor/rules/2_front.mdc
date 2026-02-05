@@ -6,4 +6,4 @@ alwaysApply: false
 
 # Your rule content
 
-- Follow guidelines in [frontend.mdx](../../apps/documentation/src/content/docs/guidelines/frontend.mdx)
+- Follow guidelines in [frontend.mdx](../../apps/documentation/src/content/docs/references/frontend.mdx)

@@ -1,0 +1,89 @@
+---
+title: AI
+description: AI explanation
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# ❓ How it works
+
+This brick is heavily opinionated. It combines:
+
+- [Langfuse](https://langfuse.com/) for prompts management (storage, versioning, combining, etc.) and trace management
+- [Vercel AI SDK](https://sdk.vercel.ai/) for the LLM calls
+- A custom AI Module in the API, which provides a service to generate text, objects and chat with LLMs.
+
+<Aside type="note" title="Langfuse is optional">
+You can remove it (LangfuseService) from the codebase and use the Vercel AI SDK directly, and manage prompts as you see fit. Telemetry will still work via OTEL, and you can see traces in Sentry.
+</Aside>
+
+## Prompt management - Langfuse
+Langfuse can be self hosted, and is entirely open source. See [their docs](https://langfuse.com/docs) for more advanced usage.
+
+Langfuse allows us to create, version and fetch prompts. 
+
+We found it was a better solution than storing the prompts in the codebase, as it allows the whole team to contribute to the prompts (including non developers) and to change a prompt without deploying the codebase.
+
+## LLM calls - Vercel AI SDK
+
+The Vercel AI SDK allows us to easily call LLMs accross providers and is natively OpenTelemetry compatible via the `experimental_telemetry` option.
+
+## Tracing Architecture - OpenTelemetry
+
+The **Vercel AI SDK is OpenTelemetry compatible** and automatically emits spans for all LLM calls. Both Sentry and Langfuse simply pick up these spans through the shared TracerProvider, no additional instrumentation is required.
+
+The tracing system is initialized in `apps/api/src/instrument.ts` before the NestJS application starts. The shared TracerProvider uses:
+- **LangfuseSpanProcessor**: Filters and exports only LLM-related spans (instrumentation scope: `langfuse-sdk` or `ai`) to Langfuse
+- **SentrySpanProcessor**: Receives all spans for application monitoring in Sentry
+
+<Aside type="tip" title="AI Traces in Sentry">
+Because the Vercel AI SDK emits OTEL spans and both processors receive them, **AI traces appear in both Langfuse and Sentry**. This allows you to:
+- See AI calls in the context of full HTTP request traces
+- Correlate AI performance issues with other application metrics
+- Debug issues where AI calls are part of a larger workflow
+
+See the [Monitoring documentation](/lonestone-boilerplate/core-features/2_monitoring) for details on the shared TracerProvider setup and how to optimize trace sampling in production.
+</Aside>
+
+
+# 📝 How to use
+
+- Create the Langfuse project in your Langfuse dashboard
+- Setup the necessary env variables (LANGFUSE_API_KEY, LANGFUSE_SECRET_KEY, OPENAI_API_KEY, etc) in the `api/.env` file.
+- You are good to go!
+
+## Organizing Traces
+
+You can organize AI calls into meaningful traces using the `telemetry` option:
+
+- **`langfuseTraceName`**: As we filter traces we send to Langfuse, AI calls will generally be orphaned, which means the main trace in Langfuse will not have a name. Providing `langfuseTraceName` will setup this name, and you can use it accross several LLM calls to group them into a single trace (useful for several call for the same operation). Behind the hood, a deterministic `traceId` is automatically generated from this value.
+- **`functionId`**: Identifies the specific function/operation within a trace (used as Span name in Langfuse)
+- **`langfuseOriginalPrompt`**: Preserves the original prompt before enhancements (useful for debugging).
+
+## API Reference
+
+See the [AI module README](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/src/modules/ai/README.md) for detailed API documentation and usage patterns.
+
+# 🧹 How to remove
+
+1. Delete the `ai` module from the `api/src/modules` folder
+2. Remove the following dependencies from the `api/package.json` file:
+
+```json
+"@ai-sdk/openai",
+"@opentelemetry/api",
+"@opentelemetry/auto-instrumentations-node",
+"@opentelemetry/sdk-node",
+"ai",
+"langfuse",
+"langfuse-vercel",
+```
+
+3. Remove the following env variables from the `api/.env` file:
+
+```
+LANGFUSE_API_KEY=
+LANGFUSE_SECRET_KEY=
+OPENAI_API_KEY=
+# other providers...
+```
