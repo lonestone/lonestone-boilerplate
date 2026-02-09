@@ -6,13 +6,3 @@ alwaysApply: false
  # Rules
 
 The most important document you need is [backend.mdx](../../apps/documentation/src/content/docs/references/backend.mdx). Always read this file.
-
-
-- Use NestJS decorators for route definition
-- Use Zod for validation
-- Use MikroORM for database operations
-- Structure modules according to NestJS best practices
-- Use TypedRoute, TypedBody, TypedParam decorators from @lonestone/nzoth/server
-- Use Better Auth for authentication
-- Follow the naming conventions in the guidelines
-- Write unit and integration tests
