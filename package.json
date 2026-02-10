@@ -14,8 +14,7 @@
   },
   "scripts": {
     "rock": "ts-node ./cli/setup.ts",
-    "dev": "pnpm --parallel --filter=!@boilerstone/mobile dev",
-    "dev:mobile": "pnpm --filter=@boilerstone/mobile dev",
+    "dev": "pnpm --parallel dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "docker:up": "docker-compose up -d",
