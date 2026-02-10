@@ -52,8 +52,6 @@ export const configValidationSchema = z.object({
   // Clients
   CLIENTS_WEB_APP_URL: z.string(),
   CLIENTS_WEB_SSR_URL: z.string(),
-  CLIENTS_MOBILE_SCHEME: z.string().default('lonestone'),
-  CLIENTS_MOBILE_RESET_PATH: z.string().default('reset-password'),
 
   // Email
   EMAIL_HOST: z.string().default('localhost'),
@@ -122,10 +120,6 @@ export const config = {
     },
     webSsr: {
       url: configParsed.data.CLIENTS_WEB_SSR_URL,
-    },
-    mobile: {
-      scheme: configParsed.data.CLIENTS_MOBILE_SCHEME,
-      resetPath: configParsed.data.CLIENTS_MOBILE_RESET_PATH,
     },
   },
   langfuse: {

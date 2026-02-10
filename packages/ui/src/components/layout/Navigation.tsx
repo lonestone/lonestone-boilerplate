@@ -7,9 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@boilerstone/ui/components/primitives/dropdown-menu'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@boilerstone/ui/components/primitives/sheet'
 import { cn } from '@boilerstone/ui/lib/utils'
-import { Menu } from 'lucide-react'
 import * as React from 'react'
 import { Link, NavLink } from 'react-router'
 
@@ -20,7 +18,6 @@ export interface NavigationItem {
   onClick?: () => void
   variant?: 'default' | 'destructive'
   separator?: boolean
-  hideOnMobile?: boolean
   hideOnDesktop?: boolean
 }
 
@@ -36,17 +33,15 @@ export interface NavigationSection {
 
 interface NavigationItemProps {
   item: NavigationItem
-  isMobile?: boolean
   onItemClick?: () => void
   className?: string
 }
 
-function NavigationItemComponent({ item, className, isMobile = false, onItemClick }: NavigationItemProps) {
+function NavigationItemComponent({ item, className, onItemClick }: NavigationItemProps) {
   const baseClassName = cn(
     className,
     'flex items-center gap-2 px-3 py-2 rounded-md transition-colors',
-    isMobile && 'w-full text-left',
-    !isMobile && 'text-sm',
+    'text-sm',
     item.variant === 'destructive' && 'text-destructive hover:bg-destructive hover:text-destructive-foreground',
     item.variant !== 'destructive' && 'hover:bg-accent hover:text-accent-foreground',
   )
@@ -67,19 +62,6 @@ function NavigationItemComponent({ item, className, isMobile = false, onItemClic
     )
   }
 
-  if (isMobile) {
-    return (
-      <Link
-        to={item.to}
-        onClick={onItemClick}
-        className={baseClassName}
-      >
-        {item.icon}
-        <span>{item.label}</span>
-      </Link>
-    )
-  }
-
   return (
     <NavLink
       to={item.to}
@@ -97,14 +79,11 @@ NavigationItemComponent.displayName = 'NavigationItem'
 
 interface NavigationSectionProps {
   section: NavigationSection
-  isMobile?: boolean
   onItemClick?: () => void
 }
 
-function NavigationSectionComponent({ section, isMobile = false, onItemClick }: NavigationSectionProps) {
-  const visibleItems = section.items.filter(item =>
-    isMobile ? !item.hideOnMobile : !item.hideOnDesktop,
-  )
+function NavigationSectionComponent({ section, onItemClick }: NavigationSectionProps) {
+  const visibleItems = section.items.filter(item => !item.hideOnDesktop)
   const sectionKey = visibleItems.map(item => item.to).join('-')
 
   if (visibleItems.length === 0) {
@@ -118,7 +97,6 @@ function NavigationSectionComponent({ section, isMobile = false, onItemClick }: 
           {item.separator && index > 0 && <Separator className="my-2" />}
           <NavigationItemComponent
             item={item}
-            isMobile={isMobile}
             onItemClick={onItemClick}
           />
         </React.Fragment>
@@ -257,53 +235,6 @@ function NavigationDesktop({ sections }: NavigationDesktopProps) {
 }
 NavigationDesktop.displayName = 'NavigationDesktop'
 
-interface NavigationMobileProps {
-  brand: React.ReactNode
-  sections: NavigationSection[]
-}
-
-function NavigationMobile({ brand, sections }: NavigationMobileProps) {
-  const [isOpen, setIsOpen] = React.useState(false)
-
-  const closeMenu = () => setIsOpen(false)
-
-  return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="lg:hidden">
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">Open menu</span>
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>
-            {brand}
-          </SheetTitle>
-        </SheetHeader>
-        <nav className="mt-6 space-y-1 pb-6">
-          {sections.map((section, sectionIndex) => {
-            const sectionKey = section.items.map(item => item.to).join('-')
-            return (
-              <React.Fragment key={sectionKey}>
-                {section.separator && sectionIndex > 0 && (
-                  <Separator className="my-2" />
-                )}
-                <NavigationSectionComponent
-                  section={section}
-                  isMobile
-                  onItemClick={closeMenu}
-                />
-              </React.Fragment>
-            )
-          })}
-        </nav>
-      </SheetContent>
-    </Sheet>
-  )
-}
-NavigationMobile.displayName = 'NavigationMobile'
-
 interface NavigationProps {
   brand: React.ReactNode
   sections?: NavigationSection[]
@@ -317,7 +248,6 @@ export function Navigation({ brand, sections = defaultSections, className }: Nav
     <div className={cn('container mx-auto flex h-14 items-center justify-between gap-8 px-4', className)}>
       <NavigationBrand>{brand}</NavigationBrand>
       <NavigationDesktop sections={sections} />
-      <NavigationMobile brand={brand} sections={sections} />
     </div>
   )
 }
@@ -329,6 +259,5 @@ export {
   NavigationDesktopSection,
   NavigationDropdown,
   NavigationItemComponent as NavigationItem,
-  NavigationMobile,
   NavigationSectionComponent as NavigationSection,
 }

@@ -1,24 +1,33 @@
-import { ModelId, modelRegistry, providers } from '../ai.config'
+import type { Mock } from 'vitest'
+import { LanguageModel } from 'ai'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ModelConfig, ModelId, modelRegistry, providers } from '../ai.config'
 import { getDefaultModel, getModel, sanitizeAiJson } from '../ai.utils'
 
-// Mock dependencies
-jest.mock('../ai.config', () => ({
-  modelRegistry: {
-    get: jest.fn(),
-    getAll: jest.fn(),
-    getDefault: jest.fn(),
-  },
-  providers: {
-    openai: jest.fn(),
+vi.mock('../ai.config', () => {
+  const mockModelRegistry = {
+    get: vi.fn(),
+    getAll: vi.fn(),
+    getDefault: vi.fn(),
+  }
+  const mockProviders = {
+    openai: vi.fn(),
     google: null,
     anthropic: null,
     mistral: null,
-  },
-}))
+  }
+  return {
+    modelRegistry: mockModelRegistry,
+    providers: mockProviders,
+  }
+})
+
+const mockModelRegistry = modelRegistry
+const mockProviders = providers
 
 describe('ai.utils', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('getModel', () => {
@@ -26,20 +35,25 @@ describe('ai.utils', () => {
       const mockModelConfig = {
         provider: 'openai',
         modelString: 'gpt-5-nano-2025-08-07',
+        isDefault: false,
+      }
+      const mockModelInstance = {
+        provider: 'openai',
+        modelId: 'gpt-5-nano-2025-08-07',
       }
 
-      const mockProvider = jest.fn().mockReturnValue({ provider: 'openai', modelId: 'gpt-5-nano-2025-08-07' })
+      vi.mocked(modelRegistry.get).mockReturnValue(mockModelConfig as unknown as ModelConfig)
+      vi.mocked(providers.openai!).mockReturnValue(mockModelInstance as unknown as LanguageModel)
 
-      ;(modelRegistry.get as jest.Mock).mockReturnValue(mockModelConfig)
-      ;(providers.openai as jest.Mock) = mockProvider
+      await getModel('OPENAI_GPT_5_NANO' as unknown as ModelId)
 
-      expect(modelRegistry.get).toHaveBeenCalledWith('OPENAI_GPT_5_NANO')
-      expect(mockProvider).toHaveBeenCalledWith('gpt-5-nano-2025-08-07')
+      expect(mockModelRegistry.get).toHaveBeenCalledWith('OPENAI_GPT_5_NANO')
+      expect(mockProviders.openai).toHaveBeenCalledWith('gpt-5-nano-2025-08-07')
     })
 
     it('should throw error when model is not registered', async () => {
-      ;(modelRegistry.get as jest.Mock).mockReturnValue(undefined)
-      ;(modelRegistry.getAll as jest.Mock).mockReturnValue(['OPENAI_GPT_5_NANO'])
+      vi.mocked(modelRegistry.get).mockReturnValue(undefined as unknown as ModelConfig)
+      vi.mocked(modelRegistry.getAll).mockReturnValue(['OPENAI_GPT_5_NANO'])
 
       await expect(getModel('INVALID_MODEL' as unknown as ModelId)).rejects.toThrow(
         'Model "INVALID_MODEL" is not registered',
@@ -52,8 +66,8 @@ describe('ai.utils', () => {
         modelString: 'gemini-3-flash-preview',
       }
 
-      ;(modelRegistry.get as jest.Mock).mockReturnValue(mockModelConfig)
-      ;(providers.google) = null
+      vi.mocked(modelRegistry.get).mockReturnValue(mockModelConfig as unknown as ModelConfig)
+      mockProviders.google = null
 
       await expect(getModel('GOOGLE_GEMINI_3_FLASH' as unknown as ModelId)).rejects.toThrow(
         'Provider "google" is not available',
@@ -65,12 +79,10 @@ describe('ai.utils', () => {
         provider: 'google',
         modelString: 'gemini-3-flash-preview',
       }
+      const mockProvider = vi.fn().mockReturnValue({ provider: 'google', modelId: 'gemini-3-flash-preview' })
 
-      const mockProvider = jest.fn().mockReturnValue({ provider: 'google', modelId: 'gemini-3-flash-preview' })
-      const asyncProvider = Promise.resolve(mockProvider)
-
-      ;(modelRegistry.get as jest.Mock).mockReturnValue(mockModelConfig)
-      ;(providers.google) = asyncProvider
+      vi.mocked(modelRegistry.get).mockReturnValue(mockModelConfig as unknown as ModelConfig)
+      mockProviders.google = Promise.resolve(mockProvider)
 
       await getModel('GOOGLE_GEMINI_3_FLASH' as unknown as ModelId)
 
@@ -84,20 +96,22 @@ describe('ai.utils', () => {
         provider: 'openai',
         modelString: 'gpt-5-nano-2025-08-07',
       }
+      const mockModelInstance = {
+        provider: 'openai',
+        modelId: 'gpt-5-nano-2025-08-07',
+      }
 
-      const mockProvider = jest.fn().mockReturnValue({ provider: 'openai', modelId: 'gpt-5-nano-2025-08-07' })
-
-      ;(modelRegistry.getDefault as jest.Mock).mockReturnValue('OPENAI_GPT_5_NANO')
-      ;(modelRegistry.get as jest.Mock).mockReturnValue(mockModelConfig)
-      ;(providers.openai) = mockProvider
+      vi.mocked(modelRegistry.getDefault).mockReturnValue('OPENAI_GPT_5_NANO')
+      vi.mocked(modelRegistry.get).mockReturnValue(mockModelConfig as unknown as ModelConfig)
+      vi.mocked(providers.openai!).mockReturnValue(mockModelInstance as unknown as LanguageModel)
 
       await getDefaultModel()
 
-      expect(modelRegistry.getDefault).toHaveBeenCalled()
+      expect(mockModelRegistry.getDefault).toHaveBeenCalled()
     })
 
     it('should return null when no default model is configured', async () => {
-      ;(modelRegistry.getDefault as jest.Mock).mockReturnValue(null)
+      ;(mockModelRegistry.getDefault as Mock).mockReturnValue(null)
 
       const model = await getDefaultModel()
 

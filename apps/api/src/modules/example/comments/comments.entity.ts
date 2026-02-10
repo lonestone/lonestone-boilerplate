@@ -6,6 +6,7 @@ import {
   OneToMany,
   PrimaryKey,
   Property,
+  Rel,
 } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
 import { Post } from '../../example/posts/posts.entity'
@@ -17,7 +18,7 @@ export class Comment {
 
   @ManyToOne(() => Post, { fieldName: 'postId' })
   @Index()
-  post!: Post
+  post!: Rel<Post>
 
   @ManyToOne(() => User, { fieldName: 'userId', nullable: true })
   @Index()

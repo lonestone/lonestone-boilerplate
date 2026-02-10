@@ -45,7 +45,8 @@ export class AuthModule implements NestModule, OnModuleInit {
     private discoveryService: DiscoveryService,
     @Inject(MetadataScanner)
     private metadataScanner: MetadataScanner,
-  ) {}
+  ) {
+  }
 
   async onModuleInit() {
     // Ensure auth service is initialized
@@ -61,11 +62,14 @@ export class AuthModule implements NestModule, OnModuleInit {
     const providers = this.discoveryService
       .getProviders()
       .filter(
-        ({ metatype }) => metatype && Reflect.getMetadata(HOOK_KEY, metatype),
+        ({ metatype, instance }) =>
+          metatype
+          && instance
+          && Reflect.getMetadata(HOOK_KEY, metatype),
       )
 
     for (const provider of providers) {
-      const providerPrototype = Object.getPrototypeOf(provider.instance)
+      const providerPrototype = Object.getPrototypeOf(provider.instance!)
       const methods = this.metadataScanner.getAllMethodNames(providerPrototype)
 
       for (const method of methods) {

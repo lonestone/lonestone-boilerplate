@@ -1,6 +1,6 @@
 # Tests pour l'API NestJS
 
-Ce dossier contient les tests pour l'API NestJS du projet. Nous utilisons Jest comme framework de test.
+Ce dossier contient les tests pour l'API NestJS du projet. Nous utilisons vi comme framework de test.
 
 ## Structure des tests
 
@@ -42,7 +42,7 @@ describe('PostController', () => {
         {
           provide: PostService,
           useValue: {
-            createPost: jest.fn().mockResolvedValue({
+            createPost: vi.fn().mockResolvedValue({
               id: 'test-id',
               title: 'Test Post',
               content: [{ type: 'text', data: 'Test content' }]
@@ -92,7 +92,7 @@ describe('Posts (e2e)', () => {
         {
           provide: PostService,
           useValue: {
-            createPost: jest.fn().mockResolvedValue({
+            createPost: vi.fn().mockResolvedValue({
               id: 'test-id',
               title: 'Test Post',
               content: [{ type: 'text', data: 'Test content' }]

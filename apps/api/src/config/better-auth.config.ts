@@ -78,6 +78,7 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
       openAPI(),
       expo(),
     ],
+
   } satisfies BetterAuthOptions
 
   // We need to pass the options to the customSession plugin to infer the type correctly
@@ -88,5 +89,6 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
     plugins: [
       ...(authOptions.plugins ?? []),
     ],
+
   })
 }
