@@ -17,6 +17,7 @@ interface BetterAuthOptionsDynamic {
   beforeHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
   afterHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
   databaseHooks?: BetterAuthOptions['databaseHooks']
+  baseUrl: string
 }
 
 // We should use this, but sadly we do not have our custom fields in the session object (only the plugin added fields)
@@ -36,6 +37,7 @@ export type BetterAuthContext = ReturnType<typeof createBetterAuth>['$context']
 
 export function createBetterAuth(options: BetterAuthOptionsDynamic) {
   const authOptions = {
+    baseURL: options.baseUrl,
     secret: options.secret,
     trustedOrigins: options.trustedOrigins,
     emailAndPassword: {
@@ -76,6 +78,7 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
     plugins: [
       openAPI(),
     ],
+
   } satisfies BetterAuthOptions
 
   // We need to pass the options to the customSession plugin to infer the type correctly
@@ -86,5 +89,6 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
     plugins: [
       ...(authOptions.plugins ?? []),
     ],
+
   })
 }

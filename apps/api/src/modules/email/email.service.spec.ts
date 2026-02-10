@@ -15,8 +15,8 @@ describe('emailService', () => {
 
     // Create mock transporter
     mockTransporter = {
-      sendMail: jest.fn(),
-      verify: jest.fn(),
+      sendMail: vi.fn(),
+      verify: vi.fn(),
     }
   })
 
@@ -33,7 +33,7 @@ describe('emailService', () => {
       }
 
       // Mock the transporter to avoid actual email sending in tests
-      const mockSendMail = jest.fn().mockResolvedValue({ messageId: 'test-message-id' })
+      const mockSendMail = vi.fn().mockResolvedValue({ messageId: 'test-message-id' })
       mockTransporter.sendMail = mockSendMail
 
       // Use Object.defineProperty to mock the private transporter
@@ -61,7 +61,7 @@ describe('emailService', () => {
         html: '<h1>Test HTML</h1>',
       }
 
-      const mockSendMail = jest.fn().mockResolvedValue({ messageId: 'test-message-id' })
+      const mockSendMail = vi.fn().mockResolvedValue({ messageId: 'test-message-id' })
       mockTransporter.sendMail = mockSendMail
 
       Object.defineProperty(service, 'transporter', {
@@ -83,7 +83,7 @@ describe('emailService', () => {
 
   describe('verifyConnection', () => {
     it('should return true when connection is verified', async () => {
-      const mockVerify = jest.fn().mockResolvedValue(true)
+      const mockVerify = vi.fn().mockResolvedValue(true)
       mockTransporter.verify = mockVerify
 
       Object.defineProperty(service, 'transporter', {
@@ -98,7 +98,7 @@ describe('emailService', () => {
     })
 
     it('should return false when connection verification fails', async () => {
-      const mockVerify = jest.fn().mockRejectedValue(new Error('Connection failed'))
+      const mockVerify = vi.fn().mockRejectedValue(new Error('Connection failed'))
       mockTransporter.verify = mockVerify
 
       Object.defineProperty(service, 'transporter', {
