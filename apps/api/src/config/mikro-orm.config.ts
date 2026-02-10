@@ -1,6 +1,6 @@
 import { Migrator } from '@mikro-orm/migrations'
 
-import { defineConfig, Options } from '@mikro-orm/postgresql'
+import { defineConfig, Options, ReflectMetadataProvider } from '@mikro-orm/postgresql'
 import { TsMorphMetadataProvider } from '@mikro-orm/reflection'
 import { SeedManager } from '@mikro-orm/seeder'
 
@@ -25,7 +25,7 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
     port: config.database.port,
     user: config.database.user,
     password: config.database.password,
-    metadataProvider: TsMorphMetadataProvider,
+    metadataProvider: __filename.endsWith('.js') ? ReflectMetadataProvider : TsMorphMetadataProvider,
     forceUtcTimezone: true,
     debug: config.env === 'development',
     extensions: [SeedManager, Migrator],

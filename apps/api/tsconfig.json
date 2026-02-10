@@ -6,6 +6,7 @@
     "experimentalDecorators": true,
     "moduleResolution": "nodenext",
     "resolveJsonModule": true,
+    "types": ["vitest/globals"],
     "strict": true,
     "strictBindCallApply": false,
     "strictNullChecks": true,

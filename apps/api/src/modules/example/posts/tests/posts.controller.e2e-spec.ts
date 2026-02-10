@@ -1,49 +1,37 @@
-import { EntityManager, MikroORM } from '@mikro-orm/core'
+import { MikroORM } from '@mikro-orm/core'
 import { INestApplication } from '@nestjs/common'
-import { createUserData } from '../../../../factories/user.factory'
-import { User } from '../../../../modules/auth/auth.entity'
 import {
   closeTestApp,
+  createRequest,
   initializeTestApp,
-  initRequestWithAuth,
   TestAppContext,
+  TestRequest,
 } from '../../../../test/test.utils'
 import { CreatePostInput } from '../contracts/posts.contract'
 import { PostModule } from '../posts.module'
 
 describe('postController (e2e)', () => {
-  // We set a high timeout to have enough time to launch the testcontainers
-  jest.setTimeout(60000)
-
-  let testContext: TestAppContext
+  let ctx: TestAppContext
   let app: INestApplication
   let orm: MikroORM
+  let request: TestRequest
 
-  let em: EntityManager
-  let testUser: User
-  let requestWithAuth: ReturnType<typeof initRequestWithAuth>
-
-  // We initialize the NestJS app and the database
   beforeAll(async () => {
-    // Initialiser l'application de test
-    testContext = await initializeTestApp({
+    ctx = await initializeTestApp({
       imports: [PostModule],
     })
-    app = testContext.app
-    orm = testContext.orm
-    em = orm.em.fork()
+    app = ctx.app
+    orm = ctx.orm
+    request = createRequest(app)
   })
 
-  // Before each test we clean the database to ensure we start with a fresh state
   beforeEach(async () => {
     await orm.schema.refreshDatabase()
-    testUser = await createUserData(em)
-    requestWithAuth = initRequestWithAuth(app, testUser.id)
+    vi.clearAllMocks()
   })
 
-  // After all tests we close the NestJS app and the database, the testcontainer is shut down
   afterAll(async () => {
-    await closeTestApp(testContext)
+    await closeTestApp(ctx)
   })
 
   describe('pOST /admin/posts', () => {
@@ -59,7 +47,7 @@ describe('postController (e2e)', () => {
       }
 
       try {
-        const response = await requestWithAuth('post', '/admin/posts').send(createPostDto)
+        const response = await createRequest(app).post('/admin/posts').send(createPostDto)
 
         expect(response.body).toMatchObject({
           id: expect.any(String),
@@ -86,7 +74,7 @@ describe('postController (e2e)', () => {
     it('should publish a post', async () => {
       try {
         // First create a post
-        const createResponse = await requestWithAuth('post', '/admin/posts').send({
+        const createResponse = await request.post('/admin/posts').send({
           title: 'Test Post',
           content: [
             {
@@ -99,7 +87,7 @@ describe('postController (e2e)', () => {
         const postId = createResponse.body.id
 
         // Then publish it
-        const publishResponse = await requestWithAuth('patch', `/admin/posts/${postId}/publish`)
+        const publishResponse = await request.patch(`/admin/posts/${postId}/publish`)
 
         expect(publishResponse.body).toMatchObject({
           id: postId,
@@ -126,7 +114,7 @@ describe('postController (e2e)', () => {
     it('should unpublish a post', async () => {
       try {
         // First create a post
-        const createResponse = await requestWithAuth('post', '/admin/posts').send({
+        const createResponse = await request.post('/admin/posts').send({
           title: 'Test Post',
           content: [
             {
@@ -139,12 +127,12 @@ describe('postController (e2e)', () => {
         const postId = createResponse.body.id
 
         // Then publish it
-        await requestWithAuth('patch', `/admin/posts/${postId}/publish`)
+        await request.patch(`/admin/posts/${postId}/publish`)
 
         // Finally unpublish it
-        await requestWithAuth('patch', `/admin/posts/${postId}/unpublish`)
+        await request.patch(`/admin/posts/${postId}/unpublish`)
 
-        const unpublishResponse = await requestWithAuth('get', `/admin/posts/${postId}`)
+        const unpublishResponse = await request.get(`/admin/posts/${postId}`)
 
         expect(unpublishResponse.body).toMatchObject({
           id: postId,
