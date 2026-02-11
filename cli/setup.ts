@@ -1,12 +1,12 @@
-import type { MobileConfig } from './mobile-setup.js'
+import type { MobileConfig } from './mobile-setup'
 import { spawn } from 'node:child_process'
 import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
-import { generateMobileDefaults, updateMobileFiles } from './mobile-setup.js'
-import { colorize } from './utils.js'
+import { generateMobileDefaults, updateMobileFiles } from './mobile-setup'
+import { colorize } from './utils'
 
 interface InputPromptOptions {
   message: string
@@ -640,6 +640,7 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
   // Update packages
   const packagesToUpdate: Array<{ path: string, name: string, condition: boolean }> = [
     { path: 'packages/ui/package.json', name: 'ui', condition: true },
+    { path: 'packages/i18n/package.json', name: 'i18n', condition: true },
     { path: 'packages/openapi-generator/package.json', name: 'openapi-generator', condition: availableApps.openapiGenerator },
   ]
 
@@ -680,23 +681,48 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
   }
 }
 
-function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps, mobileConfig: MobileConfig | null): void {
-  console.log(`\n${colorize('✏️  Updating .env files', 'cyan')}\n`)
+function buildTrustedOrigins(
+  config: EnvConfig,
+  mobileConfig: MobileConfig | null,
+  apiEnvPath: string,
+): string {
+  const examplePath = apiEnvPath.replace(/\.env$/, '.env.example')
+  const existingVars = parseEnvFile(existsSync(apiEnvPath) ? apiEnvPath : examplePath)
+  const existingOrigins = (existingVars.TRUSTED_ORIGINS ?? '')
+    .split(',')
+    .map((o: string) => o.trim())
+    .filter(Boolean)
 
-  const origins: string[] = []
+  const localhostFromFile = existingOrigins.filter(
+    (origin: string) => origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:'),
+  )
+  const nonLocalhostOrigins = existingOrigins.filter(
+    (origin: string) => !origin.startsWith('http://localhost:') && !origin.startsWith('https://localhost:'),
+  )
 
+  const fromConfig: string[] = []
   if (config.ports.api) {
-    origins.push(`http://localhost:${config.ports.api}`)
+    fromConfig.push(`http://localhost:${config.ports.api}`)
   }
   if (config.ports.webSpa) {
-    origins.push(`http://localhost:${config.ports.webSpa}`)
+    fromConfig.push(`http://localhost:${config.ports.webSpa}`)
   }
   if (config.ports.webSsr) {
-    origins.push(`http://localhost:${config.ports.webSsr}`)
+    fromConfig.push(`http://localhost:${config.ports.webSsr}`)
   }
-  // Allow Expo dev origins wildcard and mobile custom scheme
+
+  const localhostMerged = [...new Set([...fromConfig, ...localhostFromFile])]
+
   const mobileSchemeOrigin = mobileConfig ? `${mobileConfig.scheme}://*` : undefined
-  const trustedOrigins = [...origins, 'exp://*', ...(mobileSchemeOrigin ? [mobileSchemeOrigin] : [])].join(',')
+  const extraFromMobile = mobileSchemeOrigin && !nonLocalhostOrigins.includes(mobileSchemeOrigin)
+    ? [mobileSchemeOrigin]
+    : []
+
+  return [...localhostMerged, ...nonLocalhostOrigins, ...extraFromMobile].join(',')
+}
+
+function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps, mobileConfig: MobileConfig | null): void {
+  console.log(`\n${colorize('✏️  Updating .env files', 'cyan')}\n`)
 
   // Root .env (docker-compose) - update all configured vars
   const rootUpdates: Record<string, string> = {}
@@ -714,6 +740,7 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps, mobi
   // API .env
   if (availableApps.api && config.ports.api) {
     const apiEnvPath = join(projectRoot, 'apps/api/.env')
+    const trustedOrigins = buildTrustedOrigins(config, mobileConfig, apiEnvPath)
     const updates: Record<string, string> = {}
 
     updates.API_PORT = config.ports.api.toString()

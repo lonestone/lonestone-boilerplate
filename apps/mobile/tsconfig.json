@@ -12,7 +12,6 @@
         "../../packages/openapi-generator"
       ]
     },
-    "typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
     "strict": true
   },
   "include": [
