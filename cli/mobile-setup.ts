@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { colorize } from './utils.js'
+import { colorize } from './utils'
 
 export interface MobileConfig {
   appName: string
