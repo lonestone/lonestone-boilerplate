@@ -5,8 +5,11 @@ Generate code, corrections, and refactorings that comply with the basic principl
 
 
 # Rules
-Always read the [README.md](../../README.md) file before starting a new conversation.
+Always read the [README.md](./README.md) before saying or doing anything.
 
-Before writing any code, always read the [general guidelines](apps/documentation/src/content/docs/references/general.mdx) for the project. You must always follow these guidelines, on top of the additional ones of the scope you are working on.
+Read all the documentation cited in the README.md file that could be useful to understand the context of query:
+- Always read general documentation
+- Read frontend guidelines when working on frontend code
+- Read backend guidelines when working on backend code
 
-Read the rules files in the `.cursor/rules` folder and apply them when they are necessary.
+You must always follow these guidelines.
