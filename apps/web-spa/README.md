@@ -1,6 +1,7 @@
 # SPA (Single Page Application)
 
 This application is a SPA (Single Page Application) built with React and Vite.
+[Frontend Guidelines](../documentation/src/content/docs/references/frontend.mdx)
 
 ## Overview
 

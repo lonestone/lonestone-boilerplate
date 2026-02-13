@@ -268,4 +268,4 @@ pnpm dev --clear
 
 ## Documentation
 
-For more detailed guidelines, see the [Mobile Guidelines](../documentation/src/content/docs/guidelines/mobile.mdx).
+For more detailed guidelines, see the [Mobile Guidelines](../documentation/src/content/docs/references/mobile.mdx).
