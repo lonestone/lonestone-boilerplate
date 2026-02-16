@@ -10,7 +10,7 @@ import fetch from 'node-fetch'
  * Nzoth will handle the backend verification of the sort and filter strings
  */
 async function main() {
-  const url = `${process.env.API_URL}/api/docs.json`
+  const url = `${process.env.API_URL}/docs.json`
   const tmp = path.resolve('tmp', 'openapi.json')
   const res = await fetch(url)
   const spec = await res.json()
