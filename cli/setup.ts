@@ -659,7 +659,6 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
 
 function buildTrustedOrigins(
   config: EnvConfig,
-  mobileConfig: MobileConfig | null,
   apiEnvPath: string,
 ): string {
   const examplePath = apiEnvPath.replace(/\.env$/, '.env.example')
@@ -689,15 +688,10 @@ function buildTrustedOrigins(
 
   const localhostMerged = [...new Set([...fromConfig, ...localhostFromFile])]
 
-  const mobileSchemeOrigin = mobileConfig ? `${mobileConfig.scheme}://*` : undefined
-  const extraFromMobile = mobileSchemeOrigin && !nonLocalhostOrigins.includes(mobileSchemeOrigin)
-    ? [mobileSchemeOrigin]
-    : []
-
-  return [...localhostMerged, ...nonLocalhostOrigins, ...extraFromMobile].join(',')
+  return [...localhostMerged, ...nonLocalhostOrigins].join(',')
 }
 
-function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps, mobileConfig: MobileConfig | null): void {
+function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): void {
   console.log(`\n${colorize('✏️  Updating .env files', 'cyan')}\n`)
 
   // Root .env (docker-compose) - update all configured vars
@@ -716,7 +710,7 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps, mobi
   // API .env
   if (availableApps.api && config.ports.api) {
     const apiEnvPath = join(projectRoot, 'apps/api/.env')
-    const trustedOrigins = buildTrustedOrigins(config, mobileConfig, apiEnvPath)
+    const trustedOrigins = buildTrustedOrigins(config, apiEnvPath)
     const updates: Record<string, string> = {}
 
     updates.API_PORT = config.ports.api.toString()
