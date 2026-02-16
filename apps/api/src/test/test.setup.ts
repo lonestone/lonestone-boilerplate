@@ -26,10 +26,6 @@ jest.mock('better-auth/crypto', () => {
   }
 })
 
-jest.mock('@better-auth/expo', () => ({
-  expo: () => ({ name: 'expo-plugin-mock' }),
-}))
-
 jest.mock('better-auth/plugins', () => ({
   openAPI: () => ({ name: 'openapi-plugin-mock' }),
   createAuthMiddleware: <TArgs extends unknown[], TReturn>(
