@@ -15,7 +15,6 @@ Package.json files:
 - ./apps/api/package.json
 - ./apps/web-spa/package.json
 - ./apps/web-ssr/package.json
-- ./apps/mobile/package.json
 - ./apps/documentation/package.json
 - ./apps/openapi-generator/package.json
 - ./apps/schematics/package.json
@@ -27,6 +26,4 @@ Actions and workflows:
 
 Docs and README:
 - README.md
-- apps/mobile/README.md
 - ./apps/documentation/src/content/docs/quickstart.mdx
-- ./apps/documentation/src/content/docs/guides/mobile.mdx

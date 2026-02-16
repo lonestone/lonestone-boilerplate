@@ -144,8 +144,7 @@ The project uses Docker Compose to provide the following services:
 
 ### Development
 
-- **Start development** (all apps except mobile): `pnpm dev`
-- **Start mobile development**: `pnpm dev:mobile`
+- **Start development**: `pnpm dev`
 - **Build applications**: `pnpm build`
 - **Lint applications**: `pnpm lint`
 - **Generate OpenAPI clients**: `pnpm generate`
@@ -168,20 +167,12 @@ The project uses Docker Compose to provide the following services:
 - The API is built with NestJS and provides a REST API. See the [API README](apps/api/README.md) for more information.
 - The web-spa is built with React and provides a single-page application. See the [Web SPA README](apps/web-spa/README.md) for more information.
 - The web-ssr is built with React and provides a server-side rendered application. See the [Web SSR README](apps/web-ssr/README.md) for more information.
-- The mobile app is built with React Native and Expo. See the [Mobile README](apps/mobile/README.md) for more information.
 
 You can start each application in development mode with the following commands:
 
 ```bash
 # Start API in development mode from root folder
 pnpm --filter=api dev
-```
-
-```bash
-# Start mobile app in development mode
-pnpm dev:mobile
-# or from its own folder
-cd apps/mobile && pnpm dev
 ```
 
 ```bash
@@ -225,7 +216,6 @@ This documentation is also used by our custom cursor rules.
 - [General Guidelines](apps/documentation/src/content/docs/references/general.mdx)
 - [Frontend Guidelines](apps/documentation/src/content/docs/references/frontend.mdx)
 - [Backend Guidelines](apps/documentation/src/content/docs/references/backend.mdx)
-- [Mobile Guidelines](apps/documentation/src/content/docs/references/mobile.mdx)
 - [API Readme](apps/api/README.md)
 - [Frontend Readme](apps/web-spa/README.md)
 

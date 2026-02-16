@@ -1,4 +1,3 @@
-import { expo } from '@better-auth/expo'
 import { betterAuth, BetterAuthOptions, MiddlewareInputContext, MiddlewareOptions, User } from 'better-auth'
 import { openAPI } from 'better-auth/plugins'
 import { Pool } from 'pg'
@@ -76,7 +75,6 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
     },
     plugins: [
       openAPI(),
-      expo(),
     ],
   } satisfies BetterAuthOptions
 
