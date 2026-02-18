@@ -1,53 +1,34 @@
-import { EntityManager, MikroORM } from '@mikro-orm/core'
-import { INestApplication } from '@nestjs/common'
-import { createUserData } from '../../../../factories/user.factory'
-import { User } from '../../../../modules/auth/auth.entity'
-import {
-  closeTestApp,
-  initializeTestApp,
-  initRequestWithAuth,
-  TestAppContext,
-} from '../../../../test/test.utils'
+import { beforeEach, describe, expect, it } from 'vitest'
+/**
+ * E2E Tests for PostController
+ *
+ * Tests the following endpoints:
+ * - POST /admin/posts - Create a new post
+ * - PATCH /admin/posts/:id/publish - Publish a post
+ * - PATCH /admin/posts/:id/unpublish - Unpublish a post
+ * - Auth guard behavior (401 when unauthenticated)
+ */
+import { initializeTestApp } from '../../../../test/helpers/test-app.helper'
+import { createRequest } from '../../../../test/helpers/test-auth.helper'
+import { createUserWithSession } from '../../../../test/helpers/test-user.helpers'
 import { CreatePostInput } from '../contracts/posts.contract'
 import { PostModule } from '../posts.module'
 
 describe('postController (e2e)', () => {
-  // We set a high timeout to have enough time to launch the testcontainers
-  jest.setTimeout(60000)
-
-  let testContext: TestAppContext
-  let app: INestApplication
-  let orm: MikroORM
-
-  let em: EntityManager
-  let testUser: User
-  let requestWithAuth: ReturnType<typeof initRequestWithAuth>
-
-  // We initialize the NestJS app and the database
-  beforeAll(async () => {
-    // Initialiser l'application de test
-    testContext = await initializeTestApp({
+  beforeEach(async (context) => {
+    const { orm, app } = await initializeTestApp({ orm: context.orm }, {
       imports: [PostModule],
     })
-    app = testContext.app
-    orm = testContext.orm
-    em = orm.em.fork()
-  })
-
-  // Before each test we clean the database to ensure we start with a fresh state
-  beforeEach(async () => {
-    await orm.schema.refreshDatabase()
-    testUser = await createUserData(em)
-    requestWithAuth = initRequestWithAuth(app, testUser.id)
-  })
-
-  // After all tests we close the NestJS app and the database, the testcontainer is shut down
-  afterAll(async () => {
-    await closeTestApp(testContext)
+    context.app = app
+    context.em = orm.em.fork()
+    context.request = createRequest(app)
   })
 
   describe('pOST /admin/posts', () => {
-    it('should create a post', async () => {
+    it('should create a post', async (context) => {
+      const { em, request } = context
+      // Arrange
+      const { session } = await createUserWithSession(em)
       const createPostDto: CreatePostInput = {
         title: 'Test Post',
         content: [
@@ -58,111 +39,118 @@ describe('postController (e2e)', () => {
         ],
       }
 
-      try {
-        const response = await requestWithAuth('post', '/admin/posts').send(createPostDto)
+      // Act
+      const response = await request.withSession(session).post('/admin/posts').send(createPostDto)
 
-        expect(response.body).toMatchObject({
-          id: expect.any(String),
-          title: 'Test Post',
-          content: expect.any(Array),
-          type: 'draft',
-        })
+      // Assert
+      expect(response.body).toMatchObject({
+        id: expect.any(String),
+        title: 'Test Post',
+        content: expect.any(Array),
+        type: 'draft',
+      })
+    })
 
-        return response
-      }
-      catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error('Error creating post:', error.message)
-        }
-        else {
-          console.error('Error creating post:', error)
-        }
-        throw error
-      }
+    it('should return 401 when unauthenticated', async (context) => {
+      const { request } = context
+      // Act - no session, unauthenticated request
+      const response = await request.post('/admin/posts').send({
+        title: 'Test Post',
+        content: [{ type: 'text', data: 'content' }],
+      })
+
+      // Assert
+      expect(response.status).toBe(401)
     })
   })
 
   describe('pATCH /admin/posts/:id/publish', () => {
-    it('should publish a post', async () => {
-      try {
-        // First create a post
-        const createResponse = await requestWithAuth('post', '/admin/posts').send({
-          title: 'Test Post',
-          content: [
-            {
-              type: 'text',
-              data: 'This is a test post content',
-            },
-          ],
-        })
+    it('should publish a post', async (context) => {
+      const { em, request } = context
+      // Arrange
+      const { session } = await createUserWithSession(em)
 
-        const postId = createResponse.body.id
+      // First create a post
+      const createResponse = await request.withSession(session).post('/admin/posts').send({
+        title: 'Test Post',
+        content: [
+          {
+            type: 'text',
+            data: 'This is a test post content',
+          },
+        ],
+      })
+      const postId = createResponse.body.id
 
-        // Then publish it
-        const publishResponse = await requestWithAuth('patch', `/admin/posts/${postId}/publish`)
+      // Act - publish it
+      const publishResponse = await request.withSession(session).patch(`/admin/posts/${postId}/publish`)
 
-        expect(publishResponse.body).toMatchObject({
-          id: postId,
-          type: 'published',
-          slug: `test-post-${postId.slice(0, 8)}`,
-          publishedAt: expect.any(String),
-        })
-
-        return publishResponse
-      }
-      catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error('Error in publish test:', error.message)
-        }
-        else {
-          console.error('Error in publish test:', error)
-        }
-        throw error
-      }
+      // Assert
+      expect(publishResponse.body).toMatchObject({
+        id: postId,
+        type: 'published',
+        slug: `test-post-${postId.slice(0, 8)}`,
+        publishedAt: expect.any(String),
+      })
     })
   })
 
   describe('pATCH /admin/posts/:id/unpublish', () => {
-    it('should unpublish a post', async () => {
-      try {
-        // First create a post
-        const createResponse = await requestWithAuth('post', '/admin/posts').send({
-          title: 'Test Post',
-          content: [
-            {
-              type: 'text',
-              data: 'This is a test post content',
-            },
-          ],
-        })
+    it('should unpublish a post', async (context) => {
+      const { em, request } = context
+      // Arrange
+      const { session } = await createUserWithSession(em)
 
-        const postId = createResponse.body.id
+      // First create a post
+      const createResponse = await request.withSession(session).post('/admin/posts').send({
+        title: 'Test Post',
+        content: [
+          {
+            type: 'text',
+            data: 'This is a test post content',
+          },
+        ],
+      })
+      const postId = createResponse.body.id
 
-        // Then publish it
-        await requestWithAuth('patch', `/admin/posts/${postId}/publish`)
+      // Publish it
+      await request.withSession(session).patch(`/admin/posts/${postId}/publish`)
 
-        // Finally unpublish it
-        await requestWithAuth('patch', `/admin/posts/${postId}/unpublish`)
+      // Act - unpublish it
+      await request.withSession(session).patch(`/admin/posts/${postId}/unpublish`)
 
-        const unpublishResponse = await requestWithAuth('get', `/admin/posts/${postId}`)
+      // Assert
+      const unpublishResponse = await request.withSession(session).get(`/admin/posts/${postId}`)
+      expect(unpublishResponse.body).toMatchObject({
+        id: postId,
+        type: 'draft',
+        publishedAt: null,
+      })
+    })
+  })
 
-        expect(unpublishResponse.body).toMatchObject({
-          id: postId,
-          type: 'draft',
-          publishedAt: null,
-        })
+  describe('session flexibility', () => {
+    it('should isolate posts per user', async (context) => {
+      const { em, request } = context
+      // Arrange - User A creates a post
+      const { session: sessionA } = await createUserWithSession(em, { name: 'Alice' })
+      await request.withSession(sessionA).post('/admin/posts').send({
+        title: 'Alice Post',
+        content: [{ type: 'text', data: 'content' }],
+      })
 
-        return unpublishResponse
-      }
-      catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error('Error in unpublish test:', error.message)
-        }
-        else {
-          console.error('Error in unpublish test:', error)
-        }
-        throw error
-      }
+      // Arrange - User B
+      const { session: sessionB } = await createUserWithSession(em, { name: 'Bob' })
+
+      // Act - User B lists posts
+      const response = await request.withSession(sessionB).get('/admin/posts')
+
+      // Assert - User B should not see User A's posts
+      const posts = response.body.data ?? response.body
+      const alicePosts = Array.isArray(posts)
+        ? posts.filter((p: { title: string }) => p.title === 'Alice Post')
+        : []
+      expect(alicePosts).toHaveLength(0)
     })
   })
 })

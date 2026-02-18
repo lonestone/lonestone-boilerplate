@@ -3,7 +3,7 @@ title: API Testing
 description: Guide to test the API
 ---
 
-Testing is done using Jest. We will outline the most important files and configurations.
+Testing is done using Vitest. We will outline the most important files and configurations.
 
 ## Launching tests
 
@@ -85,35 +85,35 @@ You will want to stop the test container at the end of your test suite, and you'
 
 ## Service mocking
 
-You can mock some services or external services by using the `jest.mock` function.
+You can mock some services or external services by using the `vi.mock` function.
 
 Here is an example of mocking the `EmailService` in the `test/test.e2e-setup.ts` file.
 ```typescript
-jest.mock('../modules/email/email.service', () => ({
-  EmailService: jest.fn().mockImplementation(() => ({
-    sendEmail: jest.fn(),
+vi.mock('../modules/email/email.service', () => ({
+  EmailService: vi.fn().mockImplementation(() => ({
+    sendEmail: vi.fn(),
   })),
 }))
 
 // Mocking the ai service example
-jest.mock('ai', () => ({
-  generateObject: jest.fn().mockResolvedValue({ object: { analysisResult: 'mocked result' } } as never),
+vi.mock('ai', () => ({
+  generateObject: vi.fn().mockResolvedValue({ object: { analysisResult: 'mocked result' } } as never),
 }))
 
 // Mock langfuse at module level
-jest.mock('langfuse', () => ({
+vi.mock('langfuse', () => ({
   __esModule: true,
-  default: jest.fn().mockImplementation(() => ({
-    trace: jest.fn().mockReturnValue({
-      span: jest.fn().mockReturnValue({
-        end: jest.fn(),
+  default: vi.fn().mockImplementation(() => ({
+    trace: vi.fn().mockReturnValue({
+      span: vi.fn().mockReturnValue({
+        end: vi.fn(),
       }),
-      update: jest.fn(),
-      getTraceUrl: jest.fn(),
+      update: vi.fn(),
+      getTraceUrl: vi.fn(),
     }),
-    shutdown: jest.fn(),
+    shutdown: vi.fn(),
   })),
-  observeOpenAI: jest.fn((openaiInstance: unknown) => openaiInstance),
+  observeOpenAI: vi.fn((openaiInstance: unknown) => openaiInstance),
 }))
 ```
 
@@ -121,4 +121,4 @@ jest.mock('langfuse', () => ({
 
 The `test/test.utils.ts` file contains some useful utilities for testing, like initializing the test application, creating a test user, and initializing the request with authentication.
 
-The `jest.config.ts` file contains the Jest configuration for the project. You can customize it to your needs.
+The `vi.config.ts` file contains the vi configuration for the project. You can customize it to your needs.

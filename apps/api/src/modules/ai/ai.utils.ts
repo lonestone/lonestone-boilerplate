@@ -46,14 +46,30 @@ export async function getModelInstance(modelId?: ModelId): Promise<LanguageModel
 }
 
 export function sanitizeAiJson(aiOutput: string) {
-  // 1️⃣ Trim and extract JSON object boundaries
+  // 1️⃣ Trim and extract JSON object or array boundaries
   let jsonStr = aiOutput.trim()
+  const firstBracket = jsonStr.indexOf('[')
   const firstBrace = jsonStr.indexOf('{')
-  const lastBrace = jsonStr.lastIndexOf('}')
-  if (firstBrace === -1 || lastBrace === -1) {
-    throw new Error('No JSON object found in AI output')
+  const isArray
+    = (firstBracket !== -1 && firstBrace === -1)
+      || (firstBracket !== -1 && firstBracket < firstBrace)
+  if (isArray) {
+    const lastBracket = jsonStr.lastIndexOf(']')
+    if (lastBracket === -1) {
+      throw new Error('No JSON object found in AI output')
+    }
+    jsonStr = jsonStr.slice(firstBracket, lastBracket + 1)
   }
-  jsonStr = jsonStr.slice(firstBrace, lastBrace + 1)
+  else {
+    if (firstBrace === -1) {
+      throw new Error('No JSON object found in AI output')
+    }
+    const lastBrace = jsonStr.lastIndexOf('}')
+    if (lastBrace === -1) {
+      throw new Error('No JSON object found in AI output')
+    }
+    jsonStr = jsonStr.slice(firstBrace, lastBrace + 1)
+  }
 
   // 2️⃣ Normalize newlines and tabs globally
   jsonStr = jsonStr

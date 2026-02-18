@@ -36,6 +36,7 @@ export const configValidationSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
   // API
+  API_BASE_URL: z.url(),
   API_PORT: z.coerce.number(),
 
   // Database
@@ -92,7 +93,10 @@ if (!configParsed.success) {
 
 export const config = {
   env: configParsed.data.NODE_ENV,
-  apiPort: configParsed.data.API_PORT,
+  api: {
+    baseUrl: configParsed.data.API_BASE_URL,
+    port: configParsed.data.API_PORT,
+  },
   version: getVersion(),
   betterAuth: {
     secret: configParsed.data.BETTER_AUTH_SECRET,

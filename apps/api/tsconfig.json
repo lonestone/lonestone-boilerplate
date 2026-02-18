@@ -4,8 +4,10 @@
     "target": "esnext",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "baseUrl": "./",
     "moduleResolution": "nodenext",
     "resolveJsonModule": true,
+    "types": ["node", "vitest/globals"],
     "strict": true,
     "strictBindCallApply": false,
     "strictNullChecks": true,
@@ -17,6 +19,7 @@
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
+
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     // Changes to allow importing the shared ESM packages (which are also built for CJS, but TS needs to find the right version)
