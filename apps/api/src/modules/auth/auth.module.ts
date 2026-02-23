@@ -8,7 +8,7 @@ import type {
   MiddlewareOptions,
 } from 'better-auth'
 import { MikroOrmModule } from '@mikro-orm/nestjs'
-import { Global, Inject, Module, OnModuleInit, RequestMethod } from '@nestjs/common'
+import { Global, Inject, Module, RequestMethod } from '@nestjs/common'
 import {
   DiscoveryModule,
   DiscoveryService,
@@ -16,8 +16,12 @@ import {
 } from '@nestjs/core'
 import { toNodeHandler } from 'better-auth/node'
 import { createAuthMiddleware } from 'better-auth/plugins'
+import { createBetterAuth } from '../../config/better-auth.config'
+import { config } from '../../config/env.config'
 import { EmailModule } from '../email/email.module'
+import { EmailService } from '../email/email.service'
 import { AFTER_HOOK_KEY, BEFORE_HOOK_KEY, HOOK_KEY } from './auth.decorator'
+import { AuthModuleOptions, ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } from './auth.definition'
 import { Account, Session, User, Verification } from './auth.entity'
 import { AuthGuard } from './auth.guard'
 import { AuthService } from './auth.service'
@@ -30,6 +34,37 @@ import { AuthService } from './auth.service'
     MikroOrmModule.forFeature([User, Session, Account, Verification]),
   ],
   providers: [
+    {
+      provide: MODULE_OPTIONS_TOKEN,
+      useFactory: (emailService: EmailService): AuthModuleOptions => {
+        const betterAuth = createBetterAuth({
+          baseUrl: config.api.baseUrl,
+          secret: config.betterAuth.secret,
+          trustedOrigins: config.betterAuth.trustedOrigins,
+          connectionStringUrl: config.database.connectionStringUrl,
+          sendResetPassword: async (data) => {
+            const webUrl = `${config.clients.webApp.url}/reset-password?token=${data.token}`
+            return emailService.sendEmail({
+              to: data.user.email,
+              subject: 'Reset your password',
+              content: `Hello ${data.user.name}, please reset your password with the link below:<br/>Web app: <a href="${webUrl}">${webUrl}</a>`,
+            })
+          },
+          sendVerificationEmail: async (data) => {
+            const url = `${config.clients.webApp.url}/verify-email?token=${data.token}`
+            return emailService.sendEmail({
+              to: data.user.email,
+              subject: 'Verify your email',
+              content: `Hello ${data.user.name}, please verify your email by clicking on the link below: <a href="${url}">${url}</a>`,
+            })
+          },
+        })
+        return {
+          auth: betterAuth,
+        }
+      },
+      inject: [EmailService],
+    },
     AuthService,
     AuthGuard,
   ],
@@ -38,34 +73,32 @@ import { AuthService } from './auth.service'
     AuthGuard,
   ],
 })
-export class AuthModule implements NestModule, OnModuleInit {
+export class AuthModule extends ConfigurableModuleClass implements NestModule {
   constructor(
-    private readonly authService: AuthService,
     @Inject(DiscoveryService)
-    private discoveryService: DiscoveryService,
+    private readonly discoveryService: DiscoveryService,
     @Inject(MetadataScanner)
-    private metadataScanner: MetadataScanner,
-  ) {}
-
-  async onModuleInit() {
-    // Ensure auth service is initialized
-    await this.authService.onModuleInit()
+    private readonly metadataScanner: MetadataScanner,
+    @Inject(MODULE_OPTIONS_TOKEN)
+    private readonly options: AuthModuleOptions,
+  ) {
+    super()
   }
 
-  async configure(consumer: MiddlewareConsumer) {
-    // Wait for auth to be initialized
-    await this.onModuleInit()
-
-    const auth = this.authService.auth
+  configure(consumer: MiddlewareConsumer) {
+    const auth = this.options.auth
 
     const providers = this.discoveryService
       .getProviders()
       .filter(
-        ({ metatype }) => metatype && Reflect.getMetadata(HOOK_KEY, metatype),
+        ({ metatype, instance }) =>
+          metatype
+          && instance
+          && Reflect.getMetadata(HOOK_KEY, metatype),
       )
 
     for (const provider of providers) {
-      const providerPrototype = Object.getPrototypeOf(provider.instance)
+      const providerPrototype = Object.getPrototypeOf(provider.instance!)
       const methods = this.metadataScanner.getAllMethodNames(providerPrototype)
 
       for (const method of methods) {
@@ -98,7 +131,7 @@ export class AuthModule implements NestModule, OnModuleInit {
     ) => Promise<void>,
     providerInstance: unknown,
   ) {
-    const auth = this.authService.auth
+    const auth = this.options.auth
     const hookPath = Reflect.getMetadata(metadataKey, providerMethod)
     if (!hookPath || !auth?.options.hooks)
       return
@@ -115,20 +148,5 @@ export class AuthModule implements NestModule, OnModuleInit {
         }
       },
     )
-  }
-
-  static forRootAsync() {
-    return {
-      module: AuthModule,
-      imports: [EmailModule],
-      providers: [
-        AuthService,
-        {
-          provide: 'AUTH_OPTIONS',
-          useClass: AuthService,
-        },
-      ],
-      exports: [AuthService, 'AUTH_OPTIONS'],
-    }
   }
 }

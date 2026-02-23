@@ -91,7 +91,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
       },
     }),
     DbModule,
-    AuthModule.forRootAsync(),
+    AuthModule,
     EmailModule,
     AiModule,
     NestConfigModule,

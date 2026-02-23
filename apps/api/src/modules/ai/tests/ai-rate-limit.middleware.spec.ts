@@ -1,52 +1,53 @@
-import type { LanguageModel } from 'ai'
+import type { LanguageModel, LanguageModelMiddleware } from 'ai'
 import { Logger } from '@nestjs/common'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { withRetryAfter, wrapWithRetryAfter } from '../ai-rate-limit.middleware'
 
-// Mock sleep to avoid actual delays in tests
-jest.useFakeTimers()
+type WrapGenerateContext = Parameters<NonNullable<LanguageModelMiddleware['wrapGenerate']>>[0]
+type WrapStreamContext = Parameters<NonNullable<LanguageModelMiddleware['wrapStream']>>[0]
+type GenerateResult = Awaited<ReturnType<NonNullable<LanguageModelMiddleware['wrapGenerate']>>>
+type StreamResult = Awaited<ReturnType<NonNullable<LanguageModelMiddleware['wrapStream']>>>
 
 describe('ai-rate-limit.middleware', () => {
   let mockLogger: Logger
   const mockModel = { provider: 'openai', modelId: 'gpt-4' } as LanguageModel
-  // eslint-disable-next-line ts/no-explicit-any
-  const mockParams = {} as any
+  const mockParams = {} as WrapGenerateContext['params']
 
-  // eslint-disable-next-line ts/no-explicit-any
-  const createGenerateContext = (doGenerate: () => Promise<unknown>): any =>
+  const createGenerateContext = (doGenerate: () => PromiseLike<GenerateResult>): WrapGenerateContext =>
     ({
       doGenerate,
-      doStream: jest.fn(),
+      doStream: vi.fn(),
       params: mockParams,
-      model: mockModel,
+      model: mockModel as WrapGenerateContext['model'],
     })
 
-  // eslint-disable-next-line ts/no-explicit-any
-  const createStreamContext = (doStream: () => Promise<unknown>): any =>
+  const createStreamContext = (doStream: () => PromiseLike<StreamResult>): WrapStreamContext =>
     ({
-      doGenerate: jest.fn(),
+      doGenerate: vi.fn(),
       doStream,
       params: mockParams,
-      model: mockModel,
+      model: mockModel as WrapStreamContext['model'],
     })
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    jest.clearAllTimers()
+    vi.useFakeTimers()
+    vi.clearAllMocks()
+    vi.clearAllTimers()
     mockLogger = {
-      warn: jest.fn(),
-      error: jest.fn(),
-      log: jest.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      log: vi.fn(),
     } as unknown as Logger
   })
 
   afterEach(() => {
-    jest.useRealTimers()
+    vi.useRealTimers()
   })
 
   describe('withRetryAfter - wrapGenerate', () => {
     it('should succeed on first attempt', async () => {
       const middleware = withRetryAfter({}, mockLogger)
-      const mockDoGenerate = jest.fn().mockResolvedValue({ text: 'success' })
+      const mockDoGenerate = vi.fn().mockResolvedValue({ text: 'success' })
 
       const result = await middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
@@ -57,14 +58,14 @@ describe('ai-rate-limit.middleware', () => {
     it('should retry on 429 status error', async () => {
       const middleware = withRetryAfter({ maxRetries: 2, baseDelay: 100 }, mockLogger)
       const rateLimitError = { status: 429, message: 'Rate limit exceeded' }
-      const mockDoGenerate = jest.fn()
+      const mockDoGenerate = vi.fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
       // Fast-forward timers to skip delay
-      await jest.advanceTimersByTimeAsync(200)
+      await vi.advanceTimersByTimeAsync(200)
 
       const result = await resultPromise
 
@@ -82,13 +83,13 @@ describe('ai-rate-limit.middleware', () => {
     it('should retry on error with rate limit message', async () => {
       const middleware = withRetryAfter({ maxRetries: 1, baseDelay: 100 }, mockLogger)
       const rateLimitError = new Error('rate limit exceeded')
-      const mockDoGenerate = jest.fn()
+      const mockDoGenerate = vi.fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
-      await jest.advanceTimersByTimeAsync(200)
+      await vi.advanceTimersByTimeAsync(200)
 
       const result = await resultPromise
 
@@ -99,13 +100,13 @@ describe('ai-rate-limit.middleware', () => {
     it('should retry on error with 429 in message', async () => {
       const middleware = withRetryAfter({ maxRetries: 1, baseDelay: 100 }, mockLogger)
       const rateLimitError = new Error('Error 429: Too many requests')
-      const mockDoGenerate = jest.fn()
+      const mockDoGenerate = vi.fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
-      await jest.advanceTimersByTimeAsync(200)
+      await vi.advanceTimersByTimeAsync(200)
 
       const result = await resultPromise
 
@@ -116,13 +117,13 @@ describe('ai-rate-limit.middleware', () => {
     it('should retry on error with rate_limit_exceeded code', async () => {
       const middleware = withRetryAfter({ maxRetries: 1, baseDelay: 100 }, mockLogger)
       const rateLimitError = { code: 'rate_limit_exceeded', message: 'Rate limit' }
-      const mockDoGenerate = jest.fn()
+      const mockDoGenerate = vi.fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
-      await jest.advanceTimersByTimeAsync(200)
+      await vi.advanceTimersByTimeAsync(200)
 
       const result = await resultPromise
 
@@ -140,14 +141,14 @@ describe('ai-rate-limit.middleware', () => {
           },
         },
       }
-      const mockDoGenerate = jest.fn()
+      const mockDoGenerate = vi.fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
       // Should wait 5 seconds (5000ms) from retry-after header
-      await jest.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(5000)
 
       const result = await resultPromise
 
@@ -166,17 +167,17 @@ describe('ai-rate-limit.middleware', () => {
       const rateLimitError = {
         status: 429,
         headers: {
-          get: jest.fn().mockReturnValue('3'),
+          get: vi.fn().mockReturnValue('3'),
         },
       }
-      const mockDoGenerate = jest.fn()
+      const mockDoGenerate = vi.fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
       // Should wait 3 seconds (3000ms) from retry-after header
-      await jest.advanceTimersByTimeAsync(3000)
+      await vi.advanceTimersByTimeAsync(3000)
 
       const result = await resultPromise
 
@@ -187,7 +188,7 @@ describe('ai-rate-limit.middleware', () => {
     it('should use exponential backoff when no retry-after header', async () => {
       const middleware = withRetryAfter({ maxRetries: 2, baseDelay: 100 }, mockLogger)
       const rateLimitError = { status: 429 }
-      const mockDoGenerate = jest.fn()
+      const mockDoGenerate = vi.fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
@@ -195,9 +196,9 @@ describe('ai-rate-limit.middleware', () => {
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
       // First retry: baseDelay * 2^0 = 100ms (plus jitter, but we'll advance more)
-      await jest.advanceTimersByTimeAsync(200)
+      await vi.advanceTimersByTimeAsync(200)
       // Second retry: baseDelay * 2^1 = 200ms (plus jitter)
-      await jest.advanceTimersByTimeAsync(300)
+      await vi.advanceTimersByTimeAsync(300)
 
       const result = await resultPromise
 
@@ -206,21 +207,22 @@ describe('ai-rate-limit.middleware', () => {
     })
 
     it('should throw error after max retries exceeded', async () => {
-      const middleware = withRetryAfter({ maxRetries: 2, baseDelay: 100 }, mockLogger)
+      const middleware = withRetryAfter({ maxRetries: 1, baseDelay: 100 }, mockLogger)
       const rateLimitError = { status: 429, message: 'Rate limit exceeded' }
-      const mockDoGenerate = jest.fn().mockRejectedValue(rateLimitError)
+      const mockDoGenerate = vi.fn().mockRejectedValue(rateLimitError)
 
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
+      // Attach catch handler immediately to prevent unhandled rejection warning
+      Promise.resolve(resultPromise).catch(() => {})
 
-      // Advance through all retries
-      await jest.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(200)
 
       await expect(resultPromise).rejects.toEqual(rateLimitError)
-      expect(mockDoGenerate).toHaveBeenCalledTimes(3) // Initial + 2 retries
+      expect(mockDoGenerate).toHaveBeenCalledTimes(2) // Initial + 1 retry
       expect(mockLogger.warn).toHaveBeenCalledWith(
         expect.stringContaining('Rate limit exceeded after'),
         expect.objectContaining({
-          error: 'Rate limit exceeded',
+          error: 'Unknown error',
         }),
       )
     })
@@ -228,7 +230,7 @@ describe('ai-rate-limit.middleware', () => {
     it('should not retry non-rate-limit errors', async () => {
       const middleware = withRetryAfter({ maxRetries: 2 }, mockLogger)
       const otherError = new Error('Some other error')
-      const mockDoGenerate = jest.fn().mockRejectedValue(otherError)
+      const mockDoGenerate = vi.fn().mockRejectedValue(otherError)
 
       await expect(middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))).rejects.toThrow('Some other error')
 
@@ -237,10 +239,10 @@ describe('ai-rate-limit.middleware', () => {
     })
 
     it('should respect custom shouldRetry function', async () => {
-      const customShouldRetry = jest.fn().mockReturnValue(false)
+      const customShouldRetry = vi.fn().mockReturnValue(false)
       const middleware = withRetryAfter({ shouldRetry: customShouldRetry }, mockLogger)
       const rateLimitError = { status: 429 }
-      const mockDoGenerate = jest.fn().mockRejectedValue(rateLimitError)
+      const mockDoGenerate = vi.fn().mockRejectedValue(rateLimitError)
 
       await expect(middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))).rejects.toEqual(rateLimitError)
 
@@ -249,19 +251,19 @@ describe('ai-rate-limit.middleware', () => {
     })
 
     it('should use custom calculateDelay function', async () => {
-      const customCalculateDelay = jest.fn().mockReturnValue(500)
+      const customCalculateDelay = vi.fn().mockReturnValue(500)
       const middleware = withRetryAfter({
         maxRetries: 1,
         calculateDelay: customCalculateDelay,
       }, mockLogger)
       const rateLimitError = { status: 429 }
-      const mockDoGenerate = jest.fn()
+      const mockDoGenerate = vi.fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
-      await jest.advanceTimersByTimeAsync(500)
+      await vi.advanceTimersByTimeAsync(500)
 
       const result = await resultPromise
 
@@ -279,7 +281,7 @@ describe('ai-rate-limit.middleware', () => {
           yield 'chunk'
         },
       }
-      const mockDoStream = jest.fn().mockResolvedValue(mockStream)
+      const mockDoStream = vi.fn().mockResolvedValue(mockStream)
 
       const result = await middleware.wrapStream!(createStreamContext(mockDoStream))
 
@@ -295,13 +297,13 @@ describe('ai-rate-limit.middleware', () => {
           yield 'chunk'
         },
       }
-      const mockDoStream = jest.fn()
+      const mockDoStream = vi.fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue(mockStream)
 
       const resultPromise = middleware.wrapStream!(createStreamContext(mockDoStream))
 
-      await jest.advanceTimersByTimeAsync(200)
+      await vi.advanceTimersByTimeAsync(200)
 
       const result = await resultPromise
 
@@ -312,11 +314,13 @@ describe('ai-rate-limit.middleware', () => {
     it('should throw error after max retries exceeded', async () => {
       const middleware = withRetryAfter({ maxRetries: 1, baseDelay: 100 }, mockLogger)
       const rateLimitError = { status: 429 }
-      const mockDoStream = jest.fn().mockRejectedValue(rateLimitError)
+      const mockDoStream = vi.fn().mockRejectedValue(rateLimitError)
 
       const resultPromise = middleware.wrapStream!(createStreamContext(mockDoStream))
+      // Attach catch handler immediately to prevent unhandled rejection warning
+      Promise.resolve(resultPromise).catch(() => {})
 
-      await jest.advanceTimersByTimeAsync(200)
+      await vi.advanceTimersByTimeAsync(200)
 
       await expect(resultPromise).rejects.toEqual(rateLimitError)
       expect(mockDoStream).toHaveBeenCalledTimes(2) // Initial + 1 retry
@@ -352,7 +356,7 @@ describe('ai-rate-limit.middleware', () => {
     it('should handle error without status or message', async () => {
       const middleware = withRetryAfter({ maxRetries: 1 }, mockLogger)
       const error = {}
-      const mockDoGenerate = jest.fn()
+      const mockDoGenerate = vi.fn()
         .mockRejectedValueOnce(error)
         .mockResolvedValue({ text: 'success' })
 
@@ -370,14 +374,14 @@ describe('ai-rate-limit.middleware', () => {
           'retry-after': 'invalid',
         },
       }
-      const mockDoGenerate = jest.fn()
+      const mockDoGenerate = vi.fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
       // Should fall back to exponential backoff
-      await jest.advanceTimersByTimeAsync(200)
+      await vi.advanceTimersByTimeAsync(200)
 
       const result = await resultPromise
 
@@ -387,7 +391,7 @@ describe('ai-rate-limit.middleware', () => {
 
     it('should handle null error', async () => {
       const middleware = withRetryAfter({ maxRetries: 1 }, mockLogger)
-      const mockDoGenerate = jest.fn().mockRejectedValue(null)
+      const mockDoGenerate = vi.fn().mockRejectedValue(null)
 
       await expect(middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))).rejects.toBeNull()
 

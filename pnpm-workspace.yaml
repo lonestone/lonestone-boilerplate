@@ -6,8 +6,7 @@ peerDependencyRules:
   allowedVersions:
     # A lot of expo / react-native linting rules and packages are targeting eslint 8, but should work with eslint 9
     eslint: "9"
-    # jest-expo is targeting jest 29, but should work with jest 30
-    jest: "30"
+# We override dependencies here to ensure that the correct version of the dependency is used for each package
 catalogs:
   frontend:
     # React

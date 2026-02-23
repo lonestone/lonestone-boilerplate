@@ -84,7 +84,7 @@ async function bootstrap() {
   }
 
   app.enableShutdownHooks()
-  await app.listen(config.apiPort)
+  await app.listen(config.api.port)
 }
 
 bootstrap()

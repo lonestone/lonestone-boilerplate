@@ -34,6 +34,12 @@ export default antfu(
     rules: {
       'ts/consistent-type-imports': 'off',
       'node/prefer-global/process': ['error', 'always'],
+      'react/no-useless-forward-ref': 'off',
+      'react/no-forward-ref': 'off',
+      '@eslint-react/no-useless-forward-ref': 'off',
+      'eslintreact-hooks-extra/no-unnecessary-use-prefix': 'off',
+      'react-hooks-extra/no-unnecessary-use-prefix': 'off',
+      'react/no-unnecessary-use-prefix': 'off',
     },
   },
 )
