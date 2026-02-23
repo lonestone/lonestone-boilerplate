@@ -1,76 +1,54 @@
-// TEST CONTAINER MANAGER
-//
-// Utilities for managing per-test database containers.
-// This provides maximum isolation with one container per test.
+import { resolve } from 'node:path'
+import { drizzle } from 'drizzle-orm/postgres-js'
+import { migrate } from 'drizzle-orm/postgres-js/migrator'
+import postgres from 'postgres'
+import { Database, dbSchema } from 'src/modules/db/db.module'
 
-import { MikroORM, Options } from '@mikro-orm/core'
-import { createTestMikroOrmOptions } from '../../config/mikro-orm.config'
-
-export interface TestOrmContext {
-  orm: MikroORM
-  mikroOrmOptions: Options
+export interface TestDbContext {
+  db: Database
+  client: postgres.Sql
 }
 
 /**
- * Creates a new PostgreSQL container and initializes MikroORM
- * @returns TestOrmContext with ORM and MikroORM options
+ * Creates a new PostgreSQL connection and initializes Drizzle
+ * @returns TestDbContext with db and client
  */
-export async function createTestOrm(dbConfig: {
+export async function createTestDb(dbConfig: {
   host: string
   port: number
   user: string
   password: string
-}): Promise<TestOrmContext> {
-  // @ts-expect-error - import.meta is not available in CommonJS BUT DUDE I KNOW WHAT I'M DOING
-  // This file is used by Vitest and we need to use the ESM import.meta.glob to get the entities.
-  const entityModules = import.meta.glob('../../modules/**/*.entity.ts', { eager: true })
+  database: string
+}): Promise<TestDbContext> {
+  const adminConnectionString = `postgresql://${dbConfig.user}:${dbConfig.password}@${dbConfig.host}:${dbConfig.port}/postgres`
+  const adminClient = postgres(adminConnectionString)
+  await adminClient.unsafe(`CREATE DATABASE "${dbConfig.database}"`)
+  await adminClient.end()
 
-  const allEntities = Object.values(entityModules).flatMap(mod =>
-    Object.values(mod as object).filter(val => typeof val === 'function'),
-  )
+  const connectionString = `postgresql://${dbConfig.user}:${dbConfig.password}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`
+  const client = postgres(connectionString)
+  const testDb = drizzle(client, { schema: dbSchema })
 
-  const dbName = `test_${crypto.randomUUID()}`
-  process.env.DATABASE_NAME = dbName
-  // Initialize ORM with the container's database
-  const mikroOrmOptions = createTestMikroOrmOptions({
-    entitiesTs: allEntities,
-    allowGlobalContext: true,
-    contextName: `context_${dbName}`,
-    dbName,
-    host: dbConfig.host,
-    port: dbConfig.port,
-    user: dbConfig.user,
-    password: dbConfig.password,
-    preferTs: true,
+  // Run migrations
+  await migrate(testDb, {
+    migrationsFolder: resolve(__dirname, '../../modules/db/migrations'),
   })
 
-  const orm = await MikroORM.init(mikroOrmOptions)
-  await orm.schema.refreshDatabase()
-
   return {
-    orm,
-    mikroOrmOptions,
+    db: testDb,
+    client,
   }
 }
 
 /**
- * Cleans up an ORM
- * @param orm The ORM instance to cleanup
+ * Cleans up a database connection
+ * @param client The postgres client to cleanup
  */
-export async function cleanupTestOrm(orm: MikroORM): Promise<void> {
+export async function cleanupTestDb(client: postgres.Sql): Promise<void> {
   try {
-    await orm.close(true)
+    await client.end()
   }
   catch (error) {
-    console.error('Error during container cleanup:', error)
-    // Continue cleanup even if there are errors
+    console.error('Error during database cleanup:', error)
   }
-}
-
-/**
- * Resets the ORM schema
- * @param orm The ORM instance to reset
- */
-export async function resetOrmSchema(orm: MikroORM): Promise<void> {
-  await orm.schema.refreshDatabase()
 }

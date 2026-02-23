@@ -1,4 +1,3 @@
-import { registerSchema } from '@lonestone/nzoth/server'
 import { z } from 'zod'
 import { modelConfigBase, ModelId } from '../../ai/ai.config'
 import {
@@ -15,8 +14,6 @@ export const chatSchemaTypeSchema = z.enum(['userProfile', 'task', 'product', 'r
   description: 'Predefined schema types for testing structured output',
 })
 
-registerSchema(chatSchemaTypeSchema)
-
 // Extended message schema with application-specific metadata
 export const chatMessageWithSchemaTypeSchema = aiCoreMessageSchema.extend({
   metadata: aiCoreMessageMetadataSchema.extend({
@@ -26,8 +23,6 @@ export const chatMessageWithSchemaTypeSchema = aiCoreMessageSchema.extend({
   title: 'ChatMessageWithSchemaType',
   description: 'A message with optional schemaType metadata for identifying structured output',
 })
-
-registerSchema(chatMessageWithSchemaTypeSchema)
 
 export type ChatMessageWithSchemaType = z.infer<typeof chatMessageWithSchemaTypeSchema>
 
@@ -91,11 +86,6 @@ export const chatSchemas: Record<Exclude<ChatSchemaType, 'none'>, z.ZodType> = {
   product: productSchema,
   recipe: recipeSchema,
 }
-
-registerSchema(taskSchema)
-registerSchema(productSchema)
-registerSchema(recipeSchema)
-registerSchema(userProfileSchema)
 
 // ============================================================================
 // Generate Text - Single prompt text generation

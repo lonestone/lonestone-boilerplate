@@ -11,7 +11,7 @@
     "./icons": "./src/icons/index.ts"
   },
   "scripts": {
-    "registry": "pnpm dlx shadcn@latest"
+    "registry": "bunx shadcn@latest"
   },
   "dependencies": {
     "@boilerstone/openapi-generator": "workspace:*",

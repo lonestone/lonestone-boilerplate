@@ -1,10 +1,13 @@
-import { Module } from '@nestjs/common'
-import { AiService } from './ai.service'
-import { LangfuseService } from './langfuse.service'
+import { Elysia } from 'elysia'
+import { aiService } from './ai.service'
+import { langfuseService } from './langfuse.service'
 
-@Module({
-  controllers: [],
-  providers: [LangfuseService, AiService],
-  exports: [AiService, LangfuseService],
-})
-export class AiModule {}
+export const aiModule = new Elysia({ name: 'ai' })
+  .use(langfuseService)
+  .use(aiService)
+  .derive({ as: 'global' }, (context) => {
+    return {
+      aiService: context.aiService,
+      langfuseService: context.langfuseService,
+    }
+  })

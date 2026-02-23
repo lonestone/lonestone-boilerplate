@@ -1,11 +1,15 @@
-import { Response } from 'supertest'
+export interface TestResponse {
+  status: number
+  body: Record<string, unknown> | null
+  headers: Headers
+}
 
 export function expectPaginatedResponse(
-  response: Response,
+  response: TestResponse,
   expectedLength: number,
 ) {
-  expect(response.body.data).toHaveLength(expectedLength)
-  expect(response.body.meta).toMatchObject({
+  expect(response.body?.data).toHaveLength(expectedLength)
+  expect(response.body?.meta).toMatchObject({
     pageSize: expect.any(Number),
     offset: expect.any(Number),
     hasMore: expect.any(Boolean),
@@ -13,12 +17,12 @@ export function expectPaginatedResponse(
 }
 
 export function expectErrorResponse(
-  response: Response,
+  response: TestResponse,
   statusCode: number,
   messageContains?: string,
 ) {
   expect(response.status).toBe(statusCode)
   if (messageContains) {
-    expect(response.body.message).toContain(messageContains)
+    expect(response.body?.message).toContain(messageContains)
   }
 }

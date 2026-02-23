@@ -9,7 +9,7 @@ if (nodeEnv === 'test') {
   dotenvx.config({ path: join(process.cwd(), '.env.example') })
 }
 else {
-  dotenvx.config()
+  dotenvx.config({ path: join(process.cwd(), '.env') })
 }
 
 function getVersion() {
@@ -36,23 +36,23 @@ export const configValidationSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
   // API
-  API_BASE_URL: z.url(),
-  API_PORT: z.coerce.number(),
+  API_BASE_URL: z.string().url().optional().default('http://localhost:3000'),
+  API_PORT: z.coerce.number().optional().default(3000),
 
   // Database
-  DATABASE_PASSWORD: z.string(),
-  DATABASE_USER: z.string(),
-  DATABASE_NAME: z.string(),
-  DATABASE_HOST: z.string(),
-  DATABASE_PORT: z.coerce.number(),
+  DATABASE_PASSWORD: z.string().optional().default('postgres'),
+  DATABASE_USER: z.string().optional().default('postgres'),
+  DATABASE_NAME: z.string().optional().default('lonestone'),
+  DATABASE_HOST: z.string().optional().default('localhost'),
+  DATABASE_PORT: z.coerce.number().optional().default(5432),
 
   // BetterAuth
-  BETTER_AUTH_SECRET: z.string(),
-  TRUSTED_ORIGINS: z.string().transform(val => val.split(',')),
+  BETTER_AUTH_SECRET: z.string().optional().default('your_secret_here_min_32_chars_use_openssl_rand_base64_32'),
+  TRUSTED_ORIGINS: z.string().transform(val => val.split(',')).optional().default(['http://localhost:3000']),
 
   // Clients
-  CLIENTS_WEB_APP_URL: z.string(),
-  CLIENTS_WEB_SSR_URL: z.string(),
+  CLIENTS_WEB_APP_URL: z.string().optional().default('http://localhost:5173'),
+  CLIENTS_WEB_SSR_URL: z.string().optional().default('http://localhost:5174'),
 
   // Email
   EMAIL_HOST: z.string().default('localhost'),

@@ -1,13 +1,13 @@
 import type { AiGenerateOptions, TokenUsage } from './contracts/ai.contract'
+import { createTraceId } from '@langfuse/tracing'
 import { LanguageModelUsage } from 'ai'
-import { LangfuseService } from './langfuse.service'
 
 // TODO private method should be static
 export async function buildTraceId(options?: AiGenerateOptions): Promise<string | undefined> {
   if (!options?.telemetry) {
     return undefined
   }
-  return LangfuseService.createTraceId(options.telemetry.langfuseTraceName)
+  return createTraceId(options.telemetry.langfuseTraceName)
 }
 
 export function buildTelemetryOptions(options?: AiGenerateOptions, traceId?: string, defaultTraceName = 'ai.generate') {

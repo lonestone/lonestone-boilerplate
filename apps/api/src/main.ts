@@ -1,90 +1,47 @@
-import { createOpenApiDocument, ZodSerializationExceptionFilter, ZodValidationExceptionFilter } from '@lonestone/nzoth/server'
-import { NestFactory } from '@nestjs/core'
-import { DocumentBuilder } from '@nestjs/swagger'
-import { apiReference } from '@scalar/nestjs-api-reference'
-import * as express from 'express'
-import { Logger, LoggerErrorInterceptor } from 'nestjs-pino'
-import { AppModule } from './app.module'
+import { cors } from '@elysiajs/cors'
+import { openapi } from '@elysiajs/openapi'
+import { swagger } from '@elysiajs/swagger'
+import { Elysia } from 'elysia'
+import { appModule } from './app.module'
 import { config } from './config/env.config'
-import { initSharedTracerProvider } from './instrument'
 
-const PREFIX = '/api'
-
-async function bootstrap() {
-  // Init tracing
-  initSharedTracerProvider()
-
-  const app = await NestFactory.create(AppModule, {
-    bodyParser: false,
-  })
-
-  // Use Pino logger
-  app.useLogger(app.get(Logger))
-
-  // Adding error details to the logs
-  // https://github.com/iamolegga/nestjs-pino?tab=readme-ov-file#expose-stack-trace-and-error-class-in-err-property
-  app.useGlobalInterceptors(new LoggerErrorInterceptor())
-
-  // Registering custom exception filter for the Nzoth package
-  app.useGlobalFilters(
-    new ZodValidationExceptionFilter(),
-    new ZodSerializationExceptionFilter(),
-  )
-
-  app.use(
-    (
-      req: express.Request,
-      res: express.Response,
-      next: express.NextFunction,
-    ) => {
-      // If is routes of better auth, next
-      if (req.originalUrl.startsWith(`${PREFIX}/auth`)) {
-        return next()
-      }
-      // If is stripe webhook, we need the raw body
-      if (req.originalUrl.startsWith(`${PREFIX}/stripe/webhook`)) {
-        return express.raw({ type: 'application/json' })(req, res, next)
-      }
-      // Else, apply the express json middleware
-      express.json()(req, res, next)
-    },
-  )
-
-  app.enableCors({
+export const app = new Elysia()
+  .use(cors({
     origin: config.betterAuth.trustedOrigins,
     credentials: true,
-  })
-
-  app.setGlobalPrefix(PREFIX)
-
-  if (config.env === 'development') {
-    const swaggerConfig = new DocumentBuilder()
-      .setOpenAPIVersion('3.1.0')
-      .setTitle('Lonestone API')
-      .setDescription('The Lonestone API description')
-      .setVersion('1.0')
-      .addTag('@lonestone')
-      .build()
-
-    const document = createOpenApiDocument(app, swaggerConfig)
-
-    app.use(
-      `${PREFIX}/docs.json`,
-      (_: express.Request, res: express.Response) => {
-        res.json(document)
+  }))
+  .use(openapi())
+  .use(swagger({
+    documentation: {
+      info: {
+        title: 'Lonestone API',
+        version: config.version,
+        description: 'The Lonestone API',
       },
-    )
+      tags: [
+        { name: 'Admin Posts', description: 'Admin post management' },
+        { name: 'Public Posts', description: 'Public post endpoints' },
+        { name: 'Comments', description: 'Comment management' },
+        { name: 'Auth', description: 'Authentication endpoints' },
+      ],
+    },
+    path: '/api/docs',
+  }))
+  .group('/api', app => app
+    .use(appModule)
+    .get('/health', () => ({
+      status: 'ok',
+      version: config.version,
+      timestamp: new Date().toISOString(),
 
-    app.use(
-      `${PREFIX}/docs`,
-      apiReference({
-        url: `${PREFIX}/docs.json`,
-      }),
-    )
-  }
+    }), {
+      detail: { tags: ['Health'], summary: 'Health check endpoint' },
+    }))
+  .listen(config.api.port)
 
-  app.enableShutdownHooks()
-  await app.listen(config.api.port)
-}
+// eslint-disable-next-line no-console
+console.log(`🦊 Elysia server running at http://localhost:${config.api.port}`)
+// eslint-disable-next-line no-console
+console.log(`📚 API docs available at http://localhost:${config.api.port}/api/docs`)
 
-bootstrap()
+export type App = typeof app

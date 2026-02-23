@@ -17,7 +17,7 @@ export default defineConfig({
     sourcemap: process.env.NODE_ENV === 'development',
   },
   server: {
-    port: 5174,
+    port: 5176,
   },
   optimizeDeps: {
     include: ['@tanstack/react-query', 'zod'],

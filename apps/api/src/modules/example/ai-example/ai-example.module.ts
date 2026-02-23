@@ -1,9 +1,5 @@
-import { Module } from '@nestjs/common'
-import { AiModule } from '../../ai/ai.module'
-import { AiExampleController } from './ai-example.controller'
+import { Elysia } from 'elysia'
+import { aiExampleRoutes } from './ai-example.routes'
 
-@Module({
-  controllers: [AiExampleController],
-  imports: [AiModule],
-})
-export class AiExampleModule {}
+export const aiExampleModule = new Elysia({ name: 'AiExample.Module' })
+  .use(aiExampleRoutes)

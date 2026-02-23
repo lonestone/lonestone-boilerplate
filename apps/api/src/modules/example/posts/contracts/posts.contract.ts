@@ -1,9 +1,3 @@
-import {
-  createFilterQueryStringSchema,
-  createPaginationQuerySchema,
-  createSortingQueryStringSchema,
-  paginatedSchema,
-} from '@lonestone/nzoth/server'
 import { z } from 'zod'
 
 // 📖 See API Guidelines: Schema Definition Best Practices
@@ -31,30 +25,16 @@ export const postContentSchema
     },
   )
 
+export type PostContent = z.infer<typeof postContentSchema>
+
 export const enabledPostSortingKey = [
   'title',
   'createdAt',
 ] as const
 
-export const postSortingSchema = createSortingQueryStringSchema(
-  enabledPostSortingKey,
-)
-
-export type PostSorting = z.infer<typeof postSortingSchema>
-
 export const enabledPostFilteringKeys = [
   'title',
 ] as const
-
-export const postFilteringSchema = createFilterQueryStringSchema(
-  enabledPostFilteringKeys,
-)
-
-export type PostFiltering = z.infer<typeof postFilteringSchema>
-
-export const postPaginationSchema = createPaginationQuerySchema()
-
-export type PostPagination = z.infer<typeof postPaginationSchema>
 
 export const postVersionSchema = z.object({
   id: z.string().uuid(),
@@ -104,16 +84,18 @@ export const userPostSchema = z.object({
   description: 'Schema for a user\'s post',
 })
 
-export const userPostsSchema = paginatedSchema(userPostSchema.omit({
-  content: true,
-}).extend({
-  contentPreview: postContentSchema,
-})).meta({
-  title: 'UserPostsSchema',
-  description: 'Schema for a list of user\'s posts',
+export type UserPost = z.infer<typeof userPostSchema>
+
+export const userPostsSchema = z.object({
+  data: z.array(userPostSchema),
+  meta: z.object({
+    offset: z.number(),
+    pageSize: z.number(),
+    itemCount: z.number(),
+    hasMore: z.boolean(),
+  }),
 })
 
-export type UserPost = z.infer<typeof userPostSchema>
 export type UserPosts = z.infer<typeof userPostsSchema>
 
 // -------------//
@@ -136,14 +118,19 @@ export const publicPostSchema = z.object({
 })
 
 // Schema for a list of public posts
-export const publicPostsSchema = paginatedSchema(publicPostSchema.omit({
-  content: true,
-}).extend({
-  contentPreview: postContentSchema,
-  commentCount: z.number().optional(),
-})).meta({
-  title: 'PublicPostsSchema',
-  description: 'A list of public posts',
+export const publicPostsSchema = z.object({
+  data: z.array(publicPostSchema.omit({
+    content: true,
+  }).extend({
+    contentPreview: postContentSchema,
+    commentCount: z.number().optional(),
+  })),
+  meta: z.object({
+    offset: z.number(),
+    pageSize: z.number(),
+    itemCount: z.number(),
+    hasMore: z.boolean(),
+  }),
 })
 
 export type PublicPost = z.infer<typeof publicPostSchema>

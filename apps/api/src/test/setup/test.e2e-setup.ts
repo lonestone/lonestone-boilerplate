@@ -1,23 +1,23 @@
+import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, inject } from 'vitest'
 import { clearTestSessionStore } from '../helpers/test-auth.helper'
-import { cleanupTestOrm, createTestOrm } from '../helpers/test-db.helper'
+import { cleanupTestDb, createTestDb } from '../helpers/test-db.helper'
 
 beforeEach(async (context) => {
-  const { orm } = await createTestOrm(inject('pgConfig'))
-  context.orm = orm
+  const { db, client } = await createTestDb({
+    host: inject('pgConfig').host,
+    port: inject('pgConfig').port,
+    user: inject('pgConfig').user,
+    password: inject('pgConfig').password,
+    database: `test_${randomUUID()}`,
+  })
+  context.db = db
+  context.dbClient = client
 })
 
 afterEach(async (context) => {
-  const { orm, app } = context
-
-  // Close the NestJS app to avoid leaking HTTP servers
-  if (app) {
-    await app.close()
+  if (context.dbClient) {
+    await cleanupTestDb(context.dbClient)
   }
-
-  // Clean up the ORM
-  await cleanupTestOrm(orm)
-
-  // Clear the test session store to avoid memory leaks
   clearTestSessionStore()
 })

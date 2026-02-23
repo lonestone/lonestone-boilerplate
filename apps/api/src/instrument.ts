@@ -1,6 +1,6 @@
 import { LangfuseSpanProcessor } from '@langfuse/otel'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
-import * as Sentry from '@sentry/nestjs'
+import * as Sentry from '@sentry/bun'
 import {
   SentryPropagator,
   SentrySampler,
@@ -31,7 +31,6 @@ const sentryClient = Sentry.init({
 
   // Enable logs to be sent to Sentry
   enableLogs: true,
-  integrations: [Sentry.pinoIntegration()],
 
   // Critical: prevents Sentry from claiming global provider
   skipOpenTelemetrySetup: true,
@@ -71,7 +70,6 @@ function initSharedTracerProvider(): void {
   // Register with Sentry's propagator and context manager
   provider.register({
     propagator: new SentryPropagator(),
-    contextManager: new Sentry.SentryContextManager(),
   })
 
   console.warn('Shared TracerProvider initialized (Langfuse + Sentry)')

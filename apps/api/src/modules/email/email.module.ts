@@ -1,8 +1,5 @@
-import { Module } from '@nestjs/common'
+import { Elysia } from 'elysia'
 import { EmailService } from './email.service'
 
-@Module({
-  providers: [EmailService],
-  exports: [EmailService],
-})
-export class EmailModule {}
+export const emailModule = new Elysia({ name: 'email' })
+  .use(EmailService)

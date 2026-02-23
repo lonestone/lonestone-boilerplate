@@ -2,11 +2,9 @@ import type { generateText, LanguageModel } from 'ai'
 import type { z } from 'zod'
 import type { ModelId } from './ai.config'
 import type { ToolCall, ToolResult } from './contracts/ai.contract'
-import { Logger } from '@nestjs/common'
+import pino from 'pino'
 import { wrapWithRetryAfter } from './ai-rate-limit.middleware'
 import { modelRegistry, providers } from './ai.config'
-
-const logger = new Logger('AiUtils')
 
 export async function getModel(modelId: ModelId): Promise<LanguageModel> {
   const modelConfig = modelRegistry.get(modelId)
@@ -23,7 +21,7 @@ export async function getModel(modelId: ModelId): Promise<LanguageModel> {
   const providerInstance = provider instanceof Promise ? await provider : provider
   const baseModel = providerInstance(modelConfig.modelString)
 
-  return wrapWithRetryAfter(baseModel, undefined, logger)
+  return wrapWithRetryAfter(baseModel, pino(), undefined)
 }
 
 export async function getDefaultModel(): Promise<LanguageModel | null> {
