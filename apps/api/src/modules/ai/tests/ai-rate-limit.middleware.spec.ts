@@ -1,5 +1,6 @@
 import type { LanguageModel, LanguageModelMiddleware } from 'ai'
-import { Logger } from '@nestjs/common'
+import type Pino from 'pino'
+import pino from 'pino'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { withRetryAfter, wrapWithRetryAfter } from '../ai-rate-limit.middleware'
 
@@ -9,7 +10,7 @@ type GenerateResult = Awaited<ReturnType<NonNullable<LanguageModelMiddleware['wr
 type StreamResult = Awaited<ReturnType<NonNullable<LanguageModelMiddleware['wrapStream']>>>
 
 describe('ai-rate-limit.middleware', () => {
-  let mockLogger: Logger
+  let mockLogger: Pino.Logger
   const mockModel = { provider: 'openai', modelId: 'gpt-4' } as LanguageModel
   const mockParams = {} as WrapGenerateContext['params']
 
@@ -37,7 +38,7 @@ describe('ai-rate-limit.middleware', () => {
       warn: vi.fn(),
       error: vi.fn(),
       log: vi.fn(),
-    } as unknown as Logger
+    } as unknown as Pino.Logger
   })
 
   afterEach(() => {
@@ -46,7 +47,7 @@ describe('ai-rate-limit.middleware', () => {
 
   describe('withRetryAfter - wrapGenerate', () => {
     it('should succeed on first attempt', async () => {
-      const middleware = withRetryAfter({}, mockLogger)
+      const middleware = withRetryAfter({}, pino())
       const mockDoGenerate = vi.fn().mockResolvedValue({ text: 'success' })
 
       const result = await middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
@@ -334,7 +335,7 @@ describe('ai-rate-limit.middleware', () => {
         modelId: 'gpt-4',
       } as LanguageModel
 
-      const wrappedModel = wrapWithRetryAfter(mockModel, {}, mockLogger)
+      const wrappedModel = wrapWithRetryAfter(mockModel, pino(), { maxRetries: 5 })
 
       expect(wrappedModel).toBeDefined()
       expect(wrappedModel).not.toBe(mockModel)
@@ -346,7 +347,7 @@ describe('ai-rate-limit.middleware', () => {
         modelId: 'gpt-4',
       } as LanguageModel
 
-      const wrappedModel = wrapWithRetryAfter(mockModel, { maxRetries: 5 }, mockLogger)
+      const wrappedModel = wrapWithRetryAfter(mockModel, mockLogger, { maxRetries: 5 })
 
       expect(wrappedModel).toBeDefined()
     })

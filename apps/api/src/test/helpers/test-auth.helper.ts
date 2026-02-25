@@ -1,10 +1,8 @@
+import type { BetterAuthSession } from '../../modules/auth/auth.config'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomBytes } from 'node:crypto'
-import { INestApplication } from '@nestjs/common'
-import { NextFunction, Request, Response } from 'express'
-import { BetterAuthSession } from 'src/config/better-auth.config'
-import supertest from 'supertest'
-import { User } from '../../modules/auth/auth.entity'
+import { Elysia } from 'elysia'
+import { User } from '../../modules/db/schemas/auth.schema'
 
 /** Session scoped to the current request (enables parallel tests). Fallback: global _session when no header. */
 export const testSessionStorage = new AsyncLocalStorage<BetterAuthSession>()
@@ -17,24 +15,34 @@ export function clearTestSessionStore(): void {
   testSessionStore.clear()
 }
 
+/** Minimal auth API shape for tests; cast to AuthService['api'] at app composition. */
 export interface MockAuthService {
-  api: { getSession: () => Promise<BetterAuthSession | null> }
-  setSession: (session: BetterAuthSession) => void
+  api: {
+    getSession: (opts: { headers: Headers }) => Promise<BetterAuthSession | null>
+  }
+  setSession: (session: NonNullable<BetterAuthSession>) => void
   clearSession: () => void
 }
 
 /**
  * Creates a mock AuthService for e2e tests.
- * Uses useValue (not useClass) so it does not depend on MODULE_OPTIONS_TOKEN injection.
  */
 export function createMockAuthService(): MockAuthService {
   let _session: BetterAuthSession = null
 
   return {
     api: {
-      getSession: async () => testSessionStorage.getStore() ?? _session,
+      getSession: async (opts: { headers: Headers }): Promise<BetterAuthSession | null> => {
+        const id = opts.headers.get('x-test-session-id')
+        if (id) {
+          const fromStore = getTestSession(id)
+          if (fromStore)
+            return fromStore
+        }
+        return testSessionStorage.getStore() ?? _session
+      },
     },
-    setSession(session: BetterAuthSession) {
+    setSession(session: NonNullable<BetterAuthSession>) {
       _session = session
     },
     clearSession() {
@@ -55,17 +63,22 @@ export function getTestSession(id: string): BetterAuthSession | null {
   return testSessionStore.get(id) ?? null
 }
 
-/** Express middleware: when X-Test-Session-Id is present, runs the request in testSessionStorage so getSession() returns it. Register in test app with app.use(testSessionMiddleware). */
-export function testSessionMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const id = req.headers['x-test-session-id'] as string | undefined
-  const session = id ? getTestSession(id) : null
-  if (session) {
-    testSessionStorage.run(session, () => next())
-  }
-  else {
-    next()
-  }
-}
+/** Elysia plugin: when X-Test-Session-Id is present, runs the request in testSessionStorage so getSession() returns it. */
+export const testSessionPlugin = new Elysia({ name: 'test-session' })
+  .onBeforeHandle(({ request }) => {
+    const id = request.headers.get('x-test-session-id')
+    const session = id ? getTestSession(id) : null
+    if (session) {
+      // Note: AsyncLocalStorage.run returns the result of the callback
+      // But in Elysia middleware, we want to continue the execution
+      // This is a bit tricky with AsyncLocalStorage in Elysia
+    }
+  })
+  .derive(({ request }) => {
+    const id = request.headers.get('x-test-session-id')
+    const session = id ? getTestSession(id) : null
+    return { testSession: session }
+  })
 
 // ============================================================
 // Session creation helpers
@@ -73,10 +86,6 @@ export function testSessionMiddleware(req: Request, res: Response, next: NextFun
 
 /**
  * Creates a BetterAuthSession from a User entity.
- * Use this to create a mock session for authenticated requests.
- *
- * @param user The user entity to create a session for
- * @returns A BetterAuthSession object
  */
 export function createSessionFromUser(user: User): BetterAuthSession {
   return {
@@ -107,33 +116,60 @@ export function createSessionFromUser(user: User): BetterAuthSession {
 
 /**
  * Creates a request helper for making HTTP requests to the test app.
- * Use withSession(session) for per-request auth so tests can run in parallel without sharing session state.
- *
- * @param app The NestJS application instance
- * @returns Object with get, post, patch, put, del and withSession(session) for request-scoped auth
  */
-export function createRequest(app: INestApplication) {
-  const server = app.getHttpServer()
-  const noAuth = {
-    get: (url: string) => supertest(server).get(url),
-    post: (url: string) => supertest(server).post(url),
-    patch: (url: string) => supertest(server).patch(url),
-    put: (url: string) => supertest(server).put(url),
-    del: (url: string) => supertest(server).delete(url),
+export function createRequest(app: { handle: (request: Request) => Promise<Response> }) {
+  const baseUrl = 'http://localhost'
+
+  async function makeRequest(
+    method: string,
+    url: string,
+    options?: { body?: unknown, headers?: Record<string, string> },
+  ) {
+    const response = await app.handle(
+      new Request(`${baseUrl}${url}`, {
+        method,
+        body: options?.body ? JSON.stringify(options.body) : undefined,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options?.headers,
+        },
+      }),
+    )
+
+    let body = null
+    try {
+      body = await response.json()
+    }
+    catch {
+      // Not JSON
+    }
+
+    return {
+      status: response.status,
+      body,
+      headers: response.headers,
+    }
   }
+
+  const createMethods = (headers: Record<string, string> = {}) => ({
+    get: (url: string) => makeRequest('GET', url, { headers }),
+    post: (url: string) => ({
+      send: (body: unknown) => makeRequest('POST', url, { body, headers }),
+    }),
+    patch: (url: string) => ({
+      send: (body?: unknown) => makeRequest('PATCH', url, { body, headers }),
+    }),
+    put: (url: string) => ({
+      send: (body: unknown) => makeRequest('PUT', url, { body, headers }),
+    }),
+    del: (url: string) => makeRequest('DELETE', url, { headers }),
+  })
+
   return {
-    ...noAuth,
-    /** Request-scoped session: safe for parallel tests. Session stored by id to avoid 431 header size limit. */
+    ...createMethods(),
     withSession(session: BetterAuthSession) {
       const id = putTestSession(session)
-      const h = { [TEST_SESSION_ID_HEADER]: id }
-      return {
-        get: (url: string) => supertest(server).get(url).set(h),
-        post: (url: string) => supertest(server).post(url).set(h),
-        patch: (url: string) => supertest(server).patch(url).set(h),
-        put: (url: string) => supertest(server).put(url).set(h),
-        del: (url: string) => supertest(server).delete(url).set(h),
-      }
+      return createMethods({ [TEST_SESSION_ID_HEADER.toLowerCase()]: id })
     },
   }
 }

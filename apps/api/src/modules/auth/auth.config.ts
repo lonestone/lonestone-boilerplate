@@ -1,11 +1,11 @@
-import { betterAuth, BetterAuthOptions, MiddlewareInputContext, MiddlewareOptions, User } from 'better-auth'
+import { betterAuth, BetterAuthOptions, User } from 'better-auth'
+import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { openAPI } from 'better-auth/plugins'
-import { Pool } from 'pg'
+import { Database, dbSchema } from '../db/db.module'
 
 interface BetterAuthOptionsDynamic {
   secret: string
   trustedOrigins: string[]
-  connectionStringUrl: string
   sendResetPassword?: (
     data: { user: User, url: string, token: string },
     request: Request | undefined,
@@ -14,10 +14,8 @@ interface BetterAuthOptionsDynamic {
     data: { user: User, url: string, token: string },
     request: Request | undefined,
   ) => Promise<void>
-  beforeHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
-  afterHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
-  databaseHooks?: BetterAuthOptions['databaseHooks']
   baseUrl: string
+  db: Database
 }
 
 // We should use this, but sadly we do not have our custom fields in the session object (only the plugin added fields)
@@ -29,6 +27,12 @@ export type BetterAuthSession = Awaited<ReturnType<ReturnType<typeof createBette
 export type LoggedInBetterAuthSession = NonNullable<BetterAuthSession>
 
 export type BetterAuthType = ReturnType<typeof createBetterAuth>
+
+export interface AuthService {
+  api: BetterAuthType['api']
+  instance?: BetterAuthType
+}
+
 /**
  * The context type for BetterAuth middleware.
  * This type is derived from the first parameter of the $context method of BetterAuthType.
@@ -58,22 +62,18 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
         return options?.sendVerificationEmail?.(data, request)
       },
     },
-    database: new Pool({
-      connectionString: options.connectionStringUrl,
+    database: drizzleAdapter(options.db, {
+      provider: 'pg',
+      schema: dbSchema,
     }),
-    databaseHooks: options.databaseHooks,
     advanced: {
       database: {
-        generateId: false, // Fix pour Better Auth 1.2.7 - nouvelle syntaxe
+        generateId: false,
       },
     },
     rateLimit: {
       window: 50,
       max: 100,
-    },
-    hooks: {
-      before: options?.beforeHook,
-      after: options?.afterHook,
     },
     plugins: [
       openAPI(),

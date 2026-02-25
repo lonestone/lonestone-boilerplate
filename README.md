@@ -47,7 +47,7 @@ See the [Project Structure](apps/documentation/src/content/docs/explanations/arc
 ## 📋 Prerequisites
 
 - [Node.js](https://nodejs.org/) (version 24.13.0)
-- [PNPM](https://pnpm.io/) (version 10.28.2)
+- [Bun](https://bun.sh/) (version 1.2.4)
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
 
 ## 🚀 Installation
@@ -59,19 +59,19 @@ git clone https://github.com/lonestone/yourproject.git
 cd yourproject
 ```
 
-2. Ensure you have the correct node and pnpm versions (see root `package.json` file's `engines` property).
+2. Ensure you have the correct node and bun versions (see root `package.json` file's `engines` property).
 
 You can use [fnm](https://github.com/Schniz/fnm) for managing your node version
 
 ```bash
 fnm use 24.13.0
-npm i -g pnpm@10.28.2
+curl -fsSL https://bun.sh/install | bash
 ```
 
 3. Install dependencies:
 
 ```bash
-pnpm install
+bun install
 ```
 
 4. Run the setup script
@@ -86,7 +86,7 @@ The project includes an automated setup script that will:
 - Optionally run database migrations
 
 ```bash
-pnpm rock
+bun rock
 ```
 
 The script will guide you through the configuration process interactively. It will:
@@ -99,7 +99,7 @@ The script will guide you through the configuration process interactively. It wi
 5. Start applications in development mode:
 
 ```bash
-pnpm dev
+bun dev
 ```
 
 ### Manual Setup (Alternative)
@@ -121,7 +121,7 @@ cp packages/openapi-generator/.env.example packages/openapi-generator/.env
 2. Start Docker services:
 
 ```bash
-pnpm docker:up
+bun docker:up
 ```
 
 3. Run migrations or set up your schema by following the instructions in the [API README](apps/api/README.md).
@@ -138,27 +138,27 @@ The project uses Docker Compose to provide the following services:
 
 ### Docker
 
-- **Start Docker services**: `pnpm docker:up`
-- **Stop Docker services**: `pnpm docker:down`
-- **View Docker logs**: `pnpm docker:logs`
+- **Start Docker services**: `bun docker:up`
+- **Stop Docker services**: `bun docker:down`
+- **View Docker logs**: `bun docker:logs`
 
 ### Development
 
-- **Start development**: `pnpm dev`
-- **Build applications**: `pnpm build`
-- **Lint applications**: `pnpm lint`
-- **Generate OpenAPI clients**: `pnpm generate`
+- **Start development**: `bun dev`
+- **Build applications**: `bun build`
+- **Lint applications**: `bun lint`
+- **Generate OpenAPI clients**: `bun generate`
 
 ### Database (API)
 
-- **Create migration**: `pnpm db:migrate:create`
-- **Run migrations**: `pnpm db:migrate:up`
-- **Rollback last migration**: `pnpm db:migrate:down`
-- **Initialize data**: `pnpm db:seed`
+- **Create migration**: `bun db:migrate:create`
+- **Run migrations**: `bun db:migrate:up`
+- **Rollback last migration**: `bun db:migrate:down`
+- **Initialize data**: `bun db:seed`
 
 ### Tests
 
-- **Run tests**: `pnpm test`
+- **Run tests**: `bun test`
 
 ## 💻 Development
 
@@ -172,12 +172,12 @@ You can start each application in development mode with the following commands:
 
 ```bash
 # Start API in development mode from root folder
-pnpm --filter=api dev
+bun run --filter=api dev
 ```
 
 ```bash
 # Start API from its own folder
-cd apps/api && pnpm dev
+cd apps/api && bun dev
 ```
 
 ### Shared Packages

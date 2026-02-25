@@ -1,201 +1,204 @@
-import { EntityManager, FilterQuery, QueryOrderMap } from '@mikro-orm/core'
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
-import { User } from '../../auth/auth.entity'
-import { Post } from '../../example/posts/posts.entity'
-import { Comment } from './comments.entity'
-import {
+import type {
   CommentFiltering,
   CommentPagination,
   CommentResponse,
   CommentSorting,
-  CommentsResponse,
   CreateCommentInput,
 } from './contracts/comments.contract'
+import { and, desc, eq, isNull, like, sql } from 'drizzle-orm'
+import { Elysia } from 'elysia'
+import { user } from 'src/modules/db/schemas/auth.schema'
+import { dbModule } from '../../db/db.module'
+import { comments } from '../../db/schemas/example/comments.schema'
+import { posts } from '../../db/schemas/example/posts.schema'
 
-@Injectable()
-export class CommentsService {
-  constructor(private readonly em: EntityManager) {}
+export const CommentsService = new Elysia({ name: 'Comments.Service' })
+  .use(dbModule)
+  .derive({ as: 'scoped' }, ({ db }) => {
+    async function createComment(postSlug: string, data: CreateCommentInput, userId?: string): Promise<CommentResponse> {
+      const post = await db.select().from(posts).where(eq(posts.slug, postSlug)).limit(1).then(result => result[0])
+      if (!post)
+        throw new Error('Post not found')
 
-  async createComment(
-    postSlug: string,
-    data: CreateCommentInput,
-    userId?: string,
-  ): Promise<CommentResponse> {
-    const post = await this.em.findOne(Post, { slug: postSlug })
-    if (!post)
-      throw new NotFoundException('Post not found')
-
-    const comment = new Comment()
-    comment.post = post
-    comment.content = data.content
-
-    // Set user if authenticated
-    if (userId) {
-      const user = await this.em.findOne(User, { id: userId })
-      if (user) {
-        comment.user = user
+      let userdata = null
+      if (userId) {
+        userdata = await db.select().from(user).where(eq(user.id, userId)).limit(1).then(result => result[0])
       }
-    }
-    else {
-      comment.authorName = 'Anonymous'
-    }
 
-    // Handle reply to another comment
-    if (data.parentId) {
-      const parentComment = await this.em.findOne(Comment, { id: data.parentId, post: post.id })
-      if (!parentComment) {
-        throw new NotFoundException('Parent comment not found')
+      // Verify parent comment if provided
+      if (data.parentId) {
+        const parentComment = await db.select().from(comments).where(and(eq(comments.id, data.parentId), eq(comments.postId, post.id))).limit(1).then(result => result[0])
+        if (!parentComment)
+          throw new Error('Parent comment not found')
       }
-      comment.parent = parentComment
-    }
 
-    await this.em.persistAndFlush(comment)
+      const [newComment] = await db.insert(comments).values({
+        postId: post.id,
+        userId: userdata?.id,
+        content: data.content,
+        authorName: userdata ? null : 'Anonymous',
+        parentId: data.parentId,
+      }).returning()
 
-    return this.mapCommentToResponse(comment)
-  }
-
-  async getCommentsByPost(
-    postSlug: string,
-    pagination: CommentPagination,
-    sort?: CommentSorting,
-    filter?: CommentFiltering,
-  ): Promise<CommentsResponse> {
-    const post = await this.em.findOne(Post, { slug: postSlug })
-    if (!post)
-      throw new NotFoundException('Post not found')
-
-    // Only get top-level comments (no parent)
-    const whereFilter: FilterQuery<Comment> = {
-      post: post.id,
-      parent: null,
-    }
-
-    // Apply content filter if provided
-    if (filter && Array.isArray(filter) && filter.length > 0) {
-      const contentFilter = filter.find(f => f.property === 'content')
-      if (contentFilter && contentFilter.value) {
-        whereFilter.content = { $like: `%${contentFilter.value}%` }
+      return {
+        ...newComment,
+        user: userdata ? { id: userdata.id, name: userdata.name } : null,
+        replyIds: [],
+        replyCount: 0,
       }
     }
 
-    const orderBy: QueryOrderMap<Comment> = { createdAt: 'DESC' }
-    if (sort && Array.isArray(sort) && sort.length > 0) {
-      const sortItem = sort[0]
-      orderBy[sortItem.property as keyof Comment] = sortItem.direction
+    type CommentWithRelations = typeof comments.$inferSelect & {
+      user?: typeof user.$inferSelect | null
+      replies?: CommentWithRelations[]
     }
 
-    const [comments, itemCount] = await this.em.findAndCount(
-      Comment,
-      whereFilter,
-      {
-        limit: pagination.pageSize,
-        offset: pagination.offset,
-        orderBy,
-        populate: ['user', 'replies'],
-      },
-    )
+    function mapComment(comment: CommentWithRelations): CommentResponse {
+      return {
+        id: comment.id,
+        content: comment.content,
+        authorName: comment.authorName,
+        createdAt: comment.createdAt,
+        user: comment.user ? { id: comment.user.id, name: comment.user.name } : null,
+        parentId: comment.parentId,
+        replyIds: (comment.replies ?? []).map(reply => reply.id),
+        replyCount: (comment.replies ?? []).length,
+      }
+    }
 
-    // Map comments to response format
-    const mappedComments = comments.map(comment => this.mapCommentToResponse(comment))
-
-    return {
-      data: mappedComments,
+    async function getCommentsByPost(postSlug: string, pagination: CommentPagination, sort?: CommentSorting, filter?: CommentFiltering): Promise<{
+      data: CommentResponse[]
       meta: {
-        itemCount,
-        pageSize: pagination.pageSize,
-        offset: pagination.offset,
-        hasMore: itemCount > pagination.offset + pagination.pageSize,
-      },
+        itemCount: number
+        pageSize: number
+        offset: number
+        hasMore: boolean
+      }
+    }> {
+      const post = await db.query.posts.findFirst({
+        where: eq(posts.slug, postSlug),
+      })
+      if (!post)
+        throw new Error('Post not found')
+
+      // Only get top-level comments (no parent)
+      const conditions = [eq(comments.postId, post.id), isNull(comments.parentId)]
+
+      // Apply content filter if provided
+      if (filter && Array.isArray(filter) && filter.length > 0) {
+        const contentFilter = filter.find(f => f.property === 'content')
+        if (contentFilter && contentFilter.value) {
+          conditions.push(like(comments.content, `%${contentFilter.value}%`))
+        }
+      }
+
+      const where = and(...conditions)
+
+      const commentsData = await db.query.comments.findMany({
+        where,
+        with: { user: true, replies: { with: { user: true, replies: true } } },
+        orderBy: [desc(comments.createdAt)],
+        limit: pagination.limit,
+        offset: pagination.page * pagination.limit,
+      })
+
+      const [{ count: itemCount }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(comments)
+        .where(where)
+
+      return {
+        data: commentsData.map(mapComment),
+        meta: {
+          itemCount,
+          pageSize: pagination.limit,
+          offset: pagination.page * pagination.limit,
+          hasMore: itemCount > pagination.page * pagination.limit + pagination.limit,
+        },
+      }
     }
-  }
 
-  async getCommentReplies(
-    commentId: string,
-    pagination: CommentPagination,
-    sort?: CommentSorting,
-  ): Promise<CommentsResponse> {
-    const comment = await this.em.findOne(Comment, { id: commentId })
-    if (!comment)
-      throw new NotFoundException('Comment not found')
-
-    const orderBy: QueryOrderMap<Comment> = { createdAt: 'DESC' }
-    if (sort && Array.isArray(sort) && sort.length > 0) {
-      const sortItem = sort[0]
-      orderBy[sortItem.property as keyof Comment] = sortItem.direction
-    }
-
-    const [replies, itemCount] = await this.em.findAndCount(
-      Comment,
-      { parent: commentId },
-      {
-        limit: pagination.pageSize,
-        offset: pagination.offset,
-        orderBy,
-        populate: ['user', 'replies'],
-      },
-    )
-
-    // Map replies to response format
-    const mappedReplies = replies.map(reply => this.mapCommentToResponse(reply))
-
-    return {
-      data: mappedReplies,
+    async function getCommentReplies(commentId: string, pagination: CommentPagination, _sort?: CommentSorting): Promise<{
+      data: CommentResponse[]
       meta: {
-        itemCount,
-        pageSize: pagination.pageSize,
-        offset: pagination.offset,
-        hasMore: itemCount > pagination.offset + pagination.pageSize,
-      },
+        itemCount: number
+        pageSize: number
+        offset: number
+        hasMore: boolean
+      }
+    }> {
+      const comment = await db.query.comments.findFirst({
+        where: eq(comments.id, commentId),
+      })
+      if (!comment)
+        throw new Error('Comment not found')
+
+      const where = eq(comments.parentId, commentId)
+
+      const replies = await db.query.comments.findMany({
+        where,
+        with: { user: true, replies: { with: { user: true, replies: true } } },
+        orderBy: [desc(comments.createdAt)],
+        limit: pagination.limit,
+        offset: pagination.page * pagination.limit,
+      })
+
+      const [{ count: itemCount }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(comments)
+        .where(where)
+
+      return {
+        data: replies.map(mapComment),
+        meta: {
+          itemCount,
+          pageSize: pagination.limit,
+          offset: pagination.page * pagination.limit,
+          hasMore: itemCount > pagination.page * pagination.limit + pagination.limit,
+        },
+      }
     }
-  }
 
-  async deleteComment(commentId: string, userId: string): Promise<void> {
-    const comment = await this.em.findOne(Comment, { id: commentId }, { populate: ['post', 'post.user'] })
-    if (!comment)
-      throw new NotFoundException('Comment not found')
+    async function deleteComment(commentId: string, userId?: string): Promise<void> {
+      const comment = await db.query.comments.findFirst({
+        where: eq(comments.id, commentId),
+        with: { post: { with: { user: true } } },
+      })
+      if (!comment)
+        throw new Error('Comment not found')
 
-    // Check if user is the post author
-    if (comment.post.user.id !== userId) {
-      throw new ForbiddenException('Only the post author can delete comments')
+      // Check if user is the post author
+      if (comment.post.user.id !== userId) {
+        throw new Error('Only the post author can delete comments')
+      }
+
+      // Delete all replies first
+      await db.delete(comments).where(eq(comments.parentId, commentId))
+
+      // Then delete the comment itself
+      await db.delete(comments).where(eq(comments.id, commentId))
     }
 
-    // Delete all replies first
-    await this.em.nativeDelete(Comment, { parent: commentId })
+    async function getCommentCount(postSlug: string): Promise<number> {
+      const post = await db.query.posts.findFirst({
+        where: eq(posts.slug, postSlug),
+      })
+      if (!post)
+        throw new Error('Post not found')
 
-    // Then delete the comment itself
-    await this.em.removeAndFlush(comment)
-  }
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(comments)
+        .where(eq(comments.postId, post.id))
 
-  async getCommentCount(postSlug: string): Promise<number> {
-    const post = await this.em.findOne(Post, { slug: postSlug })
-    if (!post)
-      throw new NotFoundException('Post not found')
-    return await this.em.count(Comment, { post: post.id })
-  }
-
-  private mapCommentToResponse(comment: Comment): CommentResponse {
-    const replyIds = comment.replies?.isInitialized()
-      ? comment.replies.getItems().map(reply => reply.id)
-      : []
-
-    const replyCount = comment.replies?.isInitialized()
-      ? comment.replies.count()
-      : 0
+      return count
+    }
 
     return {
-      id: comment.id,
-      content: comment.content,
-      authorName: comment.authorName || null,
-      createdAt: comment.createdAt,
-      user: comment.user
-        ? {
-            id: comment.user.id,
-            name: comment.user.name || 'User',
-          }
-        : null,
-      parentId: comment.parent?.id || null,
-      replyIds,
-      replyCount,
+      createComment,
+      getCommentsByPost,
+      getCommentReplies,
+      deleteComment,
+      getCommentCount,
     }
-  }
-}
+  })

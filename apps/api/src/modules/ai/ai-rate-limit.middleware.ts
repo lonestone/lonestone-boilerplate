@@ -1,5 +1,5 @@
 import type { LanguageModel, LanguageModelMiddleware } from 'ai'
-import { Logger } from '@nestjs/common'
+import type Pino from 'pino'
 import { wrapLanguageModel } from 'ai'
 
 interface RateLimitErrorHeaders {
@@ -108,7 +108,7 @@ function extractRetryAfter(error: RetryableError): string | undefined {
 
 export function withRetryAfter(
   options: WithRetryAfterOptions = {},
-  logger?: Logger,
+  logger: Pino.Logger,
 ): LanguageModelMiddleware {
   const baseDelay = options.baseDelay ?? DEFAULT_OPTIONS.baseDelay
   const maxDelay = options.maxDelay ?? DEFAULT_OPTIONS.maxDelay
@@ -121,8 +121,6 @@ export function withRetryAfter(
     calculateDelay: options.calculateDelay || ((retryCount, retryAfter) =>
       DEFAULT_OPTIONS.calculateDelay(retryCount, retryAfter, baseDelay, maxDelay)),
   }
-
-  const log = logger || new Logger('AiRateLimitMiddleware')
 
   return {
     specificationVersion: 'v3',
@@ -143,7 +141,8 @@ export function withRetryAfter(
           }
 
           if (retryCount >= opts.maxRetries) {
-            log.warn(`Rate limit exceeded after ${opts.maxRetries + 1} attempts`, {
+            logger.warn({
+              message: `Rate limit exceeded after ${opts.maxRetries + 1} attempts`,
               error: error instanceof Error ? error.message : 'Unknown error',
             })
             throw error
@@ -152,7 +151,8 @@ export function withRetryAfter(
           const retryAfter = extractRetryAfter(error)
           const delay = opts.calculateDelay(retryCount, retryAfter)
 
-          log.warn(`Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${opts.maxRetries + 1})`, {
+          logger.warn({
+            message: `Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${opts.maxRetries + 1})`,
             retryAfter,
             retryCount: retryCount + 1,
             maxRetries: opts.maxRetries,
@@ -182,7 +182,8 @@ export function withRetryAfter(
           }
 
           if (retryCount >= opts.maxRetries) {
-            log.warn(`Rate limit exceeded after ${opts.maxRetries + 1} attempts`, {
+            logger.warn({
+              message: `Rate limit exceeded after ${opts.maxRetries + 1} attempts`,
               error: error instanceof Error ? error.message : 'Unknown error',
             })
             throw error
@@ -191,7 +192,8 @@ export function withRetryAfter(
           const retryAfter = extractRetryAfter(error)
           const delay = opts.calculateDelay(retryCount, retryAfter)
 
-          log.warn(`Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${opts.maxRetries + 1})`, {
+          logger.warn({
+            message: `Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${opts.maxRetries + 1})`,
             retryAfter,
             retryCount: retryCount + 1,
             maxRetries: opts.maxRetries,
@@ -209,8 +211,8 @@ export function withRetryAfter(
 
 export function wrapWithRetryAfter(
   model: LanguageModel,
+  logger: Pino.Logger,
   options?: WithRetryAfterOptions,
-  logger?: Logger,
 ): LanguageModel {
   return wrapLanguageModel({
     model: model as Parameters<typeof wrapLanguageModel>[0]['model'],

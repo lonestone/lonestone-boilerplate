@@ -3,58 +3,34 @@
 // Role-based session helpers to reduce boilerplate in e2e tests.
 // Use factories (src/factories/) for entity creation; these helpers combine user + session.
 
-import type { EntityManager } from '@mikro-orm/core'
-import type { BetterAuthSession } from '../../config/better-auth.config'
-import type { User } from '../../modules/auth/auth.entity'
-import { createUserData } from '../../factories/user.factory'
+import type { LoggedInBetterAuthSession } from 'src/modules/auth/auth.config'
+import type { Database } from 'src/modules/db/db.module'
+import type { User } from 'src/modules/db/schemas/auth.schema'
+import { user } from 'src/modules/db/schemas/auth.schema'
 import { createSessionFromUser } from './test-auth.helper'
 
 export interface UserWithSession {
   user: User
-  session: BetterAuthSession
+  session: LoggedInBetterAuthSession
 }
 
 /**
  * Creates a user and session. Use for tests that need an authenticated user.
  */
 export async function createUserWithSession(
-  em: EntityManager,
+  db: Database,
   overrides?: Partial<User>,
 ): Promise<UserWithSession> {
-  const user = await createUserData(em, overrides)
-  const session = createSessionFromUser(user)
-  return { user, session }
+  const newUser = await db.insert(user).values({
+    name: 'Test User',
+    email: 'test@example.com',
+    emailVerified: true,
+    ...overrides,
+  }).returning().then(result => result[0])
+
+  if (!newUser)
+    throw new Error('Failed to create user')
+
+  const session = createSessionFromUser(newUser) as LoggedInBetterAuthSession
+  return { user: newUser, session }
 }
-
-// ============================================================
-// Role-specific helpers (to extend for projects with roles)
-// ============================================================
-
-// Example for projects using Better Auth organizations plugin:
-//
-// export interface AdminWithSession {
-//   user: User
-//   organization: Organization
-//   membership: OrganizationMember
-//   session: BetterAuthSession
-// }
-//
-// export async function createAdminWithSession(
-//   em: EntityManager,
-//   organization: Organization,
-// ): Promise<AdminWithSession> {
-//   const user = await createUserData(em)
-//   const membership = await addMemberToOrganization(em, organization, user, 'admin')
-//   const session = createSessionFromUser(user, { activeOrganizationId: organization.id })
-//   return { user, organization, membership, session }
-// }
-
-// Example for projects with simple role field:
-//
-// export async function createSuperadminWithSession(
-//   em: EntityManager,
-// ): Promise<UserWithSession> {
-//   const user = await createUserData(em, { role: 'superadmin' })
-//   const session = createSessionFromUser(user)
-//   return { user, session }
-// }

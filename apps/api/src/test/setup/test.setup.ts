@@ -1,1 +1,1 @@
-import 'reflect-metadata'
+// No reflect-metadata needed for Elysia/Drizzle

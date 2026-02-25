@@ -4,11 +4,12 @@
 // are set before env.config.ts validates them.
 // Test containers are now managed per test for maximum isolation.
 
+import type postgres from 'postgres'
+import type { BetterAuthSession } from 'src/modules/auth/auth.config'
+import type { Database } from 'src/modules/db/db.module'
 import type { TestProject } from 'vitest/node'
-import { EntityManager, MikroORM } from '@mikro-orm/core'
-import { INestApplication } from '@nestjs/common'
+import type { TestRequest } from '../helpers/test-auth.helper'
 import { PostgreSqlContainer } from '@testcontainers/postgresql'
-import { TestRequest } from '../helpers/test-auth.helper'
 
 declare module 'vitest' {
   export interface ProvidedContext {
@@ -21,10 +22,12 @@ declare module 'vitest' {
   }
 
   export interface TestContext {
-    orm: MikroORM
-    em: EntityManager
+    app: { handle: (request: Request) => Promise<Response> }
+    db: Database
+    dbClient: postgres.Sql
     request: TestRequest
-    app: INestApplication
+    setSession: (session: NonNullable<BetterAuthSession>) => void
+    clearSession: () => void
   }
 }
 

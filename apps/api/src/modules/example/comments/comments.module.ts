@@ -1,10 +1,7 @@
-import { Module } from '@nestjs/common'
-import { CommentsController } from './comments.controller'
+import { Elysia } from 'elysia'
+import { commentsRoutes } from './comments.routes'
 import { CommentsService } from './comments.service'
 
-@Module({
-  controllers: [CommentsController],
-  providers: [CommentsService],
-  exports: [CommentsService],
-})
-export class CommentsModule {}
+export const commentsModule = new Elysia({ name: 'comments' })
+  .use(CommentsService)
+  .use(commentsRoutes)

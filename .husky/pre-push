@@ -10,14 +10,14 @@ fi
 
 # Run linter
 echo "🔍 Running linter..."
-pnpm lint || exit 1
+bun run lint || exit 1
 
 # Run type checking
 echo "📋 Running type check..."
-pnpm typecheck || exit 1
+bun run typecheck || exit 1
 
 # Run tests
 echo "🧪 Running tests..."
-pnpm test || exit 1
+bun test || exit 1
 
 echo "✅ All pre-commit checks passed!"

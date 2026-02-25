@@ -1,9 +1,3 @@
-import {
-  createFilterQueryStringSchema,
-  createPaginationQuerySchema,
-  createSortingQueryStringSchema,
-  paginatedSchema,
-} from '@lonestone/nzoth/server'
 import { z } from 'zod'
 
 // Schema for creating a comment
@@ -41,7 +35,15 @@ export const commentSchema = z.object({
 export type CommentResponse = z.infer<typeof commentSchema>
 
 // Schema for comments list
-export const commentsSchema = paginatedSchema(commentSchema).meta({
+export const commentsSchema = z.object({
+  data: z.array(commentSchema),
+  meta: z.object({
+    itemCount: z.number(),
+    pageSize: z.number(),
+    offset: z.number(),
+    hasMore: z.boolean(),
+  }),
+}).meta({
   title: 'CommentsSchema',
   description: 'Schema for a paginated list of comments',
 })
@@ -54,9 +56,9 @@ export const enabledCommentSortingKey = [
   'authorName',
 ] as const
 
-export const commentSortingSchema = createSortingQueryStringSchema(
-  enabledCommentSortingKey,
-)
+export const commentSortingSchema = z.object({
+  sort: z.enum(enabledCommentSortingKey),
+})
 
 export type CommentSorting = z.infer<typeof commentSortingSchema>
 
@@ -64,12 +66,15 @@ export const enabledCommentFilteringKeys = [
   'content',
 ] as const
 
-export const commentFilteringSchema = createFilterQueryStringSchema(
-  enabledCommentFilteringKeys,
-)
+export const commentFilteringSchema = z.object({
+  filter: z.enum(enabledCommentFilteringKeys),
+})
 
 export type CommentFiltering = z.infer<typeof commentFilteringSchema>
 
-export const commentPaginationSchema = createPaginationQuerySchema()
+export const commentPaginationSchema = z.object({
+  page: z.number(),
+  limit: z.number(),
+})
 
 export type CommentPagination = z.infer<typeof commentPaginationSchema>

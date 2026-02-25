@@ -4,9 +4,9 @@
   "private": true,
   "main": "./index.ts",
   "scripts": {
-    "dev": "dotenvx run -- wait-on ${API_URL}/docs-json && pnpm generate --watch",
+    "dev": "dotenvx run -- wait-on ${API_URL}/docs-json && bun run generate --watch",
     "preprocess": "node ./preprocess/index.js",
-    "generate": "cross-env dotenvx run -- pnpm preprocess && dotenvx run -- openapi-ts -f ./openapi-ts.config.ts"
+    "generate": "cross-env dotenvx run -- bun run preprocess && dotenvx run -- openapi-ts -f ./openapi-ts.config.ts"
   },
   "peerDependencies": {
     "zod": "catalog:validation"

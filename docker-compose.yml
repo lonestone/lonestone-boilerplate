@@ -1,7 +1,8 @@
 services:
   # Base de données
-  db:
+  db-elysia:
     image: postgres:16-alpine
+    container_name: elysia-db
     environment:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
@@ -16,8 +17,8 @@ services:
       timeout: 5s
       retries: 5
 
-  maildev:
-    container_name: lonestone-maildev
+  maildev-elysia:
+    container_name: elysia-maildev
     image: netoun/mail-server-dev
     ports:
       - '${SMTP_PORT_WEB}:1080'
