@@ -27,6 +27,7 @@ modules/feature-name/
 ├── feature-name.service.ts    # Business logic
 ├── feature-name.entity.ts     # If there is a single entity, a single entity file is fine
 ├── feature-name.contract.ts   # If there is a single entity, a single contract is fine
+├── feature-name.mapper.ts    # Mapper for the entity (transform entity to contract, used in the controller)
 └── contracts/                 # DTOs and validation schemas
     └── feature-name.contract.ts # If multiple contracts are needed, create a subfolder to store them together
 └── entities/                 # Database entities
@@ -180,6 +181,17 @@ export const userResponseSchema = z.object({
 - Use consistent response formats
 - Return typed responses using Zod schemas
 - Document responses with OpenAPI annotations
+
+### Services
+
+- Services should usually return entities, to be used accross other services without the need to transform contract back to entities (or re-fetch from the database). If the project aims for a full hexagonal architecture, you can return contracts from the services but they should be different from the contracts used in the controller.
+
+### Response Mappers
+
+- It's a good practise to use a mapper to transform the entity to the contract in the controller.
+- Mappers can be static class or injectable service when they need to use other services.
+- Mappers should be named `entity.mapper.ts`
+- Mappers should handle collections gracefully, using MikroORM `getItems` after checking if the collection has been initialized via `entity.collection.isInitialized()`
 
 ### Error Handling
 

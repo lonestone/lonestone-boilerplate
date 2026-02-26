@@ -14,15 +14,18 @@ import {
 import { z } from 'zod'
 import { Session } from '../../auth/auth.decorator'
 import { AuthGuard } from '../../auth/auth.guard'
+import { CommentsMapper } from './comments.mapper'
 import { CommentsService } from './comments.service'
 import {
   CommentFiltering,
   commentFilteringSchema,
   CommentPagination,
   commentPaginationSchema,
+  CommentResponse,
   commentSchema,
   CommentSorting,
   commentSortingSchema,
+  CommentsResponse,
   commentsSchema,
   CreateCommentInput,
   createCommentSchema,
@@ -32,16 +35,20 @@ import {
   postSlug: z.string(),
 }))
 export class CommentsController {
-  constructor(private readonly commentsService: CommentsService) {}
+  constructor(
+    private readonly commentsService: CommentsService,
+    private readonly commentsMapper: CommentsMapper,
+  ) {}
 
   @TypedRoute.Post('', commentSchema)
   async createComment(
     @TypedParam('postSlug', z.string()) postSlug: string,
     @TypedBody(createCommentSchema) body: CreateCommentInput,
     @Optional() @Session() session?: { user: { id: string } },
-  ) {
+  ): Promise<CommentResponse> {
     const userId = session?.user?.id
-    return await this.commentsService.createComment(postSlug, body, userId)
+    const comment = await this.commentsService.createComment(postSlug, body, userId)
+    return this.commentsMapper.toComment(comment)
   }
 
   @TypedRoute.Get('', commentsSchema)
@@ -50,13 +57,14 @@ export class CommentsController {
     @PaginationParams(commentPaginationSchema) pagination: CommentPagination,
     @SortingParams(commentSortingSchema) sort?: CommentSorting,
     @FilteringParams(commentFilteringSchema) filter?: CommentFiltering,
-  ) {
-    return await this.commentsService.getCommentsByPost(
+  ): Promise<CommentsResponse> {
+    const result = await this.commentsService.getCommentsByPost(
       postSlug,
       pagination,
       sort,
       filter,
     )
+    return this.commentsMapper.toCommentsResponse(result)
   }
 
   @TypedRoute.Get('count')
@@ -70,12 +78,13 @@ export class CommentsController {
     @TypedParam('commentId', z.string()) commentId: string,
     @PaginationParams(commentPaginationSchema) pagination: CommentPagination,
     @SortingParams(commentSortingSchema) sort?: CommentSorting,
-  ) {
-    return await this.commentsService.getCommentReplies(
+  ): Promise<CommentsResponse> {
+    const result = await this.commentsService.getCommentReplies(
       commentId,
       pagination,
       sort,
     )
+    return this.commentsMapper.toCommentsResponse(result)
   }
 
   @TypedRoute.Delete(':commentId')

@@ -2,25 +2,40 @@ import { EntityManager, FilterQuery } from '@mikro-orm/core'
 import { Injectable, NotFoundException } from '@nestjs/common'
 import slugify from 'slugify'
 import { User } from '../../auth/auth.entity'
+import { buildOrderBy } from '../../db/query-order.util'
 import { Comment } from '../../example/comments/comments.entity'
 import {
   CreatePostInput,
   PostFiltering,
   PostPagination,
   PostSorting,
-  PublicPosts,
   UpdatePostInput,
-  UserPost,
-  UserPosts,
-} from '../posts/contracts/posts.contract'
-import { PublicPost } from './contracts/posts.contract'
+} from './contracts/posts.contract'
 import { Post, PostVersion } from './posts.entity'
+
+export interface UserPostsResult {
+  posts: Post[]
+  total: number
+  pagination: PostPagination
+}
+
+export interface PublicPostResult {
+  post: Post
+  commentCount: number
+}
+
+export interface PublicPostsResult {
+  posts: Post[]
+  total: number
+  pagination: PostPagination
+  commentCountByPostId: Map<string, number>
+}
 
 @Injectable()
 export class PostService {
   constructor(private readonly em: EntityManager) {}
 
-  async createPost(userId: string, data: CreatePostInput): Promise<UserPost> {
+  async createPost(userId: string, data: CreatePostInput): Promise<Post> {
     const user = await this.em.findOne(User, { id: userId })
     if (!user)
       throw new Error('User not found')
@@ -32,29 +47,17 @@ export class PostService {
     version.post = post
     version.title = data.title
     version.content = data.content
+    post.versions.add(version)
 
     await this.em.persistAndFlush([post, version])
-    return {
-      id: post.id,
-      title: version.title,
-      content: version.content,
-      type: 'draft',
-      publishedAt: post.publishedAt,
-      versions: [
-        {
-          id: version.id,
-          title: version.title,
-          createdAt: version.createdAt,
-        },
-      ],
-    } satisfies UserPost
+    return post
   }
 
   async updatePost(
     postId: string,
     userId: string,
     data: UpdatePostInput,
-  ): Promise<UserPost> {
+  ): Promise<Post> {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
@@ -83,6 +86,7 @@ export class PostService {
       version.post = post
       version.title = data.title ?? latestVersion.title
       version.content = data.content ?? latestVersion.content
+      post.versions.add(version)
       await this.em.persistAndFlush(version)
     }
     else {
@@ -94,23 +98,7 @@ export class PostService {
       await this.em.flush()
     }
 
-    return {
-      id: post.id,
-      title: latestVersion.title,
-      content: latestVersion.content ?? [],
-      type:
-        post.publishedAt && post.publishedAt < latestVersion.createdAt
-          ? 'published'
-          : 'draft',
-      publishedAt: post.publishedAt,
-      versions: [
-        {
-          id: latestVersion.id,
-          title: latestVersion.title,
-          createdAt: latestVersion.createdAt,
-        },
-      ],
-    } satisfies UserPost
+    return post
   }
 
   async computeSlug(post: Post) {
@@ -125,7 +113,7 @@ export class PostService {
     return `${baseSlug}-${shortId}`
   }
 
-  async publishPost(userId: string, postId: string) {
+  async publishPost(userId: string, postId: string): Promise<Post> {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
@@ -160,25 +148,15 @@ export class PostService {
 
     await this.em.flush()
 
-    return {
-      id: post.id,
-      title: latestVersion.title,
-      content: latestVersion.content ?? [],
-      type: 'published',
-      publishedAt: post.publishedAt,
-      slug: post.slug,
-      versions: [
-        {
-          id: latestVersion.id,
-          title: latestVersion.title,
-          createdAt: latestVersion.createdAt,
-        },
-      ],
-    }
+    return post
   }
 
-  async unpublishPost(userId: string, postId: string) {
-    const post = await this.em.findOne(Post, { id: postId, user: userId })
+  async unpublishPost(userId: string, postId: string): Promise<Post> {
+    const post = await this.em.findOne(
+      Post,
+      { id: postId, user: userId },
+      { populate: ['versions'] },
+    )
     if (!post)
       throw new Error('Post not found')
 
@@ -187,7 +165,7 @@ export class PostService {
     return post
   }
 
-  async getUserPost(postId: string, userId: string): Promise<UserPost> {
+  async getUserPost(postId: string, userId: string): Promise<Post> {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
@@ -198,27 +176,7 @@ export class PostService {
     if (!post)
       throw new Error('Post not found')
 
-    return {
-      id: post.id,
-      title:
-        post.versions.getItems()[post.versions.getItems().length - 1].title,
-      content:
-        post.versions.getItems()[post.versions.getItems().length - 1].content
-        ?? [],
-      type:
-        post.publishedAt
-        && post.publishedAt
-        < post.versions.getItems()[post.versions.getItems().length - 1]
-          .createdAt
-          ? 'published'
-          : 'draft',
-      publishedAt: post.publishedAt,
-      versions: post.versions.getItems().map(version => ({
-        id: version.id,
-        title: version.title,
-        createdAt: version.createdAt,
-      })),
-    } satisfies UserPost
+    return post
   }
 
   async getUserPosts(
@@ -226,24 +184,18 @@ export class PostService {
     pagination: PostPagination,
     sort?: PostSorting,
     filter?: PostFiltering,
-  ): Promise<UserPosts> {
+  ): Promise<UserPostsResult> {
     const where: FilterQuery<Post> = { user: userId }
-    const orderBy: Record<string, 'ASC' | 'DESC'> = { createdAt: 'DESC' }
+    const orderBy = buildOrderBy({
+      sort,
+      allowedProperties: ['createdAt'] as const,
+      defaultProperty: 'createdAt',
+    })
 
     if (filter?.length) {
       filter.forEach((item) => {
         if (item.property === 'title') {
           where.versions = { title: { $like: `%${item.value}%` } }
-        }
-      })
-    }
-
-    if (sort?.length) {
-      sort.forEach((sortItem) => {
-        if (sortItem.property !== 'title') {
-          orderBy[sortItem.property] = sortItem.direction.toUpperCase() as
-          | 'ASC'
-          | 'DESC'
         }
       })
     }
@@ -253,200 +205,96 @@ export class PostService {
       orderBy,
       limit: pagination.pageSize,
       offset: pagination.offset,
-      fields: [
-        'id',
-        'slug',
-        'publishedAt',
-        'versions.id',
-        'versions.title',
-        'versions.createdAt',
-      ],
     })
 
-    const data = await Promise.all(
-      posts.map(async (post) => {
-        const latestVersionId
-          = post.versions.getItems()[post.versions.getItems().length - 1].id
-        if (!latestVersionId)
-          throw new Error(`No version found for post ${post.id}`)
-
-        // Trouver le premier contenu de type text pour l'aperçu
-        const latestVersion = await this.em.findOne(
-          PostVersion,
-          { id: latestVersionId },
-          {
-            orderBy: { createdAt: 'ASC' },
-          },
-        )
-
-        if (!latestVersion)
-          throw new Error(`No version found for post ${post.id}`)
-
-        const contentPreview = latestVersion.content?.find(
-          c => c.type === 'text',
-        ) ?? {
-          type: 'text' as const,
-          data: '',
-        }
-
-        return {
-          publishedAt: post.publishedAt,
-          title: latestVersion.title,
-          slug: post.slug,
-          id: post.id,
-          versions: post.versions.getItems().map(version => ({
-            id: version.id,
-            title: version.title,
-            createdAt: version.createdAt,
-          })),
-          type:
-            post.publishedAt && post.publishedAt < latestVersion.createdAt
-              ? 'published'
-              : 'draft',
-          contentPreview,
-        } satisfies UserPosts['data'][number]
-      }),
-    )
-
     return {
-      data,
-      meta: {
-        itemCount: total,
-        pageSize: pagination.pageSize,
-        offset: pagination.offset,
-        hasMore: pagination.offset + pagination.pageSize < total,
-      },
+      posts,
+      total,
+      pagination,
     }
   }
 
-  async getPublicPost(slug: string): Promise<PublicPost> {
-    // Get the published post with its author
+  async getPublicPost(slug: string): Promise<PublicPostResult> {
     const post = await this.em.findOne(
       Post,
       { slug, publishedAt: { $ne: null } },
       {
-        populate: ['user'],
+        populate: ['user', 'versions'],
       },
     )
 
     if (!post)
       throw new Error('Post not found')
 
-    // Get the last version before the publication date
-    const latestVersion = await this.em.findOne(
-      PostVersion,
-      {
-        post: post.id,
-        createdAt: { $lte: post.publishedAt! },
-      },
-      {
-        orderBy: { createdAt: 'DESC' },
-      },
-    )
-
-    if (!latestVersion)
-      throw new Error('No valid version found')
-
-    // Get comment count
     const commentCount = await this.em.count(Comment, {
       post: post.id,
     })
 
-    // Return the public format
     return {
-      publishedAt: post.publishedAt!,
-      title: latestVersion.title,
-      content: latestVersion.content || [],
-      author: {
-        name: post.user.name,
-      },
-      slug: post.slug,
+      post,
       commentCount,
     }
   }
 
-  async getRandomPublicPost(): Promise<PublicPost> {
+  async getRandomPublicPost(): Promise<PublicPostResult> {
     const postsCount = await this.em.count(Post, {
       publishedAt: { $ne: null },
     })
+    if (postsCount === 0)
+      throw new NotFoundException('No post found')
+
     const randomIndex = Math.floor(Math.random() * postsCount)
-    const postSlug = await this.em.find(
+    const posts = await this.em.find(
       Post,
       { publishedAt: { $ne: null } },
       {
-        populate: ['user'],
+        populate: ['user', 'versions'],
         orderBy: { createdAt: 'DESC' },
         offset: randomIndex,
         limit: 1,
       },
     )
 
-    if (!postSlug[0].slug)
+    const randomPost = posts[0]
+    if (!randomPost?.slug)
       throw new NotFoundException('No post found')
-    return this.getPublicPost(postSlug[0].slug)
+
+    const commentCount = await this.em.count(Comment, { post: randomPost.id })
+
+    return {
+      post: randomPost,
+      commentCount,
+    }
   }
 
   async getPublicPosts(
     pagination: PostPagination,
     sort?: PostSorting,
     filter?: PostFiltering,
-  ): Promise<PublicPosts> {
-    // Build the base query for published posts
+  ): Promise<PublicPostsResult> {
     const where: FilterQuery<Post> = { publishedAt: { $ne: null } }
-    const orderBy: Record<string, 'ASC' | 'DESC'> = { publishedAt: 'DESC' }
+    const orderBy = buildOrderBy({
+      sort,
+      allowedProperties: ['publishedAt', 'createdAt'] as const,
+      defaultProperty: 'publishedAt',
+      stableProperty: 'createdAt',
+    })
 
-    // Apply the filters if present
     if (filter?.length) {
       filter.forEach((item) => {
         if (item.property === 'title') {
-          // For the title filter, we must pass through the versions
           where.versions = { title: { $like: `%${item.value}%` } }
         }
       })
     }
 
-    // Apply the sorting if present
-    if (sort?.length) {
-      sort.forEach((sortItem) => {
-        if (sortItem.property !== 'title') {
-          orderBy[sortItem.property] = sortItem.direction.toUpperCase() as
-          | 'ASC'
-          | 'DESC'
-        }
-      })
-    }
-
-    // Get the posts with pagination
     const [posts, total] = await this.em.findAndCount(Post, where, {
-      populate: ['user'],
+      populate: ['user', 'versions'],
       orderBy,
       limit: pagination.pageSize,
       offset: pagination.offset,
     })
 
-    // Get the last valid versions for all posts in a single query
-    const postIds = posts.map(p => p.id)
-
-    // First, get all versions for these posts
-    const allVersions = await this.em.find(
-      PostVersion,
-      { post: { $in: postIds } },
-      {
-        orderBy: { createdAt: 'DESC' },
-      },
-    )
-
-    // Organize the versions by post
-    const versionsByPost = new Map<string, PostVersion[]>()
-    allVersions.forEach((version) => {
-      const postId = version.post.id
-      if (!versionsByPost.has(postId)) {
-        versionsByPost.set(postId, [])
-      }
-      versionsByPost.get(postId)!.push(version)
-    })
-
-    // Get comment counts for all posts
     const commentCountsPromises = posts.map(post =>
       this.em.count(Comment, { post: post.id }),
     )
@@ -456,47 +304,11 @@ export class PostService {
       commentCountByPostId.set(post.id, commentCounts[index])
     })
 
-    // Build the response
-    const data = posts.map((post) => {
-      // Find the last valid version for this post
-      const versions = versionsByPost.get(post.id) || []
-      const validVersions = versions.filter(
-        v => v.createdAt <= post.publishedAt!,
-      )
-      const latestVersion = validVersions[0] // Already sorted by date descending
-
-      if (!latestVersion) {
-        throw new Error(`No valid version found for post ${post.id}`)
-      }
-
-      // Find a content preview (first text element)
-      const contentPreview = latestVersion.content?.find(
-        c => c.type === 'text',
-      ) || {
-        type: 'text',
-        data: '',
-      }
-
-      return {
-        title: latestVersion.title,
-        publishedAt: post.publishedAt!,
-        slug: post.slug,
-        author: {
-          name: post.user.name,
-        },
-        contentPreview,
-        commentCount: commentCountByPostId.get(post.id) || 0,
-      }
-    })
-
     return {
-      data,
-      meta: {
-        itemCount: total,
-        pageSize: pagination.pageSize,
-        offset: pagination.offset,
-        hasMore: pagination.offset + pagination.pageSize < total,
-      },
+      posts,
+      total,
+      pagination,
+      commentCountByPostId,
     }
   }
 }
