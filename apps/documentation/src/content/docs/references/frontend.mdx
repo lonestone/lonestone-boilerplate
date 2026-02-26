@@ -40,8 +40,10 @@ If not specified otherwise, follow the following guidelines:
     - routes are usually defined in a `routes.ts` file
 - Use react-hook-form for form handling.
 - Use zod for form validation.    
+- Use @boilerstone/i18n for internationalization, no hardcoded strings.
 - Use tanstack-query for data fetching
     - structure queries by features, put the queries options in /features/featureName/utils/featureName-queries.ts
+
 ```
 export function fetchOrganizationQueryOptions(options: { pageSize: number, page: number, search?: string }) {
   return {
