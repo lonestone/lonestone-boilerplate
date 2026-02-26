@@ -38,11 +38,11 @@ This project uses a "monorepo" architecture. The advantages are numerous, but pr
 
 ## 🛠️ Tech Stack
 
-See the [Architecture](apps/documentation/src/content/docs/explanations/architecture.mdx) page for more details.
+See the [Architecture](apps/documentation/src/content/docs/explanations/1_architecture.mdx) page for more details.
 
 ## 📁 Project Structure
 
-See the [Project Structure](apps/documentation/src/content/docs/explanations/architecture.mdx) page for more details.
+See the [Project Structure](apps/documentation/src/content/docs/explanations/1_architecture.mdx) page for more details.
 
 ## 📋 Prerequisites
 
@@ -199,7 +199,7 @@ It includes the following jobs:
 - **Type Check**: Checks TypeScript types for all packages and applications
 - **Build**: Builds all packages and applications
 
-For more information, see the [GitHub Workflows README](.github/README.md).
+For more information, see the [GitHub Actions documentation](.github/ACTIONS.md).
 
 ### AI Agents good practice
 When working with an AI Agent (such as Copilot, Cursor or Claude), please follow these guidelines:

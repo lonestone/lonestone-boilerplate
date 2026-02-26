@@ -9,7 +9,6 @@ The API is organized into modules following NestJS's modular architecture:
 
 ### Modules
 - [Auth](./src/modules/auth/README.md)
-- [Config](./src/modules/config/README.md)
 - [Db](./src/modules/db/README.md)
 - [Email](./src/modules/email/README.md)
 
@@ -44,7 +43,7 @@ pnpm install
 | `NODE_ENV` | Environment (development, production) | No | `development` |
 | `TRUSTED_ORIGINS` | List of trusted origins. ⚠️ If you change the port of your frontends, you need to update this variable. | Yes | - |
 
-See [`apps/api/.env.example`](/apps/api/.env.example) for reference.
+See [`.env.example`](./.env.example) for reference.
 
 ## Getting Started
 

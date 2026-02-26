@@ -2,7 +2,7 @@
 
 A clean service for AI text generation using the [Vercel AI SDK](https://sdk.vercel.ai/) with multiple provider support, schema validation, tool calling, and streaming.
 
-For tracing and Langfuse integration details, see the [AI explanation docs](../../../documentation/src/content/docs/explanations/core%20features/ai.mdx).
+For tracing and Langfuse integration details, see the [AI explanation docs](../../../../documentation/src/content/docs/core-features/4_ai.mdx).
 
 ## Configuration
 

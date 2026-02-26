@@ -71,7 +71,7 @@ Unlike a SPA, an SSR application can use environment variables at runtime becaus
 | `VITE_API_URL` | Backend API URL | Yes | - |
 | `NODE_ENV` | Environment (development, production) | No | `development` |
 
-See [.env.example](/apps/web-ssr/.env.example) as a reference.
+See [.env.example](./.env.example) as a reference.
 
 ## Building with Docker
 
