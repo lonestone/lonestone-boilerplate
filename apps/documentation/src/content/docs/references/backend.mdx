@@ -98,6 +98,7 @@ If you want to create a new module from scratch without the generator, you shoul
 - This metadata is automatically used by `@lonestone/nzoth/server` to generate API documentation
 - It provides better developer experience with auto-generated OpenAPI specs
 - The metadata includes title, description, examples, and other OpenAPI-specific information
+- Enums should be present in the contract files, not in the entities. And they should be exposed via `meta()` to be used on the frontends.
 
 **Schema Structure:**
 - Start with basic validation rules (type, length, format, etc.)
