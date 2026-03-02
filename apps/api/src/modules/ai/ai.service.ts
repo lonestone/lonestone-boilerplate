@@ -97,6 +97,7 @@ export class AiService implements OnModuleInit {
     prompt,
     model,
     options,
+    tools,
     signal,
   }: GenerateTextInput): Promise<GenerateTextServiceResult> {
     const abortController = signal ? undefined : new AbortController()
@@ -108,6 +109,7 @@ export class AiService implements OnModuleInit {
       model: modelInstance,
       prompt,
       abortSignal,
+      tools,
       ...options,
       stopWhen: stepCountIs(options?.stopWhen ?? DEFAULT_STOPWHEN),
       experimental_telemetry: buildTelemetryOptions(options, traceId, 'ai.generateText'),
@@ -119,6 +121,8 @@ export class AiService implements OnModuleInit {
       result: result.text,
       usage: buildUsageStats(result.usage),
       finishReason: result.finishReason,
+      toolCalls: extractToolCalls(result.steps),
+      toolResults: extractToolResults(result.steps),
       abortController,
     }
   }
@@ -157,6 +161,7 @@ export class AiService implements OnModuleInit {
     schema,
     model,
     options,
+    tools,
     signal,
   }: GenerateObjectInput<T>): Promise<GenerateObjectServiceResult<T>> {
     const abortController = signal ? undefined : new AbortController()
@@ -171,6 +176,7 @@ export class AiService implements OnModuleInit {
       model: modelInstance,
       prompt: fullPrompt,
       abortSignal,
+      tools,
       ...options,
       stopWhen: stepCountIs(options?.stopWhen ?? DEFAULT_STOPWHEN),
       experimental_telemetry: buildTelemetryOptions(options, traceId, 'ai.generateObject'),
@@ -191,6 +197,8 @@ export class AiService implements OnModuleInit {
       result: parsed,
       usage: buildUsageStats(result.usage),
       finishReason: result.finishReason,
+      toolCalls: extractToolCalls(result.steps),
+      toolResults: extractToolResults(result.steps),
       abortController,
     }
   }

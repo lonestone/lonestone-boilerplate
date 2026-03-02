@@ -36,6 +36,7 @@ export type AiGenerateOptions = z.infer<typeof aiGenerateOptionsSchema>
 export const aiBaseInputSchema = z.object({
   model: z.custom<ModelId>(val => typeof val === 'string').optional(),
   options: aiGenerateOptionsSchema.optional(),
+  tools: z.custom<Record<string, Tool>>(val => val && typeof val === 'object').optional(),
   signal: z.custom<AbortSignal>(val => val instanceof AbortSignal).optional(),
 })
 
@@ -49,11 +50,6 @@ export const tokenUsageSchema = z.object({
 })
 
 export type TokenUsage = z.infer<typeof tokenUsageSchema>
-
-export const aiBaseResultSchema = z.object({
-  usage: tokenUsageSchema.optional(),
-  finishReason: z.string().optional(),
-})
 
 export const toolCallSchema = z.object({
   toolCallId: z.string(),
@@ -76,6 +72,13 @@ export const toolResultSchema = z.object({
 })
 
 export type ToolResult = z.infer<typeof toolResultSchema>
+
+export const aiBaseResultSchema = z.object({
+  usage: tokenUsageSchema.optional(),
+  finishReason: z.string().optional(),
+  toolCalls: z.array(toolCallSchema).optional(),
+  toolResults: z.array(toolResultSchema).optional(),
+})
 
 // ============================================================================
 // Core Message Schemas
@@ -159,7 +162,6 @@ export type GenerateObjectResult<T> = z.infer<ReturnType<typeof makeGenerateObje
 export const chatInputSchema = aiBaseInputSchema.extend({
   messages: z.array(aiCoreMessageSchema).min(1),
   schema: z.custom<z.ZodType>(val => val && typeof val === 'object').optional(),
-  tools: z.custom<Record<string, Tool>>(val => val && typeof val === 'object').optional(),
 }).meta({
   title: 'ChatInput',
   description: 'Input for multi-turn conversation with optional tools and schema validation',
@@ -170,8 +172,6 @@ export type ChatInput = z.infer<typeof chatInputSchema>
 export const chatResultSchema = aiBaseResultSchema.extend({
   result: z.string(),
   messages: z.array(aiCoreMessageSchema),
-  toolCalls: z.array(toolCallSchema).optional(),
-  toolResults: z.array(toolResultSchema).optional(),
 }).meta({
   title: 'ChatResult',
   description: 'Result of a chat conversation',
