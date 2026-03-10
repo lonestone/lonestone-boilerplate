@@ -55,16 +55,6 @@ export const tokenUsageSchema = z.object({
 
 export type TokenUsage = z.infer<typeof tokenUsageSchema>
 
-export const generationCostSchema = z.object({
-  totalCost: z.number().describe('Estimated cost for this generation (e.g. USD)'),
-  currency: z.string().default('USD'),
-}).meta({
-  title: 'GenerationCost',
-  description: 'Optional cost estimate for the generation; allows callers to sum costs across calls',
-})
-
-export type GenerationCost = z.infer<typeof generationCostSchema>
-
 export const toolCallSchema = z.object({
   toolCallId: z.string(),
   toolName: z.string(),
@@ -89,7 +79,6 @@ export type ToolResult = z.infer<typeof toolResultSchema>
 
 export const aiBaseResultSchema = z.object({
   usage: tokenUsageSchema.optional(),
-  cost: generationCostSchema.optional().describe('Optional cost estimate for this generation'),
   finishReason: z.string().optional(),
   toolCalls: z.array(toolCallSchema).optional(),
   toolResults: z.array(toolResultSchema).optional(),
