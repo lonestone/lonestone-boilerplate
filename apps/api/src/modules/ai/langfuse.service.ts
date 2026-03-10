@@ -23,7 +23,8 @@ export interface FinalizeTraceInput {
 }
 
 function toPropagateMetadata(metadata: Record<string, unknown> | undefined): Record<string, string> | undefined {
-  if (!metadata || Object.keys(metadata).length === 0) return undefined
+  if (!metadata || Object.keys(metadata).length === 0)
+    return undefined
   return Object.fromEntries(
     Object.entries(metadata).map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)]),
   )
