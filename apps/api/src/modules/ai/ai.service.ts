@@ -62,16 +62,18 @@ export class AiService implements OnModuleInit {
     }
   }
 
-  private async executeGeneration(generateOptions: Parameters<typeof generateText>[0], traceId?: string, options?: AiGenerateOptions) {
-    if (traceId) {
-      return this.langfuseService.executeTracedGeneration(generateOptions, options)
+  private async executeGeneration(generateOptions: Parameters<typeof generateText>[0], options?: AiGenerateOptions) {
+    if (options?.telemetry) {
+      const traceId = await buildTraceId(options)
+      return this.langfuseService.executeTracedGeneration(generateOptions, options, traceId)
     }
     return generateText(generateOptions)
   }
 
-  private async executeStreaming(streamOptions: Parameters<typeof streamText>[0], traceId?: string, options?: AiGenerateOptions) {
-    if (traceId) {
-      return this.langfuseService.executeTracedStreaming(streamOptions, options)
+  private async executeStreaming(streamOptions: Parameters<typeof streamText>[0], options?: AiGenerateOptions) {
+    if (options?.telemetry) {
+      const traceId = await buildTraceId(options)
+      return this.langfuseService.executeTracedStreaming(streamOptions, options, traceId)
     }
     return streamText(streamOptions)
   }
@@ -81,6 +83,7 @@ export class AiService implements OnModuleInit {
    *
    * @param input - The generation input configuration
    * @param input.prompt - The prompt string to generate text from
+   * @param input.tools - Optional tools (functions) the model can call during generation
    * @param input.model - Optional model identifier. Falls back to the default configured model
    * @param input.options - Generation options (temperature, maxTokens, telemetry, etc.)
    * @param input.signal - Optional AbortSignal for request cancellation
@@ -103,8 +106,6 @@ export class AiService implements OnModuleInit {
     const abortController = signal ? undefined : new AbortController()
     const abortSignal = signal || abortController!.signal
     const modelInstance = await getModelInstance(model)
-    const traceId = await buildTraceId(options)
-
     const generateOptions: Parameters<typeof generateText>[0] = {
       model: modelInstance,
       prompt,
@@ -112,10 +113,10 @@ export class AiService implements OnModuleInit {
       tools,
       ...options,
       stopWhen: stepCountIs(options?.stopWhen ?? DEFAULT_STOPWHEN),
-      experimental_telemetry: buildTelemetryOptions(options, traceId, 'ai.generateText'),
+      experimental_telemetry: buildTelemetryOptions(options, 'ai.generateText'),
     }
 
-    const result = await this.executeGeneration(generateOptions, traceId, options)
+    const result = await this.executeGeneration(generateOptions, options)
 
     return {
       result: result.text,
@@ -134,6 +135,7 @@ export class AiService implements OnModuleInit {
    *
    * @param input - The generation input configuration
    * @param input.prompt - The prompt string describing what to generate
+   * @param input.tools - Optional tools (functions) the model can call during generation
    * @param input.schema - Zod schema for structured JSON output validation
    * @param input.model - Optional model identifier. Falls back to the default configured model
    * @param input.options - Generation options (temperature, maxTokens, telemetry, etc.)
@@ -167,8 +169,6 @@ export class AiService implements OnModuleInit {
     const abortController = signal ? undefined : new AbortController()
     const abortSignal = signal || abortController!.signal
     const modelInstance = await getModelInstance(model)
-    const traceId = await buildTraceId(options)
-
     const schemaPrompt = createSchemaPromptCommand(schema)
     const fullPrompt = `${prompt}\n${schemaPrompt}`
 
@@ -179,10 +179,10 @@ export class AiService implements OnModuleInit {
       tools,
       ...options,
       stopWhen: stepCountIs(options?.stopWhen ?? DEFAULT_STOPWHEN),
-      experimental_telemetry: buildTelemetryOptions(options, traceId, 'ai.generateObject'),
+      experimental_telemetry: buildTelemetryOptions(options, 'ai.generateObject'),
     }
 
-    const result = await this.executeGeneration(generateOptions, traceId, options)
+    const result = await this.executeGeneration(generateOptions, options)
 
     let parsed: T
     try {
@@ -263,8 +263,15 @@ export class AiService implements OnModuleInit {
     const abortController = signal ? undefined : new AbortController()
     const abortSignal = signal || abortController!.signal
     const modelInstance = await getModelInstance(model)
-    const traceId = await buildTraceId(options)
-
+    const chatOptions = options?.telemetry
+      ? {
+          ...options,
+          telemetry: {
+            ...options.telemetry,
+            traceMode: options.telemetry.traceMode ?? 'split',
+          },
+        }
+      : options
     // If schema provided, append schema instruction as assistant message
     // (system messages can only be at the start of the conversation)
     const newHistory: AiCoreMessage[] = schema
@@ -279,13 +286,13 @@ export class AiService implements OnModuleInit {
       model: modelInstance,
       messages: newHistory as ModelMessage[],
       abortSignal,
-      ...options,
+      ...chatOptions,
       tools,
-      stopWhen: stepCountIs(options?.stopWhen ?? DEFAULT_STOPWHEN),
-      experimental_telemetry: buildTelemetryOptions(options, traceId, 'ai.chat'),
+      stopWhen: stepCountIs(chatOptions?.stopWhen ?? DEFAULT_STOPWHEN),
+      experimental_telemetry: buildTelemetryOptions(chatOptions, 'ai.chat'),
     }
 
-    const result = await this.executeGeneration(generateOptions, traceId, options)
+    const result = await this.executeGeneration(generateOptions, chatOptions)
 
     // Validate response if schema provided (throws on invalid)
     if (schema) {
@@ -384,15 +391,13 @@ export class AiService implements OnModuleInit {
       throw new Error('Either prompt or messages must be provided')
     }
 
-    const traceId = await buildTraceId(options)
-
     const streamOptionsBase: Omit<Parameters<typeof streamText>[0], 'messages' | 'prompt'> = {
       model: modelInstance,
       abortSignal,
       ...options,
       tools,
       stopWhen: stepCountIs(options?.stopWhen ?? DEFAULT_STOPWHEN),
-      experimental_telemetry: buildTelemetryOptions(options, traceId, 'ai.streamText'),
+      experimental_telemetry: buildTelemetryOptions(options, 'ai.streamText'),
     }
 
     const streamOptions: Parameters<typeof streamText>[0] = hasMessages
@@ -405,7 +410,7 @@ export class AiService implements OnModuleInit {
           prompt: conversationMessages[0]?.content || '',
         }
 
-    const result = await this.executeStreaming(streamOptions, traceId, options)
+    const result = await this.executeStreaming(streamOptions, options)
 
     let fullText = ''
 

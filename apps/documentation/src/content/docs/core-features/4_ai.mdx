@@ -14,7 +14,7 @@ This brick is heavily opinionated. It combines:
 - A custom AI Module in the API, which provides a service to generate text, objects and chat with LLMs.
 
 <Aside type="note" title="Langfuse is optional">
-You can remove it (LangfuseService) from the codebase and use the Vercel AI SDK directly, and manage prompts as you see fit. Telemetry will still work via OTEL, and you can see traces in Sentry.
+You can remove it (LangfuseService) from the codebase and use the Vercel AI SDK directly, and manage prompts as you see fit. Telemetry will still work via OTEL, and you will still see traces in Sentry.
 </Aside>
 
 ## Prompt management - Langfuse
@@ -49,16 +49,181 @@ See the [Monitoring documentation](/lonestone-boilerplate/core-features/2_monito
 # 📝 How to use
 
 - Create the Langfuse project in your Langfuse dashboard
-- Setup the necessary env variables (LANGFUSE_API_KEY, LANGFUSE_SECRET_KEY, OPENAI_API_KEY, etc) in the `api/.env` file.
+- Setup the necessary env variables (`LANGFUSE_SECRET_KEY`, optionally `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_BASE_URL`, plus at least one provider key like `OPENAI_API_KEY`) in the `api/.env` file.
 - You are good to go!
 
 ## Organizing Traces
 
+By default, all LLM calls are grouped into the same OTEL trace. An OTEL trace starts on a HTTP requests or a CRON job. All children spans are grouped into this trace.
+
+But that may not be convenient for your use case. Imagine a CRON job that loops on a hugh list of items: you may want to have 1 line per item in Langfuse UI, not a giant trace with hundreds of lines.
+
+On Sentry's side, there's not much we can do. But with Langfuse however, we have more control on span/trace grouping and naming.
+
+<Aside type="tip" title="OTEL trace in Langfuse">
+Because we are filtering the spans that are sent to Langfuse, the spans are "orphaned" from the OTEL trace. This means you won't see "GET /api/your_route" as the trace name on Langfuse.
+
+**Without more work, all the spans would simply be unnamed, making it hard to search and browse traces.**
+
+That's why the next section is important if you want to log and debug your llm calls in Langfuse.
+</Aside>
+
 You can organize AI calls into meaningful traces using the `telemetry` option:
 
-- **`langfuseTraceName`**: As we filter traces we send to Langfuse, AI calls will generally be orphaned, which means the main trace in Langfuse will not have a name. Providing `langfuseTraceName` will setup this name, and you can use it accross several LLM calls to group them into a single trace (useful for several call for the same operation). Behind the hood, a deterministic `traceId` is automatically generated from this value.
-- **`functionId`**: Identifies the specific function/operation within a trace (used as Span name in Langfuse)
+- **`traceMode`**: Controls grouping behavior.
+  - `inherit` reuses the current OTEL trace context (default).
+  - `split` creates a dedicated Langfuse trace for this call by injecting a specific `traceId`.
+  - For `chat`, when telemetry is provided and `traceMode` is omitted, the default is `split`.
+- **`traceId`**: Optional explicit trace ID in split mode. Reuse it if you want several calls to belong to the same split trace.
+  This is applied through `parentSpanContext` in Langfuse tracing (not through Vercel telemetry fields).
+- **`traceName`**: Display name for the Langfuse trace. This is only for readability in the UI.
+- **`spanName`**: Span name for the current LLM call. Internally, this is forwarded to Vercel telemetry as `functionId`.
+- **`sessionId`**: Groups multiple traces into a Langfuse Session (best for chat or long workflows split into many traces).
+- **`metadata`**: Trace/span metadata for filtering and analysis (job IDs, user IDs, step IDs, etc.).
 - **`langfuseOriginalPrompt`**: Preserves the original prompt before enhancements (useful for debugging).
+
+## Recommended use-cases
+
+### 1) Single-shot generation
+
+Use `inherit` with a clear `traceName` + `spanName`:
+
+```typescript
+await aiService.generateText({
+  prompt: 'Summarize this article',
+  options: {
+    telemetry: {
+      traceMode: 'inherit',
+      traceName: 'api.single-generation',
+      spanName: 'ai.generate-text',
+    },
+  },
+})
+
+// Add more context to the trace, displayed in the row of the trace in Langfuse UI
+this.langfuseService.finalizeTrace({
+  input: body.prompt,
+  output: result.result,
+})
+```
+
+![Langfuse single-shot generation](../../../assets/langfuse_single-shot.png)
+
+### 2) One API request, 3 LLM calls grouped
+
+In this case, we can keep the same OTEL trace (as we want all the LLM calls to be grouped anyway), and finish with `finalizeTrace()` to add more context to the trace, displayed in the row of the trace in Langfuse UI:
+
+```typescript
+const results: string[] = []
+
+const step1 = await aiService.generateText({
+  prompt: 'Step 1',
+  options: { telemetry: { traceMode: 'inherit', spanName: 'ai.step-1' } },
+})
+results.push(step1.result)
+
+const step2 = await aiService.generateObject({
+  prompt: 'Step 2',
+  schema,
+  options: { telemetry: { traceMode: 'inherit', spanName: 'ai.step-2' } },
+})
+results.push(step2.result)
+
+const step3 = await aiService.generateText({
+  prompt: 'Step 3',
+  options: { telemetry: { traceMode: 'inherit', spanName: 'ai.step-3' } },
+})
+results.push(step3.result)
+
+// Customize the input and output to display the relevant information in the row of the trace in Langfuse UI
+// Beware that Langfuse UI input and output display is quite arbitrary, so I advice you build a nice string
+langfuseService.finalizeTrace({
+  name: `api.grouped-calls-${Date.now()}`,
+  input: { prompts: ['Step 1', 'Step 2', 'Step 3'] },
+  output: { results, status: 'done' },
+})
+```
+
+![Langfuse grouped calls](../../../assets/langfuse_grouped_calls.png)
+
+### 3) Long-running job with 100 split sub-jobs
+
+For one trace per sub-job (100 lines in trace list), use split mode and a unique `traceId` per sub-job:
+
+```typescript
+await aiService.generateText({
+  prompt: subJobPrompt,
+  options: {
+    telemetry: {
+      traceMode: 'split',
+      traceId: await LangfuseService.createTraceId(`job:${jobId}:subjob:${subJobId}`),
+      traceName: `job:${jobId}:subjob:${subJobId}`,
+      spanName: 'ai.subjob.generate',
+      metadata: { jobId, subJobId },
+    },
+  },
+})
+```
+
+Advanced case (1 sub-job = several LLM calls): compute one `traceId` per sub-job and reuse it across all calls of that sub-job.
+
+![Langfuse split mode](../../../assets/langfuse_split_mode.png)
+
+### 4) Chat
+
+Use `split` per turn and reuse `sessionId` (conversation/thread ID):
+
+```typescript
+await aiService.chat({
+  messages,
+  options: {
+    telemetry: {
+      traceMode: 'split',
+      traceId: await LangfuseService.createTraceId(`chat:${conversationId}:turn:${turnId}`),
+      traceName: `chat.turn:${turnId}`,
+      spanName: 'ai.chat.turn',
+      sessionId: conversationId,
+      metadata: { conversationId, turnId },
+    },
+  },
+})
+```
+
+With this, each turn will be displayed as a separate line in Langfuse UI, and all the turns for the same conversation will be merged into a single session.
+
+![Langfuse chat turns](../../../assets/langfuse_chat_turns.png)
+
+![Langfuse chat sessions](../../../assets/langfuse_chat_session.png)
+
+## Going further
+
+Nothing stops you from using those different parameters in a more complex way.
+
+For example, you may want to update the Langfuse trace for each new turn of a chat, instead of creating a new trace for each turn.
+
+You can do this by using `traceMode: 'split'` and the same `traceId` for all the turns of the same conversation.
+
+You may also want to use the session feature to group traces across requests for something else than a chat (e.g. a long-running job that loops on a huge list of items).
+
+<Aside type="tip" title="Generating trace id">
+Always use `await LangfuseService.createTraceId('your-trace-string')` to generate a trace id, as it ensures the trace id is unique and deterministic.
+</Aside>
+
+![Langfuse chat turns merged](../../../assets/langfuse_same_traceId.png)
+
+
+## Trace use-case examples
+
+The API exposes five example endpoints that demonstrate each trace pattern. Call them under `POST /ai/examples/use-case-*` (see OpenAPI for request bodies):
+
+| Use case | Endpoint | Description |
+|----------|----------|-------------|
+| 1. Single generation | `POST /ai/examples/use-case-1-single-generation` | One REST call, one LLM call; trace is finalized with name/output so Langfuse shows them. |
+| 2. Grouped calls | `POST /ai/examples/use-case-2-grouped-calls` | One REST call, several LLM calls in one trace (inherit); finalizeTrace at end. |
+| 3. Logical units | `POST /ai/examples/use-case-3-logical-units` | One REST call, each “workflow” gets its own trace (split per unit). |
+| 4. Chat session | `POST /ai/examples/use-case-4-chat-session` | Chat with explicit `sessionId` to group traces across requests. |
+| 5. Chat session with turns merged into a single trace | `POST /ai/examples/use-case-5-chat-session-with-turns-merged` | Chat with explicit `sessionId` to group traces across requests, and turns merged into a single trace. |
+
 
 ## API Reference
 
@@ -66,24 +231,29 @@ See the [AI module README](https://github.com/lonestone/lonestone-boilerplate/bl
 
 # 🧹 How to remove
 
-1. Delete the `ai` module from the `api/src/modules` folder
-2. Remove the following dependencies from the `api/package.json` file:
+1. Delete the `ai` module from the `api/src/modules` folder.
+2. Remove Langfuse + AI SDK dependencies from `apps/api/package.json`:
 
 ```json
+"@ai-sdk/anthropic",
+"@ai-sdk/google",
+"@ai-sdk/mcp",
+"@ai-sdk/mistral",
 "@ai-sdk/openai",
-"@opentelemetry/api",
-"@opentelemetry/auto-instrumentations-node",
-"@opentelemetry/sdk-node",
+"@langfuse/client",
+"@langfuse/otel",
+"@langfuse/tracing",
 "ai",
-"langfuse",
-"langfuse-vercel",
 ```
 
-3. Remove the following env variables from the `api/.env` file:
+3. Remove Langfuse/provider env variables from `apps/api/.env`:
 
 ```
-LANGFUSE_API_KEY=
 LANGFUSE_SECRET_KEY=
+LANGFUSE_PUBLIC_KEY=
+LANGFUSE_BASE_URL=
 OPENAI_API_KEY=
-# other providers...
+GOOGLE_API_KEY=
+MISTRAL_API_KEY=
+ANTHROPIC_API_KEY=
 ```

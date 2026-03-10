@@ -56,8 +56,8 @@ export class AiExampleController {
       options: {
         ...body.options,
         telemetry: {
-          langfuseTraceName: `generate-text-at-time-${Date.now()}`,
-          functionId: 'generate-text',
+          traceName: `generate-text-at-time-${Date.now()}`,
+          spanName: 'generate-text',
           langfuseOriginalPrompt: prompt.toJSON(),
         },
       },
@@ -89,8 +89,8 @@ export class AiExampleController {
       options: {
         ...body.options,
         telemetry: {
-          langfuseTraceName: `generate-object-at-time-${Date.now()}`,
-          functionId: 'generate-object',
+          traceName: `generate-object-at-time-${Date.now()}`,
+          spanName: 'generate-object',
           langfuseOriginalPrompt: prompt.toJSON(),
         },
       },
@@ -128,9 +128,9 @@ export class AiExampleController {
     // You may wish to generate a single trace name for a given "session" or "conversation", and re-use it for each new message. This would merge all the spans in a single trace, which may be more convenient.
     const traceName = `chat-at-time-${Date.now()}`
 
-    // 💡 We don't customise the functionId, which will be used to name the "span" in Langfuse UI.
-    // If you merge multiple messages in a single trace, you may wish to use a custom functionId for each (e.g. `chat-message-1`, `chat-message-2`, etc.)
-    const functionId = 'chat'
+    // 💡 We don't customise the spanName, which will be used to name the span in Langfuse UI
+    // (forwarded to Vercel telemetry as functionId).
+    const spanName = 'chat'
 
     const result = await this.aiService.chat({
       messages: body.messages,
@@ -140,8 +140,10 @@ export class AiExampleController {
       options: {
         ...body.options,
         telemetry: {
-          langfuseTraceName: traceName,
-          functionId,
+          traceMode: 'split',
+          traceName,
+          sessionId: 'demo-chat-session',
+          spanName,
           langfuseOriginalPrompt: prompt.toJSON(),
         },
       },
@@ -191,7 +193,7 @@ export class AiExampleController {
 
   private createStreamObservable(
     body: StreamTextRequest | StreamObjectRequest | StreamChatRequest,
-    functionId: string,
+    spanName: string,
   ): Observable<MessageEvent> {
     return new Observable((subscriber) => {
       let abortController: AbortController | null = null
@@ -205,7 +207,7 @@ export class AiExampleController {
           abortController = new AbortController()
 
           // Build stream input based on request type
-          const streamInput = this.buildStreamInput(body, tools, functionId)
+          const streamInput = this.buildStreamInput(body, tools, spanName)
 
           for await (const event of this.aiService.streamTextGenerator(streamInput, abortController.signal)) {
             if (subscriber.closed) {
@@ -244,7 +246,7 @@ export class AiExampleController {
   private buildStreamInput(
     body: StreamTextRequest | StreamObjectRequest | StreamChatRequest,
     tools: Record<string, Tool>,
-    functionId: string,
+    spanName: string,
   ) {
     const baseOptions = {
       model: body.model,
@@ -252,8 +254,8 @@ export class AiExampleController {
       options: {
         ...body.options,
         telemetry: {
-          langfuseTraceName: `${functionId}-at-time-${Date.now()}`,
-          functionId,
+          traceName: `${spanName}-at-time-${Date.now()}`,
+          spanName,
         },
       },
     }

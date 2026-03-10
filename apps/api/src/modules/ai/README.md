@@ -77,6 +77,7 @@ Simple text generation from a prompt.
 **Parameters:**
 - `prompt` - The prompt string to generate text from
 - `model` - Optional model identifier (falls back to default)
+- `tools` - Optional tools (functions) the model can call during generation
 - `options` - Generation options: `temperature`, `maxTokens`, `topP`, `frequencyPenalty`, `presencePenalty`, `telemetry`
 - `signal` - Optional AbortSignal for cancellation
 
@@ -100,6 +101,7 @@ Generates structured output validated against a Zod schema.
 - `prompt` - The prompt describing what to generate
 - `schema` - Zod schema for structured JSON output validation
 - `model` - Optional model identifier
+- `tools` - Optional tools (functions) the model can call during generation
 - `options` - Generation options
 - `signal` - Optional AbortSignal for cancellation
 
@@ -236,3 +238,34 @@ for await (const event of this.aiService.streamTextGenerator({
 | Multi-turn conversation | `chat()` |
 | Conversation with tools | `chat()` with `tools` |
 | Real-time streaming | `streamTextGenerator()` |
+
+## Tracing and telemetry
+
+Telemetry is configured via `options.telemetry`:
+
+- `traceMode?: 'inherit' | 'split'` - keep active OTEL trace or force a dedicated trace per call
+- Chat note: when telemetry is provided on `chat()`, omitted `traceMode` defaults to `split`
+- `traceId?: string` - optional explicit trace ID in split mode (reuse it to group multiple calls). Applied via Langfuse `parentSpanContext`.
+- `traceName?: string` - trace display name in Langfuse. If used multiple times in the same OTEL trace, the last one will be used.
+- `spanName?: string` - span display name (forwarded to Vercel as `functionId`)
+- `sessionId?: string` - groups related traces into one Langfuse Session (does not replace trace IDs)
+- `metadata?: Record<string, unknown>` - metadata used for filtering/debugging
+- `langfuseOriginalPrompt?: string` - original prompt snapshot
+
+```typescript
+await aiService.generateText({
+  prompt: 'Summarize...',
+  options: {
+    telemetry: {
+      traceMode: 'split',
+      traceId: '0123456789abcdef0123456789abcdef',
+      traceName: 'job:42:subjob:7',
+      spanName: 'ai.subjob.summary',
+      sessionId: 'job:42',
+      metadata: { jobId: 42, subJobId: 7 },
+    },
+  },
+})
+```
+
+See the [AI explanation docs](../../../../documentation/src/content/docs/core-features/4_ai.mdx) for more details.

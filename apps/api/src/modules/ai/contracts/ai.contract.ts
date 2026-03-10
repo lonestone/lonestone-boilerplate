@@ -17,9 +17,13 @@ export const aiGenerateOptionsSchema = z.object({
   maxSteps: z.number().positive().optional(),
   stopWhen: z.number().positive().optional(),
   telemetry: z.object({
-    langfuseTraceName: z.string().describe('This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.'),
+    traceMode: z.enum(['inherit', 'split']).optional().describe('Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.'),
+    traceId: z.string().optional().describe('Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.'),
+    traceName: z.string().optional().describe('Display name used as root span name for the Langfuse trace. This does not control grouping.'),
+    spanName: z.string().optional().describe('Name for the LLM span. This is forwarded to Vercel telemetry as functionId.'),
+    sessionId: z.string().optional().describe('Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).'),
+    metadata: z.record(z.string(), z.unknown()).optional().describe('Telemetry metadata attached to (Langfuse) trace/span.'),
     langfuseOriginalPrompt: z.string().optional().describe('The original prompt that was used to generate the response. (Use prompt.toJSON())'),
-    functionId: z.string().optional().describe('This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.'),
   }).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 }).meta({
@@ -51,6 +55,16 @@ export const tokenUsageSchema = z.object({
 
 export type TokenUsage = z.infer<typeof tokenUsageSchema>
 
+export const generationCostSchema = z.object({
+  totalCost: z.number().describe('Estimated cost for this generation (e.g. USD)'),
+  currency: z.string().default('USD'),
+}).meta({
+  title: 'GenerationCost',
+  description: 'Optional cost estimate for the generation; allows callers to sum costs across calls',
+})
+
+export type GenerationCost = z.infer<typeof generationCostSchema>
+
 export const toolCallSchema = z.object({
   toolCallId: z.string(),
   toolName: z.string(),
@@ -75,6 +89,7 @@ export type ToolResult = z.infer<typeof toolResultSchema>
 
 export const aiBaseResultSchema = z.object({
   usage: tokenUsageSchema.optional(),
+  cost: generationCostSchema.optional().describe('Optional cost estimate for this generation'),
   finishReason: z.string().optional(),
   toolCalls: z.array(toolCallSchema).optional(),
   toolResults: z.array(toolResultSchema).optional(),

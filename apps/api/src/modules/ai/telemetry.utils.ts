@@ -1,24 +1,34 @@
 import type { AiGenerateOptions, TokenUsage } from './contracts/ai.contract'
+import { randomUUID } from 'node:crypto'
 import { LanguageModelUsage } from 'ai'
 import { LangfuseService } from './langfuse.service'
 
 // TODO private method should be static
-export async function buildTraceId(options?: AiGenerateOptions): Promise<string | undefined> {
-  if (!options?.telemetry) {
+export async function buildTraceId(
+  options?: AiGenerateOptions,
+  _defaultTraceName = 'ai.generate',
+  defaultTraceMode: 'inherit' | 'split' = 'inherit',
+): Promise<string | undefined> {
+  const effectiveTraceMode = options?.telemetry?.traceMode ?? defaultTraceMode
+
+  if (!options?.telemetry || effectiveTraceMode !== 'split') {
     return undefined
   }
-  return LangfuseService.createTraceId(options.telemetry.langfuseTraceName)
+
+  if (options.telemetry.traceId) {
+    return options.telemetry.traceId
+  }
+
+  return LangfuseService.createTraceId(randomUUID())
 }
 
-export function buildTelemetryOptions(options?: AiGenerateOptions, traceId?: string, defaultTraceName = 'ai.generate') {
+export function buildTelemetryOptions(options?: AiGenerateOptions, defaultTraceName = 'ai.generate') {
   return {
     isEnabled: true,
     recordInputs: true,
     recordOutputs: true,
     ...(options?.telemetry && {
-      langfuseTraceName: options.telemetry.langfuseTraceName || defaultTraceName,
-      traceId,
-      functionId: options.telemetry.functionId || '',
+      functionId: options.telemetry.spanName || defaultTraceName,
       langfuseOriginalPrompt: options.telemetry.langfuseOriginalPrompt || '',
     }),
   }
