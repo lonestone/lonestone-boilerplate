@@ -15,9 +15,7 @@ export default antfu(
       'packages/openapi-generator/client/',
       '**/.astro/**',
       'node_modules/',
-      'CLAUDE.md',
-      'AGENTS.md',
-      '**/README.md',
+      '**/*.md',
       'pnpm-workspace.yaml',
     ],
     rules: {
