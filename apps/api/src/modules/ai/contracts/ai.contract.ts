@@ -17,9 +17,13 @@ export const aiGenerateOptionsSchema = z.object({
   maxSteps: z.number().positive().optional(),
   stopWhen: z.number().positive().optional(),
   telemetry: z.object({
-    langfuseTraceName: z.string().describe('This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.'),
+    traceMode: z.enum(['inherit', 'split']).optional().describe('Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.'),
+    traceId: z.string().optional().describe('Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.'),
+    traceName: z.string().optional().describe('Display name used as root span name for the Langfuse trace. This does not control grouping.'),
+    spanName: z.string().optional().describe('Name for the LLM span. This is forwarded to Vercel telemetry as functionId.'),
+    sessionId: z.string().optional().describe('Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).'),
+    metadata: z.record(z.string(), z.unknown()).optional().describe('Telemetry metadata attached to (Langfuse) trace/span.'),
     langfuseOriginalPrompt: z.string().optional().describe('The original prompt that was used to generate the response. (Use prompt.toJSON())'),
-    functionId: z.string().optional().describe('This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.'),
   }).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 }).meta({
@@ -36,6 +40,7 @@ export type AiGenerateOptions = z.infer<typeof aiGenerateOptionsSchema>
 export const aiBaseInputSchema = z.object({
   model: z.custom<ModelId>(val => typeof val === 'string').optional(),
   options: aiGenerateOptionsSchema.optional(),
+  tools: z.custom<Record<string, Tool>>(val => val && typeof val === 'object').optional(),
   signal: z.custom<AbortSignal>(val => val instanceof AbortSignal).optional(),
 })
 
@@ -49,11 +54,6 @@ export const tokenUsageSchema = z.object({
 })
 
 export type TokenUsage = z.infer<typeof tokenUsageSchema>
-
-export const aiBaseResultSchema = z.object({
-  usage: tokenUsageSchema.optional(),
-  finishReason: z.string().optional(),
-})
 
 export const toolCallSchema = z.object({
   toolCallId: z.string(),
@@ -76,6 +76,13 @@ export const toolResultSchema = z.object({
 })
 
 export type ToolResult = z.infer<typeof toolResultSchema>
+
+export const aiBaseResultSchema = z.object({
+  usage: tokenUsageSchema.optional(),
+  finishReason: z.string().optional(),
+  toolCalls: z.array(toolCallSchema).optional(),
+  toolResults: z.array(toolResultSchema).optional(),
+})
 
 // ============================================================================
 // Core Message Schemas
@@ -159,7 +166,6 @@ export type GenerateObjectResult<T> = z.infer<ReturnType<typeof makeGenerateObje
 export const chatInputSchema = aiBaseInputSchema.extend({
   messages: z.array(aiCoreMessageSchema).min(1),
   schema: z.custom<z.ZodType>(val => val && typeof val === 'object').optional(),
-  tools: z.custom<Record<string, Tool>>(val => val && typeof val === 'object').optional(),
 }).meta({
   title: 'ChatInput',
   description: 'Input for multi-turn conversation with optional tools and schema validation',
@@ -170,8 +176,6 @@ export type ChatInput = z.infer<typeof chatInputSchema>
 export const chatResultSchema = aiBaseResultSchema.extend({
   result: z.string(),
   messages: z.array(aiCoreMessageSchema),
-  toolCalls: z.array(toolCallSchema).optional(),
-  toolResults: z.array(toolResultSchema).optional(),
 }).meta({
   title: 'ChatResult',
   description: 'Result of a chat conversation',

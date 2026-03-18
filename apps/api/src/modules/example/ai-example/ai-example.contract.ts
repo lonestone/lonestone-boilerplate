@@ -219,3 +219,67 @@ export const streamChatRequestSchema = z.object({
 })
 
 export type StreamChatRequest = z.infer<typeof streamChatRequestSchema>
+
+// ============================================================================
+// Example use-case endpoints (trace patterns)
+// ============================================================================
+
+/** Use case 1: Single REST call, one generation. Request. */
+export const useCase1SingleGenerationRequestSchema = generateTextRequestSchema.meta({
+  title: 'UseCase1SingleGenerationRequest',
+  description: 'Single generation; trace is finalized with name/output so Langfuse shows them',
+})
+export type UseCase1SingleGenerationRequest = z.infer<typeof useCase1SingleGenerationRequestSchema>
+
+/** Use case 2: One REST call, several LLM calls in one trace. Request. */
+export const useCase2GroupedCallsRequestSchema = z.object({
+  prompts: z.array(z.string().min(1)).min(1).max(5).describe('Prompts for each step (same trace)'),
+  model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
+}).meta({
+  title: 'UseCase2GroupedCallsRequest',
+  description: 'Multiple LLM calls in one request; one trace in Langfuse, finalized at end',
+})
+export type UseCase2GroupedCallsRequest = z.infer<typeof useCase2GroupedCallsRequestSchema>
+
+export const useCase2GroupedCallsResponseSchema = z.object({
+  traceName: z.string(),
+  results: z.array(z.string()),
+  usage: aiBaseResultSchema.shape.usage.optional(),
+}).meta({
+  title: 'UseCase2GroupedCallsResponse',
+  description: 'Combined results from grouped LLM calls',
+})
+export type UseCase2GroupedCallsResponse = z.infer<typeof useCase2GroupedCallsResponseSchema>
+
+/** Use case 3: One REST call, logical units (each unit = one trace). Request. */
+export const useCase3LogicalUnitsRequestSchema = z.object({
+  workflowPrompts: z.array(z.string().min(1)).min(1).max(5).describe('One prompt per logical workflow; each gets its own trace'),
+  model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
+}).meta({
+  title: 'UseCase3LogicalUnitsRequest',
+  description: 'Multiple workflows; each workflow gets its own Langfuse trace (split per unit)',
+})
+export type UseCase3LogicalUnitsRequest = z.infer<typeof useCase3LogicalUnitsRequestSchema>
+
+export const useCase3LogicalUnitsResponseSchema = z.object({
+  workflows: z.array(z.object({
+    index: z.number(),
+    result: z.string(),
+    usage: aiBaseResultSchema.shape.usage.optional(),
+  })),
+}).meta({
+  title: 'UseCase3LogicalUnitsResponse',
+  description: 'One result per workflow (each in its own trace)',
+})
+export type UseCase3LogicalUnitsResponse = z.infer<typeof useCase3LogicalUnitsResponseSchema>
+
+/** Use case 4: Simple generation with sessionId — group traces in Langfuse by session (e.g. conversation). */
+export const useCase4ChatSessionRequestSchema = z.object({
+  prompt: z.string().min(1),
+  sessionId: z.string().min(1).describe('Session ID to group traces in Langfuse (e.g. conversation or thread)'),
+  model: z.enum(Object.keys(modelConfigBase) as [ModelId]).optional(),
+}).meta({
+  title: 'UseCase4ChatSessionRequest',
+  description: 'Simple generateText with sessionId for grouping traces across requests',
+})
+export type UseCase4ChatSessionRequest = z.infer<typeof useCase4ChatSessionRequestSchema>

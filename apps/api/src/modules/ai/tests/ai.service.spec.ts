@@ -49,10 +49,12 @@ vi.mock('ai', () => ({
 
 vi.mock('@langfuse/tracing', () => {
   const createTraceIdMock = vi.fn().mockResolvedValue('test-trace-id')
+  const startActiveObservationMock = vi.fn((_name: string, fn: () => unknown) => Promise.resolve(fn()))
   return {
     getActiveSpanId: vi.fn(),
     getActiveTraceId: vi.fn(),
-    startActiveObservation: vi.fn((name, fn) => fn()),
+    propagateAttributes: vi.fn((_params: unknown, fn: () => unknown) => fn()),
+    startActiveObservation: startActiveObservationMock,
     updateActiveTrace: vi.fn(),
     createTraceId: createTraceIdMock,
   }
