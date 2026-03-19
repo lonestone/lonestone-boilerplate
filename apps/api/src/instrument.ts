@@ -20,7 +20,7 @@ const sentryConfig: Sentry.NodeOptions = {
   // Setting this option to true will send default PII data to Sentry.
   // For example, automatic IP address collection on events
   sendDefaultPii: true,
-  tracesSampleRate: 1.0,
+  tracesSampleRate: config.env === 'production' ? 0.1 : 1.0,
 
   // Enable logs to be sent to Sentry
   enableLogs: true,
