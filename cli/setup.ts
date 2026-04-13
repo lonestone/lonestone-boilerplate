@@ -445,7 +445,11 @@ function copyEnvFiles(envFilesInfo: EnvFileInfo[]): void {
   }
 }
 
-function updateEnvFile(filePath: string, replacements: Record<string, string>, onlyMissing: boolean = false): void {
+function updateEnvFile(
+  filePath: string,
+  replacements: Record<string, string | ((old: string | null) => string)>,
+  onlyMissing: boolean = false,
+): void {
   if (!existsSync(filePath)) {
     console.log(`  ${colorize('⚠', 'yellow')} File not found: ${colorize(filePath, 'dim')}`)
     return
@@ -456,17 +460,20 @@ function updateEnvFile(filePath: string, replacements: Record<string, string>, o
   let updated = false
 
   for (const [key, value] of Object.entries(replacements)) {
+    const f = typeof value === 'function' ? value : () => value
+
     if (onlyMissing && key in existingVars && existingVars[key]) {
       continue
     }
 
-    const regex = new RegExp(`^${key}=.*$`, 'm')
+    const regex = new RegExp(`^${key}=(.*)$`, 'm')
     if (regex.test(content)) {
-      content = content.replace(regex, `${key}=${value}`)
+      const old = regex.exec(content)?.[1] ?? null
+      content = content.replace(regex, `${key}=${f(old)}`)
       updated = true
     }
     else {
-      content += `\n${key}=${value}`
+      content += `\n${key}=${f(null)}`
       updated = true
     }
   }
@@ -695,13 +702,29 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   console.log(`\n${colorize('✏️  Updating .env files', 'cyan')}\n`)
 
   // Root .env (docker-compose) - update all configured vars
-  const rootUpdates: Record<string, string> = {}
+  const rootUpdates: Record<string, string | ((old: string | null) => string)> = {}
   rootUpdates.DATABASE_USER = config.database.user
   rootUpdates.DATABASE_PASSWORD = config.database.password
   rootUpdates.DATABASE_NAME = config.database.name
+  rootUpdates.DATABASE_HOST = config.database.host
   rootUpdates.DATABASE_PORT = config.database.port.toString()
   rootUpdates.SMTP_PORT = config.smtp.port.toString()
   rootUpdates.SMTP_PORT_WEB = config.smtp.portWeb.toString()
+
+  if (config.ports.api) {
+    rootUpdates.API_PORT = config.ports.api.toString()
+    rootUpdates.API_BASE_URL = `http://localhost:${config.ports.api}`
+    rootUpdates.TRUSTED_ORIGINS = (old: string | null) => {
+      if (!old) {
+        return `http://localhost:${config.ports.api},http://localhost:5173,http://localhost:5174`
+      }
+      if (!old.includes('http://localhost:3000')) {
+        console.log(`  ${colorize('⚠', 'yellow')} TRUSTED ORIGINS could not be automatically updated, check your .env for the correct value, it should include http://localhost:${config.ports.api}.`)
+        return old
+      }
+      return old.replace('http://localhost:3000', `http://localhost:${config.ports.api}`)
+    }
+  }
 
   if (Object.keys(rootUpdates).length > 0) {
     updateEnvFile(join(projectRoot, '.env'), rootUpdates, false)
