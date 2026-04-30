@@ -203,13 +203,12 @@ For more information, see the [GitHub Actions documentation](.github/ACTIONS.md)
 
 ### CD Workflow
 
-This workflow generates a Docker image into the Github Registry (GHCR) for the apps api, web-ssr and web-spa
+This workflow generates a Docker image into the Github Registry (GHCR) for the api
+web-spa and web-ssr should not use this pattern and prefer a build-on-deploy instead
 
-This is a recommended workflow for production apps instead of buildiong directly from your deployment server (Dokploy, Render) as it allows you to tag each release, deploy staging and prod on the same artifact, and decrease load on your deployment server
+This is a recommended workflow for production apps instead of building directly from your deployment server (Dokploy, Render) as it allows you to tag each release, deploy staging and prod on the same artifact, and decrease load on your deployment server
 
 To enable the CD workflow go to `.github/workflows/push-to-ghcr.yml` and uncomment the top block
-
-If you need runtime environment variables for the front, manage them in web-spa/docker-entrypoint.sh
 
 ### AI Agents good practice
 When working with an AI Agent (such as Copilot, Cursor or Claude), please follow these guidelines:

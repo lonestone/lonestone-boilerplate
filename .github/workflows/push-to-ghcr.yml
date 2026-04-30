@@ -17,15 +17,10 @@ jobs:
     strategy:
       fail-fast: false
       # Define the images to build, all the steps will be repeated for each line in the matrix
-      # comment the projects you don't want top generate images for
       matrix:
         include:
           - dockerfile: ./apps/api/Dockerfile
             image: ${{ github.repository }}-api
-          - dockerfile: ./apps/web-spa/Dockerfile
-            image: ${{ github.repository }}-web-spa
-          - dockerfile: ./apps/web-ssr/Dockerfile
-            image: ${{ github.repository }}-web-ssr
 
     permissions:
       contents: read
