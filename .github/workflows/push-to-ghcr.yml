@@ -1,0 +1,71 @@
+name: Build Docker to GHCR
+
+on:
+  workflow_dispatch:
+  #  uncomment the following block to trigger the workflow when the CI workflow completes
+  # workflow_run:
+  #   workflows: [CI ✨]
+  #   types: [completed]
+  #   branches: [main, prod]
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # Define the images to build, all the steps will be repeated for each line in the matrix
+      # comment the projects you don't want top generate images for
+      matrix:
+        include:
+          - dockerfile: ./apps/api/Dockerfile
+            image: ${{ github.repository }}-api
+          - dockerfile: ./apps/web-spa/Dockerfile
+            image: ${{ github.repository }}-web-spa
+          - dockerfile: ./apps/web-ssr/Dockerfile
+            image: ${{ github.repository }}-web-ssr
+
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Log in to the Container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ matrix.image }}
+
+      # For more information, see [Usage](https://github.com/docker/build-push-action#usage)
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built.
+      # It increases supply chain security for people who consume the image. For more information,
+      # see [Using artifact attestations to establish provenance for builds](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds).
+      # DOES NOT WOKR ON PRIVATE REPOSITORIES
+      # - name: Generate artifact attestation
+      #   uses: actions/attest@v4
+      #   with:
+      #     subject-name: ${{ env.REGISTRY }}/${{ matrix.image }}
+      #     subject-digest: ${{ steps.push.outputs.digest }}
+      #     push-to-registry: true
