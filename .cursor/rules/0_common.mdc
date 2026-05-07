@@ -7,6 +7,8 @@ alwaysApply: true
 # Rules
 Always read the [README.md](../../README.md) file before starting a new conversation.
 
+Always read the [INDEX.md](../../apps/documentation/INDEX.md) file before starting a new conversation.
+
 Before writing any code, always read the [general guidelines](apps/documentation/src/content/docs/references/general.mdx) for the project. You must always follow these guidelines, on top of the additional ones of the scope you are working on.
 
 # Intro

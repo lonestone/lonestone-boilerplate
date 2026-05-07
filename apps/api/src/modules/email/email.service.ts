@@ -1,3 +1,4 @@
+import { Traceable } from '@amplication/opentelemetry-nestjs'
 import { Injectable, Logger } from '@nestjs/common'
 import { createTransport, Transporter } from 'nodemailer'
 import { config } from '../../config/env.config'
@@ -19,6 +20,7 @@ interface SmtpConfig {
   }
 }
 
+@Traceable()
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name)

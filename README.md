@@ -209,7 +209,9 @@ When working with an AI Agent (such as Copilot, Cursor or Claude), please follow
 
 ## 📚 Documentation
 
-Project documentation is available in the `docs/` folder and in app `README`s. It contains information about architecture, coding conventions, and development guides.
+The stack technical documentation is available in the `apps/documentation/` folder. It contains information about architecture, coding conventions, and development guides. A index listing all the avaible documentation can be found at `apps/documentation/INDEX.md`.
+
+After cloning this repo, we advise putting your project specific documentation in the `docs/` folder and in app `README`s. This contains information about your the "business" side of the project. But you can also use `apps/documentation` as the center of all docs, it's up to you.
 
 This documentation is also used by our custom cursor rules.
 
@@ -219,7 +221,7 @@ This documentation is also used by our custom cursor rules.
 - [API Readme](apps/api/README.md)
 - [Frontend Readme](apps/web-spa/README.md)
 
-The `docs/features` directory should contain a list of folder for each new features. In those you can write specification document and TODO tasks for a feature you are implementing. Feature specefications can can also point toward README.md files inside the packages' features, that should provide more details about the implementation within the scope of the package.
+The `docs/features` directory should contain a list of folder for each new features. In those you can write specification document and TODO tasks for a feature you are implementing. Feature specifications can can also point toward README.md files inside the packages' features, that should provide more details about the implementation within the scope of the package.
 
 ## 🔍 Tracing Architecture
 
