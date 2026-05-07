@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "start": "node dist/src/main.js",
+    "start": "node dist/main.js",
     "dev": "nest start --watch",
     "db:migration:init": "npx mikro-orm migration:create --initial",
     "db:migrate:create": "npx mikro-orm migration:create",

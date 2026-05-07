@@ -1,5 +1,5 @@
 # Stage 1: base
-FROM node:22.14-alpine AS base
+FROM node:24.13-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 # Use pnpm version according to our package.json, if not the pnpm store will not be in synced later on, resulting in errors
@@ -8,19 +8,15 @@ WORKDIR /app
 
 # Stage 2: Installing deps, building and deploying
 FROM base AS builder
-# pnpm fetch does require only lockfile
-COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-RUN pnpm fetch
 
-# Copy source after fetch
 COPY . .
-RUN pnpm install -r --offline --prefer-offline
+RUN pnpm install --frozen-lockfile
 
 RUN pnpm --filter {apps/api}... build
 
 # Create a deploy folder with only the required deps
 # This respects gitignore in /apps/api, so remember to include your dist folder in the "files" section of your package.json
-RUN pnpm deploy --legacy --filter="./apps/api" --prod /app/api
+RUN pnpm deploy --filter="./apps/api" --prod /app/api
 
 # Stage 4: Production (Final image)
 FROM base AS runner

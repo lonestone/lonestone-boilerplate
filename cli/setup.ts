@@ -164,6 +164,39 @@ function parseEnvFile(filePath: string): Record<string, string> {
   return vars
 }
 
+function getViteConfigPort(filePath: string): number | undefined {
+  if (!existsSync(filePath)) {
+    return undefined
+  }
+
+  const content = readFileSync(filePath, 'utf-8')
+  const match = content.match(/server\s*:\s*\{[\s\S]*?\bport\s*:\s*(\d+)/)
+  if (!match) {
+    return undefined
+  }
+  return Number.parseInt(match[1], 10)
+}
+
+function updateViteConfigPort(filePath: string, port: number): void {
+  if (!existsSync(filePath)) {
+    console.log(`  ${colorize('⚠', 'yellow')} File not found: ${colorize(filePath, 'dim')}`)
+    return
+  }
+
+  const content = readFileSync(filePath, 'utf-8')
+  const regex = /(server\s*:\s*\{[\s\S]*?\bport\s*:\s*)(\d+)/
+  if (!regex.test(content)) {
+    console.log(`  ${colorize('⚠', 'yellow')} Could not find Vite server port in: ${colorize(filePath, 'dim')}`)
+    return
+  }
+
+  const updated = content.replace(regex, `$1${port}`)
+  if (updated !== content) {
+    writeFileSync(filePath, updated, 'utf-8')
+    console.log(`  ${colorize('✓', 'green')} Updated ${colorize(filePath.replace(`${projectRoot}/`, ''), 'dim')}`)
+  }
+}
+
 function getMissingVariables(examplePath: string, envPath: string): string[] {
   const exampleVars = parseEnvFile(examplePath)
   const envVars = parseEnvFile(envPath)
@@ -256,55 +289,10 @@ async function promptDatabaseConfig(): Promise<EnvConfig['database']> {
 
 async function promptPortsConfig(availableApps: AvailableApps): Promise<EnvConfig['ports']> {
   const ports: EnvConfig['ports'] = {}
-  const needsPortConfig: string[] = []
-
-  if (availableApps.api) {
-    const apiExamplePath = join(projectRoot, 'apps/api/.env.example')
-    const apiEnvPath = join(projectRoot, 'apps/api/.env')
-    const envExists = existsSync(apiEnvPath)
-    const existingVars = envExists ? parseEnvFile(apiEnvPath) : {}
-    const exampleVars = parseEnvFile(apiExamplePath)
-    const missingVars = envExists ? getMissingVariables(apiExamplePath, apiEnvPath) : Object.keys(exampleVars)
-
-    if (missingVars.includes('API_PORT')) {
-      needsPortConfig.push('API')
-    }
-    else {
-      ports.api = Number.parseInt(existingVars.API_PORT || '3000', 10)
-    }
-  }
-
-  if (availableApps.webSpa) {
-    const webSpaExamplePath = join(projectRoot, 'apps/web-spa/.env.example')
-    const webSpaEnvPath = join(projectRoot, 'apps/web-spa/.env')
-    const envExists = existsSync(webSpaEnvPath)
-    const missingVars = envExists ? getMissingVariables(webSpaExamplePath, webSpaEnvPath) : []
-
-    if (missingVars.length > 0) {
-      needsPortConfig.push('Web SPA')
-    }
-  }
-
-  if (availableApps.webSsr) {
-    const webSsrExamplePath = join(projectRoot, 'apps/web-ssr/.env.example')
-    const webSsrEnvPath = join(projectRoot, 'apps/web-ssr/.env')
-    const envExists = existsSync(webSsrEnvPath)
-    const missingVars = envExists ? getMissingVariables(webSsrExamplePath, webSsrEnvPath) : []
-
-    if (missingVars.length > 0) {
-      needsPortConfig.push('Web SSR')
-    }
-  }
-
-  if (needsPortConfig.length === 0) {
-    console.log(`\n${colorize('🔌 Application Ports Configuration', 'cyan')}`)
-    console.log(`  ${colorize('✓', 'green')} Ports already configured`)
-    return ports
-  }
 
   console.log(`\n${colorize('🔌 Application Ports Configuration', 'cyan')}\n`)
 
-  if (availableApps.api && needsPortConfig.includes('API')) {
+  if (availableApps.api) {
     const apiExamplePath = join(projectRoot, 'apps/api/.env.example')
     const apiEnvPath = join(projectRoot, 'apps/api/.env')
     const envExists = existsSync(apiEnvPath)
@@ -314,30 +302,17 @@ async function promptPortsConfig(availableApps: AvailableApps): Promise<EnvConfi
     const apiPortStr = await prompt('API port', initialPort)
     ports.api = Number.parseInt(apiPortStr, 10) || 3000
   }
-  else if (availableApps.api) {
-    const apiEnvPath = join(projectRoot, 'apps/api/.env')
-    const existingVars = parseEnvFile(apiEnvPath)
-    ports.api = Number.parseInt(existingVars.API_PORT || '3000', 10)
-  }
 
-  if (availableApps.webSpa && needsPortConfig.includes('Web SPA')) {
-    const webSpaExamplePath = join(projectRoot, 'apps/web-spa/.env.example')
-    const webSpaEnvPath = join(projectRoot, 'apps/web-spa/.env')
-    const envExists = existsSync(webSpaEnvPath)
-    const existingVars = envExists ? parseEnvFile(webSpaEnvPath) : {}
-    const exampleVars = parseEnvFile(webSpaExamplePath)
-    const initialPort = existingVars.VITE_PORT || exampleVars.VITE_PORT || '5173'
+  if (availableApps.webSpa) {
+    const viteConfigPath = join(projectRoot, 'apps/web-spa/vite.config.ts')
+    const initialPort = (getViteConfigPort(viteConfigPath) ?? 5173).toString()
     const webSpaPortStr = await prompt('Web SPA port', initialPort)
     ports.webSpa = Number.parseInt(webSpaPortStr, 10) || 5173
   }
 
-  if (availableApps.webSsr && needsPortConfig.includes('Web SSR')) {
-    const webSsrExamplePath = join(projectRoot, 'apps/web-ssr/.env.example')
-    const webSsrEnvPath = join(projectRoot, 'apps/web-ssr/.env')
-    const envExists = existsSync(webSsrEnvPath)
-    const existingVars = envExists ? parseEnvFile(webSsrEnvPath) : {}
-    const exampleVars = parseEnvFile(webSsrExamplePath)
-    const initialPort = existingVars.PORT || exampleVars.PORT || '5174'
+  if (availableApps.webSsr) {
+    const viteConfigPath = join(projectRoot, 'apps/web-ssr/vite.config.ts')
+    const initialPort = (getViteConfigPort(viteConfigPath) ?? 5174).toString()
     const webSsrPortStr = await prompt('Web SSR port', initialPort)
     ports.webSsr = Number.parseInt(webSsrPortStr, 10) || 5174
   }
@@ -445,7 +420,11 @@ function copyEnvFiles(envFilesInfo: EnvFileInfo[]): void {
   }
 }
 
-function updateEnvFile(filePath: string, replacements: Record<string, string>, onlyMissing: boolean = false): void {
+function updateEnvFile(
+  filePath: string,
+  replacements: Record<string, string | ((old: string | null) => string)>,
+  onlyMissing: boolean = false,
+): void {
   if (!existsSync(filePath)) {
     console.log(`  ${colorize('⚠', 'yellow')} File not found: ${colorize(filePath, 'dim')}`)
     return
@@ -456,17 +435,20 @@ function updateEnvFile(filePath: string, replacements: Record<string, string>, o
   let updated = false
 
   for (const [key, value] of Object.entries(replacements)) {
+    const f = typeof value === 'function' ? value : () => value
+
     if (onlyMissing && key in existingVars && existingVars[key]) {
       continue
     }
 
-    const regex = new RegExp(`^${key}=.*$`, 'm')
+    const regex = new RegExp(`^${key}=(.*)$`, 'm')
     if (regex.test(content)) {
-      content = content.replace(regex, `${key}=${value}`)
+      const old = regex.exec(content)?.[1] ?? null
+      content = content.replace(regex, `${key}=${f(old)}`)
       updated = true
     }
     else {
-      content += `\n${key}=${value}`
+      content += `\n${key}=${f(null)}`
       updated = true
     }
   }
@@ -691,17 +673,37 @@ function buildTrustedOrigins(
   return [...localhostMerged, ...nonLocalhostOrigins].join(',')
 }
 
+function updateViteConfigPorts(config: EnvConfig, availableApps: AvailableApps): void {
+  console.log(`\n${colorize('⚙️  Updating Vite dev server ports', 'cyan')}\n`)
+
+  if (availableApps.webSpa && config.ports.webSpa) {
+    updateViteConfigPort(join(projectRoot, 'apps/web-spa/vite.config.ts'), config.ports.webSpa)
+  }
+
+  if (availableApps.webSsr && config.ports.webSsr) {
+    updateViteConfigPort(join(projectRoot, 'apps/web-ssr/vite.config.ts'), config.ports.webSsr)
+  }
+}
+
 function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): void {
   console.log(`\n${colorize('✏️  Updating .env files', 'cyan')}\n`)
 
   // Root .env (docker-compose) - update all configured vars
-  const rootUpdates: Record<string, string> = {}
+  const rootUpdates: Record<string, string | ((old: string | null) => string)> = {}
   rootUpdates.DATABASE_USER = config.database.user
   rootUpdates.DATABASE_PASSWORD = config.database.password
   rootUpdates.DATABASE_NAME = config.database.name
+  rootUpdates.DATABASE_HOST = config.database.host
   rootUpdates.DATABASE_PORT = config.database.port.toString()
   rootUpdates.SMTP_PORT = config.smtp.port.toString()
   rootUpdates.SMTP_PORT_WEB = config.smtp.portWeb.toString()
+
+  if (config.ports.api) {
+    rootUpdates.API_PORT = config.ports.api.toString()
+    rootUpdates.API_BASE_URL = `http://localhost:${config.ports.api}`
+    const rootEnvPath = join(projectRoot, '.env')
+    rootUpdates.TRUSTED_ORIGINS = buildTrustedOrigins(config, rootEnvPath)
+  }
 
   if (Object.keys(rootUpdates).length > 0) {
     updateEnvFile(join(projectRoot, '.env'), rootUpdates, false)
@@ -799,6 +801,9 @@ async function main(): Promise<void> {
 
     // Update .env files with the configured values
     updateAllEnvFiles(config, availableApps)
+
+    // Update Vite config ports (SPA/SSR)
+    updateViteConfigPorts(config, availableApps)
 
     console.log(`\n${colorize('✅ Setup completed successfully!', 'green')}`)
     console.log(`\n${colorize('📝 Configuration Summary:', 'cyan')}`)
