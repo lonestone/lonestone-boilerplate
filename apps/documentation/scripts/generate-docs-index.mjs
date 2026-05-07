@@ -1,4 +1,3 @@
-@@ -0,0 +1,180 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -40,8 +39,8 @@ function normalizeFrontmatterValue(value) {
   }
 
   if (
-    (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) ||
-    (trimmedValue.startsWith("'") && trimmedValue.endsWith("'"))
+    (trimmedValue.startsWith('"') && trimmedValue.endsWith('"'))
+    || (trimmedValue.startsWith('\'') && trimmedValue.endsWith('\''))
   ) {
     return trimmedValue.slice(1, -1).trim()
   }
@@ -57,7 +56,7 @@ function extractDescriptionFromFrontmatter(content) {
 
   const frontmatterContent = frontmatterMatch[1]
   const lines = frontmatterContent.split(/\r?\n/)
-  const descriptionLine = lines.find((line) => line.startsWith('description:'))
+  const descriptionLine = lines.find(line => line.startsWith('description:'))
 
   if (!descriptionLine) {
     return ''
@@ -74,7 +73,7 @@ function createLocalFileLink(relativePath) {
 function createSectionTitle(sectionName) {
   return sectionName
     .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ')
 }
 
