@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { execSync, spawn } from 'node:child_process'
 import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
@@ -759,6 +759,43 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   console.log(`  ${colorize('✓', 'green')} Configuration values have been updated in .env files`)
 }
 
+function cleanupBoilerplateFiles(): void {
+  console.log(`\n${colorize('🧹 Cleaning up boilerplate-only files', 'cyan')}\n`)
+
+  // Files and directories that are only useful for maintaining the boilerplate itself
+  const filesToRemove = [
+    // Release draft generation implementation
+    'tasks/boilerplate-ai-upgrades',
+    // Boilerplate-only release tasks
+    '.cursor/rules/boilerplate-rules.mdc',
+    // Maintainer-only documentation
+    'docs/boilerplate-maintenance.md',
+  ]
+
+  for (const file of filesToRemove) {
+    const filePath = join(projectRoot, file)
+    if (existsSync(filePath)) {
+      try {
+        execSync(`rm -rf "${filePath}"`, { stdio: 'pipe' })
+        console.log(`  ${colorize('✓', 'green')} Removed ${colorize(file, 'dim')}`)
+      }
+      catch {
+        console.log(`  ${colorize('⚠', 'yellow')} Failed to remove ${colorize(file, 'dim')}`)
+      }
+    }
+  }
+
+  // Copy boilerplate.example.json to boilerplate.json for tracking
+  const examplePath = join(projectRoot, '.boilerplate', 'boilerplate.example.json')
+  const targetPath = join(projectRoot, '.boilerplate', 'boilerplate.json')
+  if (existsSync(examplePath) && !existsSync(targetPath)) {
+    copyFileSync(examplePath, targetPath)
+    console.log(`  ${colorize('✓', 'green')} Created ${colorize('.boilerplate/boilerplate.json', 'dim')}`)
+  }
+
+  console.log(`\n  ${colorize('✓', 'green')} Boilerplate cleanup completed`)
+}
+
 async function main(): Promise<void> {
   console.log(`\n${colorize('🚀 Development Environment Setup', 'bright')}\n`)
 
@@ -804,6 +841,9 @@ async function main(): Promise<void> {
 
     // Update Vite config ports (SPA/SSR)
     updateViteConfigPorts(config, availableApps)
+
+    // Template cleanup: remove boilerplate-only files
+    cleanupBoilerplateFiles()
 
     console.log(`\n${colorize('✅ Setup completed successfully!', 'green')}`)
     console.log(`\n${colorize('📝 Configuration Summary:', 'cyan')}`)

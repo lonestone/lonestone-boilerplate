@@ -63,3 +63,6 @@ android/
 
 # ios
 ios/
+
+# Boilerplate upgrade workspace (temporary)
+.boilerplate/upgrade/
