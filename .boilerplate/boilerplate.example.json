@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "lonestone/lonestone-boilerplate",
+    "currentVersion": "1.0.0"
+  },
+  "trackedDomains": ["tooling", "api", "frontend", "ci", "docker-env"],
+  "intentions": {
+    "applied": [],
+    "skipped": []
+  }
+}
