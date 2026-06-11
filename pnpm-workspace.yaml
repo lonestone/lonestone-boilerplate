@@ -34,9 +34,15 @@ catalogs:
     react-i18next: ^16.5.4
     i18next: ^25.8.0
   auth:
-    # Better Auth
-    better-auth: ^1.4.18
-    "@better-auth/expo": ^1.4.6
+    # Better Auth — pinned to an EXACT version on purpose. Better Auth has
+    # shipped behaviour-breaking changes in minor releases (e.g. 1.6 validates
+    # sign-in additionalFields from the request body before the user.create
+    # hooks run, where 1.4 validated them after). A floating range here means a
+    # deploy that does not use `pnpm install --frozen-lockfile` can silently pull
+    # a newer minor than the lockfile and break auth in prod only. Bump
+    # deliberately and test the auth flows when you do.
+    better-auth: 1.4.18
+    "@better-auth/expo": 1.4.6
   build:
     # Node, vite, ts
     "@types/node": ^25.1.0
