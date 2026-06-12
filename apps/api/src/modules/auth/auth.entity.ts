@@ -4,7 +4,7 @@ import {
   PrimaryKey,
   Property,
   Unique,
-} from '@mikro-orm/core'
+} from '@mikro-orm/decorators/legacy'
 
 @Entity({ tableName: 'user' })
 export class User {

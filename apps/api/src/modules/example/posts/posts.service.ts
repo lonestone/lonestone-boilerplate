@@ -49,7 +49,8 @@ export class PostService {
     version.content = data.content
     post.versions.add(version)
 
-    await this.em.persistAndFlush([post, version])
+    this.em.persist([post, version])
+    await this.em.flush()
     return post
   }
 
@@ -87,7 +88,8 @@ export class PostService {
       version.title = data.title ?? latestVersion.title
       version.content = data.content ?? latestVersion.content
       post.versions.add(version)
-      await this.em.persistAndFlush(version)
+      this.em.persist(version)
+      await this.em.flush()
     }
     else {
       // Otherwise we update the last version

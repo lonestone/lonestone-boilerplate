@@ -3,12 +3,12 @@
 // Utilities for managing per-test database containers.
 // This provides maximum isolation with one container per test.
 
-import { MikroORM, Options } from '@mikro-orm/core'
+import { MikroORM } from '@mikro-orm/core'
 import { createTestMikroOrmOptions } from '../../config/mikro-orm.config'
 
 export interface TestOrmContext {
   orm: MikroORM
-  mikroOrmOptions: Options
+  mikroOrmOptions: ReturnType<typeof createTestMikroOrmOptions>
 }
 
 /**
@@ -45,7 +45,7 @@ export async function createTestOrm(dbConfig: {
   })
 
   const orm = await MikroORM.init(mikroOrmOptions)
-  await orm.schema.refreshDatabase()
+  await orm.schema.refresh()
 
   return {
     orm,
@@ -72,5 +72,5 @@ export async function cleanupTestOrm(orm: MikroORM): Promise<void> {
  * @param orm The ORM instance to reset
  */
 export async function resetOrmSchema(orm: MikroORM): Promise<void> {
-  await orm.schema.refreshDatabase()
+  await orm.schema.refresh()
 }

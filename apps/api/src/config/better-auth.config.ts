@@ -1,11 +1,13 @@
-import { betterAuth, BetterAuthOptions, MiddlewareInputContext, MiddlewareOptions, User } from 'better-auth'
+import type { MikroORM } from '@mikro-orm/core'
+import type { BetterAuthOptions, MiddlewareInputContext, MiddlewareOptions, User } from 'better-auth'
+import { betterAuth } from 'better-auth'
 import { openAPI } from 'better-auth/plugins'
-import { Pool } from 'pg'
+import { mikroOrmAdapter } from '../modules/auth/auth-db.adapter'
 
 interface BetterAuthOptionsDynamic {
+  orm: MikroORM
   secret: string
   trustedOrigins: string[]
-  connectionStringUrl: string
   sendResetPassword?: (
     data: { user: User, url: string, token: string },
     request: Request | undefined,
@@ -58,9 +60,7 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
         return options?.sendVerificationEmail?.(data, request)
       },
     },
-    database: new Pool({
-      connectionString: options.connectionStringUrl,
-    }),
+    database: mikroOrmAdapter(options.orm),
     databaseHooks: options.databaseHooks,
     advanced: {
       database: {

@@ -1,13 +1,13 @@
+import type { Rel } from '@mikro-orm/core'
 import {
-  Collection,
   Entity,
   Index,
   ManyToOne,
   OneToMany,
   PrimaryKey,
   Property,
-  Rel,
-} from '@mikro-orm/core'
+} from '@mikro-orm/decorators/legacy'
+import { Collection } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
 import { Post } from '../../example/posts/posts.entity'
 

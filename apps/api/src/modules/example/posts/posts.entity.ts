@@ -1,5 +1,4 @@
 import {
-  Collection,
   Entity,
   Index,
   ManyToOne,
@@ -7,7 +6,8 @@ import {
   PrimaryKey,
   Property,
   Unique,
-} from '@mikro-orm/core'
+} from '@mikro-orm/decorators/legacy'
+import { Collection } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
 import { Comment } from '../../example/comments/comments.entity'
 

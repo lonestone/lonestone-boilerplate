@@ -1,8 +1,11 @@
 import { Migrator } from '@mikro-orm/migrations'
 
-import { defineConfig, Options, ReflectMetadataProvider } from '@mikro-orm/postgresql'
-import { TsMorphMetadataProvider } from '@mikro-orm/reflection'
+import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy'
+import { defineConfig, Options } from '@mikro-orm/postgresql'
 import { SeedManager } from '@mikro-orm/seeder'
+import { Account, Session, User, Verification } from '../modules/auth/auth.entity'
+import { Comment } from '../modules/example/comments/comments.entity'
+import { Post, PostVersion } from '../modules/example/posts/posts.entity'
 
 // This file is used by the mikro-orm CLI for migrations and seeding
 import { config } from './env.config'
@@ -14,18 +17,28 @@ type CreateMikroOrmOptions = {
   isTest?: boolean
 } & Options
 
+const entities = [
+  Account,
+  Comment,
+  Post,
+  PostVersion,
+  Session,
+  User,
+  Verification,
+]
+
 export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
   const { ...restOptions } = options ?? {}
 
   const _options: Options = defineConfig({
-    entities: ['./dist/**/*.entity.js'],
-    entitiesTs: ['./src/**/*.entity.ts'],
+    entities,
+    entitiesTs: entities,
     dbName: config.database.name,
     host: config.database.host,
     port: config.database.port,
     user: config.database.user,
     password: config.database.password,
-    metadataProvider: __filename.endsWith('.js') ? ReflectMetadataProvider : TsMorphMetadataProvider,
+    metadataProvider: ReflectMetadataProvider,
     forceUtcTimezone: true,
     debug: config.env === 'development',
     extensions: [SeedManager, Migrator],

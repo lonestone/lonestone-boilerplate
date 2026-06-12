@@ -54,7 +54,8 @@ export class CommentsService {
       comment.parent = parentComment
     }
 
-    await this.em.persistAndFlush(comment)
+    this.em.persist(comment)
+    await this.em.flush()
 
     return comment
   }
@@ -154,7 +155,8 @@ export class CommentsService {
     await this.em.nativeDelete(Comment, { parent: commentId })
 
     // Then delete the comment itself
-    await this.em.removeAndFlush(comment)
+    this.em.remove(comment)
+    await this.em.flush()
   }
 
   async getCommentCount(postSlug: string): Promise<number> {

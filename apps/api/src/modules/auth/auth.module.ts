@@ -7,6 +7,7 @@ import type {
   MiddlewareContext,
   MiddlewareOptions,
 } from 'better-auth'
+import { MikroORM } from '@mikro-orm/core'
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Global, Inject, Module, RequestMethod } from '@nestjs/common'
 import {
@@ -36,12 +37,12 @@ import { AuthService } from './auth.service'
   providers: [
     {
       provide: MODULE_OPTIONS_TOKEN,
-      useFactory: (emailService: EmailService): AuthModuleOptions => {
+      useFactory: (emailService: EmailService, orm: MikroORM): AuthModuleOptions => {
         const betterAuth = createBetterAuth({
           baseUrl: config.api.baseUrl,
           secret: config.betterAuth.secret,
           trustedOrigins: config.betterAuth.trustedOrigins,
-          connectionStringUrl: config.database.connectionStringUrl,
+          orm,
           sendResetPassword: async (data) => {
             const webUrl = `${config.clients.webApp.url}/reset-password?token=${data.token}`
             return emailService.sendEmail({
@@ -63,7 +64,7 @@ import { AuthService } from './auth.service'
           auth: betterAuth,
         }
       },
-      inject: [EmailService],
+      inject: [EmailService, MikroORM],
     },
     AuthService,
     AuthGuard,
