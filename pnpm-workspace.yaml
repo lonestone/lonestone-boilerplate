@@ -31,7 +31,7 @@ catalogs:
     i18next: ^25.8.0
   auth:
     # Better Auth
-    better-auth: ^1.4.18
+    better-auth: ^1.6.9
     "@better-auth/expo": ^1.4.6
   build:
     # Node, vite, ts

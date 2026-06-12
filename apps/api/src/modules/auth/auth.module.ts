@@ -15,8 +15,8 @@ import {
   DiscoveryService,
   MetadataScanner,
 } from '@nestjs/core'
+import { createAuthMiddleware } from 'better-auth/api'
 import { toNodeHandler } from 'better-auth/node'
-import { createAuthMiddleware } from 'better-auth/plugins'
 import { config } from '../../config/env.config'
 import { EmailModule } from '../email/email.module'
 import { EmailService } from '../email/email.service'
