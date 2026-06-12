@@ -17,6 +17,7 @@ type IntentionClassification = 'no-migration' | 'informational' | 'migration' | 
 interface MigrationIntention {
   id: string
   file: string
+  content: string
   domain?: string
   classification: IntentionClassification
   metadataIssues: string[]
@@ -227,6 +228,7 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
       intentions.push({
         id: intentionId,
         file: file.file,
+        content: file.content,
         domain,
         classification,
         metadataIssues: parsedMetadata.issues,

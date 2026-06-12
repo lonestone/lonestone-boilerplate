@@ -144,6 +144,7 @@ For each intention:
 
 ### On Completion
 
+- Set `source.currentVersion` to the target version in `.boilerplate/boilerplate.json` (final commit of the upgrade branch)
 - Generate final summary for PR description
 - Include:
   - Total intentions processed
