@@ -46,7 +46,7 @@ export function buildOrderBy<
     orderBy[defaultProperty] = defaultDirection
   }
 
-  if (!Object.prototype.hasOwnProperty.call(orderBy, stableProperty)) {
+  if (!Object.hasOwn(orderBy, stableProperty)) {
     orderBy[stableProperty] = stableDirection
   }
 

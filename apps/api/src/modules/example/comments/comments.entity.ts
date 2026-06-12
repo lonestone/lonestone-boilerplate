@@ -1,4 +1,5 @@
 import type { Rel } from '@mikro-orm/core'
+import { Collection } from '@mikro-orm/core'
 import {
   Entity,
   Index,
@@ -7,7 +8,6 @@ import {
   PrimaryKey,
   Property,
 } from '@mikro-orm/decorators/legacy'
-import { Collection } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
 import { Post } from '../../example/posts/posts.entity'
 

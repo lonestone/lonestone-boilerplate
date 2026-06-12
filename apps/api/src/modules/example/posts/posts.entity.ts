@@ -1,3 +1,4 @@
+import { Collection } from '@mikro-orm/core'
 import {
   Entity,
   Index,
@@ -7,7 +8,6 @@ import {
   Property,
   Unique,
 } from '@mikro-orm/decorators/legacy'
-import { Collection } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
 import { Comment } from '../../example/comments/comments.entity'
 

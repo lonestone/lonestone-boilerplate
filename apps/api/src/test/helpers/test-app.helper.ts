@@ -31,6 +31,10 @@ interface InitializeTestAppOptions {
   orm: MikroORM
 }
 
+function registerMiddleware(app: INestApplication, middleware: express.RequestHandler): void {
+  app.use(middleware)
+}
+
 /**
  * Initializes a NestJS application with a new test container.
  * AuthService is mocked in test.e2e-setup (vi.mock) with getSession/setSession only.
@@ -87,23 +91,19 @@ export async function initializeTestApp(options: InitializeTestAppOptions, metad
       new ZodSerializationExceptionFilter(),
     )
 
-    app.use(testSessionMiddleware)
+    registerMiddleware(app, testSessionMiddleware)
 
     // Configure body parsing as in main.ts:
     // - Skip JSON parsing for Better Auth routes (needs raw body)
     // - Parse JSON for everything else
-    app.use(
-      (
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
-      ) => {
-        if (req.originalUrl.startsWith('/auth')) {
-          return next()
-        }
-        express.json({ limit: '50mb' })(req, res, next)
-      },
-    )
+    const jsonBodyParser: express.RequestHandler = (req, res, next) => {
+      if (req.originalUrl.startsWith('/auth')) {
+        return next()
+      }
+      express.json({ limit: '50mb' })(req, res, next)
+    }
+
+    registerMiddleware(app, jsonBodyParser)
     app.enableCors({
       origin: '*',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',

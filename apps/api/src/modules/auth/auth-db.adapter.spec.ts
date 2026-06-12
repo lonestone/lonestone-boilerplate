@@ -1,18 +1,21 @@
+import type { EntityName } from '@mikro-orm/core'
 import { MikroORM } from '@mikro-orm/core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createMikroOrmOptions } from '../db/db.config'
 import { validateAuthSchema } from './auth-db.adapter'
 import { createBetterAuth } from './auth.config'
+import * as authEntities from './auth.entity'
 
 describe('better-auth schema drift', () => {
   let orm: MikroORM
 
   beforeAll(async () => {
-    orm = await MikroORM.init(createMikroOrmOptions({ debug: false }))
+    const entities = Object.values(authEntities) as EntityName<object>[]
+    orm = await MikroORM.init(createMikroOrmOptions({ debug: false, entities, entitiesTs: entities }))
   })
 
   afterAll(async () => {
-    await orm.close(true)
+    await orm?.close(true)
   })
 
   it('maps every better-auth model and field to a MikroORM entity', () => {

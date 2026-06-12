@@ -1,9 +1,10 @@
-import type { MikroORM as MikroORMClass } from '@mikro-orm/core'
-import type { createMikroOrmOptions as CreateMikroOrmOptions } from '../db/db.config'
+import type { EntityName, MikroORM as MikroORMClass } from '@mikro-orm/core'
+import type { createMikroOrmOptions as CreateMikroOrmOptions, entityGlobs as EntityGlobs } from '../db/db.config'
 import type { createBetterAuth as CreateBetterAuth } from './auth.config'
 
+import { readdirSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 
 // ---------------------------------------------------------------------------
 // Config consumed by the better-auth CLI only (`pnpm auth:generate`).
@@ -28,12 +29,45 @@ const { createBetterAuth } = require('./auth.config.ts') as {
 const { createMikroOrmOptions } = require('../db/db.config.ts') as {
   createMikroOrmOptions: typeof CreateMikroOrmOptions
 }
+const { entityGlobs } = require('../db/db.config.ts') as {
+  entityGlobs: typeof EntityGlobs
+}
 const { config } = require('../../config/env.config.ts') as {
   config: typeof import('../../config/env.config').config
 }
 
+type EntityModule = Record<string, EntityName<object>>
+
+function listFiles(dir: string, suffix: string): string[] {
+  return readdirSync(dir).flatMap((entry) => {
+    const path = join(dir, entry)
+    const stat = statSync(path)
+
+    if (stat.isDirectory()) {
+      return listFiles(path, suffix)
+    }
+
+    return path.endsWith(suffix) ? [path] : []
+  })
+}
+
+function loadEntitiesFromGlob(pattern: string): EntityName<object>[] {
+  const [rootPattern, suffix] = pattern.replace(/^\.\//, '').split('/**/*')
+
+  if (!rootPattern || !suffix) {
+    return []
+  }
+
+  return listFiles(resolve(process.cwd(), rootPattern), suffix).flatMap((file) => {
+    const moduleExports = require(file) as EntityModule
+    return Object.values(moduleExports).filter((value): value is EntityName<object> => typeof value === 'function')
+  })
+}
+
+const entities = entityGlobs.entitiesTs.flatMap(loadEntitiesFromGlob)
+
 export const auth = createBetterAuth({
-  orm: new MikroORM(createMikroOrmOptions({ debug: false })),
+  orm: new MikroORM(createMikroOrmOptions({ debug: false, entities, entitiesTs: entities })),
   baseUrl: config.api.baseUrl,
   secret: config.betterAuth.secret,
   trustedOrigins: config.betterAuth.trustedOrigins,

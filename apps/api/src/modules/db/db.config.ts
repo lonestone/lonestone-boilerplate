@@ -1,25 +1,18 @@
+import type { Options } from '@mikro-orm/postgresql'
 import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy'
 import { Migrator } from '@mikro-orm/migrations'
-import { defineConfig, Options } from '@mikro-orm/postgresql'
+import { defineConfig } from '@mikro-orm/postgresql'
 import { SeedManager } from '@mikro-orm/seeder'
 import { config } from '../../config/env.config'
-import { Account, Session, User, Verification } from '../auth/auth.entity'
-import { Comment } from '../example/comments/comments.entity'
-import { Post, PostVersion } from '../example/posts/posts.entity'
 
 type CreateMikroOrmOptions = {
   isTest?: boolean
 } & Options
 
-const entities = [
-  Account,
-  Comment,
-  Post,
-  PostVersion,
-  Session,
-  User,
-  Verification,
-]
+export const entityGlobs = {
+  entities: ['./dist/**/*.entity.js'],
+  entitiesTs: ['./src/**/*.entity.ts'],
+} as const
 
 export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
   return defineConfig({
@@ -28,8 +21,8 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
     user: config.database.user,
     password: config.database.password,
     dbName: config.database.name,
-    entities,
-    entitiesTs: entities,
+    entities: [...entityGlobs.entities],
+    entitiesTs: [...entityGlobs.entitiesTs],
     metadataProvider: ReflectMetadataProvider,
     forceUtcTimezone: true,
     debug: config.env === 'development',
