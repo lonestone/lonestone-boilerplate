@@ -4,7 +4,7 @@
 // This provides maximum isolation with one container per test.
 
 import { MikroORM } from '@mikro-orm/core'
-import { createTestMikroOrmOptions } from '../../config/mikro-orm.config'
+import { createTestMikroOrmOptions } from '../../modules/db/db.config'
 
 export interface TestOrmContext {
   orm: MikroORM

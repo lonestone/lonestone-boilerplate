@@ -13,12 +13,12 @@ import type {
   DBAdapterDebugLogOption,
 } from 'better-auth/adapters'
 import type { DBFieldAttribute } from 'better-auth/db'
+import { relative } from 'node:path'
 import { ReferenceKind, serialize } from '@mikro-orm/core'
 import { BetterAuthError } from 'better-auth'
 import { createAdapterFactory } from 'better-auth/adapters'
 import { getAuthTables } from 'better-auth/db'
-import { dirname, relative, resolve } from 'node:path'
-import { createEntityResolver, renderScaffold } from './auth-schema-codegen'
+import { applyEntityPatches } from './auth-schema-codegen'
 
 export interface MikroOrmAdapterConfig {
   debugLogs?: DBAdapterDebugLogOption
@@ -29,16 +29,20 @@ type AdapterFactoryCreatorConfig = Parameters<
   Parameters<typeof createAdapterFactory>[0]['adapter']
 >[0]
 
-type AuthModelEntity = Record<string, unknown>
-type AuthEntityName = EntityName<AuthModelEntity>
+type AdapterPrimitive = string | number | boolean | Date | null | undefined
+interface AuthModelEntity {}
+interface PathRecord {
+  [key: PathKey]: AdapterValue
+}
+
+type AdapterValue = AdapterPrimitive | AdapterValue[] | AuthModelEntity | PathRecord
 type AuthEntityMetadata = EntityMetadata<AuthModelEntity>
 type AuthEntityProperty = EntityProperty<AuthModelEntity>
 type AuthEntityData = EntityData<AuthModelEntity>
 type AuthFilterQuery = FilterQuery<AuthModelEntity>
 type AuthFindOptions = FindOptions<AuthModelEntity>
-type AuthRecord = Record<string, unknown>
 type PathKey = string | number
-type PathRecord = Record<PathKey, unknown>
+type AuthRecord = Record<string, AdapterValue>
 
 interface AdapterCreateParams<T> {
   data: T
@@ -68,11 +72,11 @@ interface AdapterUpdateParams<T> extends AdapterQueryParams {
   update: T
 }
 
-function isPathRecord(value: unknown): value is PathRecord {
-  return typeof value === 'object' && value !== null
+function isPathRecord(value: AdapterValue): value is PathRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date)
 }
 
-function toAuthRecord(value: unknown): AuthRecord {
+function toAuthRecord<T>(value: T): AuthRecord {
   if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
     return value as AuthRecord
   }
@@ -80,7 +84,7 @@ function toAuthRecord(value: unknown): AuthRecord {
   throwAdapterError('Expected adapter input to be an object record.')
 }
 
-function setPath(obj: PathRecord, path: readonly PathKey[], value: unknown): void {
+function setPath(obj: PathRecord, path: readonly PathKey[], value: AdapterValue): void {
   if (path.length === 0) {
     throwAdapterError('Cannot set an empty object path.')
   }
@@ -140,8 +144,8 @@ function createAdapterUtils(
     naming.getEntityName(naming.classToTableName(name))
 
   const getEntityMetadata: AdapterUtils['getEntityMetadata'] = (entityName) => {
-    const normalized = normalizeEntityName(entityName) as unknown as EntityName<unknown>
-    const metadata = metadataStore.find(normalized)
+    const normalized = normalizeEntityName(entityName)
+    const metadata = [...metadataStore.getAll().values()].find(meta => meta.className === normalized)
 
     if (!metadata) {
       throwAdapterError(
@@ -234,7 +238,7 @@ function createAdapterUtils(
     for (const [key, value] of Object.entries(input)) {
       const prop = getPropertyMetadata(metadata, key)
       const normalizedValue = prop.targetMeta && !OWN_REFERENCES.has(prop.kind)
-        ? orm.em.getReference(prop.targetMeta.class as AuthEntityName, value)
+        ? orm.em.getReference(prop.targetMeta.class as EntityName<AuthModelEntity>, value)
         : value
 
       setPath(fields, [prop.name], normalizedValue)
@@ -363,8 +367,6 @@ export function diffAuthTables(
 ): AuthSchemaModelDiff[] {
   const utils = createAdapterUtils(orm, { getFieldName: ({ field }) => field })
   const diffs: AuthSchemaModelDiff[] = []
-  const toMessage = (error: unknown) => error instanceof Error ? error.message : String(error)
-
   for (const table of Object.values(tables)) {
     const fields: AuthSchemaField[] = Object.entries(table.fields).map(([key, attribute]) => ({
       attribute,
@@ -375,12 +377,13 @@ export function diffAuthTables(
 
     try {
       metadata = utils.getEntityMetadata(table.modelName)
-    } catch (error) {
+    }
+    catch {
       diffs.push({
         fields,
         missingFields: fields,
         model: table.modelName,
-        problems: [toMessage(error)],
+        problems: [`Cannot find metadata for "${table.modelName}" entity.`],
       })
       continue
     }
@@ -391,9 +394,10 @@ export function diffAuthTables(
     for (const field of fields) {
       try {
         utils.getFieldPath(metadata, field.field)
-      } catch (error) {
+      }
+      catch {
         missingFields.push(field)
-        problems.push(toMessage(error))
+        problems.push(`Cannot find property "${field.field}" on entity "${metadata.className}".`)
       }
     }
 
@@ -413,11 +417,11 @@ export function validateAuthSchema(orm: MikroORM, options: BetterAuthOptions): s
   return diffAuthSchema(orm, options).flatMap(diff => diff.problems)
 }
 
-export const mikroOrmAdapter = (
+export function mikroOrmAdapter(
   orm: MikroORM,
   { debugLogs, supportsJSON = true }: MikroOrmAdapterConfig = {},
-) =>
-  createAdapterFactory({
+) {
+  return createAdapterFactory({
     adapter(config) {
       const {
         getEntityMetadata,
@@ -453,19 +457,23 @@ export const mikroOrmAdapter = (
           file?: string
           tables: ReturnType<typeof getAuthTables>
         }) {
-          const path = file ?? 'src/modules/auth/better-auth.generated.ts'
+          const defaultPath = file ?? 'src/modules/auth/auth.entity.ts'
           const diffs = diffAuthTables(orm, tables)
 
           if (diffs.length === 0) {
-            return { code: '', path }
+            return { code: '', path: defaultPath }
           }
 
-          const code = renderScaffold(diffs, {
-            displayPath: absolutePath => relative(process.cwd(), absolutePath),
-            resolveEntity: createEntityResolver(orm, dirname(resolve(path))),
-          })
+          const patchedFiles = applyEntityPatches(diffs, orm)
 
-          return { code, overwrite: true, path }
+          if (patchedFiles.size > 0) {
+            const [firstPath, firstContent] = [...patchedFiles.entries()][0]!
+            return { code: firstContent, path: relative(process.cwd(), firstPath), overwrite: true }
+          }
+
+          throwAdapterError(
+            `Cannot determine which MikroORM entity file should receive Better Auth schema changes. Check createMikroOrmOptions() entities discovery.`,
+          )
         },
 
         async delete({ model, where }: AdapterQueryParams): Promise<void> {
@@ -551,7 +559,7 @@ export const mikroOrmAdapter = (
           return normalizeOutput(metadata, entity) as T
         },
 
-        async updateMany({ model, update, where }: AdapterUpdateParams<unknown>): Promise<number> {
+        async updateMany<T>({ model, update, where }: AdapterUpdateParams<T>): Promise<number> {
           const metadata = getEntityMetadata(model)
 
           return orm.em.nativeUpdate(
@@ -569,3 +577,4 @@ export const mikroOrmAdapter = (
       supportsJSON,
     },
   })
+}

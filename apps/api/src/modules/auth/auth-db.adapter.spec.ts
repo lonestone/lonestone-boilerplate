@@ -1,8 +1,8 @@
 import { MikroORM } from '@mikro-orm/core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createBetterAuth } from '../../config/better-auth.config'
-import { createMikroOrmOptions } from '../../config/mikro-orm.config'
+import { createMikroOrmOptions } from '../db/db.config'
 import { validateAuthSchema } from './auth-db.adapter'
+import { createBetterAuth } from './auth.config'
 
 describe('better-auth schema drift', () => {
   let orm: MikroORM

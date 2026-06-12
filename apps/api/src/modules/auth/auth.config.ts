@@ -1,8 +1,10 @@
 import type { MikroORM } from '@mikro-orm/core'
-import type { BetterAuthOptions, MiddlewareInputContext, MiddlewareOptions, User } from 'better-auth'
+import type { BetterAuthOptions, User } from 'better-auth'
 import { betterAuth } from 'better-auth'
 import { openAPI } from 'better-auth/plugins'
-import { mikroOrmAdapter } from '../modules/auth/auth-db.adapter'
+import { mikroOrmAdapter } from './auth-db.adapter'
+
+type BetterAuthHooks = NonNullable<BetterAuthOptions['hooks']>
 
 interface BetterAuthOptionsDynamic {
   orm: MikroORM
@@ -16,8 +18,8 @@ interface BetterAuthOptionsDynamic {
     data: { user: User, url: string, token: string },
     request: Request | undefined,
   ) => Promise<void>
-  beforeHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
-  afterHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
+  beforeHook?: BetterAuthHooks['before']
+  afterHook?: BetterAuthHooks['after']
   databaseHooks?: BetterAuthOptions['databaseHooks']
   baseUrl: string
 }
