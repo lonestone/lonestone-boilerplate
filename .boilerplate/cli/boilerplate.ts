@@ -88,6 +88,30 @@ function archiveGitReference(reference: string, destination: string, cwd = proje
   rmSync(tarFile, { force: true })
 }
 
+function gitFileExists(reference: string, filePath: string): boolean {
+  try {
+    runGitCommand(['cat-file', '-e', `${reference}:${filePath}`])
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+function listGitMarkdownFiles(reference: string, directory: string): string[] {
+  try {
+    const output = runGitCommand(['ls-tree', '-r', '--name-only', reference, '--', directory])
+    return output.split('\n').filter(file => file.endsWith('.md')).sort()
+  }
+  catch {
+    return []
+  }
+}
+
+function readGitFile(reference: string, filePath: string): string {
+  return execFileSync('git', ['show', `${reference}:${filePath}`], { cwd: projectRoot, encoding: 'utf-8' })
+}
+
 function listMarkdownFiles(directory: string, recursive = false): string[] {
   if (!existsSync(directory)) {
     return []
@@ -131,12 +155,16 @@ function getReleases(): ReleaseInfo[] {
   return tags.split('\n').filter(Boolean).map((tag) => {
     const version = tag.replace(/^v/, '')
     const date = runGitCommand(['log', '-1', '--format=%ci', tag]).split(' ')[0]
-    const intentionsPath = join(boilerplateDir, 'migration-intentions', tag, 'README.md')
+    // Intentions for a release live in its git tag: a consumer forked at an older
+    // version does not have the newer files on disk. Disk is the fallback for
+    // releases drafted in the boilerplate repo but not tagged yet.
+    const hasMigrations = gitFileExists(tag, `.boilerplate/migration-intentions/${tag}/README.md`)
+      || existsSync(join(boilerplateDir, 'migration-intentions', tag, 'README.md'))
     return {
       version,
       tag,
       date,
-      hasMigrations: existsSync(intentionsPath),
+      hasMigrations,
     }
   })
 }
@@ -307,6 +335,20 @@ function formatMetadataWarnings(intentions: MigrationIntention[]): string {
 
 function getIntentionFiles(releases: ReleaseInfo[]): IntentionFileInput[] {
   return releases.flatMap((release) => {
+    // Git tag first: consumers forked before this release only have it in git
+    const releaseDirInGit = `.boilerplate/migration-intentions/v${release.version}`
+    if (gitFileExists(release.tag, `${releaseDirInGit}/README.md`)) {
+      return listGitMarkdownFiles(release.tag, releaseDirInGit)
+        .filter(file => !file.endsWith('README.md') && !file.endsWith('classification.md'))
+        .map(file => ({
+          releaseVersion: release.version,
+          file: `${release.tag}:${file}`,
+          relativePath: file.slice(releaseDirInGit.length + 1),
+          content: readGitFile(release.tag, file),
+        }))
+    }
+
+    // Disk fallback: release drafted in the boilerplate repo but not tagged yet
     const releaseDir = join(boilerplateDir, 'migration-intentions', `v${release.version}`)
     const releaseReadme = join(releaseDir, 'README.md')
     if (!existsSync(releaseReadme)) {
@@ -488,10 +530,10 @@ async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promis
   mkdirSync(join(upgradeDir, 'intentions'), { recursive: true })
 
   for (const intention of upgradePath.intentions) {
-    if (existsSync(intention.file)) {
-      const destFile = join(upgradeDir, 'intentions', `${intention.id.replace(/\//g, '-')}.md`)
-      cpSync(intention.file, destFile)
-    }
+    // Content was resolved from the release git tag (or disk fallback); write it
+    // instead of copying, since the source may not exist as a local file
+    const destFile = join(upgradeDir, 'intentions', `${intention.id.replace(/\//g, '-')}.md`)
+    writeFileSync(destFile, intention.content, 'utf-8')
   }
 
   // Extract reference files from git tags
@@ -556,6 +598,7 @@ You are an AI agent tasked with applying boilerplate upgrade intentions to this 
 9. Run validation after each intention
 10. Update \`boilerplate.json\` after successful validation
 11. **Stop** on unsafe ambiguity and write a blocked report
+12. After the last intention is resolved, set \`source.currentVersion\` to ${path.targetVersion} in \`boilerplate.json\`
 
 ### Git Policy
 
