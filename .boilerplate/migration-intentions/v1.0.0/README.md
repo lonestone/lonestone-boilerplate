@@ -1,6 +1,6 @@
 # Migration Intentions - v1.0.0
 
-## Index
+## Intentions
 
 <!-- This file will be populated when migration intentions are created for a release -->
 <!-- Example: -->

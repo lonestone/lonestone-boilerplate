@@ -1,4 +1,18 @@
+---
+id: vX.Y.Z/slug
+domain: tooling
+classification: migration
+---
+
 # Migration Intention Template
+
+> The frontmatter block above must stay on the very first line of the file — the parser only reads it there.
+
+## Metadata
+
+- `id`: stable identifier recorded in `.boilerplate/boilerplate.json`
+- `domain`: one of the consumer project's tracked domains (`tooling`, `api`, `frontend`, `ci`, `docker-env`, `monitoring`, `email`, `auth`, `storage`)
+- `classification`: `migration` or `breaking-manual` for actionable intentions
 
 ## Goal
 

@@ -12,8 +12,8 @@
 
 ## Migration Intentions
 
-<!-- Transferable evolutions (link to index) -->
-<!-- See [index.md](./index.md) -->
+<!-- Transferable evolutions (link to the release README) -->
+<!-- See [README.md](./README.md) -->
 
 ## Breaking / Manual
 

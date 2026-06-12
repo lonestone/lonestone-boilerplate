@@ -2,7 +2,7 @@
 
 ## Overview
 
-Successfully implemented the complete AI-assisted boilerplate upgrade system as specified in `tasks/boilerplate-ai-upgrades/`.
+This is an internal pilot implementation of the AI-assisted boilerplate upgrade system specified in `tasks/boilerplate-ai-upgrades/`.
 
 ## What Was Implemented
 
@@ -11,7 +11,7 @@ Successfully implemented the complete AI-assisted boilerplate upgrade system as 
 **Files Created:**
 - `CHANGELOG.md` - Human-facing changelog with migration intention links
 - `migration-intentions/` - Directory structure for migration intentions
-- `migration-intentions/v1.0.0/index.md` - Version-specific intention index
+- `migration-intentions/v1.0.0/README.md` - Version-specific intention index (rendered by GitHub when browsing the folder)
 - `migration-intentions/v1.0.0/classification.md` - Change classification document
 
 **Features:**
@@ -26,6 +26,7 @@ Successfully implemented the complete AI-assisted boilerplate upgrade system as 
 - `migration-intentions/TEMPLATE.md` - Template for creating new intentions
 
 **Required Sections:**
+- Frontmatter metadata - Stable `id`, `domain`, and `classification`
 - Goal - Expected end state
 - Why - Reason for the change
 - Applies When - Explicit applicability checks
@@ -38,6 +39,7 @@ Successfully implemented the complete AI-assisted boilerplate upgrade system as 
 **Functional Rules:**
 - One intention per coherent evolution
 - Agent-agnostic instructions
+- Explicit domain and classification metadata for reliable filtering
 - Preserves project-specific behavior
 - Prefers adapting over replacing
 - Includes explicit applicability checks and stop conditions
@@ -78,6 +80,7 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 - Local workspace preparation (.boilerplate/)
 - Session prompt generation for AI agents
 - Status tracking and reporting
+- Typed git/file operations where possible; no shell-based `rm`, `cp`, or `ls`
 
 ### 5. Release Draft Generation (Task 03) ✓
 
@@ -105,7 +108,7 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 **Files Created:**
 - `legacy-checkpoints/` - Directory for checkpoint bundles
 - `legacy-checkpoints/TEMPLATE.md` - Checkpoint template
-- `legacy-checkpoints/index.md` - Checkpoint index
+- `legacy-checkpoints/README.md` - Checkpoint index
 
 **Checkpoint Contents:**
 - Supported source version range
@@ -168,13 +171,14 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 **Safety Features:**
 - Refuses dirty worktrees
 - Creates dedicated upgrade branch
+- Fails clearly if the dedicated branch already exists and is not checked out
 - References never overwrite project files
 - Session prompt enforces one-intention-at-a-time workflow
 
 ### 9. Agent Execution Workflow (Task 10) ✓
 
 **Documentation Created:**
-- `docs/ai-agent-execution.md` - Complete agent workflow guide
+- `docs/upgrade-runbook.md` - Canonical upgrade workflow (human or AI executor)
 
 **Agent Workflow:**
 1. Read intention file
@@ -305,7 +309,7 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 
 ## Testing
 
-All CLI commands tested and working:
+Smoke-tested CLI commands:
 - ✓ `pnpm boilerplate` - Help output
 - ✓ `pnpm boilerplate versions list` - Version listing
 - ✓ `pnpm boilerplate upgrade status` - Status display
@@ -340,8 +344,8 @@ pnpm boilerplate upgrade path --to 1.6.0 --project .
 # Prepare upgrade context
 pnpm boilerplate upgrade prepare --project . --to 1.6.0
 
-# AI agent executes from .boilerplate/upgrade-session.md
-# (Agent works through intentions one by one)
+# Executor (human or AI agent) works through .boilerplate/upgrade/upgrade-session.md
+# one intention at a time — see docs/upgrade-runbook.md
 
 # Review results
 git log --oneline upgrade/v1.0.0-to-v1.6.0
@@ -367,13 +371,13 @@ lonestone-boilerplate/
 ├── migration-intentions/                  # Migration intentions
 │   ├── TEMPLATE.md                        # Intention template
 │   └── v1.0.0/
-│       ├── index.md                       # Version index
+│       ├── README.md                      # Version index
 │       └── classification.md              # Change classification
 ├── legacy-checkpoints/                    # Legacy checkpoint bundles
 │   ├── TEMPLATE.md                        # Checkpoint template
-│   └── index.md                           # Checkpoint index
+│   └── README.md                          # Checkpoint index
 ├── docs/
-│   ├── ai-agent-execution.md              # Agent workflow guide
+│   ├── upgrade-runbook.md                 # Canonical upgrade workflow (human or AI)
 │   └── pilot-rollout.md                   # Pilot implementation guide
 ├── cli/
 │   ├── setup.ts                           # Setup script (with cleanup)
@@ -390,7 +394,7 @@ lonestone-boilerplate/
 
 ## Summary
 
-All 12 tasks have been successfully implemented with:
+The pilot is implemented with:
 - ✓ Proper separation of concerns (producer vs consumer)
 - ✓ Safety-first design (no destructive operations)
 - ✓ Clear documentation and templates
@@ -401,4 +405,4 @@ All 12 tasks have been successfully implemented with:
 - ✓ Pilot rollout framework
 - ✓ Template cleanup for generated projects
 
-The system is ready for pilot testing on a real consumer project.
+The system is ready for pilot testing on a real consumer project, not broad rollout yet.

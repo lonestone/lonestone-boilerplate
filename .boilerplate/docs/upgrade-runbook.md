@@ -1,8 +1,10 @@
-# AI Agent Execution Workflow
+# Upgrade Runbook
 
 ## Overview
 
-This document describes how AI agents should execute boilerplate upgrades in consumer projects.
+This is the canonical workflow for applying boilerplate upgrades to a consumer project. It is executor-neutral: a human developer can follow it step by step, and an AI agent (Claude Code, Cursor, ...) follows the exact same steps. Tool-specific entry points (such as `.claude/skills/upgrade-boilerplate/`) are thin shims that point here.
+
+Commands that support `--json` emit machine-readable output — prefer it when the executor is a program.
 
 ## Prerequisites
 
@@ -10,7 +12,9 @@ Before starting an upgrade session:
 
 1. Ensure the project has a `.boilerplate/boilerplate.json` file (run `pnpm boilerplate upgrade init` if not)
 2. Ensure the Git worktree is clean (`git status --porcelain` should be empty)
-3. Run `pnpm boilerplate upgrade prepare --project <path> --to <target-version>`
+3. Check where you stand: `pnpm boilerplate upgrade status --json`
+4. Preview the path: `pnpm boilerplate upgrade path --to <target-version> --json`
+5. Run `pnpm boilerplate upgrade prepare --project <path> --to <target-version>`
 
 ## Session Structure
 
@@ -21,12 +25,14 @@ After preparation, the `.boilerplate/upgrade/` directory contains:
   boilerplate.json       # Project tracking (committed)
   upgrade/               # Temporary workspace (not committed)
     reference/
-      source/            # Source version reference files
-      target/            # Target version reference files
+      source/            # Source version reference files (.boilerplate/ tree at the source tag)
+      target/            # Target version reference files (.boilerplate/ tree at the target tag)
     intentions/          # Migration intention files
     upgrade-session.md   # Main session prompt
     status.md            # Current status report
 ```
+
+Reference extraction requires the source and target git tags to exist locally. In a consumer project, fetch them first: `git fetch <boilerplate-remote> --tags`. For app-code references mentioned in an intention's "Reference Paths", compare against the boilerplate repository at the target tag.
 
 ## Execution Workflow
 
@@ -34,11 +40,13 @@ After preparation, the `.boilerplate/upgrade/` directory contains:
 
 1. **Read the intention file**
    - Location: `.boilerplate/upgrade/intentions/<intention-id>.md`
+   - Check frontmatter metadata: `id`, `domain`, `classification`
    - Understand the goal, why, and reference paths
 
 2. **Run applicability checks**
    - Check "Applies when" conditions
    - Check "Do not apply when" conditions
+   - If `classification` is `breaking-manual`, stop and ask for a human decision before editing
    - If not applicable, record as skipped with reason
 
 3. **Compare with references** (if useful)
@@ -70,6 +78,8 @@ Stop immediately if:
 - Validation fails after reasonable attempts
 - Unsafe ambiguity is detected
 - Project-specific behavior would be lost
+
+When the executor is an AI agent, stopping means writing a blocked report and handing back to a human — never guessing through.
 
 ### Recording Results
 
@@ -108,6 +118,7 @@ Stop immediately if:
 - Create one commit per resolved intention
 - Keep successful commits if a later intention fails
 - Create a dedicated upgrade branch
+- If the expected upgrade branch already exists, check it out manually before re-running `upgrade prepare`
 
 ## Validation Rules
 
@@ -148,19 +159,22 @@ For each intention:
 pnpm boilerplate upgrade init --project ./my-project
 
 # 2. Check status
-pnpm boilerplate upgrade status --project ./my-project
+pnpm boilerplate upgrade status --project ./my-project --json
 
-# 3. Prepare upgrade context
+# 3. Preview the upgrade path
+pnpm boilerplate upgrade path --to 1.6.0 --project ./my-project --json
+
+# 4. Prepare upgrade context
 pnpm boilerplate upgrade prepare --project ./my-project --to 1.6.0
 
-# 4. AI agent executes intentions from .boilerplate/upgrade-session.md
-# (This is done by the AI agent, not manually)
+# 5. Execute the intentions listed in .boilerplate/upgrade/upgrade-session.md,
+#    one at a time — yourself, or by handing the session to an AI agent
 
-# 5. Review the upgrade branch
+# 6. Review the upgrade branch
 git log --oneline
 git diff main..upgrade/v1.5.0-to-v1.6.0
 
-# 6. Create PR when satisfied
+# 7. Create PR when satisfied
 ```
 
 ## Best Practices
