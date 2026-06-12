@@ -1,9 +1,10 @@
-import { execSync, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import {
   copyFileSync,
   existsSync,
   readdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs'
@@ -833,7 +834,7 @@ function cleanupBoilerplateFiles(): void {
     const filePath = join(projectRoot, file)
     if (existsSync(filePath)) {
       try {
-        execSync(`rm -rf "${filePath}"`, { stdio: 'pipe' })
+        rmSync(filePath, { recursive: true, force: true })
         console.log(`  ${colorize('✓', 'green')} Removed ${colorize(file, 'dim')}`)
       }
       catch {

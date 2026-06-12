@@ -70,15 +70,15 @@ pnpm boilerplate upgrade prepare --project . --to 1.6.0
 - Is `upgrade-session.md` clear and actionable?
 - Are reference files present and useful?
 
-### Step 5: Execute AI Agent
+### Step 5: Execute the Intentions
 
-Provide the AI agent with:
+Execute them yourself by following `docs/upgrade-runbook.md`, or hand the session to an AI agent (e.g. the `upgrade-boilerplate` Claude Code skill) with:
 - Access to the `.boilerplate/` directory
 - The `upgrade-session.md` file
 - Permission to make changes and commits
 
 **Agent workflow:**
-1. Agent reads `.boilerplate/upgrade-session.md`
+1. Agent reads `.boilerplate/upgrade/upgrade-session.md`
 2. For each intention:
    - Reads the intention file
    - Checks applicability

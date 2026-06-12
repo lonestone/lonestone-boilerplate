@@ -66,3 +66,9 @@ ios/
 
 # Boilerplate upgrade workspace (temporary)
 .boilerplate/upgrade/
+
+# Local experiments / scratch notes
+.lab/
+
+# Claude Code personal settings (the skills/ folder is shared and committed)
+.claude/settings.local.json

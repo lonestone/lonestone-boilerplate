@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { colorize } from '../../cli/utils'
@@ -36,7 +36,7 @@ interface UpgradeReport {
 
 function checkGitClean(workDir: string): boolean {
   try {
-    const output = execSync('git status --porcelain', {
+    const output = execFileSync('git', ['status', '--porcelain'], {
       cwd: workDir,
       encoding: 'utf-8',
     }).trim()
@@ -50,7 +50,7 @@ function checkGitClean(workDir: string): boolean {
 function createUpgradeBranch(workDir: string, sourceVersion: string, targetVersion: string): string {
   const branchName = `upgrade/v${sourceVersion}-to-v${targetVersion}`
   try {
-    execSync(`git checkout -b ${branchName}`, {
+    execFileSync('git', ['checkout', '-b', branchName], {
       cwd: workDir,
       encoding: 'utf-8',
     })
@@ -63,8 +63,8 @@ function createUpgradeBranch(workDir: string, sourceVersion: string, targetVersi
 
 function commitIntention(workDir: string, intentionId: string): string {
   try {
-    execSync('git add -A', { cwd: workDir, encoding: 'utf-8' })
-    const output = execSync(`git commit -m "feat: apply migration intention ${intentionId}"`, {
+    execFileSync('git', ['add', '-A'], { cwd: workDir, encoding: 'utf-8' })
+    const output = execFileSync('git', ['commit', '-m', `feat: apply migration intention ${intentionId}`], {
       cwd: workDir,
       encoding: 'utf-8',
     })
@@ -80,15 +80,15 @@ function runValidation(workDir: string, intentionId: string, customChecks?: stri
   const checks: Array<{ name: string, status: 'passed' | 'failed' | 'unavailable', output?: string }> = []
 
   const globalChecks = [
-    { name: 'lint', command: 'pnpm lint' },
-    { name: 'typecheck', command: 'pnpm typecheck' },
-    { name: 'test', command: 'pnpm test' },
-    { name: 'build', command: 'pnpm build' },
+    { name: 'lint', command: 'pnpm', args: ['lint'] },
+    { name: 'typecheck', command: 'pnpm', args: ['typecheck'] },
+    { name: 'test', command: 'pnpm', args: ['test'] },
+    { name: 'build', command: 'pnpm', args: ['build'] },
   ]
 
   for (const check of globalChecks) {
     try {
-      const output = execSync(check.command, {
+      const output = execFileSync(check.command, check.args, {
         cwd: workDir,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -96,12 +96,14 @@ function runValidation(workDir: string, intentionId: string, customChecks?: stri
       checks.push({ name: check.name, status: 'passed', output })
     }
     catch (error: unknown) {
-      if (error instanceof Error && (error.message.includes('missing script') || error.message.includes('command not found'))) {
+      const err = error as { message?: string, stdout?: string, stderr?: string }
+      // pnpm reports "Missing script" on stderr, not in the error message
+      const combined = [err.message, err.stdout, err.stderr].filter(Boolean).join('\n')
+      if (/missing script|command not found/i.test(combined)) {
         checks.push({ name: check.name, status: 'unavailable' })
       }
       else {
-        const output = error instanceof Error ? (error as { stdout?: string, stderr?: string }).stdout || (error as { stdout?: string, stderr?: string }).stderr || error.message : String(error)
-        checks.push({ name: check.name, status: 'failed', output })
+        checks.push({ name: check.name, status: 'failed', output: err.stdout || err.stderr || err.message || String(error) })
       }
     }
   }
@@ -109,6 +111,13 @@ function runValidation(workDir: string, intentionId: string, customChecks?: stri
   if (customChecks) {
     for (const check of customChecks) {
       try {
+        if (!check.trim()) {
+          checks.push({ name: check, status: 'unavailable' })
+          continue
+        }
+
+        // Custom checks are full command lines authored in project config; run them
+        // through the shell so quoting and operators behave as written
         const output = execSync(check, {
           cwd: workDir,
           encoding: 'utf-8',

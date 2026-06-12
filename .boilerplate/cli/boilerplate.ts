@@ -1,10 +1,22 @@
-import { execSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import type {
+  CheckpointInfo,
+  IntentionFileInput,
+  MigrationIntention,
+  ReleaseInfo,
+  UpgradePath,
+} from './boilerplate-core'
+import { execFileSync } from 'node:child_process'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
 import { colorize } from '../../cli/utils'
+import {
+  computeUpgradePath,
+  getUpgradeBranchName,
+  readOptionValue,
+} from './boilerplate-core'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -50,30 +62,6 @@ interface BoilerplateState {
   }
 }
 
-interface ReleaseInfo {
-  version: string
-  tag: string
-  date: string
-  hasMigrations: boolean
-}
-
-interface MigrationIntention {
-  id: string
-  file: string
-  domain?: string
-  classification: 'no-migration' | 'informational' | 'migration' | 'breaking-manual'
-}
-
-interface UpgradePath {
-  sourceVersion: string
-  targetVersion: string
-  checkpoints: string[]
-  releases: string[]
-  intentions: MigrationIntention[]
-  sourceTag: string
-  targetTag: string
-}
-
 function prompt(message: string, initial: string): Promise<string> {
   const input = new Input({ message, initial })
   return input.run()
@@ -84,8 +72,54 @@ function _confirm(message: string): Promise<boolean> {
   return confirmPrompt.run()
 }
 
-function runGitCommand(args: string[]): string {
-  return execSync(`git ${args.join(' ')}`, { cwd: projectRoot, encoding: 'utf-8' }).trim()
+function getProjectPath(projectPath: string): string {
+  return isAbsolute(projectPath) ? projectPath : resolve(process.cwd(), projectPath)
+}
+
+function runGitCommand(args: string[], cwd = projectRoot): string {
+  return execFileSync('git', args, { cwd, encoding: 'utf-8' }).trim()
+}
+
+function archiveGitReference(reference: string, destination: string, cwd = projectRoot): void {
+  // --output avoids buffering the archive on stdout (execFileSync caps stdout at 1MB by default)
+  const tarFile = join(destination, '.reference.tar')
+  execFileSync('git', ['archive', '--format=tar', `--output=${tarFile}`, reference, '.boilerplate/'], { cwd })
+  execFileSync('tar', ['-xf', tarFile, '-C', destination])
+  rmSync(tarFile, { force: true })
+}
+
+function listMarkdownFiles(directory: string, recursive = false): string[] {
+  if (!existsSync(directory)) {
+    return []
+  }
+
+  const files: string[] = []
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = join(directory, entry.name)
+    if (entry.isDirectory() && recursive) {
+      files.push(...listMarkdownFiles(entryPath, true))
+      continue
+    }
+    if (entry.isFile() && entry.name.endsWith('.md')) {
+      files.push(entryPath)
+    }
+  }
+
+  return files.sort()
+}
+
+function ensureUpgradeBranch(workDir: string, branchName: string): void {
+  const currentBranch = runGitCommand(['branch', '--show-current'], workDir)
+  if (currentBranch === branchName) {
+    return
+  }
+
+  const existingBranch = runGitCommand(['branch', '--list', branchName], workDir)
+  if (existingBranch) {
+    throw new Error(`Branch ${branchName} already exists. Check it out before preparing the upgrade.`)
+  }
+
+  runGitCommand(['checkout', '-b', branchName], workDir)
 }
 
 function getReleases(): ReleaseInfo[] {
@@ -97,7 +131,7 @@ function getReleases(): ReleaseInfo[] {
   return tags.split('\n').filter(Boolean).map((tag) => {
     const version = tag.replace(/^v/, '')
     const date = runGitCommand(['log', '-1', '--format=%ci', tag]).split(' ')[0]
-    const intentionsPath = join(boilerplateDir, 'migration-intentions', tag, 'index.md')
+    const intentionsPath = join(boilerplateDir, 'migration-intentions', tag, 'README.md')
     return {
       version,
       tag,
@@ -165,10 +199,10 @@ function detectSourceVersion(projectPath: string): { version: string, confidence
   return null
 }
 
-function cmdUpgradeInit(projectPath: string): void {
+async function cmdUpgradeInit(projectPath: string): Promise<void> {
   console.log(`\n${colorize('🔧 Initializing Boilerplate Tracking', 'cyan')}\n`)
 
-  const absolutePath = projectPath.startsWith('/') ? projectPath : join(process.cwd(), projectPath)
+  const absolutePath = getProjectPath(projectPath)
 
   if (!existsSync(absolutePath)) {
     console.error(`  ${colorize('❌', 'red')} Project path not found: ${absolutePath}`)
@@ -194,153 +228,119 @@ function cmdUpgradeInit(projectPath: string): void {
     console.log(`  ${colorize('⚠', 'yellow')} Could not detect source version`)
   }
 
-  prompt('Enter source boilerplate version', version).then((sourceVersion) => {
-    const state: BoilerplateState = {
-      schemaVersion: 1,
-      source: {
-        repository: 'lonestone/lonestone-boilerplate',
-        currentVersion: sourceVersion,
-      },
-      trackedDomains: ['tooling', 'api', 'frontend', 'ci', 'docker-env'],
-      intentions: {
-        applied: [],
-        skipped: [],
-      },
-    }
+  const sourceVersion = await prompt('Enter source boilerplate version', version)
+  const state: BoilerplateState = {
+    schemaVersion: 1,
+    source: {
+      repository: 'lonestone/lonestone-boilerplate',
+      currentVersion: sourceVersion,
+    },
+    trackedDomains: ['tooling', 'api', 'frontend', 'ci', 'docker-env'],
+    intentions: {
+      applied: [],
+      skipped: [],
+    },
+  }
 
-    writeBoilerplateJson(absolutePath, state)
-    console.log(`\n  ${colorize('✓', 'green')} Created boilerplate.json`)
-    console.log(`  ${colorize('Source version:', 'dim')} ${sourceVersion}`)
-  })
+  writeBoilerplateJson(absolutePath, state)
+  console.log(`\n  ${colorize('✓', 'green')} Created boilerplate.json`)
+  console.log(`  ${colorize('Source version:', 'dim')} ${sourceVersion}`)
 }
 
-function getCheckpoints(): Array<{ id: string, targetVersion: string, minSourceVersion: string, file: string }> {
+function getCheckpoints(): CheckpointInfo[] {
   const checkpointsDir = join(boilerplateDir, 'legacy-checkpoints')
   if (!existsSync(checkpointsDir)) {
     return []
   }
-  try {
-    const files = execSync(`ls -1 ${checkpointsDir}/*.md 2>/dev/null || true`, { encoding: 'utf-8' })
-      .trim()
-      .split('\n')
-      .filter(f => f && !f.endsWith('TEMPLATE.md') && !f.endsWith('index.md'))
-    return files.map((file) => {
+
+  return listMarkdownFiles(checkpointsDir)
+    .filter(f => !f.endsWith('TEMPLATE.md') && !f.endsWith('README.md'))
+    .map((file) => {
       const id = basename(file).replace('.md', '')
       const parts = id.split('-to-')
       return { id, targetVersion: parts[1] || '', minSourceVersion: parts[1] ? '0.0.0' : '', file }
     })
-  }
-  catch {
-    return []
-  }
 }
 
-function computeUpgradePath(sourceVersion: string, targetVersion: string, trackedDomains: string[], appliedIntentions: string[], skippedIntentions: string[]): UpgradePath {
-  const releases = getReleases()
-  const checkpoints = getCheckpoints()
+function formatIntentionListItem(intention: MigrationIntention): string {
+  const domain = intention.domain ? ` [${intention.domain}]` : ''
+  const metadataIssues = intention.metadataIssues.length > 0
+    ? colorize(` metadata: ${intention.metadataIssues.join(', ')}`, 'yellow')
+    : ''
 
-  const sourceTag = releases.find(r => r.version === sourceVersion)?.tag || `v${sourceVersion}`
-  const targetTag = releases.find(r => r.version === targetVersion)?.tag || `v${targetVersion}`
+  return `${colorize('•', 'cyan')} ${colorize(intention.id, 'bright')}${domain}${metadataIssues}`
+}
 
-  const selectedCheckpoints: string[] = []
+function getMetadataIssueCount(intentions: MigrationIntention[]): number {
+  return intentions.filter(intention => intention.metadataIssues.length > 0).length
+}
 
-  // If source is older than the earliest release with intentions, insert a checkpoint
-  const earliestRelease = releases
-    .filter(r => r.hasMigrations)
-    .sort((a, b) => a.version.localeCompare(b.version, undefined, { numeric: true }))[0]
-
-  if (earliestRelease) {
-    for (const cp of checkpoints) {
-      if (versionLte(cp.targetVersion, earliestRelease.version) && versionGt(cp.targetVersion, sourceVersion)) {
-        selectedCheckpoints.push(cp.id)
-      }
-    }
+function formatCountList(counts: Record<string, number>): string {
+  const entries = Object.entries(counts).filter(([, count]) => count > 0)
+  if (entries.length === 0) {
+    return '_none_'
   }
 
-  const releasesInRange = releases
-    .filter((r) => {
-      const v = r.version
-      return versionGt(v, sourceVersion) && versionLte(v, targetVersion)
-    })
-    .sort((a, b) => a.version.localeCompare(b.version, undefined, { numeric: true }))
+  return entries.map(([name, count]) => `- ${name}: ${count}`).join('\n')
+}
 
-  const intentions: MigrationIntention[] = []
+function formatIntentionStatusItem(intention: MigrationIntention): string {
+  const domain = intention.domain || 'unknown-domain'
+  return `- ${intention.id} (${domain}, ${intention.classification})`
+}
 
-  for (const release of releasesInRange) {
-    const indexFile = join(boilerplateDir, 'migration-intentions', `v${release.version}`, 'index.md')
-    if (!existsSync(indexFile)) {
-      continue
-    }
+function formatIntentionPromptItem(intention: MigrationIntention): string {
+  const stopFirst = intention.classification === 'breaking-manual' ? ' - STOP FIRST: requires human decision before edits' : ''
+  return `- [ ] ${intention.id} (${intention.classification})${stopFirst}`
+}
 
+function formatMetadataWarnings(intentions: MigrationIntention[]): string {
+  const intentionsWithIssues = intentions.filter(intention => intention.metadataIssues.length > 0)
+  if (intentionsWithIssues.length === 0) {
+    return '_none_'
+  }
+
+  return intentionsWithIssues
+    .map(intention => `- ${intention.id}: ${intention.metadataIssues.join(', ')}`)
+    .join('\n')
+}
+
+function getIntentionFiles(releases: ReleaseInfo[]): IntentionFileInput[] {
+  return releases.flatMap((release) => {
     const releaseDir = join(boilerplateDir, 'migration-intentions', `v${release.version}`)
-    const intentionFiles = execSync(`ls -1 ${releaseDir}/*.md 2>/dev/null || true`, { encoding: 'utf-8' })
-      .trim()
-      .split('\n')
-      .filter(f => f && !f.endsWith('index.md') && !f.endsWith('classification.md'))
-
-    for (const file of intentionFiles) {
-      const intentionId = `v${release.version}/${basename(file).replace('.md', '')}`
-      if (appliedIntentions.includes(intentionId) || skippedIntentions.includes(intentionId)) {
-        continue
-      }
-
-      // Infer domain from file path: files in version subdirectories (e.g. v1.0.0/api/s3-module.md)
-      const relativePath = file.replace(releaseDir, '')
-      const domain = relativePath.startsWith('/') ? relativePath.split('/')[1] : undefined
-
-      // Skip if trackedDomains is non-empty and this intention's domain doesn't match
-      if (trackedDomains.length > 0 && domain && !trackedDomains.includes(domain)) {
-        continue
-      }
-
-      intentions.push({
-        id: intentionId,
-        file,
-        domain,
-        classification: 'migration',
-      })
+    const releaseReadme = join(releaseDir, 'README.md')
+    if (!existsSync(releaseReadme)) {
+      return []
     }
-  }
 
-  return {
+    return listMarkdownFiles(releaseDir, true)
+      .filter(file => !file.endsWith('README.md') && !file.endsWith('classification.md'))
+      .map(file => ({
+        releaseVersion: release.version,
+        file,
+        relativePath: relative(releaseDir, file),
+        content: readFileSync(file, 'utf-8'),
+      }))
+  })
+}
+
+function resolveUpgradePath(sourceVersion: string, targetVersion: string, trackedDomains: string[], appliedIntentions: string[], skippedIntentions: string[]): UpgradePath {
+  const releases = getReleases()
+
+  return computeUpgradePath({
     sourceVersion,
     targetVersion,
-    checkpoints: selectedCheckpoints,
-    releases: releasesInRange.map(r => r.tag),
-    intentions,
-    sourceTag,
-    targetTag,
-  }
+    trackedDomains,
+    appliedIntentions,
+    skippedIntentions,
+    releases,
+    checkpoints: getCheckpoints(),
+    intentionFiles: getIntentionFiles(releases),
+  })
 }
 
-function compareVersions(a: string, b: string): number {
-  const pa = a.split('.').map(Number)
-  const pb = b.split('.').map(Number)
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const da = i < pa.length ? pa[i] : 0
-    const db = i < pb.length ? pb[i] : 0
-    if (da !== db)
-      return da - db
-  }
-  return 0
-}
-
-function versionGt(a: string, b: string): boolean {
-  return compareVersions(a, b) > 0
-}
-
-function versionLte(a: string, b: string): boolean {
-  return compareVersions(a, b) <= 0
-}
-
-function basename(path: string): string {
-  return path.split('/').pop() || ''
-}
-
-function cmdUpgradePath(fromVersion: string, toVersion: string, projectPath: string): void {
-  console.log(`\n${colorize('🛤️  Upgrade Path Resolution', 'cyan')}\n`)
-
-  const absolutePath = projectPath ? (projectPath.startsWith('/') ? projectPath : join(process.cwd(), projectPath)) : projectRoot
+function cmdUpgradePath(fromVersion: string, toVersion: string, projectPath: string, json = false): void {
+  const absolutePath = projectPath ? getProjectPath(projectPath) : projectRoot
   const state = readBoilerplateJson(absolutePath)
 
   let sourceVersion = fromVersion
@@ -357,31 +357,66 @@ function cmdUpgradePath(fromVersion: string, toVersion: string, projectPath: str
 
   if (!sourceVersion) {
     console.error(`  ${colorize('❌', 'red')} No source version specified or detected`)
+    console.error(`  ${colorize('→', 'cyan')} Run ${colorize(`boilerplate upgrade init --project ${projectPath}`, 'bright')} or pass ${colorize('--from <version>', 'bright')}`)
     process.exit(1)
   }
 
-  const path = computeUpgradePath(sourceVersion, toVersion, trackedDomains, appliedIntentions, skippedIntentions)
+  const path = resolveUpgradePath(sourceVersion, toVersion, trackedDomains, appliedIntentions, skippedIntentions)
+  const branchName = getUpgradeBranchName(path.sourceVersion, path.targetVersion)
 
-  console.log(`  ${colorize('Source:', 'dim')} ${colorize(`v${path.sourceVersion}`, 'bright')}`)
-  console.log(`  ${colorize('Target:', 'dim')} ${colorize(`v${path.targetVersion}`, 'bright')}`)
+  if (json) {
+    console.log(JSON.stringify({ ...path, branchName }, null, 2))
+    return
+  }
+
+  console.log(`\n${colorize('🛤️  Upgrade Path Resolution', 'cyan')}\n`)
+
+  const migrationIntentions = path.intentions.filter(intention => intention.classification === 'migration')
+  const breakingManualIntentions = path.intentions.filter(intention => intention.classification === 'breaking-manual')
+  const metadataIssueCount = getMetadataIssueCount(path.intentions)
+
+  console.log(`  ${colorize('Release range:', 'dim')} ${colorize(`v${path.sourceVersion} → v${path.targetVersion}`, 'bright')}`)
+  console.log(`  ${colorize('Target branch:', 'dim')} ${colorize(branchName, 'bright')}`)
   console.log(`  ${colorize('Releases:', 'dim')} ${path.releases.length}`)
-  console.log(`  ${colorize('Pending intentions:', 'dim')} ${path.intentions.length}`)
+  console.log(`  ${colorize('Already applied/skipped:', 'dim')} ${path.alreadyResolvedCount}`)
+  console.log(`  ${colorize('Migration intentions:', 'dim')} ${migrationIntentions.length}`)
+  console.log(`  ${colorize('Breaking/manual intentions:', 'dim')} ${breakingManualIntentions.length}`)
+  console.log(`  ${colorize('Metadata warnings:', 'dim')} ${metadataIssueCount}`)
 
-  if (path.intentions.length > 0) {
-    console.log(`\n  ${colorize('📋 Pending Intentions:', 'cyan')}\n`)
-    for (const intention of path.intentions) {
-      console.log(`    ${colorize('•', 'cyan')} ${colorize(intention.id, 'bright')}`)
+  console.log(`\n  ${colorize('Counts by classification (whole range):', 'cyan')}\n`)
+  console.log(formatCountList(path.classificationCounts).split('\n').map(line => `    ${line}`).join('\n'))
+
+  console.log(`\n  ${colorize('Skipped by domain:', 'cyan')}\n`)
+  console.log(formatCountList(path.skippedByDomain).split('\n').map(line => `    ${line}`).join('\n'))
+
+  if (migrationIntentions.length > 0) {
+    console.log(`\n  ${colorize('📋 Migration Intentions:', 'cyan')}\n`)
+    for (const intention of migrationIntentions) {
+      console.log(`    ${formatIntentionListItem(intention)}`)
+    }
+  }
+
+  if (breakingManualIntentions.length > 0) {
+    console.log(`\n  ${colorize('⚠ Breaking/manual Intentions:', 'yellow')}\n`)
+    console.log(`    ${colorize('These require a human decision before edits.', 'yellow')}`)
+    for (const intention of breakingManualIntentions) {
+      console.log(`    ${formatIntentionListItem(intention)}`)
     }
   }
 
   console.log()
 }
 
-function cmdUpgradeStatus(projectPath: string): void {
-  console.log(`\n${colorize('📊 Boilerplate Upgrade Status', 'cyan')}\n`)
-
-  const absolutePath = projectPath ? (projectPath.startsWith('/') ? projectPath : join(process.cwd(), projectPath)) : projectRoot
+function cmdUpgradeStatus(projectPath: string, json = false): void {
+  const absolutePath = projectPath ? getProjectPath(projectPath) : projectRoot
   const state = readBoilerplateJson(absolutePath)
+
+  if (json) {
+    console.log(JSON.stringify(state ? { initialized: true, ...state } : { initialized: false }, null, 2))
+    return
+  }
+
+  console.log(`\n${colorize('📊 Boilerplate Upgrade Status', 'cyan')}\n`)
 
   if (!state) {
     console.log(`  ${colorize('⚠', 'yellow')} No boilerplate.json found`)
@@ -415,21 +450,23 @@ function cmdUpgradeStatus(projectPath: string): void {
 async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promise<void> {
   console.log(`\n${colorize('📦 Preparing Upgrade Context', 'cyan')}\n`)
 
-  const absolutePath = projectPath ? (projectPath.startsWith('/') ? projectPath : join(process.cwd(), projectPath)) : projectRoot
+  const absolutePath = projectPath ? getProjectPath(projectPath) : projectRoot
   const state = readBoilerplateJson(absolutePath)
 
   if (!state) {
-    console.error(`  ${colorize('❌', 'red')} No boilerplate.json found. Run init first.`)
+    console.error(`  ${colorize('❌', 'red')} No boilerplate.json found.`)
+    console.error(`  ${colorize('→', 'cyan')} Run ${colorize(`boilerplate upgrade init --project ${projectPath}`, 'bright')} first.`)
     process.exit(1)
   }
 
-  const dirtyOutput = execSync('git status --porcelain', { cwd: absolutePath, encoding: 'utf-8' }).trim()
+  const dirtyOutput = runGitCommand(['status', '--porcelain'], absolutePath)
   if (dirtyOutput) {
     console.error(`  ${colorize('❌', 'red')} Git worktree is dirty. Clean before upgrading.`)
+    console.error(`  ${colorize('→', 'cyan')} Inspect changes with ${colorize(`git -C ${absolutePath} status --short`, 'bright')}`)
     process.exit(1)
   }
 
-  const upgradePath = computeUpgradePath(
+  const upgradePath = resolveUpgradePath(
     state.source.currentVersion,
     toVersion,
     state.trackedDomains,
@@ -437,13 +474,13 @@ async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promis
     state.intentions.skipped.map(i => i.id),
   )
 
-  const branchName = `upgrade/v${upgradePath.sourceVersion}-to-v${upgradePath.targetVersion}`
-  execSync(`git checkout -b ${branchName} 2>/dev/null || true`, { cwd: absolutePath, encoding: 'utf-8' })
+  const branchName = getUpgradeBranchName(upgradePath.sourceVersion, upgradePath.targetVersion)
+  ensureUpgradeBranch(absolutePath, branchName)
   console.log(`  ${colorize('→', 'cyan')} Working on branch: ${colorize(branchName, 'bright')}`)
 
   const upgradeDir = join(absolutePath, '.boilerplate', 'upgrade')
   if (existsSync(upgradeDir)) {
-    execSync(`rm -rf ${upgradeDir}`, { cwd: absolutePath })
+    rmSync(upgradeDir, { recursive: true, force: true })
   }
 
   mkdirSync(join(upgradeDir, 'reference', 'source'), { recursive: true })
@@ -452,18 +489,19 @@ async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promis
 
   for (const intention of upgradePath.intentions) {
     if (existsSync(intention.file)) {
-      const destFile = join(upgradeDir, 'intentions', `${intention.id.replace('/', '-')}.md`)
-      execSync(`cp "${intention.file}" "${destFile}"`, { encoding: 'utf-8' })
+      const destFile = join(upgradeDir, 'intentions', `${intention.id.replace(/\//g, '-')}.md`)
+      cpSync(intention.file, destFile)
     }
   }
 
   // Extract reference files from git tags
   try {
-    execSync(`git archive --format=tar ${upgradePath.sourceTag} .boilerplate/ | tar -xC ${join(upgradeDir, 'reference', 'source')}`, { encoding: 'utf-8', stdio: 'pipe' })
-    execSync(`git archive --format=tar ${upgradePath.targetTag} .boilerplate/ | tar -xC ${join(upgradeDir, 'reference', 'target')}`, { encoding: 'utf-8', stdio: 'pipe' })
+    archiveGitReference(upgradePath.sourceTag, join(upgradeDir, 'reference', 'source'))
+    archiveGitReference(upgradePath.targetTag, join(upgradeDir, 'reference', 'target'))
   }
-  catch {
-    console.log(`  ${colorize('⚠', 'yellow')} Could not extract reference files (tags may not exist)`)
+  catch (error) {
+    console.log(`  ${colorize('⚠', 'yellow')} Could not extract reference files from ${upgradePath.sourceTag} or ${upgradePath.targetTag}: ${error instanceof Error ? error.message : String(error)}`)
+    console.log(`  ${colorize('→', 'cyan')} Those git references must exist locally. Fetch them with ${colorize('git fetch <boilerplate-remote> --tags', 'bright')}`)
   }
 
   // Copy checkpoint files if needed
@@ -471,7 +509,7 @@ async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promis
     const cpFile = join(boilerplateDir, 'legacy-checkpoints', `${cpId}.md`)
     if (existsSync(cpFile)) {
       const destFile = join(upgradeDir, 'intentions', `${cpId}.md`)
-      execSync(`cp "${cpFile}" "${destFile}"`, { encoding: 'utf-8' })
+      cpSync(cpFile, destFile)
     }
   }
 
@@ -511,12 +549,13 @@ You are an AI agent tasked with applying boilerplate upgrade intentions to this 
 2. Read each intention file before starting
 3. Run applicability checks from the intention
 4. **Stop** if a "Do not apply when" condition matches
-5. Compare project files with boilerplate references when useful
-6. Apply the **smallest safe change** needed
-7. **Preserve** all project-specific behavior
-8. Run validation after each intention
-9. Update \`boilerplate.json\` after successful validation
-10. **Stop** on unsafe ambiguity and write a blocked report
+5. For \`breaking-manual\` intentions, **stop before editing files** and write a blocked report describing the required human decision
+6. Compare project files with boilerplate references when useful
+7. Apply the **smallest safe change** needed
+8. **Preserve** all project-specific behavior
+9. Run validation after each intention
+10. Update \`boilerplate.json\` after successful validation
+11. **Stop** on unsafe ambiguity and write a blocked report
 
 ### Git Policy
 
@@ -528,7 +567,11 @@ You are an AI agent tasked with applying boilerplate upgrade intentions to this 
 
 ${checkpointSection}## Pending Intentions
 
-${path.intentions.map(i => `- [ ] ${i.id}`).join('\n')}
+${path.intentions.map(formatIntentionPromptItem).join('\n')}
+
+## Metadata Warnings
+
+${formatMetadataWarnings(path.intentions)}
 
 ## Project State
 
@@ -549,20 +592,49 @@ Begin with the first intention.
 }
 
 function generateStatusReport(path: UpgradePath): string {
+  const migrationIntentions = path.intentions.filter(intention => intention.classification === 'migration')
+  const breakingManualIntentions = path.intentions.filter(intention => intention.classification === 'breaking-manual')
+  const branchName = getUpgradeBranchName(path.sourceVersion, path.targetVersion)
+
   return `# Upgrade Status
 
 ## Path
 
 - Source: v${path.sourceVersion}
 - Target: v${path.targetVersion}
+- Branch: ${branchName}
 - Releases: ${path.releases.join(', ')}
 - Checkpoints: ${path.checkpoints.length > 0 ? path.checkpoints.join(', ') : 'none'}
 
+## Summary
+
+### Counts By Classification (Whole Range)
+
+${formatCountList(path.classificationCounts)}
+
+### Skipped By Domain
+
+${formatCountList(path.skippedByDomain)}
+
+### Already Applied Or Skipped
+
+${path.alreadyResolvedCount}
+
 ## Intentions
 
-### Pending (${path.intentions.length})
+### Migration (${migrationIntentions.length})
 
-${path.intentions.map(i => `- ${i.id}`).join('\n')}
+${migrationIntentions.map(formatIntentionStatusItem).join('\n') || '_none_'}
+
+### Breaking/manual (${breakingManualIntentions.length})
+
+These require a human decision before edits.
+
+${breakingManualIntentions.map(formatIntentionStatusItem).join('\n') || '_none_'}
+
+### Metadata Warnings (${getMetadataIssueCount(path.intentions)})
+
+${formatMetadataWarnings(path.intentions)}
 
 ### Applied
 
@@ -579,6 +651,13 @@ _none_
 ## Status
 
 **Ready** - Awaiting agent execution
+
+## Next Steps
+
+1. Read \`.boilerplate/upgrade/upgrade-session.md\`.
+2. Apply or block one intention at a time.
+3. Record applied, skipped, and blocked outcomes in \`.boilerplate/boilerplate.json\` and this report.
+4. Run the validation listed by each intention before marking it applied.
 `
 }
 
@@ -594,9 +673,9 @@ async function cmdReleaseDraft(from: string, to: string, next: string): Promise<
   const releaseDir = join(boilerplateDir, 'migration-intentions', `v${next}`)
   mkdirSync(releaseDir, { recursive: true })
 
-  const indexContent = `# Migration Intentions - v${next}
+  const readmeContent = `# Migration Intentions - v${next}
 
-## Index
+## Intentions
 
 <!-- Review and populate with generated intentions -->
 
@@ -604,7 +683,7 @@ async function cmdReleaseDraft(from: string, to: string, next: string): Promise<
 
 <!-- Review classification.md for change summary -->
 `
-  writeFileSync(join(releaseDir, 'index.md'), indexContent, 'utf-8')
+  writeFileSync(join(releaseDir, 'README.md'), readmeContent, 'utf-8')
 
   const classificationContent = `# Change Classification - v${next}
 
@@ -652,13 +731,18 @@ ${colorize('Commands:', 'cyan')}
   ${colorize('upgrade status', 'bright')}             Show current upgrade status
   ${colorize('release draft', 'bright')}              Generate release draft artifacts
 
+${colorize('Options:', 'cyan')}
+
+  ${colorize('--project <path>', 'bright')}           Consumer project to operate on (default: this repository)
+  ${colorize('--json', 'bright')}                     Machine-readable output for ${colorize('upgrade status', 'dim')} and ${colorize('upgrade path', 'dim')}
+
 ${colorize('Examples:', 'cyan')}
 
   ${colorize('boilerplate versions list', 'dim')}
   ${colorize('boilerplate upgrade init --project ./my-project', 'dim')}
   ${colorize('boilerplate upgrade path --from 1.0.0 --to 1.5.0', 'dim')}
   ${colorize('boilerplate upgrade prepare --project ./my-project --to 1.5.0', 'dim')}
-  ${colorize('boilerplate upgrade status --project ./my-project', 'dim')}
+  ${colorize('boilerplate upgrade status --project ./my-project --json', 'dim')}
   ${colorize('boilerplate release draft --from v1.4.0 --to HEAD --next 1.5.0', 'dim')}
 `)
 }
@@ -684,23 +768,20 @@ async function main(): Promise<void> {
       }
     }
     else if (command === 'upgrade') {
-      const fromIndex = args.indexOf('--from')
-      const toIndex = args.indexOf('--to')
-      const projectIndex = args.indexOf('--project')
-
-      const from = fromIndex !== -1 ? args[fromIndex + 1] : undefined
-      const to = toIndex !== -1 ? args[toIndex + 1] : undefined
-      const project = projectIndex !== -1 ? args[projectIndex + 1] : '.'
+      const from = readOptionValue(args, '--from')
+      const to = readOptionValue(args, '--to')
+      const project = readOptionValue(args, '--project') || '.'
+      const json = args.includes('--json')
 
       if (subcommand === 'init') {
-        cmdUpgradeInit(project)
+        await cmdUpgradeInit(project)
       }
       else if (subcommand === 'path') {
         if (!to) {
           console.error(`  ${colorize('❌', 'red')} --to is required`)
           process.exit(1)
         }
-        cmdUpgradePath(from || '', to, project)
+        cmdUpgradePath(from || '', to, project, json)
       }
       else if (subcommand === 'prepare') {
         if (!to) {
@@ -710,7 +791,7 @@ async function main(): Promise<void> {
         await cmdUpgradePrepare(project, to)
       }
       else if (subcommand === 'status') {
-        cmdUpgradeStatus(project)
+        cmdUpgradeStatus(project, json)
       }
       else {
         printUsage()
@@ -718,13 +799,9 @@ async function main(): Promise<void> {
     }
     else if (command === 'release') {
       if (subcommand === 'draft') {
-        const fromIndex = args.indexOf('--from')
-        const toIndex = args.indexOf('--to')
-        const nextIndex = args.indexOf('--next')
-
-        const from = fromIndex !== -1 ? args[fromIndex + 1] : undefined
-        const to = toIndex !== -1 ? args[toIndex + 1] : undefined
-        const next = nextIndex !== -1 ? args[nextIndex + 1] : undefined
+        const from = readOptionValue(args, '--from')
+        const to = readOptionValue(args, '--to')
+        const next = readOptionValue(args, '--next')
 
         if (!from || !to || !next) {
           console.error(`  ${colorize('❌', 'red')} --from, --to, and --next are required`)
@@ -747,4 +824,10 @@ async function main(): Promise<void> {
   }
 }
 
-main()
+// Run only when invoked as a script, so tests can import the helpers below
+const isDirectExecution = process.argv[1] ? resolve(process.argv[1]) === __filename : false
+if (isDirectExecution) {
+  main()
+}
+
+export { archiveGitReference }

@@ -1,6 +1,8 @@
 packages:
   - packages/*
   - apps/*
+  # Upgrade tooling; safe to delete the directory to detach from the boilerplate
+  - .boilerplate
 strictPeerDependencies: true
 # We override dependencies here to ensure that the correct version of the dependency is used for each package
 catalogs:
