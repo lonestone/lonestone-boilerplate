@@ -6,6 +6,8 @@ Everything an executor needs lives here, in markdown and JSON, independent of wh
 
 ## Contents
 
+In the boilerplate repository, this directory contains both producer-side artifacts (published intentions, release helpers, tests) and consumer-side artifacts (local project state and upgrade runner):
+
 ```
 boilerplate.json          # This project's state: source version, applied/skipped intentions
 boilerplate.schema.json   # Schema for the state file
@@ -16,11 +18,14 @@ migration-intentions/     # Published intentions, one directory per release
 legacy-checkpoints/       # Consolidated jumps for very old projects
 ```
 
+When a new project runs `pnpm rock`, the setup script switches `.boilerstone/` to consumer mode: it keeps local tracking and the upgrade CLI, but removes producer-only artifacts such as `migration-intentions/`, `legacy-checkpoints/`, and internal rollout docs. Published intentions are resolved from the boilerplate repository and git tags when an upgrade is prepared.
+
 ## Usage
 
 ```bash
 pnpm boilerplate                                  # Help
 pnpm boilerplate upgrade status --json            # Where am I? (--json for agents/scripts)
+pnpm boilerplate upgrade doctor --json            # Is the project ready to upgrade?
 pnpm boilerplate upgrade path --to 1.6.0 --json   # What's between me and the target?
 pnpm boilerplate upgrade prepare --to 1.6.0       # Build the upgrade workspace
 ```
@@ -29,6 +34,17 @@ pnpm boilerplate upgrade prepare --to 1.6.0       # Build the upgrade workspace
 - **AI executor**: the Claude Code skill `upgrade-boilerplate` follows the same runbook. Cursor loads skills from `.claude/skills/` too.
 
 Tests for the CLI live in `cli/*.spec.ts` and run with the regular workspace test suite (`pnpm test`).
+
+## Maintainer release checklist
+
+Before tagging a boilerplate release:
+
+1. Classify each meaningful change as `no-migration`, `informational`, `migration`, or `breaking-manual`
+2. Write or update migration intentions for actionable changes
+3. Update `.boilerstone/boilerplate.example.json` to the new source version
+4. Run `pnpm boilerplate upgrade path --from <previous-version> --to <next-version> --json`
+5. Run `pnpm --filter @boilerstone/boilerplate test`
+6. Create and push the `vX.Y.Z` git tag so consumer projects can fetch the release intentions
 
 ## Detaching from the boilerplate
 

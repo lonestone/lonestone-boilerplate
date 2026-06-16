@@ -19,6 +19,11 @@
           "description": "Source boilerplate repository identifier",
           "examples": ["lonestone/lonestone-boilerplate"]
         },
+        "remote": {
+          "type": "string",
+          "description": "Git remote URL used to fetch boilerplate release tags in consumer projects",
+          "examples": ["https://github.com/lonestone/lonestone-boilerplate.git"]
+        },
         "currentVersion": {
           "type": "string",
           "description": "Current tracked boilerplate version (SemVer)",

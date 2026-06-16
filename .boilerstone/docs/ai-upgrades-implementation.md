@@ -53,6 +53,7 @@ This is an internal pilot implementation of the AI-assisted boilerplate upgrade 
 **Schema Features:**
 - Schema versioning for future compatibility
 - Source repository and version tracking
+- Optional boilerplate remote URL for fetching release tags
 - Domain-based filtering (tooling, api, frontend, ci, docker-env, etc.)
 - Applied intentions with dates
 - Skipped intentions with reasons
@@ -67,6 +68,7 @@ This is an internal pilot implementation of the AI-assisted boilerplate upgrade 
 ```bash
 pnpm boilerplate versions list                                    # List available versions
 pnpm boilerplate upgrade init --project <path>                    # Initialize tracking
+pnpm boilerplate upgrade doctor --project <path>                  # Diagnose readiness
 pnpm boilerplate upgrade path --from <v> --to <v>                # Resolve upgrade path
 pnpm boilerplate upgrade prepare --project <path> --to <v>       # Prepare context
 pnpm boilerplate upgrade status --project <path>                 # Show status
@@ -76,6 +78,7 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 **Features:**
 - Version listing from Git tags
 - Source version detection (Git divergence + fallback)
+- Upgrade readiness diagnostics (`doctor`)
 - Upgrade path computation with domain filtering
 - Local workspace preparation (.boilerstone/)
 - Session prompt generation for AI agents
@@ -232,6 +235,11 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 - `tasks/boilerplate-ai-upgrades/` - Release tasks
 - `.cursor/rules/boilerplate-rules.mdc` - Maintainer rules
 - `docs/boilerplate-maintenance.md` - Maintainer docs
+- `.boilerstone/migration-intentions/` - Published by the boilerplate, not maintained inside consumers
+- `.boilerstone/legacy-checkpoints/` - Producer-side checkpoint bundles
+- `.boilerstone/docs/ai-upgrades-implementation.md` - Internal implementation notes
+- `.boilerstone/docs/pilot-rollout.md` - Internal pilot guide
+- `.boilerstone/boilerplate.example.json` - Example state file after `boilerplate.json` exists
 - Other maintainer-only tooling
 
 **Files Kept:**
@@ -239,6 +247,10 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 - Project documentation
 - Agent rules (useful for upgrades)
 - `boilerplate.json` - Tracking file
+- `.boilerstone/boilerplate.schema.json` - Tracking schema
+- `.boilerstone/cli/` - Local upgrade commands (`status`, `path`, `prepare`)
+- `.boilerstone/package.json` and `.boilerstone/vitest.config.ts` - Workspace/test wiring for the upgrade CLI
+- `.boilerstone/docs/upgrade-runbook.md` - Human/AI upgrade workflow
 - Runtime/dev files
 
 **Functional Rules:**

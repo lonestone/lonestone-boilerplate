@@ -1,10 +1,11 @@
 import { Buffer } from 'node:buffer'
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { cleanupBoilerplateFiles } from '../../cli/setup'
 import { archiveGitReference } from './boilerplate'
 import {
   compareVersions,
@@ -78,6 +79,12 @@ function createGitRepo(prefix: string): string {
   runGit(repoDir, ['config', 'user.name', 'Test'])
   runGit(repoDir, ['config', 'commit.gpgsign', 'false'])
   return repoDir
+}
+
+function writeProjectFile(projectPath: string, filePath: string, content: string): void {
+  const fullPath = join(projectPath, filePath)
+  mkdirSync(dirname(fullPath), { recursive: true })
+  writeFileSync(fullPath, content)
 }
 
 describe('boilerplate core', () => {
@@ -277,6 +284,17 @@ describe('boilerplate CLI smoke', () => {
     expect(JSON.parse(result.stdout)).toEqual({ initialized: false })
   })
 
+  it('emits machine-readable doctor failures with --json', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-json-doctor-'))
+    const result = runCli(['upgrade', 'doctor', '--project', projectPath, '--json'], projectPath)
+
+    expect(result.status).toBe(1)
+    const payload = JSON.parse(result.stdout)
+    expect(payload.initialized).toBe(false)
+    expect(payload.summary.failed).toBeGreaterThan(0)
+    expect(payload.checks.some((check: { name: string }) => check.name === 'boilerplate.json')).toBe(true)
+  })
+
   it('emits machine-readable upgrade paths with --json', () => {
     const result = runCli(['upgrade', 'path', '--from', '0.9.0', '--to', '1.0.0', '--json'])
 
@@ -312,6 +330,52 @@ describe('boilerplate CLI smoke', () => {
       expect(branch).toBe('upgrade/v0.9.0-to-v1.0.0')
     }
     finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('setup cleanup', () => {
+  it('switches .boilerstone to consumer mode without losing local upgrade state', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-consumer-cleanup-'))
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+
+    try {
+      writeProjectFile(projectPath, '.boilerstone/boilerplate.example.json', `${JSON.stringify({
+        schemaVersion: 1,
+        source: {
+          repository: 'lonestone/lonestone-boilerplate',
+          remote: 'https://github.com/lonestone/lonestone-boilerplate.git',
+          currentVersion: '1.0.0',
+        },
+        trackedDomains: ['tooling'],
+        intentions: { applied: [], skipped: [] },
+      }, null, 2)}\n`)
+      writeProjectFile(projectPath, '.boilerstone/boilerplate.schema.json', '{}')
+      writeProjectFile(projectPath, '.boilerstone/README.md', '# Upgrade system')
+      writeProjectFile(projectPath, '.boilerstone/cli/boilerplate.ts', 'export {}')
+      writeProjectFile(projectPath, '.boilerstone/docs/upgrade-runbook.md', '# Runbook')
+      writeProjectFile(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md', '# Internal')
+      writeProjectFile(projectPath, '.boilerstone/docs/pilot-rollout.md', '# Pilot')
+      writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
+      writeProjectFile(projectPath, '.boilerstone/legacy-checkpoints/README.md', '# Legacy')
+
+      cleanupBoilerplateFiles(projectPath)
+
+      expect(existsSync(join(projectPath, '.boilerstone/boilerplate.json'))).toBe(true)
+      expect(JSON.parse(readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8')).source.remote).toBe('https://github.com/lonestone/lonestone-boilerplate.git')
+      expect(existsSync(join(projectPath, '.boilerstone/boilerplate.schema.json'))).toBe(true)
+      expect(existsSync(join(projectPath, '.boilerstone/cli/boilerplate.ts'))).toBe(true)
+      expect(existsSync(join(projectPath, '.boilerstone/docs/upgrade-runbook.md'))).toBe(true)
+
+      expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(false)
+      expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
+      expect(existsSync(join(projectPath, '.boilerstone/legacy-checkpoints'))).toBe(false)
+      expect(existsSync(join(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md'))).toBe(false)
+      expect(existsSync(join(projectPath, '.boilerstone/docs/pilot-rollout.md'))).toBe(false)
+    }
+    finally {
+      logSpy.mockRestore()
       rmSync(projectPath, { recursive: true, force: true })
     }
   })

@@ -13,8 +13,9 @@ Before starting an upgrade session:
 1. Ensure the project has a `.boilerstone/boilerplate.json` file (run `pnpm boilerplate upgrade init` if not)
 2. Ensure the Git worktree is clean (`git status --porcelain` should be empty)
 3. Check where you stand: `pnpm boilerplate upgrade status --json`
-4. Preview the path: `pnpm boilerplate upgrade path --to <target-version> --json`
-5. Run `pnpm boilerplate upgrade prepare --project <path> --to <target-version>`
+4. Diagnose readiness: `pnpm boilerplate upgrade doctor --json`
+5. Preview the path: `pnpm boilerplate upgrade path --to <target-version> --json`
+6. Run `pnpm boilerplate upgrade prepare --project <path> --to <target-version>`
 
 ## Session Structure
 
@@ -32,7 +33,7 @@ After preparation, the `.boilerstone/upgrade/` directory contains:
     status.md            # Current status report
 ```
 
-Reference extraction requires the source and target git tags to exist locally. In a consumer project, fetch them first: `git fetch <boilerplate-remote> --tags`. For app-code references mentioned in an intention's "Reference Paths", compare against the boilerplate repository at the target tag.
+Reference extraction requires the source and target git tags to exist locally. In a consumer project, run `pnpm boilerplate upgrade doctor` first; it prints the exact `git remote add ...` / `git fetch ... --tags` commands when tags are missing. For app-code references mentioned in an intention's "Reference Paths", compare against the boilerplate repository at the target tag.
 
 ## Execution Workflow
 
@@ -162,20 +163,23 @@ pnpm boilerplate upgrade init --project ./my-project
 # 2. Check status
 pnpm boilerplate upgrade status --project ./my-project --json
 
-# 3. Preview the upgrade path
+# 3. Diagnose readiness
+pnpm boilerplate upgrade doctor --project ./my-project --json
+
+# 4. Preview the upgrade path
 pnpm boilerplate upgrade path --to 1.6.0 --project ./my-project --json
 
-# 4. Prepare upgrade context
+# 5. Prepare upgrade context
 pnpm boilerplate upgrade prepare --project ./my-project --to 1.6.0
 
-# 5. Execute the intentions listed in .boilerstone/upgrade/upgrade-session.md,
+# 6. Execute the intentions listed in .boilerstone/upgrade/upgrade-session.md,
 #    one at a time — yourself, or by handing the session to an AI agent
 
-# 6. Review the upgrade branch
+# 7. Review the upgrade branch
 git log --oneline
 git diff main..upgrade/v1.5.0-to-v1.6.0
 
-# 7. Create PR when satisfied
+# 8. Create PR when satisfied
 ```
 
 ## Best Practices
