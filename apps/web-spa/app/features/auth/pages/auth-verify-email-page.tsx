@@ -36,8 +36,7 @@ export default function AuthVerifyEmailPage() {
     if (token) {
       verifyEmailMutation(token)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
+  }, [searchParams]) // eslint-disable-line react/exhaustive-deps
 
   if (isPending) {
     return (

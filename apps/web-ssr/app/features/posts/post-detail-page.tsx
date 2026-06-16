@@ -3,6 +3,7 @@ import { publicPostControllerGetPost } from '@boilerstone/openapi-generator/clie
 import PostContent from '@boilerstone/ui/components/posts/PostContent'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { ArrowLeft, Calendar, User } from 'lucide-react'
+import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { CommentsList } from '../comments/comments-list'
 
@@ -26,6 +27,13 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
   // Get the post slug to use as a unique identifier for comments
   const postSlug = loaderData.post?.slug || ''
 
+  const publishedDate = useMemo(
+    () => loaderData.post?.publishedAt
+      ? new Date(loaderData.post.publishedAt).toLocaleDateString()
+      : 'Date inconnue',
+    [loaderData.post?.publishedAt],
+  )
+
   return (
     <div className="container mx-auto py-8 px-4 space-y-6">
       <Button variant="outline" asChild>
@@ -42,11 +50,7 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          <span>
-            {loaderData.post?.publishedAt
-              ? new Date(loaderData.post.publishedAt).toLocaleDateString()
-              : 'Date inconnue'}
-          </span>
+          <span>{publishedDate}</span>
         </div>
       </div>
 

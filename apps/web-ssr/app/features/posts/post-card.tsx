@@ -19,6 +19,8 @@ export default function PostCard({ post }: PostCardProps) {
       : textContent.data
   }, [post.contentPreview])
 
+  const publishedDate = useMemo(() => new Date(post.publishedAt).toLocaleDateString(), [post.publishedAt])
+
   return (
     <Card className="group/card-post overflow-hidden transition-all hover:shadow-lg" asChild>
       <Link to={`/posts/${post.slug}`} className="block p-6 hover:bg-muted/50">
@@ -39,7 +41,7 @@ export default function PostCard({ post }: PostCardProps) {
             </div>
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
-              <span>{new Date(post.publishedAt).toLocaleDateString()}</span>
+              <span>{publishedDate}</span>
             </div>
             {post.commentCount !== undefined && (
               <div className="flex items-center gap-1">

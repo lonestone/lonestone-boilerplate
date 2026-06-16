@@ -40,6 +40,14 @@ export default antfu(
       'eslintreact-hooks-extra/no-unnecessary-use-prefix': 'off',
       'react-hooks-extra/no-unnecessary-use-prefix': 'off',
       'react/no-unnecessary-use-prefix': 'off',
+      'react/error-boundaries': 'off',
+      'react/purity': 'off',
+    },
+  },
+  {
+    files: ['packages/i18n/**'],
+    rules: {
+      'react/error-boundaries': 'off',
     },
   },
 )
