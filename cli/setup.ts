@@ -1,6 +1,6 @@
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { copyFileSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
@@ -35,6 +35,7 @@ const { Input, Confirm } = Enquirer as unknown as EnquirerConstructors
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..')
+const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
 
 interface AvailableApps {
   api: boolean
@@ -102,6 +103,31 @@ function runCommand(command: string, args: string[]): Promise<void> {
       reject(error)
     })
   })
+}
+
+function normalizeGitRemote(value: string): string {
+  return value
+    .trim()
+    .replace(/^git@github\.com:/, 'https://github.com/')
+    .replace(/^ssh:\/\/git@github\.com\//, 'https://github.com/')
+    .replace(/\/$/, '')
+    .replace(/\.git$/, '')
+    .toLowerCase()
+}
+
+function isBoilerplateMaintainerCheckout(rootPath: string): boolean {
+  try {
+    const originUrl = execFileSync('git', ['remote', 'get-url', 'origin'], {
+      cwd: rootPath,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+
+    return normalizeGitRemote(originUrl) === normalizeGitRemote(defaultBoilerplateRemote)
+  }
+  catch {
+    return false
+  }
 }
 
 function sleep(ms: number): Promise<void> {
@@ -759,10 +785,24 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   console.log(`  ${colorize('✓', 'green')} Configuration values have been updated in .env files`)
 }
 
-function cleanupBoilerplateFiles(): void {
+function cleanupBoilerplateFiles(rootPath = projectRoot): void {
   console.log(`\n${colorize('🧹 Cleaning up boilerplate-only files', 'cyan')}\n`)
 
-  // Files and directories that are only useful for maintaining the boilerplate itself
+  // Copy boilerplate.example.json to boilerplate.json for tracking before removing the example.
+  const examplePath = join(rootPath, '.boilerstone', 'boilerplate.example.json')
+  const targetPath = join(rootPath, '.boilerstone', 'boilerplate.json')
+  if (existsSync(examplePath) && !existsSync(targetPath)) {
+    copyFileSync(examplePath, targetPath)
+    console.log(`  ${colorize('✓', 'green')} Created ${colorize('.boilerstone/boilerplate.json', 'dim')}`)
+  }
+
+  if (isBoilerplateMaintainerCheckout(rootPath)) {
+    console.log(`  ${colorize('→', 'cyan')} Skipped producer-side cleanup in boilerplate maintainer checkout`)
+    return
+  }
+
+  // Files and directories that are only useful for maintaining or publishing the boilerplate itself.
+  // Consumer projects keep the local upgrade state and CLI, but fetch published intentions from the boilerplate repository.
   const filesToRemove = [
     // Release draft generation implementation
     'tasks/boilerplate-ai-upgrades',
@@ -770,10 +810,16 @@ function cleanupBoilerplateFiles(): void {
     '.cursor/rules/boilerplate-rules.mdc',
     // Maintainer-only documentation
     'docs/boilerplate-maintenance.md',
+    '.boilerstone/docs/ai-upgrades-implementation.md',
+    '.boilerstone/docs/pilot-rollout.md',
+    // Producer-side upgrade artifacts published by the boilerplate, not maintained inside consumers
+    '.boilerstone/migration-intentions',
+    '.boilerstone/legacy-checkpoints',
+    '.boilerstone/boilerplate.example.json',
   ]
 
   for (const file of filesToRemove) {
-    const filePath = join(projectRoot, file)
+    const filePath = join(rootPath, file)
     if (existsSync(filePath)) {
       try {
         rmSync(filePath, { recursive: true, force: true })
@@ -783,14 +829,6 @@ function cleanupBoilerplateFiles(): void {
         console.log(`  ${colorize('⚠', 'yellow')} Failed to remove ${colorize(file, 'dim')}`)
       }
     }
-  }
-
-  // Copy boilerplate.example.json to boilerplate.json for tracking
-  const examplePath = join(projectRoot, '.boilerstone', 'boilerplate.example.json')
-  const targetPath = join(projectRoot, '.boilerstone', 'boilerplate.json')
-  if (existsSync(examplePath) && !existsSync(targetPath)) {
-    copyFileSync(examplePath, targetPath)
-    console.log(`  ${colorize('✓', 'green')} Created ${colorize('.boilerstone/boilerplate.json', 'dim')}`)
   }
 
   console.log(`\n  ${colorize('✓', 'green')} Boilerplate cleanup completed`)
@@ -928,4 +966,9 @@ async function main(): Promise<void> {
   }
 }
 
-main()
+const isDirectExecution = process.argv[1] ? resolve(process.argv[1]) === __filename : false
+if (isDirectExecution) {
+  main()
+}
+
+export { cleanupBoilerplateFiles }
