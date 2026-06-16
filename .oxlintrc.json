@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "react",
+    "import",
+    "unicorn",
+    "node",
+    "jsx-a11y",
+    "promise"
+  ],
+  "env": {
+    "node": true,
+    "browser": true
+  },
+  "settings": {
+    "react": {
+      "version": "19.2.5"
+    }
+  },
+  "ignorePatterns": [
+    "**/.react-router/**",
+    "**/*.gen.ts",
+    "**/dist/**",
+    "**/temp/**",
+    "**/build/**",
+    "packages/schematics/src/files/**",
+    "packages/openapi-generator/client/**",
+    "**/.astro/**",
+    "node_modules/**",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "**/README.md",
+    "pnpm-workspace.yaml"
+  ],
+  "rules": {
+    "typescript/no-explicit-any": "error"
+  },
+  "overrides": [
+    {
+      "files": ["apps/api/**/*.ts", "apps/api/**/*.json"],
+      "rules": {
+        "typescript/consistent-type-imports": "off"
+      }
+    }
+  ]
+}

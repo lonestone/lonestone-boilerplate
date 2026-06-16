@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+/* oxlint-disable no-console */
 
 import { Dictionary, EntityManager } from '@mikro-orm/core'
 import { Seeder } from '@mikro-orm/seeder'

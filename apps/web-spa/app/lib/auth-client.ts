@@ -1,4 +1,4 @@
-// eslint-disable-next-line ts/ban-ts-comment -- ignore
+// oxlint-disable-next-line typescript/ban-ts-comment -- ignore
 // @ts-ignore
 import type { BetterAuthType } from '../../../api/src/config/better-auth.config'
 import { customSessionClient, inferAdditionalFields } from 'better-auth/client/plugins'

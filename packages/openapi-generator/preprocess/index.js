@@ -69,7 +69,7 @@ async function main() {
 
   fs.mkdirSync(path.dirname(tmp), { recursive: true })
   fs.writeFileSync(tmp, JSON.stringify(spec, null, 2))
-  // eslint-disable-next-line no-console
+  // oxlint-disable-next-line no-console
   console.log('✔ OpenAPI spec transformed with dynamic filter/sort arrays')
 }
 

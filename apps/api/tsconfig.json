@@ -23,7 +23,6 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     // Changes to allow importing the shared ESM packages (which are also built for CJS, but TS needs to find the right version)
-    // eslint-disable-next-line jsonc/sort-keys
     "module": "nodenext",
     "preserveWatchOutput": true
   },

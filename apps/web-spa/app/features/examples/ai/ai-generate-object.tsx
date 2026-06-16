@@ -171,7 +171,7 @@ export function AiGenerateObject() {
     if (!streamingState?.text)
       return null
     try {
-      // eslint-disable-next-line regexp/no-super-linear-backtracking
+      // oxlint-disable-next-line regexp/no-super-linear-backtracking
       const jsonMatch = streamingState.text.match(/```json\s*([\s\S]*?)\s*```/)
       const jsonText = jsonMatch ? jsonMatch[1] : streamingState.text
       return JSON.parse(jsonText)

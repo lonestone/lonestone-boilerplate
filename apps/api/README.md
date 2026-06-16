@@ -19,8 +19,8 @@ Among the most important:
 - [MikroORM](https://mikro-orm.io/) as the ORM
 - [better-auth](https://www.better-auth.com/docs) as the authentication module
 - [Zod](https://zod.dev/) for input and output API data validation
-- [ESLint](https://eslint.org/) for code formatting and implementing various syntax rules
-- [Antfu](https://github.com/antfu/eslint-config)'s ESLint configuration as a base
+- [Oxlint](https://oxc.rs/) for linting
+- [Oxfmt](https://oxc.rs/) for code formatting
 - [DotEnv](https://github.com/motdotla/dotenv) to manage configuration files (.env) regardless of OS
 
 ## Installation

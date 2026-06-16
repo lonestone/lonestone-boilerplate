@@ -1,6 +1,6 @@
 {
   "recommendations": [
-    "dbaeumer.vscode-eslint",
+    "oxc.oxc-vscode",
     "lokalise.i18n-ally",
     "bierner.markdown-mermaid",
     "bradlc.vscode-tailwindcss",
