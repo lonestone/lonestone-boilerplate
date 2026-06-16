@@ -76,14 +76,21 @@ function getProjectPath(projectPath: string): string {
   return isAbsolute(projectPath) ? projectPath : resolve(process.cwd(), projectPath)
 }
 
+function getGitEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env }
+  delete env.GIT_DIR
+  delete env.GIT_WORK_TREE
+  return env
+}
+
 function runGitCommand(args: string[], cwd = projectRoot): string {
-  return execFileSync('git', args, { cwd, encoding: 'utf-8' }).trim()
+  return execFileSync('git', args, { cwd, encoding: 'utf-8', env: getGitEnv() }).trim()
 }
 
 function archiveGitReference(reference: string, destination: string, cwd = projectRoot): void {
   // --output avoids buffering the archive on stdout (execFileSync caps stdout at 1MB by default)
   const tarFile = join(destination, '.reference.tar')
-  execFileSync('git', ['archive', '--format=tar', `--output=${tarFile}`, reference, '.boilerstone/'], { cwd })
+  execFileSync('git', ['archive', '--format=tar', `--output=${tarFile}`, reference, '.boilerstone/'], { cwd, env: getGitEnv() })
   execFileSync('tar', ['-xf', tarFile, '-C', destination])
   rmSync(tarFile, { force: true })
 }
@@ -109,7 +116,7 @@ function listGitMarkdownFiles(reference: string, directory: string): string[] {
 }
 
 function readGitFile(reference: string, filePath: string): string {
-  return execFileSync('git', ['show', `${reference}:${filePath}`], { cwd: projectRoot, encoding: 'utf-8' })
+  return execFileSync('git', ['show', `${reference}:${filePath}`], { cwd: projectRoot, encoding: 'utf-8', env: getGitEnv() })
 }
 
 function listMarkdownFiles(directory: string, recursive = false): string[] {
