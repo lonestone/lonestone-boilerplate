@@ -77,7 +77,7 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 - Version listing from Git tags
 - Source version detection (Git divergence + fallback)
 - Upgrade path computation with domain filtering
-- Local workspace preparation (.boilerplate/)
+- Local workspace preparation (.boilerstone/)
 - Session prompt generation for AI agents
 - Status tracking and reporting
 - Typed git/file operations where possible; no shell-based `rm`, `cp`, or `ls`
@@ -151,7 +151,7 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 ### 8. Upgrade Context Preparation (Task 09) ✓
 
 **Implemented in CLI:**
-- Creates `.boilerplate/` workspace
+- Creates `.boilerstone/` workspace
 - Fetches source and target references
 - Downloads intentions
 - Generates `upgrade-session.md`
@@ -159,7 +159,7 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 
 **Workspace Layout:**
 ```
-.boilerplate/
+.boilerstone/
   reference/
     source/          # Source version files
     target/          # Target version files
@@ -217,8 +217,8 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 - Block on validation failure
 
 **Reporting:**
-- `.boilerplate/status.md` during execution
-- `.boilerplate/blocked.md` on failure
+- `.boilerstone/status.md` during execution
+- `.boilerstone/blocked.md` on failure
 - Final summary for PR description
 - Updated boilerplate.json
 
@@ -344,7 +344,7 @@ pnpm boilerplate upgrade path --to 1.6.0 --project .
 # Prepare upgrade context
 pnpm boilerplate upgrade prepare --project . --to 1.6.0
 
-# Executor (human or AI agent) works through .boilerplate/upgrade/upgrade-session.md
+# Executor (human or AI agent) works through .boilerstone/upgrade/upgrade-session.md
 # one intention at a time — see docs/upgrade-runbook.md
 
 # Review results

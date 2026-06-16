@@ -10,7 +10,7 @@ Commands that support `--json` emit machine-readable output — prefer it when t
 
 Before starting an upgrade session:
 
-1. Ensure the project has a `.boilerplate/boilerplate.json` file (run `pnpm boilerplate upgrade init` if not)
+1. Ensure the project has a `.boilerstone/boilerplate.json` file (run `pnpm boilerplate upgrade init` if not)
 2. Ensure the Git worktree is clean (`git status --porcelain` should be empty)
 3. Check where you stand: `pnpm boilerplate upgrade status --json`
 4. Preview the path: `pnpm boilerplate upgrade path --to <target-version> --json`
@@ -18,15 +18,15 @@ Before starting an upgrade session:
 
 ## Session Structure
 
-After preparation, the `.boilerplate/upgrade/` directory contains:
+After preparation, the `.boilerstone/upgrade/` directory contains:
 
 ```
-.boilerplate/
+.boilerstone/
   boilerplate.json       # Project tracking (committed)
   upgrade/               # Temporary workspace (not committed)
     reference/
-      source/            # Source version reference files (.boilerplate/ tree at the source tag)
-      target/            # Target version reference files (.boilerplate/ tree at the target tag)
+      source/            # Source version reference files (.boilerstone/ tree at the source tag)
+      target/            # Target version reference files (.boilerstone/ tree at the target tag)
     intentions/          # Migration intention files
     upgrade-session.md   # Main session prompt
     status.md            # Current status report
@@ -39,7 +39,7 @@ Reference extraction requires the source and target git tags to exist locally. I
 ### For Each Intention
 
 1. **Read the intention file**
-   - Location: `.boilerplate/upgrade/intentions/<intention-id>.md`
+   - Location: `.boilerstone/upgrade/intentions/<intention-id>.md`
    - Check frontmatter metadata: `id`, `domain`, `classification`
    - Understand the goal, why, and reference paths
 
@@ -50,8 +50,8 @@ Reference extraction requires the source and target git tags to exist locally. I
    - If not applicable, record as skipped with reason
 
 3. **Compare with references** (if useful)
-   - Source: `.boilerplate/upgrade/reference/source/`
-   - Target: `.boilerplate/upgrade/reference/target/`
+   - Source: `.boilerstone/upgrade/reference/source/`
+   - Target: `.boilerstone/upgrade/reference/target/`
    - Understand what changed and why
 
 4. **Apply the smallest safe change**
@@ -106,7 +106,7 @@ When the executor is an AI agent, stopping means writing a blocked report and ha
 ```
 
 **Blocked:**
-- Write to `.boilerplate/upgrade/blocked.md`
+- Write to `.boilerstone/upgrade/blocked.md`
 - Include: intention ID, reason, failed checks, suggested next actions
 - Do NOT update boilerplate.json
 
@@ -139,12 +139,12 @@ For each intention:
 
 ### During Execution
 
-- Update `.boilerplate/upgrade/status.md` with progress
+- Update `.boilerstone/upgrade/status.md` with progress
 - Mark intentions as applied/skipped/blocked
 
 ### On Completion
 
-- Set `source.currentVersion` to the target version in `.boilerplate/boilerplate.json` (final commit of the upgrade branch)
+- Set `source.currentVersion` to the target version in `.boilerstone/boilerplate.json` (final commit of the upgrade branch)
 - Generate final summary for PR description
 - Include:
   - Total intentions processed
@@ -168,7 +168,7 @@ pnpm boilerplate upgrade path --to 1.6.0 --project ./my-project --json
 # 4. Prepare upgrade context
 pnpm boilerplate upgrade prepare --project ./my-project --to 1.6.0
 
-# 5. Execute the intentions listed in .boilerplate/upgrade/upgrade-session.md,
+# 5. Execute the intentions listed in .boilerstone/upgrade/upgrade-session.md,
 #    one at a time — yourself, or by handing the session to an AI agent
 
 # 6. Review the upgrade branch

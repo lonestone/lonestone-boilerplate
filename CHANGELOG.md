@@ -18,4 +18,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Migration
 
 - No migration required for new projects.
-- See [migration intentions](./.boilerplate/migration-intentions/v1.0.0/index.md) for future upgrades.
+- See [migration intentions](./.boilerstone/migration-intentions/v1.0.0/README.md) for future upgrades.

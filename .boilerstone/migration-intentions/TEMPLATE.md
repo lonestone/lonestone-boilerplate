@@ -10,7 +10,7 @@ classification: migration
 
 ## Metadata
 
-- `id`: stable identifier recorded in `.boilerplate/boilerplate.json`
+- `id`: stable identifier recorded in `.boilerstone/boilerplate.json`
 - `domain`: one of the consumer project's tracked domains (`tooling`, `api`, `frontend`, `ci`, `docker-env`, `monitoring`, `email`, `auth`, `storage`)
 - `classification`: `migration` or `breaking-manual` for actionable intentions
 

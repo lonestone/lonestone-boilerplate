@@ -65,7 +65,7 @@ android/
 ios/
 
 # Boilerplate upgrade workspace (temporary)
-.boilerplate/upgrade/
+.boilerstone/upgrade/
 
 # Local experiments / scratch notes
 .lab/

@@ -21,7 +21,7 @@ import {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..', '..')
-const boilerplateDir = join(projectRoot, '.boilerplate')
+const boilerplateDir = join(projectRoot, '.boilerstone')
 
 interface InputPromptOptions {
   message: string
@@ -83,7 +83,7 @@ function runGitCommand(args: string[], cwd = projectRoot): string {
 function archiveGitReference(reference: string, destination: string, cwd = projectRoot): void {
   // --output avoids buffering the archive on stdout (execFileSync caps stdout at 1MB by default)
   const tarFile = join(destination, '.reference.tar')
-  execFileSync('git', ['archive', '--format=tar', `--output=${tarFile}`, reference, '.boilerplate/'], { cwd })
+  execFileSync('git', ['archive', '--format=tar', `--output=${tarFile}`, reference, '.boilerstone/'], { cwd })
   execFileSync('tar', ['-xf', tarFile, '-C', destination])
   rmSync(tarFile, { force: true })
 }
@@ -158,7 +158,7 @@ function getReleases(): ReleaseInfo[] {
     // Intentions for a release live in its git tag: a consumer forked at an older
     // version does not have the newer files on disk. Disk is the fallback for
     // releases drafted in the boilerplate repo but not tagged yet.
-    const hasMigrations = gitFileExists(tag, `.boilerplate/migration-intentions/${tag}/README.md`)
+    const hasMigrations = gitFileExists(tag, `.boilerstone/migration-intentions/${tag}/README.md`)
       || existsSync(join(boilerplateDir, 'migration-intentions', tag, 'README.md'))
     return {
       version,
@@ -188,7 +188,7 @@ function cmdVersionsList(): void {
 }
 
 function readBoilerplateJson(projectPath: string): BoilerplateState | null {
-  const boilerplateJsonPath = join(projectPath, '.boilerplate', 'boilerplate.json')
+  const boilerplateJsonPath = join(projectPath, '.boilerstone', 'boilerplate.json')
   if (!existsSync(boilerplateJsonPath)) {
     return null
   }
@@ -198,7 +198,8 @@ function readBoilerplateJson(projectPath: string): BoilerplateState | null {
 }
 
 function writeBoilerplateJson(projectPath: string, state: BoilerplateState): void {
-  const boilerplateJsonPath = join(projectPath, '.boilerplate', 'boilerplate.json')
+  mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
+  const boilerplateJsonPath = join(projectPath, '.boilerstone', 'boilerplate.json')
   writeFileSync(boilerplateJsonPath, `${JSON.stringify(state, null, 2)}\n`, 'utf-8')
 }
 
@@ -336,7 +337,7 @@ function formatMetadataWarnings(intentions: MigrationIntention[]): string {
 function getIntentionFiles(releases: ReleaseInfo[]): IntentionFileInput[] {
   return releases.flatMap((release) => {
     // Git tag first: consumers forked before this release only have it in git
-    const releaseDirInGit = `.boilerplate/migration-intentions/v${release.version}`
+    const releaseDirInGit = `.boilerstone/migration-intentions/v${release.version}`
     if (gitFileExists(release.tag, `${releaseDirInGit}/README.md`)) {
       return listGitMarkdownFiles(release.tag, releaseDirInGit)
         .filter(file => !file.endsWith('README.md') && !file.endsWith('classification.md'))
@@ -520,7 +521,7 @@ async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promis
   ensureUpgradeBranch(absolutePath, branchName)
   console.log(`  ${colorize('→', 'cyan')} Working on branch: ${colorize(branchName, 'bright')}`)
 
-  const upgradeDir = join(absolutePath, '.boilerplate', 'upgrade')
+  const upgradeDir = join(absolutePath, '.boilerstone', 'upgrade')
   if (existsSync(upgradeDir)) {
     rmSync(upgradeDir, { recursive: true, force: true })
   }
@@ -561,7 +562,7 @@ async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promis
   const statusReport = generateStatusReport(upgradePath)
   writeFileSync(join(upgradeDir, 'status.md'), statusReport, 'utf-8')
 
-  console.log(`  ${colorize('✓', 'green')} Created .boilerplate/upgrade/ workspace`)
+  console.log(`  ${colorize('✓', 'green')} Created .boilerstone/upgrade/ workspace`)
   console.log(`  ${colorize('✓', 'green')} Generated upgrade-session.md`)
   console.log(`  ${colorize('✓', 'green')} Generated status.md`)
   console.log(`  ${colorize('→', 'cyan')} ${upgradePath.intentions.length} intentions ready for execution`)
@@ -574,7 +575,7 @@ function generateSessionPrompt(path: UpgradePath, state: BoilerplateState): stri
 
 ${path.checkpoints.map(c => `- ${c}`).join('\n')}
 
-Checkpoint files are in \`.boilerplate/upgrade/intentions/\` as \`<checkpoint-id>.md\`.
+Checkpoint files are in \`.boilerstone/upgrade/intentions/\` as \`<checkpoint-id>.md\`.
 
 `
     : ''
@@ -626,9 +627,9 @@ ${formatMetadataWarnings(path.intentions)}
 
 ## Reference Files
 
-- Source reference: \`.boilerplate/upgrade/reference/source/\`
-- Target reference: \`.boilerplate/upgrade/reference/target/\`
-- Intention files: \`.boilerplate/upgrade/intentions/\`
+- Source reference: \`.boilerstone/upgrade/reference/source/\`
+- Target reference: \`.boilerstone/upgrade/reference/target/\`
+- Intention files: \`.boilerstone/upgrade/intentions/\`
 
 Begin with the first intention.
 `
@@ -697,9 +698,9 @@ _none_
 
 ## Next Steps
 
-1. Read \`.boilerplate/upgrade/upgrade-session.md\`.
+1. Read \`.boilerstone/upgrade/upgrade-session.md\`.
 2. Apply or block one intention at a time.
-3. Record applied, skipped, and blocked outcomes in \`.boilerplate/boilerplate.json\` and this report.
+3. Record applied, skipped, and blocked outcomes in \`.boilerstone/boilerplate.json\` and this report.
 4. Run the validation listed by each intention before marking it applied.
 `
 }
@@ -753,7 +754,7 @@ ${log}
 `
   writeFileSync(join(releaseDir, 'classification.md'), classificationContent, 'utf-8')
 
-  console.log(`\n  ${colorize('✓', 'green')} Created draft artifacts in ${colorize(`.boilerplate/migration-intentions/v${next}/`, 'dim')}`)
+  console.log(`\n  ${colorize('✓', 'green')} Created draft artifacts in ${colorize(`.boilerstone/migration-intentions/v${next}/`, 'dim')}`)
   console.log(`  ${colorize('→', 'cyan')} Review and edit generated files before tagging`)
   console.log()
 }
