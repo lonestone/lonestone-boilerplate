@@ -786,11 +786,11 @@ function cleanupBoilerplateFiles(): void {
   }
 
   // Copy boilerplate.example.json to boilerplate.json for tracking
-  const examplePath = join(projectRoot, '.boilerplate', 'boilerplate.example.json')
-  const targetPath = join(projectRoot, '.boilerplate', 'boilerplate.json')
+  const examplePath = join(projectRoot, '.boilerstone', 'boilerplate.example.json')
+  const targetPath = join(projectRoot, '.boilerstone', 'boilerplate.json')
   if (existsSync(examplePath) && !existsSync(targetPath)) {
     copyFileSync(examplePath, targetPath)
-    console.log(`  ${colorize('✓', 'green')} Created ${colorize('.boilerplate/boilerplate.json', 'dim')}`)
+    console.log(`  ${colorize('✓', 'green')} Created ${colorize('.boilerstone/boilerplate.json', 'dim')}`)
   }
 
   console.log(`\n  ${colorize('✓', 'green')} Boilerplate cleanup completed`)

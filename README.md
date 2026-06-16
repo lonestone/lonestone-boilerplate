@@ -229,7 +229,7 @@ This documentation is also used by our custom cursor rules.
 - [Backend Guidelines](apps/documentation/src/content/docs/references/backend.mdx)
 - [API Readme](apps/api/README.md)
 - [Frontend Readme](apps/web-spa/README.md)
-- [Boilerplate upgrade system](.boilerplate/README.md) — keep a project in sync with this template (human or AI executed, removable)
+- [Boilerplate upgrade system](.boilerstone/README.md) — keep a project in sync with this template (human or AI executed, removable)
 
 The `docs/features` directory should contain a list of folder for each new features. In those you can write specification document and TODO tasks for a feature you are implementing. Feature specifications can can also point toward README.md files inside the packages' features, that should provide more details about the implementation within the scope of the package.
 

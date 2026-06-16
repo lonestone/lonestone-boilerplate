@@ -12,8 +12,7 @@
 
 ## Migration Intentions
 
-<!-- Transferable evolutions (link to the release README) -->
-<!-- See [README.md](./README.md) -->
+- [setup-boilerplate-tracking](./setup-boilerplate-tracking.md): initialize `.boilerstone/boilerplate.json` in older projects so later migration intentions can be prepared safely.
 
 ## Breaking / Manual
 

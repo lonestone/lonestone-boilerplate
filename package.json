@@ -14,7 +14,7 @@
   },
   "scripts": {
     "rock": "tsx ./cli/setup.ts",
-    "boilerplate": "tsx ./.boilerplate/cli/boilerplate.ts",
+    "boilerplate": "tsx ./.boilerstone/cli/boilerplate.ts",
     "dev": "pnpm --parallel dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",

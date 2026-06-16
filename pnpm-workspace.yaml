@@ -2,7 +2,7 @@ packages:
   - packages/*
   - apps/*
   # Upgrade tooling; safe to delete the directory to detach from the boilerplate
-  - .boilerplate
+  - .boilerstone
 
 catalogs:
   auth:

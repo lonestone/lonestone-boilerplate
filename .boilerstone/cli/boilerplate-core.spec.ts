@@ -17,7 +17,7 @@ import {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = resolve(__dirname, '../..')
-const cliPath = join(projectRoot, '.boilerplate/cli/boilerplate.ts')
+const cliPath = join(projectRoot, '.boilerstone/cli/boilerplate.ts')
 
 function createIntentionContent(options: { id?: string, domain?: string, classification?: string }): string {
   const lines = [
@@ -206,13 +206,13 @@ describe('boilerplate core', () => {
 })
 
 describe('archiveGitReference', () => {
-  it('extracts only .boilerplate/ and survives archives larger than the default exec buffer', () => {
+  it('extracts only .boilerstone/ and survives archives larger than the default exec buffer', () => {
     const repoDir = createGitRepo('boilerplate-archive-repo-')
     const destDir = mkdtempSync(join(tmpdir(), 'boilerplate-archive-dest-'))
 
     try {
-      mkdirSync(join(repoDir, '.boilerplate'), { recursive: true })
-      writeFileSync(join(repoDir, '.boilerplate', 'big.bin'), Buffer.alloc(2 * 1024 * 1024, 1))
+      mkdirSync(join(repoDir, '.boilerstone'), { recursive: true })
+      writeFileSync(join(repoDir, '.boilerstone', 'big.bin'), Buffer.alloc(2 * 1024 * 1024, 1))
       writeFileSync(join(repoDir, 'outside.txt'), 'not part of the reference')
       runGit(repoDir, ['add', '-A'])
       runGit(repoDir, ['commit', '-m', 'init'])
@@ -220,7 +220,7 @@ describe('archiveGitReference', () => {
 
       archiveGitReference('v9.9.9', destDir, repoDir)
 
-      expect(statSync(join(destDir, '.boilerplate', 'big.bin')).size).toBe(2 * 1024 * 1024)
+      expect(statSync(join(destDir, '.boilerstone', 'big.bin')).size).toBe(2 * 1024 * 1024)
       expect(existsSync(join(destDir, 'outside.txt'))).toBe(false)
       expect(existsSync(join(destDir, '.reference.tar'))).toBe(false)
     }
@@ -285,8 +285,8 @@ describe('boilerplate CLI smoke', () => {
     const projectPath = createGitRepo('boilerplate-prepare-')
 
     try {
-      mkdirSync(join(projectPath, '.boilerplate'), { recursive: true })
-      writeFileSync(join(projectPath, '.boilerplate', 'boilerplate.json'), `${JSON.stringify({
+      mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
+      writeFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), `${JSON.stringify({
         schemaVersion: 1,
         source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.9.0' },
         trackedDomains: [],
@@ -298,8 +298,8 @@ describe('boilerplate CLI smoke', () => {
       const result = runCli(['upgrade', 'prepare', '--project', projectPath, '--to', '1.0.0'])
 
       expect(result.status).toBe(0)
-      expect(existsSync(join(projectPath, '.boilerplate', 'upgrade', 'upgrade-session.md'))).toBe(true)
-      expect(existsSync(join(projectPath, '.boilerplate', 'upgrade', 'status.md'))).toBe(true)
+      expect(existsSync(join(projectPath, '.boilerstone', 'upgrade', 'upgrade-session.md'))).toBe(true)
+      expect(existsSync(join(projectPath, '.boilerstone', 'upgrade', 'status.md'))).toBe(true)
 
       const branch = spawnSync('git', ['branch', '--show-current'], { cwd: projectPath, encoding: 'utf-8' }).stdout.trim()
       expect(branch).toBe('upgrade/v0.9.0-to-v1.0.0')

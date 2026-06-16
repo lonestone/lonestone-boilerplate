@@ -1,4 +1,4 @@
-# `.boilerplate/` — Upgrade system
+# `.boilerstone/` — Upgrade system
 
 This directory is the tool-agnostic home of the boilerplate upgrade system. A project created from this template diverges forever, so upstream changes cannot be merged as code. Instead, each release publishes **migration intentions** — the *meaning* of a change (goal, why, applicability, stop conditions) — and an executor (a human developer or an AI agent) replays that meaning in the consumer project as the smallest safe equivalent change.
 
@@ -34,9 +34,9 @@ Tests for the CLI live in `cli/*.spec.ts` and run with the regular workspace tes
 
 This system is designed to be removable in one move. If your project no longer wants boilerplate upgrades:
 
-1. `rm -rf .boilerplate`
+1. `rm -rf .boilerstone`
 2. Remove the `boilerplate` script from the root `package.json`
-3. Optionally remove the `.boilerplate` entry in `pnpm-workspace.yaml` and the `.boilerplate/upgrade/` line in `.gitignore` (both are harmless if left)
+3. Optionally remove the `.boilerstone` entry in `pnpm-workspace.yaml` and the `.boilerstone/upgrade/` line in `.gitignore` (both are harmless if left)
 4. Optionally remove `.claude/skills/upgrade-boilerplate/`
 
 Nothing else in the repository depends on this directory.
