@@ -189,6 +189,10 @@ cd apps/api && pnpm dev
 
 The project uses GitHub Actions for continuous integration. Workflows are defined in the `.github/workflows/` folder.
 
+The CI tries to run on our self-hosted runners, but if none are available, it will fall back to the default ubuntu-latest runner (Github ones).
+We have a webhook running that adds the `RUNNERS_READ_TOKEN` secret to the repository. But for old repositories, you need to add it manually. 
+Ensure the repository has the secret `RUNNERS_READ_TOKEN` set to a token with the `read:runners` permission. (Ask a developer for the token, do not create one yourself)
+
 ### CI Workflow
 
 The CI workflow (`ci.yml`) runs on every push to the `main` and `master` branches, as well as on pull requests to these branches.

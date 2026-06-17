@@ -7,9 +7,66 @@ on:
     branches: [main]
 
 jobs:
+  choose-runner:
+    name: 🧭 Choose Runner
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.pick.outputs.runner }}
+    steps:
+      - name: 🔎 Pick available runner
+        id: pick
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.RUNNERS_READ_TOKEN }}
+          script: |
+            const selfHostedRunnerLabels = ['self-hosted', 'linux', 'x64', 'docker'];
+            const selfHostedRunner = JSON.stringify(selfHostedRunnerLabels);
+            const githubHostedRunner = JSON.stringify('ubuntu-latest');
+
+            async function listRunners() {
+              try {
+                return await github.paginate(
+                  github.rest.actions.listSelfHostedRunnersForOrg,
+                  {
+                    org: context.repo.owner,
+                    per_page: 100,
+                  }
+                );
+              } catch (error) {
+                core.warning(
+                  `Could not list organization self-hosted runners: ${error.message}. Trying repository runners.`
+                );
+
+                return github.paginate(
+                  github.rest.actions.listSelfHostedRunnersForRepo,
+                  {
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    per_page: 100,
+                  }
+                );
+              }
+            }
+
+            try {
+              const runners = await listRunners();
+              const available = runners.some((runner) => {
+                const runnerLabels = runner.labels.map((label) => label.name.toLowerCase());
+                return runner.status === 'online' && runner.busy === false && selfHostedRunnerLabels.every((label) => runnerLabels.includes(label));
+              });
+
+              core.setOutput('runner', available ? selfHostedRunner : githubHostedRunner);
+              core.info(`Selected runner: ${available ? selfHostedRunner : githubHostedRunner}`);
+            } catch (error) {
+              core.warning(
+                `Could not inspect self-hosted runners: ${error.message}. Falling back to ubuntu-latest.`
+              );
+              core.setOutput('runner', githubHostedRunner);
+            }
   setup:
     name: 🛠️ Setup
-    runs-on: ubuntu-latest
+    needs: [choose-runner]
+    runs-on: ${{ fromJSON(needs.choose-runner.outputs.runner) }}
     outputs:
       node-version: 24.13.0
       pnpm-version: 10.28.2
@@ -51,8 +108,8 @@ jobs:
 
   lint:
     name: 🧹 Lint
-    needs: [setup]
-    runs-on: ubuntu-latest
+    needs: [choose-runner, setup]
+    runs-on: ${{ fromJSON(needs.choose-runner.outputs.runner) }}
     steps:
       - name: 📂 Restore workspace
         uses: actions/cache@v3
@@ -71,8 +128,8 @@ jobs:
 
   build:
     name: 🏗️ Build
-    needs: [lint, setup]
-    runs-on: ubuntu-latest
+    needs: [choose-runner, lint, setup]
+    runs-on: ${{ fromJSON(needs.choose-runner.outputs.runner) }}
     steps:
       - name: 📂 Restore workspace
         uses: actions/cache@v3
@@ -100,8 +157,8 @@ jobs:
 
   typecheck:
     name: 🔎 Type Check
-    needs: [build, setup]
-    runs-on: ubuntu-latest
+    needs: [choose-runner, build, setup]
+    runs-on: ${{ fromJSON(needs.choose-runner.outputs.runner) }}
     steps:
       - name: 📂 Restore built workspace
         uses: actions/cache@v3
@@ -120,8 +177,8 @@ jobs:
 
   test:
     name: 🧪 Test
-    needs: [build, setup]
-    runs-on: ubuntu-latest
+    needs: [choose-runner, build, setup]
+    runs-on: ${{ fromJSON(needs.choose-runner.outputs.runner) }}
     services:
       postgres:
         image: postgres:16-alpine
