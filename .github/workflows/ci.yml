@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   choose-runner:
     name: 🧭 Choose Runner
@@ -22,6 +25,17 @@ jobs:
             const selfHostedRunnerLabels = ['self-hosted', 'linux', 'x64', 'docker'];
             const selfHostedRunner = JSON.stringify(selfHostedRunnerLabels);
             const githubHostedRunner = JSON.stringify('ubuntu-latest');
+
+            const isPullRequest = context.eventName === 'pull_request';
+            const headRepo = context.payload.pull_request?.head?.repo?.full_name;
+            const baseRepo = context.payload.repository?.full_name;
+            const isFork = isPullRequest && headRepo !== baseRepo;
+
+            if (isFork) {
+              core.info('Fork pull request detected. Forcing GitHub-hosted runner.');
+              core.setOutput('runner', githubHostedRunner);
+              return;
+            }
 
             async function listRunners() {
               try {
@@ -73,6 +87,8 @@ jobs:
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: 🔧 Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
@@ -87,7 +103,7 @@ jobs:
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: 📦 Setup pnpm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -101,7 +117,7 @@ jobs:
         run: pnpm install
 
       - name: 💾 Cache workspace
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .
           key: workspace-${{ github.sha }}
@@ -112,7 +128,7 @@ jobs:
     runs-on: ${{ fromJSON(needs.choose-runner.outputs.runner) }}
     steps:
       - name: 📂 Restore workspace
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .
           key: workspace-${{ github.sha }}
@@ -132,7 +148,7 @@ jobs:
     runs-on: ${{ fromJSON(needs.choose-runner.outputs.runner) }}
     steps:
       - name: 📂 Restore workspace
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .
           key: workspace-${{ github.sha }}
@@ -150,7 +166,7 @@ jobs:
         run: pnpm -r build
 
       - name: 💾 Cache built workspace
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .
           key: workspace-built-${{ github.sha }}
@@ -161,7 +177,7 @@ jobs:
     runs-on: ${{ fromJSON(needs.choose-runner.outputs.runner) }}
     steps:
       - name: 📂 Restore built workspace
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .
           key: workspace-built-${{ github.sha }}
@@ -196,7 +212,7 @@ jobs:
 
     steps:
       - name: 📂 Restore built workspace
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .
           key: workspace-built-${{ github.sha }}
