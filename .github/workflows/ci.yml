@@ -30,11 +30,19 @@ jobs:
             const headRepo = context.payload.pull_request?.head?.repo?.full_name;
             const baseRepo = context.payload.repository?.full_name;
             const isFork = isPullRequest && headRepo !== baseRepo;
+            const isPublicRepo = context.payload.repository?.private === false;
 
             core.info(`event=${context.eventName}`);
             core.info(`headRepo=${headRepo}`);
             core.info(`baseRepo=${baseRepo}`);
             core.info(`isFork=${isFork}`);
+            core.info(`isPublicRepo=${isPublicRepo}`);
+
+            if (isPublicRepo) {
+              core.info('Public repository detected. Forcing GitHub-hosted runner.');
+              core.setOutput('runner', githubHostedRunner);
+              return;
+            }
 
             if (isFork) {
               core.info('Fork pull request detected. Forcing GitHub-hosted runner.');
