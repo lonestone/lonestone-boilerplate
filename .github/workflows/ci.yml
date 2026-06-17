@@ -31,6 +31,11 @@ jobs:
             const baseRepo = context.payload.repository?.full_name;
             const isFork = isPullRequest && headRepo !== baseRepo;
 
+            core.info(`event=${context.eventName}`);
+            core.info(`headRepo=${headRepo}`);
+            core.info(`baseRepo=${baseRepo}`);
+            core.info(`isFork=${isFork}`);
+
             if (isFork) {
               core.info('Fork pull request detected. Forcing GitHub-hosted runner.');
               core.setOutput('runner', githubHostedRunner);
@@ -64,6 +69,9 @@ jobs:
 
             try {
               const runners = await listRunners();
+              runners.forEach((runner) => {
+                core.info(`Runner: ${runner.name} | status=${runner.status} | busy=${runner.busy} | labels=${runner.labels.map((l) => l.name).join(', ')}`);
+              });
               const available = runners.some((runner) => {
                 const runnerLabels = runner.labels.map((label) => label.name.toLowerCase());
                 return runner.status === 'online' && runner.busy === false && selfHostedRunnerLabels.every((label) => runnerLabels.includes(label));
