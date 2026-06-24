@@ -61,7 +61,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    The Admin plugin adds several fields to the user table. Update your `User` entity in `auth.entity.ts`:
 
-    ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
+   ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
 @Entity({ tableName: 'user' })
    export class User {
      // ... your existing properties (id, name, email, etc.)
@@ -93,7 +93,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    The Admin plugin also adds an `impersonatedBy` field to track when an admin is impersonating another user:
 
-    ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
+   ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
     @Entity({ tableName: 'session' })
    export class Session {
      // ... your existing properties
@@ -129,7 +129,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    **Usage examples:**
 
-    ```typescript
+   ```typescript
     import { Injectable } from '@nestjs/common'
     import { EntityManager } from '@mikro-orm/postgresql'
     import { User } from './auth.entity'
@@ -170,7 +170,7 @@ import { Steps } from '@astrojs/starlight/components';
         await this.em.flush()
     }
     }
-    ```
+   ```
 
    :::tip
    All available routes and methods are documented in the [official Better Auth - Admin documentation](https://www.better-auth.com/docs/plugins/admin#api-reference).

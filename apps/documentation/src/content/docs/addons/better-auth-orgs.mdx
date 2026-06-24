@@ -55,7 +55,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    Add the 3 organization entities to your existing `auth.entity.ts` file:
 
-    ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
+   ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
    export class Organization {
      @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
      id!: string;
