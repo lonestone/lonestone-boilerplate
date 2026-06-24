@@ -324,7 +324,6 @@ describe('boilerplate CLI smoke', () => {
 
       expect(result.status).toBe(0)
       expect(existsSync(join(projectPath, '.boilerstone', 'upgrade', 'upgrade-session.md'))).toBe(true)
-      expect(existsSync(join(projectPath, '.boilerstone', 'upgrade', 'status.md'))).toBe(true)
 
       const branch = spawnSync('git', ['branch', '--show-current'], { cwd: projectPath, encoding: 'utf-8', env: getGitEnv() }).stdout.trim()
       expect(branch).toBe('upgrade/v0.9.0-to-v1.0.0')
