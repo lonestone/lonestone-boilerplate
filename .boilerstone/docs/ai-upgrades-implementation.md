@@ -72,7 +72,6 @@ pnpm boilerplate upgrade doctor --project <path>                  # Diagnose rea
 pnpm boilerplate upgrade path --from <v> --to <v>                # Resolve upgrade path
 pnpm boilerplate upgrade prepare --project <path> --to <v>       # Prepare context
 pnpm boilerplate upgrade status --project <path>                 # Show status
-pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate drafts
 ```
 
 **Features:**
@@ -82,31 +81,10 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 - Upgrade path computation with domain filtering
 - Local workspace preparation (.boilerstone/)
 - Session prompt generation for AI agents
-- Status tracking and reporting
+- Status command (reads boilerplate.json)
 - Typed git/file operations where possible; no shell-based `rm`, `cp`, or `ls`
 
-### 5. Release Draft Generation (Task 03) ✓
-
-**Integrated in CLI:**
-- `release draft` command
-- Git diff analysis
-- Commit message analysis
-- Draft artifact generation
-- Change classification scaffolding
-
-**Outputs:**
-- Draft CHANGELOG.md section
-- Migration intention index
-- Individual intention files (scaffolded)
-- Classification document
-
-**Functional Rules:**
-- AI generates drafts, not final truth
-- Human review required before tagging
-- All significant changes classified
-- No modification of consumer projects
-
-### 6. Legacy Checkpoints (Task 04) ✓
+### 5. Legacy Checkpoints (Task 04) ✓
 
 **Files Created:**
 - `legacy-checkpoints/` - Directory for checkpoint bundles
@@ -129,7 +107,7 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 - Summarizes multiple versions into larger steps
 - Explicit about risk and manual work
 
-### 7. Upgrade Path Resolution (Task 08) ✓
+### 6. Upgrade Path Resolution (Task 08) ✓
 
 **Implemented in CLI:**
 - Lists releases between source and target
@@ -151,14 +129,13 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 - Unknown versions require human confirmation
 - No code editing during path resolution
 
-### 8. Upgrade Context Preparation (Task 09) ✓
+### 7. Upgrade Context Preparation (Task 09) ✓
 
 **Implemented in CLI:**
 - Creates `.boilerstone/` workspace
 - Fetches source and target references
 - Downloads intentions
 - Generates `upgrade-session.md`
-- Generates `status.md`
 
 **Workspace Layout:**
 ```
@@ -168,7 +145,6 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
     target/          # Target version files
   intentions/        # Migration intention files
   upgrade-session.md # Main session prompt
-  status.md          # Current status
 ```
 
 **Safety Features:**
@@ -178,7 +154,7 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 - References never overwrite project files
 - Session prompt enforces one-intention-at-a-time workflow
 
-### 9. Agent Execution Workflow (Task 10) ✓
+### 8. Agent Execution Workflow (Task 10) ✓
 
 **Documentation Created:**
 - `docs/upgrade-runbook.md` - Canonical upgrade workflow (human or AI executor)
@@ -201,31 +177,7 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 - Record skipped with reasons
 - Stop on unsafe ambiguity
 
-### 10. Git Validation and Reporting (Task 11) ✓
-
-**Files Created:**
-- `cli/upgrade-validation.ts` - Validation and reporting module
-
-**Git Rules:**
-- Refuse if worktree dirty
-- Create dedicated branch
-- Never stash/push/merge automatically
-- One commit per intention
-- Keep successful commits on failure
-
-**Validation:**
-- Intention-specific validation
-- Global checks: lint, typecheck, test, build
-- Missing scripts reported as unavailable
-- Block on validation failure
-
-**Reporting:**
-- `.boilerstone/status.md` during execution
-- `.boilerstone/blocked.md` on failure
-- Final summary for PR description
-- Updated boilerplate.json
-
-### 11. Template Cleanup (Task 06) ✓
+### 9. Template Cleanup (Task 06) ✓
 
 **Integrated in Setup:**
 - Modified `cli/setup.ts` with cleanup function
@@ -258,7 +210,7 @@ pnpm boilerplate release draft --from <v> --to <v> --next <v>   # Generate draft
 - Must not prevent future upgrades
 - Documented and testable cleanup list
 
-### 12. Pilot Rollout (Task 12) ✓
+### 10. Pilot Rollout (Task 12) ✓
 
 **Documentation Created:**
 - `docs/pilot-rollout.md` - Complete pilot guide
@@ -333,11 +285,12 @@ Smoke-tested CLI commands:
 ### For Maintainers
 
 ```bash
-# Generate release draft
-pnpm boilerplate release draft --from v1.4.0 --to HEAD --next 1.5.0
+# Author migration intentions by hand under
+# .boilerstone/migration-intentions/v1.5.0/ (see migration-intentions/TEMPLATE.md)
 
-# Review generated artifacts in migration-intentions/v1.5.0/
-# Edit and refine intentions
+# Preview the path before tagging (disk fallback resolves the un-tagged draft)
+pnpm boilerplate upgrade path --to 1.5.0
+
 # Tag release when ready
 git tag v1.5.0
 git push origin v1.5.0
@@ -394,7 +347,6 @@ lonestone-boilerplate/
 ├── cli/
 │   ├── setup.ts                           # Setup script (with cleanup)
 │   ├── boilerplate.ts                     # CLI services
-│   ├── upgrade-validation.ts              # Validation & reporting
 │   └── utils.ts                           # Console utilities
 └── tasks/
     └── boilerplate-ai-upgrades/           # Original task specifications
@@ -413,7 +365,6 @@ The pilot is implemented with:
 - ✓ Working CLI with all specified commands
 - ✓ JSON Schema validation
 - ✓ Git-safe operations
-- ✓ Comprehensive validation and reporting
 - ✓ Pilot rollout framework
 - ✓ Template cleanup for generated projects
 
