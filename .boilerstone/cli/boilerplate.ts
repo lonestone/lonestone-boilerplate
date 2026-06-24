@@ -30,26 +30,15 @@ interface InputPromptOptions {
   initial?: string
 }
 
-interface ConfirmPromptOptions {
-  name: string
-  message: string
-  initial?: boolean
-}
-
 interface InputPrompt {
   run: () => Promise<string>
 }
 
-interface ConfirmPrompt {
-  run: () => Promise<boolean>
-}
-
 interface EnquirerConstructors {
   Input: new (options: InputPromptOptions) => InputPrompt
-  Confirm: new (options: ConfirmPromptOptions) => ConfirmPrompt
 }
 
-const { Input, Confirm } = Enquirer as unknown as EnquirerConstructors
+const { Input } = Enquirer as unknown as EnquirerConstructors
 
 interface BoilerplateState {
   schemaVersion: number
@@ -68,11 +57,6 @@ interface BoilerplateState {
 function prompt(message: string, initial: string): Promise<string> {
   const input = new Input({ message, initial })
   return input.run()
-}
-
-function _confirm(message: string): Promise<boolean> {
-  const confirmPrompt = new Confirm({ name: 'confirm', message, initial: false })
-  return confirmPrompt.run()
 }
 
 function getProjectPath(projectPath: string): string {
