@@ -436,11 +436,6 @@ function formatCountList(counts: Record<string, number>): string {
   return entries.map(([name, count]) => `- ${name}: ${count}`).join('\n')
 }
 
-function formatIntentionStatusItem(intention: MigrationIntention): string {
-  const domain = intention.domain || 'unknown-domain'
-  return `- ${intention.id} (${domain}, ${intention.classification})`
-}
-
 function formatIntentionPromptItem(intention: MigrationIntention): string {
   const stopFirst = intention.classification === 'breaking-manual' ? ' - STOP FIRST: requires human decision before edits' : ''
   return `- [ ] ${intention.id} (${intention.classification})${stopFirst}`
@@ -871,12 +866,8 @@ async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promis
   const sessionPrompt = generateSessionPrompt(upgradePath, state)
   writeFileSync(join(upgradeDir, 'upgrade-session.md'), sessionPrompt, 'utf-8')
 
-  const statusReport = generateStatusReport(upgradePath)
-  writeFileSync(join(upgradeDir, 'status.md'), statusReport, 'utf-8')
-
   console.log(`  ${colorize('✓', 'green')} Created .boilerstone/upgrade/ workspace`)
   console.log(`  ${colorize('✓', 'green')} Generated upgrade-session.md`)
-  console.log(`  ${colorize('✓', 'green')} Generated status.md`)
   console.log(`  ${colorize('→', 'cyan')} ${upgradePath.intentions.length} intentions ready for execution`)
   console.log()
 }
@@ -947,130 +938,6 @@ Begin with the first intention.
 `
 }
 
-function generateStatusReport(path: UpgradePath): string {
-  const migrationIntentions = path.intentions.filter(intention => intention.classification === 'migration')
-  const breakingManualIntentions = path.intentions.filter(intention => intention.classification === 'breaking-manual')
-  const branchName = getUpgradeBranchName(path.sourceVersion, path.targetVersion)
-
-  return `# Upgrade Status
-
-## Path
-
-- Source: v${path.sourceVersion}
-- Target: v${path.targetVersion}
-- Branch: ${branchName}
-- Releases: ${path.releases.join(', ')}
-- Checkpoints: ${path.checkpoints.length > 0 ? path.checkpoints.join(', ') : 'none'}
-
-## Summary
-
-### Counts By Classification (Whole Range)
-
-${formatCountList(path.classificationCounts)}
-
-### Skipped By Domain
-
-${formatCountList(path.skippedByDomain)}
-
-### Already Applied Or Skipped
-
-${path.alreadyResolvedCount}
-
-## Intentions
-
-### Migration (${migrationIntentions.length})
-
-${migrationIntentions.map(formatIntentionStatusItem).join('\n') || '_none_'}
-
-### Breaking/manual (${breakingManualIntentions.length})
-
-These require a human decision before edits.
-
-${breakingManualIntentions.map(formatIntentionStatusItem).join('\n') || '_none_'}
-
-### Metadata Warnings (${getMetadataIssueCount(path.intentions)})
-
-${formatMetadataWarnings(path.intentions)}
-
-### Applied
-
-_none_
-
-### Skipped
-
-_none_
-
-### Blocked
-
-_none_
-
-## Status
-
-**Ready** - Awaiting agent execution
-
-## Next Steps
-
-1. Read \`.boilerstone/upgrade/upgrade-session.md\`.
-2. Apply or block one intention at a time.
-3. Record applied, skipped, and blocked outcomes in \`.boilerstone/boilerplate.json\` and this report.
-4. Run the validation listed by each intention before marking it applied.
-`
-}
-
-async function cmdReleaseDraft(from: string, to: string, next: string): Promise<void> {
-  console.log(`\n${colorize('📝 Generating Release Draft', 'cyan')}\n`)
-  console.log(`  ${colorize('From:', 'dim')} ${from}`)
-  console.log(`  ${colorize('To:', 'dim')} ${to}`)
-  console.log(`  ${colorize('Next version:', 'dim')} ${next}`)
-
-  const diff = runGitCommand(['diff', '--stat', `${from}..${to}`])
-  const log = runGitCommand(['log', '--oneline', `${from}..${to}`])
-
-  const releaseDir = join(boilerplateDir, 'migration-intentions', `v${next}`)
-  mkdirSync(releaseDir, { recursive: true })
-
-  const readmeContent = `# Migration Intentions - v${next}
-
-## Intentions
-
-<!-- Review and populate with generated intentions -->
-
-## Classification
-
-<!-- Review classification.md for change summary -->
-`
-  writeFileSync(join(releaseDir, 'README.md'), readmeContent, 'utf-8')
-
-  const classificationContent = `# Change Classification - v${next}
-
-## Analysis Required
-
-Review the following changes and classify each:
-
-\`\`\`
-${diff}
-\`\`\`
-
-### Recent Commits
-
-\`\`\`
-${log}
-\`\`\`
-
-## Categories
-
-- \`no migration\`: No effect on consumer projects
-- \`informational\`: Useful context, no action required
-- \`migration intention\`: Transferable evolution
-- \`breaking/manual\`: Requires human decision
-`
-  writeFileSync(join(releaseDir, 'classification.md'), classificationContent, 'utf-8')
-
-  console.log(`\n  ${colorize('✓', 'green')} Created draft artifacts in ${colorize(`.boilerstone/migration-intentions/v${next}/`, 'dim')}`)
-  console.log(`  ${colorize('→', 'cyan')} Review and edit generated files before tagging`)
-  console.log()
-}
-
 function printUsage(): void {
   console.log(`
 ${colorize('🪨  Boilerplate CLI', 'bright')}
@@ -1086,8 +953,6 @@ ${colorize('Commands:', 'cyan')}
   ${colorize('upgrade path', 'bright')}               Show upgrade path to target version
   ${colorize('upgrade prepare', 'bright')}            Prepare local upgrade context
   ${colorize('upgrade status', 'bright')}             Show current upgrade status
-  ${colorize('release draft', 'bright')}              Generate release draft artifacts
-
 ${colorize('Options:', 'cyan')}
 
   ${colorize('--project <path>', 'bright')}           Consumer project to operate on (default: this repository)
@@ -1100,9 +965,7 @@ ${colorize('Examples:', 'cyan')}
   ${colorize('boilerplate upgrade doctor --project ./my-project', 'dim')}
   ${colorize('boilerplate upgrade path --from 1.0.0 --to 1.5.0', 'dim')}
   ${colorize('boilerplate upgrade prepare --project ./my-project --to 1.5.0', 'dim')}
-  ${colorize('boilerplate upgrade status --project ./my-project --json', 'dim')}
-  ${colorize('boilerplate release draft --from v1.4.0 --to HEAD --next 1.5.0', 'dim')}
-`)
+  ${colorize('boilerplate upgrade status --project ./my-project --json', 'dim')}`)
 }
 
 async function main(): Promise<void> {
@@ -1153,23 +1016,6 @@ async function main(): Promise<void> {
       }
       else if (subcommand === 'status') {
         cmdUpgradeStatus(project, json)
-      }
-      else {
-        printUsage()
-      }
-    }
-    else if (command === 'release') {
-      if (subcommand === 'draft') {
-        const from = readOptionValue(args, '--from')
-        const to = readOptionValue(args, '--to')
-        const next = readOptionValue(args, '--next')
-
-        if (!from || !to || !next) {
-          console.error(`  ${colorize('❌', 'red')} --from, --to, and --next are required`)
-          process.exit(1)
-        }
-
-        await cmdReleaseDraft(from, to, next)
       }
       else {
         printUsage()

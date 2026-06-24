@@ -30,7 +30,6 @@ After preparation, the `.boilerstone/upgrade/` directory contains:
       target/            # Target version reference files (.boilerstone/ tree at the target tag)
     intentions/          # Migration intention files
     upgrade-session.md   # Main session prompt
-    status.md            # Current status report
 ```
 
 Reference extraction requires the source and target git tags to exist locally. In a consumer project, run `pnpm boilerplate upgrade doctor` first; it prints the exact `git remote add ...` / `git fetch ... --tags` commands when tags are missing. For app-code references mentioned in an intention's "Reference Paths", compare against the boilerplate repository at the target tag.
@@ -140,8 +139,7 @@ For each intention:
 
 ### During Execution
 
-- Update `.boilerstone/upgrade/status.md` with progress
-- Mark intentions as applied/skipped/blocked
+- Mark intentions as applied/skipped/blocked in `.boilerstone/boilerplate.json`
 
 ### On Completion
 
