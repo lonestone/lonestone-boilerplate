@@ -3,6 +3,8 @@ import type { AuthSchemaField, AuthSchemaModelDiff } from './auth-db.adapter'
 import { readFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 
+const DEFAULT_FALLBACK_ENTITY_FILE = 'src/modules/auth/auth.entity.ts'
+
 export interface EntityResolver {
   (model: string): { className: string, importPath: string } | undefined
 }
@@ -347,11 +349,15 @@ function appendClasses(content: string, entities: RenderedEntity[]): string {
  * y insère les propriétés manquantes dans les classes existantes
  * et ajoute les nouvelles classes d'entité manquantes.
  *
+ * Quand aucune entité existante n'est patchée, les nouvelles entités
+ * sont écrites dans `fallbackEntityFilePath` (par défaut `src/modules/auth/auth.entity.ts`).
+ *
  * @returns La liste des fichiers modifiés (chemin → contenu final).
  */
 export function applyEntityPatches(
   diffs: AuthSchemaModelDiff[],
   orm: MikroORM,
+  fallbackEntityFilePath: string = resolve(process.cwd(), DEFAULT_FALLBACK_ENTITY_FILE),
 ): Map<string, string> {
   const files = new Map<string, string>()
 
@@ -419,9 +425,26 @@ export function applyEntityPatches(
   }
 
   // Si aucune entité existante n'est patchée mais qu'il y a des entités manquantes,
-  // on ne peut pas déterminer le fichier de destination → on retourne vide
+  // on écrit les nouvelles entités dans le fichier de repli (auth.entity.ts par défaut).
   if (bySourceFile.size === 0 && missingEntities.length > 0) {
-    return files
+    const filePath = fallbackEntityFilePath
+    let content = readFileSync(filePath, 'utf-8')
+    const rendered = missingEntities.map(diff => renderMissingEntity(diff, orm, filePath))
+    const allDecorators = new Set<string>()
+    const allTypeImports = new Set<string>()
+    const allEntityImports = new Map<string, string>()
+
+    for (const entity of rendered) {
+      for (const dec of entity.decorators) allDecorators.add(dec)
+      for (const typeImport of entity.typeImports) allTypeImports.add(typeImport)
+      for (const [name, path] of entity.entityImports) allEntityImports.set(name, path)
+    }
+
+    content = ensureDecoratorImport(content, allDecorators)
+    content = ensureTypeImport(content, allTypeImports)
+    content = ensureEntityImports(content, allEntityImports)
+    content = appendClasses(content, rendered)
+    files.set(filePath, content)
   }
 
   return files

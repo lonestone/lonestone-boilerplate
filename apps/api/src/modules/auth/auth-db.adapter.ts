@@ -13,7 +13,7 @@ import type {
   DBAdapterDebugLogOption,
 } from 'better-auth/adapters'
 import type { DBFieldAttribute } from 'better-auth/db'
-import { relative } from 'node:path'
+import { relative, resolve } from 'node:path'
 import { ReferenceKind, serialize } from '@mikro-orm/core'
 import { BetterAuthError } from 'better-auth'
 import { createAdapterFactory } from 'better-auth/adapters'
@@ -133,7 +133,7 @@ interface AdapterUtils {
   normalizeWhereClauses: (metadata: AuthEntityMetadata, where?: CleanedWhere[]) => AuthFilterQuery
 }
 
-function createAdapterUtils(
+export function createAdapterUtils(
   orm: MikroORM,
   config: Pick<AdapterFactoryCreatorConfig, 'getFieldName'>,
 ): AdapterUtils {
@@ -464,9 +464,19 @@ export function mikroOrmAdapter(
             return { code: '', path: defaultPath }
           }
 
-          const patchedFiles = applyEntityPatches(diffs, orm)
+          const patchedFiles = applyEntityPatches(diffs, orm, resolve(process.cwd(), defaultPath))
 
-          if (patchedFiles.size > 0) {
+          if (patchedFiles.size > 1) {
+            const paths = [...patchedFiles.keys()]
+              .map(p => relative(process.cwd(), p))
+              .join(', ')
+            throwAdapterError(
+              `Better Auth schema changes span multiple entity files (${paths}). `
+              + `Consolidate the affected auth entities into a single file (e.g. src/modules/auth/auth.entity.ts) and re-run \`pnpm auth:generate\`.`,
+            )
+          }
+
+          if (patchedFiles.size === 1) {
             const [firstPath, firstContent] = [...patchedFiles.entries()][0]!
             return { code: firstContent, path: relative(process.cwd(), firstPath), overwrite: true }
           }
