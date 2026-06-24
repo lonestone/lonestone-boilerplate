@@ -15,10 +15,9 @@ cli/                      # CLI: status, path, prepare (pure logic in boilerplat
 docs/upgrade-runbook.md   # THE workflow — same steps for humans and AI agents
 docs/                     # Implementation notes, pilot guide
 migration-intentions/     # Published intentions, one directory per release
-legacy-checkpoints/       # Consolidated jumps for very old projects
 ```
 
-When a new project runs `pnpm rock`, the setup script switches `.boilerstone/` to consumer mode: it keeps local tracking and the upgrade CLI, but removes producer-only artifacts such as `migration-intentions/`, `legacy-checkpoints/`, and internal rollout docs. Published intentions are resolved from the boilerplate repository and git tags when an upgrade is prepared.
+When a new project runs `pnpm rock`, the setup script switches `.boilerstone/` to consumer mode: it keeps local tracking and the upgrade CLI, but removes producer-only artifacts such as `migration-intentions/` and internal rollout docs. Published intentions are resolved from the boilerplate repository and git tags when an upgrade is prepared.
 
 ## Usage
 

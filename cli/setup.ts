@@ -814,7 +814,6 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
     '.boilerstone/docs/pilot-rollout.md',
     // Producer-side upgrade artifacts published by the boilerplate, not maintained inside consumers
     '.boilerstone/migration-intentions',
-    '.boilerstone/legacy-checkpoints',
     '.boilerstone/boilerplate.example.json',
   ]
 

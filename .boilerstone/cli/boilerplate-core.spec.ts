@@ -143,9 +143,6 @@ describe('boilerplate core', () => {
         { version: '1.0.0', tag: 'v1.0.0', date: '2026-01-01', hasMigrations: false },
         { version: '1.1.0', tag: 'v1.1.0', date: '2026-01-01', hasMigrations: true },
       ],
-      checkpoints: [
-        { id: '0.9.0-to-1.1.0', targetVersion: '1.1.0', minSourceVersion: '0.0.0', file: 'checkpoint.md' },
-      ],
       intentionFiles: [
         {
           releaseVersion: '1.1.0',
@@ -357,7 +354,6 @@ describe('setup cleanup', () => {
       writeProjectFile(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md', '# Internal')
       writeProjectFile(projectPath, '.boilerstone/docs/pilot-rollout.md', '# Pilot')
       writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
-      writeProjectFile(projectPath, '.boilerstone/legacy-checkpoints/README.md', '# Legacy')
 
       cleanupBoilerplateFiles(projectPath)
 
@@ -369,7 +365,6 @@ describe('setup cleanup', () => {
 
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
-      expect(existsSync(join(projectPath, '.boilerstone/legacy-checkpoints'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/docs/pilot-rollout.md'))).toBe(false)
     }

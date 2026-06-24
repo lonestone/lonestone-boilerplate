@@ -5,13 +5,6 @@ interface ReleaseInfo {
   hasMigrations: boolean
 }
 
-interface CheckpointInfo {
-  id: string
-  targetVersion: string
-  minSourceVersion: string
-  file: string
-}
-
 type IntentionClassification = 'no-migration' | 'informational' | 'migration' | 'breaking-manual'
 
 interface MigrationIntention {
@@ -48,14 +41,12 @@ interface ComputeUpgradePathOptions {
   appliedIntentions: string[]
   skippedIntentions: string[]
   releases: ReleaseInfo[]
-  checkpoints: CheckpointInfo[]
   intentionFiles: IntentionFileInput[]
 }
 
 interface UpgradePath {
   sourceVersion: string
   targetVersion: string
-  checkpoints: string[]
   releases: string[]
   intentions: MigrationIntention[]
   sourceTag: string
@@ -178,19 +169,6 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
   const sourceTag = options.releases.find(r => r.version === options.sourceVersion)?.tag || `v${options.sourceVersion}`
   const targetTag = options.releases.find(r => r.version === options.targetVersion)?.tag || `v${options.targetVersion}`
 
-  const selectedCheckpoints: string[] = []
-  const earliestRelease = options.releases
-    .filter(r => r.hasMigrations)
-    .sort((a, b) => compareVersions(a.version, b.version))[0]
-
-  if (earliestRelease) {
-    for (const checkpoint of options.checkpoints) {
-      if (versionLte(checkpoint.targetVersion, earliestRelease.version) && versionGt(checkpoint.targetVersion, options.sourceVersion)) {
-        selectedCheckpoints.push(checkpoint.id)
-      }
-    }
-  }
-
   const releasesInRange = options.releases
     .filter(release => versionGt(release.version, options.sourceVersion) && versionLte(release.version, options.targetVersion))
     .sort((a, b) => compareVersions(a.version, b.version))
@@ -239,7 +217,6 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
   return {
     sourceVersion: options.sourceVersion,
     targetVersion: options.targetVersion,
-    checkpoints: selectedCheckpoints,
     releases: releasesInRange.map(r => r.tag),
     intentions,
     sourceTag,
@@ -251,7 +228,6 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
 }
 
 export {
-  type CheckpointInfo,
   compareVersions,
   computeUpgradePath,
   type ComputeUpgradePathOptions,
