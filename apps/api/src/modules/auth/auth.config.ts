@@ -1,5 +1,6 @@
 import type { MikroORM } from '@mikro-orm/core'
-import type { Auth, BetterAuthOptions, User } from 'better-auth'
+import type { BetterAuthOptions, User } from 'better-auth'
+import type { BetterAuthType } from './auth.client-types'
 import { betterAuth } from 'better-auth'
 import { openAPI } from 'better-auth/plugins'
 import { mikroOrmAdapter } from './auth-db.adapter'
@@ -32,19 +33,7 @@ interface BetterAuthOptionsDynamic {
 export type BetterAuthSession = Awaited<ReturnType<ReturnType<typeof createBetterAuth>['api']['getSession']>>
 export type LoggedInBetterAuthSession = NonNullable<BetterAuthSession>
 
-export interface BetterAuthType {
-  $context: Promise<object>
-  api: {
-    getSession: (input: { headers: Headers }) => Promise<{
-      session: object
-      user: {
-        id: string
-      }
-    } | null>
-  }
-  handler: Auth['handler']
-  options: BetterAuthOptions
-}
+export type { BetterAuthType }
 /**
  * The context type for BetterAuth middleware.
  * This type is derived from the first parameter of the $context method of BetterAuthType.
