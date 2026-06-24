@@ -17,9 +17,9 @@ Here is the file structure we will modify:
 
 ```
 apps/api/src/
-├── auth/
-│   └── auth.entity.ts              (to update)
-└── better-auth.config.ts           (to update)
+├── modules/auth/
+│   ├── auth.entity.ts              (to update)
+│   └── auth.config.ts              (to update)
 ```
 
 ### Installation
@@ -32,7 +32,7 @@ import { Steps } from '@astrojs/starlight/components';
 
 1. ### Add the plugin to Better Auth configuration
 
-   In your Better Auth configuration file `better-auth.config.ts` on the API side, add the `organization` plugin:
+   In your Better Auth configuration file `apps/api/src/modules/auth/auth.config.ts` on the API side, add the `organization` plugin:
 
    ```typescript
    import { organization } from "better-auth/plugins"
@@ -55,13 +55,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    Add the 3 organization entities to your existing `auth.entity.ts` file:
 
-   ```typescript title="src/auth/auth.entity.ts"
-   // ... your existing entities (User, Session, etc.)
-
-   /**
-    * Store organization information
-    */
-   @Entity({ tableName: 'organization' })
+    ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
    export class Organization {
      @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
      id!: string;
@@ -143,9 +137,9 @@ import { Steps } from '@astrojs/starlight/components';
 
    #### Update the User entity
 
-   ```typescript title="src/auth/auth.entity.ts"
+   ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
    // ... your existing entities
-   @Entity(tableName: 'user')
+   @Entity({ tableName: 'user' })
    export class User {
      // ... your existing properties
 
@@ -158,9 +152,9 @@ import { Steps } from '@astrojs/starlight/components';
 
    The Better Auth Organizations plugin automatically adds the `activeOrganizationId` field to the session when a user logs in or switches their active organization. You need to add this field to your MikroORM Session entity to match the database schema:
 
-   ```typescript title="src/auth/auth.entity.ts"
+   ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
    // ... your existing entities
-   @Entity(tableName: 'session')
+   @Entity({ tableName: 'session' })
    export class Session {
      // ... your existing properties
      @Property({ fieldName: 'activeOrganizationId', nullable: true })
@@ -169,7 +163,7 @@ import { Steps } from '@astrojs/starlight/components';
    ```
 
    :::note[About Active Organization]
-   The `activeOrganizationId` field stores which organization the user is currently working in. Users can switch between organizations using `authClient.organization.setActive()`. You can also automatically set the active organization when a session is created using database hooks in `better-auth.config.ts`.
+   The `activeOrganizationId` field stores which organization the user is currently working in. Users can switch between organizations using `authClient.organization.setActive()`. You can also automatically set the active organization when a session is created using database hooks in `auth.config.ts`.
 
    For detailed information on managing active organizations, see the [Better Auth Active Organization documentation](https://www.better-auth.com/docs/plugins/organization#active-organization).
    :::
@@ -223,7 +217,7 @@ However, you may need to implement custom business logic specific to your applic
 
 **Example:**
 
-```typescript title="src/auth/organization.service.ts"
+```typescript title="apps/api/src/modules/auth/organization.service.ts"
 import { Property } from '@hubspot/api-client/lib/codegen/crm/properties'
 import { EnsureRequestContext, EntityManager, wrap } from '@mikro-orm/core'
 import { Injectable } from '@nestjs/common'
@@ -268,7 +262,7 @@ The boilerplate already provides authentication decorators and guards. You can e
 
 For example, if you have a resource linked to an organization, and want to create a `myResource.guard` to check if the user is a member of the organization, you can do the following:
 
-```typescript title="src/auth/myResource.guard.ts"
+```typescript title="apps/api/src/modules/auth/my-resource.guard.ts"
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
   CanActivate,
