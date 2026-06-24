@@ -52,7 +52,6 @@ pnpm boilerplate upgrade path --to 1.6.0 --project .
 
 **Observe:**
 - Is the upgrade path reasonable?
-- Are legacy checkpoints used if the project is old?
 - Are the pending intentions relevant to this project?
 
 ### Step 4: Prepare Upgrade Context
@@ -132,7 +131,6 @@ git push origin upgrade/v1.0.0-to-v1.6.0
 ### Upgrade Path
 
 - [ ] Path was explainable and logical
-- [ ] Checkpoints helped (if applicable)
 - [ ] Domain filtering worked correctly
 - [ ] Applied/skipped intentions were respected
 
@@ -176,10 +174,6 @@ git push origin upgrade/v1.0.0-to-v1.6.0
 ### Issue: Validation fails on project-specific setup
 
 **Solution:** Make validation checks conditional or add project-specific validation overrides.
-
-### Issue: Too many intentions for large version gaps
-
-**Solution:** Use legacy checkpoints to reduce the number of steps.
 
 ### Issue: Intentions not applicable to project
 

@@ -1,13 +1,12 @@
 import type {
-  CheckpointInfo,
   IntentionFileInput,
   MigrationIntention,
   ReleaseInfo,
   UpgradePath,
 } from './boilerplate-core'
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
@@ -399,21 +398,6 @@ async function cmdUpgradeInit(projectPath: string): Promise<void> {
   console.log(`  ${colorize('Source version:', 'dim')} ${sourceVersion}`)
 }
 
-function getCheckpoints(): CheckpointInfo[] {
-  const checkpointsDir = join(boilerplateDir, 'legacy-checkpoints')
-  if (!existsSync(checkpointsDir)) {
-    return []
-  }
-
-  return listMarkdownFiles(checkpointsDir)
-    .filter(f => !f.endsWith('TEMPLATE.md') && !f.endsWith('README.md'))
-    .map((file) => {
-      const id = basename(file).replace('.md', '')
-      const parts = id.split('-to-')
-      return { id, targetVersion: parts[1] || '', minSourceVersion: parts[1] ? '0.0.0' : '', file }
-    })
-}
-
 function formatIntentionListItem(intention: MigrationIntention): string {
   const domain = intention.domain ? ` [${intention.domain}]` : ''
   const metadataIssues = intention.metadataIssues.length > 0
@@ -493,7 +477,6 @@ function resolveUpgradePath(sourceVersion: string, targetVersion: string, tracke
     appliedIntentions,
     skippedIntentions,
     releases,
-    checkpoints: getCheckpoints(),
     intentionFiles: getIntentionFiles(releases),
   })
 }
@@ -717,7 +700,6 @@ function createDoctorReport(projectPath: string): DoctorReport {
 
   const producerArtifacts = [
     '.boilerstone/migration-intentions',
-    '.boilerstone/legacy-checkpoints',
     '.boilerstone/docs/ai-upgrades-implementation.md',
     '.boilerstone/docs/pilot-rollout.md',
   ].filter(file => existsSync(join(projectPath, file)))
@@ -854,15 +836,6 @@ async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promis
     console.log(`  ${colorize('→', 'cyan')} Those git references must exist locally. Fetch them with ${colorize('git fetch <boilerplate-remote> --tags', 'bright')}`)
   }
 
-  // Copy checkpoint files if needed
-  for (const cpId of upgradePath.checkpoints) {
-    const cpFile = join(boilerplateDir, 'legacy-checkpoints', `${cpId}.md`)
-    if (existsSync(cpFile)) {
-      const destFile = join(upgradeDir, 'intentions', `${cpId}.md`)
-      cpSync(cpFile, destFile)
-    }
-  }
-
   const sessionPrompt = generateSessionPrompt(upgradePath, state)
   writeFileSync(join(upgradeDir, 'upgrade-session.md'), sessionPrompt, 'utf-8')
 
@@ -873,16 +846,6 @@ async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promis
 }
 
 function generateSessionPrompt(path: UpgradePath, state: BoilerplateState): string {
-  const checkpointSection = path.checkpoints.length > 0
-    ? `## Legacy Checkpoints
-
-${path.checkpoints.map(c => `- ${c}`).join('\n')}
-
-Checkpoint files are in \`.boilerstone/upgrade/intentions/\` as \`<checkpoint-id>.md\`.
-
-`
-    : ''
-
   return `# Upgrade Session: v${path.sourceVersion} → v${path.targetVersion}
 
 ## Instructions
@@ -912,7 +875,7 @@ You are an AI agent tasked with applying boilerplate upgrade intentions to this 
 - Do not mark an intention as applied before validation passes
 - If not applicable, record as skipped with a reason
 
-${checkpointSection}## Pending Intentions
+## Pending Intentions
 
 ${path.intentions.map(formatIntentionPromptItem).join('\n')}
 

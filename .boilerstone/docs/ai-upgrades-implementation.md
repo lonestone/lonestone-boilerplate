@@ -84,35 +84,11 @@ pnpm boilerplate upgrade status --project <path>                 # Show status
 - Status command (reads boilerplate.json)
 - Typed git/file operations where possible; no shell-based `rm`, `cp`, or `ls`
 
-### 5. Legacy Checkpoints (Task 04) ✓
-
-**Files Created:**
-- `legacy-checkpoints/` - Directory for checkpoint bundles
-- `legacy-checkpoints/TEMPLATE.md` - Checkpoint template
-- `legacy-checkpoints/README.md` - Checkpoint index
-
-**Checkpoint Contents:**
-- Supported source version range
-- Target baseline version
-- Main architectural differences
-- High-risk areas
-- Applicability checks
-- Manual decisions required
-- Reference paths
-- Suggested AI workflow
-- Validation strategy
-
-**Usage:**
-- For projects too old for release-by-release migration
-- Summarizes multiple versions into larger steps
-- Explicit about risk and manual work
-
-### 6. Upgrade Path Resolution (Task 08) ✓
+### 5. Upgrade Path Resolution (Task 08) ✓
 
 **Implemented in CLI:**
 - Lists releases between source and target
 - Detects old source versions
-- Inserts legacy checkpoints when needed
 - Orders release intentions correctly
 - Filters by domain
 - Excludes applied/skipped intentions
@@ -125,11 +101,10 @@ pnpm boilerplate upgrade status --project <path>                 # Show status
 
 **Functional Rules:**
 - Upgrade path is a plan, not execution
-- Old projects use checkpoints
 - Unknown versions require human confirmation
 - No code editing during path resolution
 
-### 7. Upgrade Context Preparation (Task 09) ✓
+### 6. Upgrade Context Preparation (Task 09) ✓
 
 **Implemented in CLI:**
 - Creates `.boilerstone/` workspace
@@ -154,7 +129,7 @@ pnpm boilerplate upgrade status --project <path>                 # Show status
 - References never overwrite project files
 - Session prompt enforces one-intention-at-a-time workflow
 
-### 8. Agent Execution Workflow (Task 10) ✓
+### 7. Agent Execution Workflow (Task 10) ✓
 
 **Documentation Created:**
 - `docs/upgrade-runbook.md` - Canonical upgrade workflow (human or AI executor)
@@ -177,7 +152,7 @@ pnpm boilerplate upgrade status --project <path>                 # Show status
 - Record skipped with reasons
 - Stop on unsafe ambiguity
 
-### 9. Template Cleanup (Task 06) ✓
+### 8. Template Cleanup (Task 06) ✓
 
 **Integrated in Setup:**
 - Modified `cli/setup.ts` with cleanup function
@@ -188,7 +163,6 @@ pnpm boilerplate upgrade status --project <path>                 # Show status
 - `.cursor/rules/boilerplate-rules.mdc` - Maintainer rules
 - `docs/boilerplate-maintenance.md` - Maintainer docs
 - `.boilerstone/migration-intentions/` - Published by the boilerplate, not maintained inside consumers
-- `.boilerstone/legacy-checkpoints/` - Producer-side checkpoint bundles
 - `.boilerstone/docs/ai-upgrades-implementation.md` - Internal implementation notes
 - `.boilerstone/docs/pilot-rollout.md` - Internal pilot guide
 - `.boilerstone/boilerplate.example.json` - Example state file after `boilerplate.json` exists
@@ -210,7 +184,7 @@ pnpm boilerplate upgrade status --project <path>                 # Show status
 - Must not prevent future upgrades
 - Documented and testable cleanup list
 
-### 10. Pilot Rollout (Task 12) ✓
+### 9. Pilot Rollout (Task 12) ✓
 
 **Documentation Created:**
 - `docs/pilot-rollout.md` - Complete pilot guide
@@ -257,7 +231,6 @@ pnpm boilerplate upgrade status --project <path>                 # Show status
 - Git tags
 - CHANGELOG.md
 - migration-intentions/
-- legacy-checkpoints/
 - Intention IDs
 - Domains
 - Reference paths
@@ -338,9 +311,6 @@ lonestone-boilerplate/
 │   └── v1.0.0/
 │       ├── README.md                      # Version index
 │       └── classification.md              # Change classification
-├── legacy-checkpoints/                    # Legacy checkpoint bundles
-│   ├── TEMPLATE.md                        # Checkpoint template
-│   └── README.md                          # Checkpoint index
 ├── docs/
 │   ├── upgrade-runbook.md                 # Canonical upgrade workflow (human or AI)
 │   └── pilot-rollout.md                   # Pilot implementation guide
