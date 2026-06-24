@@ -357,8 +357,10 @@ function appendClasses(content: string, entities: RenderedEntity[]): string {
 export function applyEntityPatches(
   diffs: AuthSchemaModelDiff[],
   orm: MikroORM,
-  fallbackEntityFilePath: string = resolve(process.cwd(), DEFAULT_FALLBACK_ENTITY_FILE),
+  fallbackEntityFilePath: string = DEFAULT_FALLBACK_ENTITY_FILE,
 ): Map<string, string> {
+  const cwd = process.cwd()
+  const absoluteFallbackPath = resolve(cwd, fallbackEntityFilePath)
   const files = new Map<string, string>()
 
   // Groupe les diffs par fichier source
@@ -427,7 +429,7 @@ export function applyEntityPatches(
   // Si aucune entité existante n'est patchée mais qu'il y a des entités manquantes,
   // on écrit les nouvelles entités dans le fichier de repli (auth.entity.ts par défaut).
   if (bySourceFile.size === 0 && missingEntities.length > 0) {
-    const filePath = fallbackEntityFilePath
+    const filePath = absoluteFallbackPath
     let content = readFileSync(filePath, 'utf-8')
     const rendered = missingEntities.map(diff => renderMissingEntity(diff, orm, filePath))
     const allDecorators = new Set<string>()
@@ -447,5 +449,5 @@ export function applyEntityPatches(
     files.set(filePath, content)
   }
 
-  return files
+  return new Map([...files.entries()].map(([k, v]) => [relative(cwd, k), v]))
 }
