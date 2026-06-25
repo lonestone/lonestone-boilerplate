@@ -1,341 +1,155 @@
-# AI-Assisted Boilerplate Upgrades - Implementation Summary
+# Boilerplate Upgrade System — Architecture & Design Decisions
 
-## Overview
+> Internal note for maintainers and reviewers. A plain-language map of *how* the
+> `.boilerstone/` upgrade system works and *why* it is built this way. The
+> consumer-facing entry point is [`../README.md`](../README.md); the executable
+> workflow is [`upgrade-runbook.md`](./upgrade-runbook.md).
 
-This is an internal pilot implementation of the AI-assisted boilerplate upgrade system specified in `tasks/boilerplate-ai-upgrades/`.
+## The problem
 
-## What Was Implemented
+A project generated from this template **diverges forever**. From the first
+`pnpm rock`, the code belongs to the client, not to the boilerplate. So when the
+boilerplate evolves, we **cannot merge the changes as code** — a diff would
+clobber business logic. The classic "fork + merge upstream" model does not work.
 
-### 1. Release Artifacts Structure (Task 01) ✓
+## The core idea: ship *meaning*, not diffs
 
-**Files Created:**
-- `CHANGELOG.md` - Human-facing changelog with migration intention links
-- `migration-intentions/` - Directory structure for migration intentions
-- `migration-intentions/v1.0.0/README.md` - Version-specific intention index (rendered by GitHub when browsing the folder)
-- `migration-intentions/v1.0.0/classification.md` - Change classification document
+Each release publishes **migration intentions**: markdown files describing the
+*meaning* of a change, not its diff. An intention states:
 
-**Features:**
-- SemVer Git tag support
-- Release classification system
-- Migration intention indexing
-- Clear separation between human-facing and agent-facing documentation
+- **Goal** — the end state to reach
+- **Why** — the reason the change exists
+- **Applies when / Do not apply when** — applicability checks and stop conditions
+- **Reference Paths** — which files to compare
+- **Suggested Workflow / Validation / Record Result** — steps, checks, bookkeeping
 
-### 2. Migration Intentions Format (Task 02) ✓
+An **executor** — a human developer *or* an AI agent — reads the intention and
+**replays the smallest safe equivalent change** in the consumer project,
+preserving project-specific behaviour.
 
-**Files Created:**
-- `migration-intentions/TEMPLATE.md` - Template for creating new intentions
+> In one line: *the boilerplate declares knowledge; the project executes it locally.*
 
-**Required Sections:**
-- Frontmatter metadata - Stable `id`, `domain`, and `classification`
-- Goal - Expected end state
-- Why - Reason for the change
-- Applies When - Explicit applicability checks
-- Do Not Apply When - Stop conditions
-- Reference Paths - Files to compare
-- Suggested Agent Workflow - Ordered migration steps
-- Validation - Required checks
-- Record Result - How to update boilerplate.json
+## How it works, end to end
 
-**Functional Rules:**
-- One intention per coherent evolution
-- Agent-agnostic instructions
-- Explicit domain and classification metadata for reliable filtering
-- Preserves project-specific behavior
-- Prefers adapting over replacing
-- Includes explicit applicability checks and stop conditions
-
-### 3. Consumer Project State (Task 07) ✓
-
-**Files Created:**
-- `boilerplate.schema.json` - JSON Schema for boilerplate.json
-- `boilerplate.example.json` - Example tracking file
-
-**Schema Features:**
-- Schema versioning for future compatibility
-- Source repository and version tracking
-- Optional boilerplate remote URL for fetching release tags
-- Domain-based filtering (tooling, api, frontend, ci, docker-env, etc.)
-- Applied intentions with dates
-- Skipped intentions with reasons
-- Strict validation with pattern matching
-
-### 4. Boilerplate CLI Services (Task 05) ✓
-
-**Files Created:**
-- `cli/boilerplate.ts` - Main CLI implementation
-
-**Commands Implemented:**
-```bash
-pnpm boilerplate versions list                                    # List available versions
-pnpm boilerplate upgrade init --project <path>                    # Initialize tracking
-pnpm boilerplate upgrade doctor --project <path>                  # Diagnose readiness
-pnpm boilerplate upgrade path --from <v> --to <v>                # Resolve upgrade path
-pnpm boilerplate upgrade prepare --project <path> --to <v>       # Prepare context
-pnpm boilerplate upgrade status --project <path>                 # Show status
+```
+PRODUCER (boilerplate repo)            CONSUMER (generated project)
+───────────────────────────           ─────────────────────────────
+release vX.Y.Z
+  └─ writes intentions
+  └─ git tag vX.Y.Z  ───────────┐
+                                 │  (git fetch --tags)
+                                 ▼
+                     .boilerstone/boilerplate.json
+                     { currentVersion, trackedDomains, applied[], skipped[] }
+                                 │
+   pnpm boilerplate upgrade status   → where am I?
+   pnpm boilerplate upgrade doctor   → am I ready? (clean worktree, tags present…)
+   pnpm boilerplate upgrade path     → what's between me and the target?  (read-only)
+   pnpm boilerplate upgrade prepare  → build the workspace + dedicated branch
+                                 │
+                                 ▼
+                 .boilerstone/upgrade/   (gitignored, disposable)
+                   ├─ reference/source/   (.boilerstone tree at the source tag)
+                   ├─ reference/target/   (.boilerstone tree at the target tag)
+                   ├─ intentions/*.md     (the intentions to process)
+                   └─ upgrade-session.md  (the prompt / checklist for the executor)
+                                 │
+        Executor (human OR AI agent), one intention at a time:
+        applicability check → smallest safe change → validation → commit
+        → record outcome in boilerplate.json (applied / skipped)
 ```
 
-**Features:**
-- Version listing from Git tags
-- Source version detection (Git divergence + fallback)
-- Upgrade readiness diagnostics (`doctor`)
-- Upgrade path computation with domain filtering
-- Local workspace preparation (.boilerstone/)
-- Session prompt generation for AI agents
-- Status command (reads boilerplate.json)
-- Typed git/file operations where possible; no shell-based `rm`, `cp`, or `ls`
+`path` computes and prints only — it changes nothing. `prepare` builds a
+disposable workspace and creates a dedicated `upgrade/vX-to-vY` branch. The
+actual edits are done by the executor, **one commit per intention**.
 
-### 5. Upgrade Path Resolution (Task 08) ✓
+## Key concepts
 
-**Implemented in CLI:**
-- Lists releases between source and target
-- Detects old source versions
-- Orders release intentions correctly
-- Filters by domain
-- Excludes applied/skipped intentions
-- Marks breaking/manual steps
+**Four classifications** (frontmatter `classification:`) drive behaviour:
 
-**Source Version Detection:**
-1. Read boilerplate.json (high confidence)
-2. Git merge-base detection (medium confidence)
-3. Manual confirmation when uncertain
+| Classification    | Effect on the plan                                  |
+| ----------------- | --------------------------------------------------- |
+| `no-migration`    | nothing to do — dropped from the plan               |
+| `informational`   | useful context, no action — dropped from the plan   |
+| `migration`       | transferable evolution — **to apply**               |
+| `breaking-manual` | **STOP**: human decision required before any edit   |
 
-**Functional Rules:**
-- Upgrade path is a plan, not execution
-- Unknown versions require human confirmation
-- No code editing during path resolution
+**Domains** (`tooling`, `api`, `frontend`, `ci`, `docker-env`, …) let a project
+opt out of areas it doesn't use: intentions whose domain isn't in
+`trackedDomains` are filtered out automatically.
 
-### 6. Upgrade Context Preparation (Task 09) ✓
+**State file** — `.boilerstone/boilerplate.json` is the only committed state:
+source version + the lists of applied/skipped intention IDs. Validated by
+`boilerplate.schema.json`.
 
-**Implemented in CLI:**
-- Creates `.boilerstone/` workspace
-- Fetches source and target references
-- Downloads intentions
-- Generates `upgrade-session.md`
+## Producer vs consumer (the same directory, two modes)
 
-**Workspace Layout:**
+- **In the boilerplate repo**: everything is present — published intentions,
+  the CLI, tests, internal docs.
+- **In a generated project**: `pnpm rock` runs `cleanupBoilerplateFiles()`
+  ([`cli/setup.ts`](../../cli/setup.ts)), which **removes the producer side**
+  (`migration-intentions/`, internal docs, `boilerplate.example.json`) and
+  **keeps** the local state, CLI, schema and runbook. Future-release intentions
+  are then read **from git tags**, not from disk.
+
+This is why `getReleases()` reads **git tags first**: a project forked at an old
+version doesn't have newer files on disk, but the tag does. (A disk fallback
+covers releases drafted in the boilerplate repo but **not yet tagged** — this is
+load-bearing today, since no real release tags exist yet.)
+
+## CLI commands
+
+| Command            | Role                                                       |
+| ------------------ | ---------------------------------------------------------- |
+| `versions list`    | list available boilerplate versions (from tags / disk)    |
+| `upgrade init`     | create `boilerplate.json` (detects source version)        |
+| `upgrade doctor`   | diagnose readiness (state, clean worktree, tags, cleanup)  |
+| `upgrade path`     | compute the plan to a target version (read-only)          |
+| `upgrade prepare`  | build `.boilerstone/upgrade/` + the dedicated branch      |
+| `upgrade status`   | show current state (version, applied/skipped)             |
+
+`--json` is available on `status`, `path`, and `doctor` for agents/scripts.
+
+## Design decisions (and why)
+
+| Decision                                   | Why                                                                                      |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Intentions = meaning, not diffs            | The code has diverged; replaying a diff would break business logic.                      |
+| Git tags are the source of truth           | A consumer doesn't have future-version files on disk; the tag does. (Disk = draft fallback.) |
+| Tool-agnostic markdown + JSON              | Works for a human and for any agent (Claude, Cursor, …); no tool lock-in.                |
+| Skills are thin shims                      | [`SKILL.md`](../../.claude/skills/upgrade-boilerplate/SKILL.md) holds no process — it points to the runbook. One source of truth. |
+| Pure logic isolated from I/O               | `boilerplate-core.ts` (path computation, parsing) is side-effect-free and unit-tested; git/fs effects live in `boilerplate.ts`. |
+| Safety-first git policy                    | Refuses a dirty worktree, dedicated branch, **never** auto push/merge/stash, one commit per intention, `breaking-manual` stops. |
+| Removable in one move                      | `rm -rf .boilerstone` + drop the `boilerplate` script. Nothing else depends on it.       |
+
+## What is real vs. what is a vision
+
+- **Real and working**: the CLI (`status/doctor/path/prepare/init`), the state
+  + schema, the tested pure path/parse logic, the consumer cleanup, the skill shim.
+- **Only one real intention exists** (`v1.0.0/setup-boilerplate-tracking`). There
+  is **no proven release-to-release migration yet** — this is **pilot** stage,
+  not broad rollout.
+- **No release tags are published yet**, so the disk fallback is what makes the
+  CLI usable today. Don't remove it assuming it's dead.
+- **The "module registry" roadmap** (importing optional modules, shadcn-style) is
+  a design intent, **not implemented**.
+
+## Where things live
+
 ```
 .boilerstone/
-  reference/
-    source/          # Source version files
-    target/          # Target version files
-  intentions/        # Migration intention files
-  upgrade-session.md # Main session prompt
+  README.md                 # consumer-facing map (kept in consumers)
+  boilerplate.json          # committed state (kept)
+  boilerplate.schema.json   # state schema (kept)
+  cli/
+    boilerplate-core.ts     # pure logic: version compare, metadata parse, path compute  ← start here
+    boilerplate.ts          # commands wired to git/fs
+    boilerplate-core.spec.ts# tests (pure logic, archive, CLI smoke, prepare, cleanup)
+  docs/
+    upgrade-runbook.md       # THE workflow, identical for human/AI (kept)
+    ai-upgrades-implementation.md  # this file (producer-only, removed in consumers)
+    pilot-rollout.md         # internal pilot guide (producer-only)
+  migration-intentions/      # published intentions, one dir per release (producer-only)
+    TEMPLATE.md
+    v1.0.0/
 ```
-
-**Safety Features:**
-- Refuses dirty worktrees
-- Creates dedicated upgrade branch
-- Fails clearly if the dedicated branch already exists and is not checked out
-- References never overwrite project files
-- Session prompt enforces one-intention-at-a-time workflow
-
-### 7. Agent Execution Workflow (Task 10) ✓
-
-**Documentation Created:**
-- `docs/upgrade-runbook.md` - Canonical upgrade workflow (human or AI executor)
-
-**Agent Workflow:**
-1. Read intention file
-2. Run applicability checks
-3. Stop if stop conditions match
-4. Compare with references
-5. Apply smallest safe change
-6. Preserve project behavior
-7. Run validation
-8. Update boilerplate.json
-9. Commit resolved intention
-
-**Functional Rules:**
-- No wholesale rewrites
-- No cosmetic alignment unless required
-- No marking applied before validation
-- Record skipped with reasons
-- Stop on unsafe ambiguity
-
-### 8. Template Cleanup (Task 06) ✓
-
-**Integrated in Setup:**
-- Modified `cli/setup.ts` with cleanup function
-- Runs during `pnpm rock` setup flow
-
-**Files Removed:**
-- `tasks/boilerplate-ai-upgrades/` - Release tasks
-- `.cursor/rules/boilerplate-rules.mdc` - Maintainer rules
-- `docs/boilerplate-maintenance.md` - Maintainer docs
-- `.boilerstone/migration-intentions/` - Published by the boilerplate, not maintained inside consumers
-- `.boilerstone/docs/ai-upgrades-implementation.md` - Internal implementation notes
-- `.boilerstone/docs/pilot-rollout.md` - Internal pilot guide
-- `.boilerstone/boilerplate.example.json` - Example state file after `boilerplate.json` exists
-- Other maintainer-only tooling
-
-**Files Kept:**
-- Application code
-- Project documentation
-- Agent rules (useful for upgrades)
-- `boilerplate.json` - Tracking file
-- `.boilerstone/boilerplate.schema.json` - Tracking schema
-- `.boilerstone/cli/` - Local upgrade commands (`status`, `path`, `prepare`)
-- `.boilerstone/package.json` and `.boilerstone/vitest.config.ts` - Workspace/test wiring for the upgrade CLI
-- `.boilerstone/docs/upgrade-runbook.md` - Human/AI upgrade workflow
-- Runtime/dev files
-
-**Functional Rules:**
-- Must not remove needed files
-- Must not prevent future upgrades
-- Documented and testable cleanup list
-
-### 9. Pilot Rollout (Task 12) ✓
-
-**Documentation Created:**
-- `docs/pilot-rollout.md` - Complete pilot guide
-
-**Contents:**
-- Prerequisites and project selection
-- Step-by-step pilot workflow
-- Observation checklists
-- Common issues and solutions
-- Feedback collection framework
-- Success criteria
-
-**Pilot Steps:**
-1. Initialize tracking
-2. Check status
-3. Resolve upgrade path
-4. Prepare context
-5. Execute AI agent
-6. Review results
-7. Create PR (optional)
-
-## Architecture
-
-### Producer-Consumer Model
-
-**Boilerplate (Producer):**
-- Publishes SemVer releases
-- Creates migration intentions
-- Provides reference files
-- Maintains CLI services
-- Does NOT modify consumer projects
-
-**Consumer Projects:**
-- Store state in `boilerplate.json`
-- Choose target version
-- Request upgrade path
-- Let AI agent apply intentions
-- Validate and commit one at a time
-- Record applied/skipped intentions
-
-### Shared Contract
-
-**Documentation and Metadata:**
-- Git tags
-- CHANGELOG.md
-- migration-intentions/
-- Intention IDs
-- Domains
-- Reference paths
-- boilerplate.json format
-
-### Non-Goals (Respected)
-
-✗ No automatic push/merge to consumer projects
-✗ No destructive Git commands
-✗ No wholesale replacement of divergent files
-✗ No requirement to follow every domain
-✗ No maintainer CLI code in generated projects
-
-## Testing
-
-Smoke-tested CLI commands:
-- ✓ `pnpm boilerplate` - Help output
-- ✓ `pnpm boilerplate versions list` - Version listing
-- ✓ `pnpm boilerplate upgrade status` - Status display
-- ✓ Linting passes (`pnpm lint:fix`)
-- ✓ Type checking passes (`pnpm typecheck`)
-
-## Usage Examples
-
-### For Maintainers
-
-```bash
-# Author migration intentions by hand under
-# .boilerstone/migration-intentions/v1.5.0/ (see migration-intentions/TEMPLATE.md)
-
-# Preview the path before tagging (disk fallback resolves the un-tagged draft)
-pnpm boilerplate upgrade path --to 1.5.0
-
-# Tag release when ready
-git tag v1.5.0
-git push origin v1.5.0
-```
-
-### For Consumer Projects
-
-```bash
-# Initialize tracking
-cd my-project
-pnpm boilerplate upgrade init --project .
-
-# Check what's available
-pnpm boilerplate upgrade path --to 1.6.0 --project .
-
-# Prepare upgrade context
-pnpm boilerplate upgrade prepare --project . --to 1.6.0
-
-# Executor (human or AI agent) works through .boilerstone/upgrade/upgrade-session.md
-# one intention at a time — see docs/upgrade-runbook.md
-
-# Review results
-git log --oneline upgrade/v1.0.0-to-v1.6.0
-pnpm boilerplate upgrade status --project .
-```
-
-## Next Steps
-
-1. **Create first real migration intention** - When a meaningful change is made to the boilerplate
-2. **Test on pilot project** - Follow the pilot rollout guide
-3. **Gather feedback** - Use the observation checklist
-4. **Iterate** - Improve intentions and CLI based on learnings
-5. **Broader rollout** - Gradually expand to more projects
-
-## File Structure
-
-```
-lonestone-boilerplate/
-├── CHANGELOG.md                           # Human-facing changelog
-├── boilerplate.schema.json                # JSON Schema for tracking
-├── boilerplate.example.json               # Example tracking file
-├── boilerplate.json                       # Active tracking file
-├── migration-intentions/                  # Migration intentions
-│   ├── TEMPLATE.md                        # Intention template
-│   └── v1.0.0/
-│       ├── README.md                      # Version index
-│       └── classification.md              # Change classification
-├── docs/
-│   ├── upgrade-runbook.md                 # Canonical upgrade workflow (human or AI)
-│   └── pilot-rollout.md                   # Pilot implementation guide
-├── cli/
-│   ├── setup.ts                           # Setup script (with cleanup)
-│   ├── boilerplate.ts                     # CLI services
-│   └── utils.ts                           # Console utilities
-└── tasks/
-    └── boilerplate-ai-upgrades/           # Original task specifications
-        ├── 00-overview.md
-        ├── 01-release-artifacts.md
-        ├── ...
-        └── 12-pilot-rollout.md
-```
-
-## Summary
-
-The pilot is implemented with:
-- ✓ Proper separation of concerns (producer vs consumer)
-- ✓ Safety-first design (no destructive operations)
-- ✓ Clear documentation and templates
-- ✓ Working CLI with all specified commands
-- ✓ JSON Schema validation
-- ✓ Git-safe operations
-- ✓ Pilot rollout framework
-- ✓ Template cleanup for generated projects
-
-The system is ready for pilot testing on a real consumer project, not broad rollout yet.
