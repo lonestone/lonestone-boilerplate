@@ -25,9 +25,9 @@ export async function createTestOrm(dbConfig: {
   // This file is used by Vitest and we need to use the ESM import.meta.glob to get the entities.
   const entityModules = import.meta.glob('../../modules/**/*.entity.ts', { eager: true })
 
-  const allEntities = Object.values(entityModules).flatMap(mod =>
+  const allEntities = Array.from(new Set(Object.values(entityModules).flatMap(mod =>
     Object.values(mod as object).filter(val => typeof val === 'function'),
-  )
+  )))
 
   const dbName = `test_${crypto.randomUUID()}`
   process.env.DATABASE_NAME = dbName
