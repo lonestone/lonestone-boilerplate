@@ -1,3 +1,5 @@
+import process from 'node:process'
+
 // ANSI color codes for console output
 export const colors = {
   reset: '\x1B[0m',
@@ -12,4 +14,19 @@ export const colors = {
 
 export function colorize(text: string, color: keyof typeof colors): string {
   return `${colors[color]}${text}${colors.reset}`
+}
+
+/**
+ * A copy of process.env with Git's repo-pointer overrides removed.
+ *
+ * Git hooks (pre-push, etc.) and some CI runners export GIT_DIR / GIT_WORK_TREE,
+ * which force every `git` call to target THAT repo and ignore the `cwd` we pass.
+ * Use this whenever a git command must operate on a specific path, not on
+ * whatever repo happens to be invoking us.
+ */
+export function isolatedGitEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env }
+  delete env.GIT_DIR
+  delete env.GIT_WORK_TREE
+  return env
 }

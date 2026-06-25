@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
-import { colorize } from './utils'
+import { colorize, isolatedGitEnv } from './utils'
 
 interface InputPromptOptions {
   message: string
@@ -117,18 +117,11 @@ function normalizeGitRemote(value: string): string {
 
 function isBoilerplateMaintainerCheckout(rootPath: string): boolean {
   try {
-    // Strip GIT_DIR/GIT_WORK_TREE so a surrounding git hook (e.g. pre-push) cannot
-    // redirect this lookup to the ambient repo and misidentify any path as the
-    // boilerplate checkout. Mirrors getGitEnv() in .boilerstone/cli/boilerplate.ts.
-    const env = { ...process.env }
-    delete env.GIT_DIR
-    delete env.GIT_WORK_TREE
-
     const originUrl = execFileSync('git', ['remote', 'get-url', 'origin'], {
       cwd: rootPath,
       encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'ignore'],
-      env,
+      env: isolatedGitEnv(),
     })
 
     return normalizeGitRemote(originUrl) === normalizeGitRemote(defaultBoilerplateRemote)
