@@ -10,7 +10,7 @@ import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { INestApplication, ModuleMetadata } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import * as express from 'express'
-import { BetterAuthSession } from '../../config/better-auth.config'
+import { BetterAuthSession } from '../../modules/auth/auth.config'
 import { AuthModule } from '../../modules/auth/auth.module'
 import { AuthService } from '../../modules/auth/auth.service'
 import { createMockAuthService, testSessionMiddleware } from './test-auth.helper'
@@ -29,6 +29,10 @@ export interface TestAppContext {
 
 interface InitializeTestAppOptions {
   orm: MikroORM
+}
+
+function registerMiddleware(app: INestApplication, middleware: express.RequestHandler): void {
+  app.use(middleware)
 }
 
 /**
@@ -87,23 +91,19 @@ export async function initializeTestApp(options: InitializeTestAppOptions, metad
       new ZodSerializationExceptionFilter(),
     )
 
-    app.use(testSessionMiddleware)
+    registerMiddleware(app, testSessionMiddleware)
 
     // Configure body parsing as in main.ts:
     // - Skip JSON parsing for Better Auth routes (needs raw body)
     // - Parse JSON for everything else
-    app.use(
-      (
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
-      ) => {
-        if (req.originalUrl.startsWith('/auth')) {
-          return next()
-        }
-        express.json({ limit: '50mb' })(req, res, next)
-      },
-    )
+    const jsonBodyParser: express.RequestHandler = (req, res, next) => {
+      if (req.originalUrl.startsWith('/auth')) {
+        return next()
+      }
+      express.json({ limit: '50mb' })(req, res, next)
+    }
+
+    registerMiddleware(app, jsonBodyParser)
     app.enableCors({
       origin: '*',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',

@@ -13,6 +13,19 @@ Better-auth is using your database to store all of its data. Depending on the OR
 
 We use MikroORM in this boilerplate, and you can find the entities in the [auth module](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/src/modules/auth).
 
+The boilerplate ships a custom MikroORM adapter for Better Auth (see [`auth-db.adapter.ts`](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/src/modules/auth/auth-db.adapter.ts)), replacing the community `better-auth-mikro-orm` package. It includes a CLI integration to auto-generate entity code via `pnpm auth:generate`:
+
+```bash
+pnpm auth:generate   # auth generate --config src/modules/auth/auth.cli.ts --yes
+```
+
+When adding a Better Auth plugin:
+1. Add the plugin in `auth.config.ts`
+2. Run `pnpm auth:generate` to scaffold missing entities/fields
+3. Move the generated code into the entity files and register them in `db.config.ts`
+4. Run `pnpm db:migrate:create` to create the MikroORM migration
+5. Run auth tests to verify alignment
+
 :::note
 It's a good practise to keep all entities related to better-auth in the auth module!
 :::
@@ -23,7 +36,7 @@ Better-auth provides server and client methods, see the [Better Auth documentati
 Better-auth provides a OpenAPI schema and a live documentation of your API endpoints. You can find it at [http://localhost:3000/api/auth/reference](http://localhost:3000/api/auth/reference) by default.
 
 :::note
-It's good practice to prefix better-auth related entities table names with `auth_` to keep them organized.
+It's good practice to prefix better-auth related entities table names with `auth_` to keep them organized. Just make sure to update the table names in the entity decorators accordingly.
 ::: 
 
 
@@ -33,23 +46,22 @@ It's good practice to prefix better-auth related entities table names with `auth
 Removing Better Auth from the project is a bit more work than removing other features. It's not recommended.
 :::
 
-1. Delete the `auth` module from the `api/src/modules` folder
-2. Remove the AuthModule from the `api/src/app.module.ts` file
-3. Remove the `api/src/config/better-auth.config.ts` file
-4. Remove the following dependencies from the `api/package.json` file:
+1. Delete the `auth` module from `apps/api/src/modules/auth`
+2. Remove the AuthModule from `apps/api/src/app.module.ts`
+3. Remove the following dependencies from `apps/api/package.json`:
 
 ```json
 "better-auth",
-"better-auth-mikro-orm",
+"auth"
 ```
 
-5. Remove the following dependecies from the frontend apps
+4. Remove the following dependencies from the frontend apps
 
 ```json
 "better-auth",
 ```
 
-6. Remove the following env variables from the `api/.env` file:
+5. Remove the following env variables from `apps/api/.env`:
 
 ```
 BETTER_AUTH_SECRET=

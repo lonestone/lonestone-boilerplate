@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common'
 import { z } from 'zod'
-import { LoggedInBetterAuthSession } from '../../../config/better-auth.config'
+import { LoggedInBetterAuthSession } from '../../auth/auth.config'
 import { Session } from '../../auth/auth.decorator'
 import { AuthGuard } from '../../auth/auth.guard'
 import {

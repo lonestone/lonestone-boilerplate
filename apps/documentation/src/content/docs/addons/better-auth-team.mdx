@@ -21,9 +21,9 @@ Here is the file structure we will modify:
 
 ```
 apps/api/src/
-├── auth/
+├── modules/auth/
 │   └── auth.entity.ts              (to update)
-└── better-auth.config.ts           (to update)
+│   └── auth.config.ts              (to update)
 ```
 
 ### Installation
@@ -36,9 +36,9 @@ import { Steps } from '@astrojs/starlight/components';
 
 1. ### Enable Teams in Better Auth configuration
 
-   In your Better Auth configuration file `better-auth.config.ts` on the API side, enable teams in the `organization` plugin:
+   In your Better Auth configuration file `apps/api/src/modules/auth/auth.config.ts` on the API side, enable teams in the `organization` plugin:
 
-   ```typescript title="src/config/better-auth.config.ts"
+   ```typescript title="apps/api/src/modules/auth/auth.config.ts"
    import { organization } from "better-auth/plugins"
 
    export const auth = betterAuth({
@@ -71,7 +71,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    Add the team entities to your existing `auth.entity.ts` file:
 
-   ```typescript title="src/auth/auth.entity.ts"
+   ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
    // ... your existing entities (User, Session, Organization, Member, Invitation, etc.)
    import { Collection, OneToMany } from '@mikro-orm/core'
 
@@ -126,7 +126,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    Add the relationship to teams:
 
-   ```typescript title="src/auth/auth.entity.ts"
+   ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
    // ... your existing Organization entity
    @Entity({ tableName: 'organization' })
    export class Organization {
@@ -141,7 +141,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    Add the relationship to team members:
 
-   ```typescript title="src/auth/auth.entity.ts"
+   ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
    // ... your existing User entity
    @Entity({ tableName: 'user' })
    export class User {
@@ -156,7 +156,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    Teams can be associated with invitations. Add the optional `teamId` field to your Invitation entity:
 
-   ```typescript title="src/auth/auth.entity.ts"
+   ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
    // ... your existing Invitation entity
    @Entity({ tableName: 'invitation' })
    export class Invitation {
@@ -171,7 +171,7 @@ import { Steps } from '@astrojs/starlight/components';
 
    The Better Auth Teams plugin automatically adds the `activeTeamId` field to the session when a user switches their active team. You need to add this field to your MikroORM Session entity:
 
-   ```typescript title="src/auth/auth.entity.ts"
+   ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
    // ... your existing Session entity
    @Entity({ tableName: 'session' })
    export class Session {
@@ -291,7 +291,7 @@ The teams feature supports several configuration options:
 
 Limit the number of teams per organization:
 
-```typescript title="src/config/better-auth.config.ts"
+```typescript title="apps/api/src/modules/auth/auth.config.ts"
 organization({
   teams: {
     enabled: true,
@@ -310,7 +310,7 @@ organization({
 
 Limit the number of members per team:
 
-```typescript title="src/config/better-auth.config.ts"
+```typescript title="apps/api/src/modules/auth/auth.config.ts"
 organization({
   teams: {
     enabled: true,
@@ -329,7 +329,7 @@ organization({
 
 Control whether the last team can be removed:
 
-```typescript title="src/config/better-auth.config.ts"
+```typescript title="apps/api/src/modules/auth/auth.config.ts"
 organization({
   teams: {
     enabled: true,
@@ -348,7 +348,7 @@ However, you may need to implement custom business logic specific to your applic
 
 **Example:**
 
-```typescript title="src/auth/team.service.ts"
+```typescript title="apps/api/src/modules/auth/team.service.ts"
 import { EnsureRequestContext, EntityManager } from '@mikro-orm/core'
 import { Injectable } from '@nestjs/common'
 import { Team, TeamMember, Organization, User } from './auth.entity'
@@ -407,7 +407,7 @@ The boilerplate already provides authentication decorators and guards. You can e
 
 For example, if you have a resource linked to a team, and want to create a guard to check if the user is a member of the team, you can do the following:
 
-```typescript title="src/auth/team.guard.ts"
+```typescript title="apps/api/src/modules/auth/team.guard.ts"
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
   CanActivate,
@@ -416,7 +416,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common'
-import { LoggedInBetterAuthSession } from '../../../config/better-auth.config'
+import { LoggedInBetterAuthSession } from '../../modules/auth/auth.config'
 import { ErrorCode } from '../../../utils/error-handling'
 import { Team, TeamMember } from './auth.entity'
 
@@ -483,7 +483,7 @@ You can add custom fields to the team entities to match your business needs. Sin
 
 **Server-side configuration:**
 
-```typescript title="src/config/better-auth.config.ts"
+```typescript title="apps/api/src/modules/auth/auth.config.ts"
 import { organization } from "better-auth/plugins"
 
 export const auth = betterAuth({
@@ -536,7 +536,7 @@ import {
   inferOrgAdditionalFields,
   organizationClient,
 } from "better-auth/client/plugins"
-import type { auth } from "@/config/better-auth.config"
+import type { auth } from "apps/api/src/modules/auth/auth.config"
 
 const client = createAuthClient({
   plugins: [

@@ -1,13 +1,13 @@
+import type { Rel } from '@mikro-orm/core'
+import { Collection } from '@mikro-orm/core'
 import {
-  Collection,
   Entity,
   Index,
   ManyToOne,
   OneToMany,
   PrimaryKey,
   Property,
-  Rel,
-} from '@mikro-orm/core'
+} from '@mikro-orm/decorators/legacy'
 import { User } from '../../auth/auth.entity'
 import { Post } from '../../example/posts/posts.entity'
 
@@ -30,7 +30,7 @@ export class Comment {
   @Property({ nullable: true })
   authorName?: string
 
-  @Property({ fieldName: 'createdAt' })
+  @Property()
   createdAt: Date = new Date()
 
   @ManyToOne(() => Comment, { fieldName: 'parentId', nullable: true })

@@ -1,6 +1,6 @@
 // oxlint-disable-next-line typescript/ban-ts-comment -- ignore
 // @ts-ignore
-import type { BetterAuthType } from '../../../api/src/config/better-auth.config'
+import type { BetterAuthType } from '../../../api/src/modules/auth/auth.client-types'
 import { customSessionClient, inferAdditionalFields } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react' // make sure to import from better-auth/react
 

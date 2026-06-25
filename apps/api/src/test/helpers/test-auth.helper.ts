@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomBytes } from 'node:crypto'
 import { INestApplication } from '@nestjs/common'
 import { NextFunction, Request, Response } from 'express'
-import { BetterAuthSession } from 'src/config/better-auth.config'
+import { BetterAuthSession } from 'src/modules/auth/auth.config'
 import supertest from 'supertest'
 import { User } from '../../modules/auth/auth.entity'
 

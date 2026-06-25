@@ -7,6 +7,7 @@ import type {
   MiddlewareContext,
   MiddlewareOptions,
 } from 'better-auth'
+import { MikroORM } from '@mikro-orm/core'
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Global, Inject, Module, RequestMethod } from '@nestjs/common'
 import {
@@ -14,12 +15,12 @@ import {
   DiscoveryService,
   MetadataScanner,
 } from '@nestjs/core'
+import { createAuthMiddleware } from 'better-auth/api'
 import { toNodeHandler } from 'better-auth/node'
-import { createAuthMiddleware } from 'better-auth/plugins'
-import { createBetterAuth } from '../../config/better-auth.config'
 import { config } from '../../config/env.config'
 import { EmailModule } from '../email/email.module'
 import { EmailService } from '../email/email.service'
+import { BetterAuthType, createBetterAuth } from './auth.config'
 import { AFTER_HOOK_KEY, BEFORE_HOOK_KEY, HOOK_KEY } from './auth.decorator'
 import { AuthModuleOptions, ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } from './auth.definition'
 import { Account, Session, User, Verification } from './auth.entity'
@@ -36,12 +37,12 @@ import { AuthService } from './auth.service'
   providers: [
     {
       provide: MODULE_OPTIONS_TOKEN,
-      useFactory: (emailService: EmailService): AuthModuleOptions => {
+      useFactory: (emailService: EmailService, orm: MikroORM): AuthModuleOptions<BetterAuthType> => {
         const betterAuth = createBetterAuth({
           baseUrl: config.api.baseUrl,
           secret: config.betterAuth.secret,
           trustedOrigins: config.betterAuth.trustedOrigins,
-          connectionStringUrl: config.database.connectionStringUrl,
+          orm,
           sendResetPassword: async (data) => {
             const webUrl = `${config.clients.webApp.url}/reset-password?token=${data.token}`
             return emailService.sendEmail({
@@ -63,7 +64,7 @@ import { AuthService } from './auth.service'
           auth: betterAuth,
         }
       },
-      inject: [EmailService],
+      inject: [EmailService, MikroORM],
     },
     AuthService,
     AuthGuard,
@@ -80,7 +81,7 @@ export class AuthModule extends ConfigurableModuleClass implements NestModule {
     @Inject(MetadataScanner)
     private readonly metadataScanner: MetadataScanner,
     @Inject(MODULE_OPTIONS_TOKEN)
-    private readonly options: AuthModuleOptions,
+    private readonly options: AuthModuleOptions<BetterAuthType>,
   ) {
     super()
   }
@@ -124,12 +125,12 @@ export class AuthModule extends ConfigurableModuleClass implements NestModule {
       ctx: MiddlewareContext<
         MiddlewareOptions,
         AuthContext & {
-          returned?: unknown
+          returned?: object
           responseHeaders?: Headers
         }
       >,
     ) => Promise<void>,
-    providerInstance: unknown,
+    providerInstance: object,
   ) {
     const auth = this.options.auth
     const hookPath = Reflect.getMetadata(metadataKey, providerMethod)

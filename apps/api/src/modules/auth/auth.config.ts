@@ -1,11 +1,16 @@
-import { betterAuth, BetterAuthOptions, MiddlewareInputContext, MiddlewareOptions, User } from 'better-auth'
+import type { MikroORM } from '@mikro-orm/core'
+import type { BetterAuthOptions, User } from 'better-auth'
+import type { BetterAuthType } from './auth.client-types'
+import { betterAuth } from 'better-auth'
 import { openAPI } from 'better-auth/plugins'
-import { Pool } from 'pg'
+import { mikroOrmAdapter } from './auth-db.adapter'
+
+type BetterAuthHooks = NonNullable<BetterAuthOptions['hooks']>
 
 interface BetterAuthOptionsDynamic {
+  orm: MikroORM
   secret: string
   trustedOrigins: string[]
-  connectionStringUrl: string
   sendResetPassword?: (
     data: { user: User, url: string, token: string },
     request: Request | undefined,
@@ -14,8 +19,8 @@ interface BetterAuthOptionsDynamic {
     data: { user: User, url: string, token: string },
     request: Request | undefined,
   ) => Promise<void>
-  beforeHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
-  afterHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
+  beforeHook?: BetterAuthHooks['before']
+  afterHook?: BetterAuthHooks['after']
   databaseHooks?: BetterAuthOptions['databaseHooks']
   baseUrl: string
 }
@@ -28,14 +33,14 @@ interface BetterAuthOptionsDynamic {
 export type BetterAuthSession = Awaited<ReturnType<ReturnType<typeof createBetterAuth>['api']['getSession']>>
 export type LoggedInBetterAuthSession = NonNullable<BetterAuthSession>
 
-export type BetterAuthType = ReturnType<typeof createBetterAuth>
+export type { BetterAuthType }
 /**
  * The context type for BetterAuth middleware.
  * This type is derived from the first parameter of the $context method of BetterAuthType.
  */
 export type BetterAuthContext = ReturnType<typeof createBetterAuth>['$context']
 
-export function createBetterAuth(options: BetterAuthOptionsDynamic) {
+export function createBetterAuth(options: BetterAuthOptionsDynamic): BetterAuthType {
   const authOptions = {
     baseURL: options.baseUrl,
     secret: options.secret,
@@ -58,9 +63,7 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
         return options?.sendVerificationEmail?.(data, request)
       },
     },
-    database: new Pool({
-      connectionString: options.connectionStringUrl,
-    }),
+    database: mikroOrmAdapter(options.orm),
     databaseHooks: options.databaseHooks,
     advanced: {
       database: {

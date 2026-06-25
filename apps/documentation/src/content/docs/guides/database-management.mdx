@@ -20,6 +20,13 @@ If you want also want to seed the database with data, you can use the following 
 pnpm db:fresh:seed
 ```
 
+#### Auto-generating Better Auth entities
+When adding Better Auth plugins, you can auto-generate the required entity code:
+```bash
+pnpm auth:generate
+```
+This uses the Better Auth CLI to detect missing entities/fields and scaffolds them directly into your entity files.
+
 #### Syncing changes without dropping the database
 This command will sync the changes to the database based on your entity files. Note that this can lead to some errors.
 ```bash

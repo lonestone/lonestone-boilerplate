@@ -13,7 +13,7 @@ MikroORM is a solid ORM, supported by a strong community (and an excellent devel
 - Very stable and proven
 - Very close to SQL, no fancy abstraction
 - Easy to extend as needed (e.g. custom columns)
-- Actually based on Knex, a rewrite is planned for v7 to use Kysely instead
+- Actually based on Knex, v7 rewrote the query builder to use Kysely instead
 
 - Drizzle, très cool car 100% TS mais avec encore pas mal de lacunes quand on [creuse un peu](https://www.notion.so/3262ab9bba874259ae8bcacf49c9e9f2?pvs=21) (pas de transactions par défaut, un typage bif bof trop basé sur l’inférence, etc.)
 
@@ -57,6 +57,7 @@ Some important concepts to know:
 - MikroORM use the concept of "[Unit of Work](https://mikro-orm.io/docs/unit-of-work)" and "[Identity Map](https://mikro-orm.io/docs/identity-map)". Those concepts are really key, so ensure you understand them well.
 - Linked to those concepts, be warry of `em.fork()` which will create a new Context
 - MikroORM NestJS module automatically creates a new Context for each request, you don't need to do anything special to get it. But if you want to use some functions outside of a request — for example in a CRON job — you will need to create a new Context manually (or use the `EnsureRequestContext` decorator).
+- Deprecated methods removed in v7: use `em.persist(entity)` + `await em.flush()` instead of `em.persistAndFlush(entity)`, `em.remove(entity)` + `await em.flush()` instead of `em.removeAndFlush(entity)`, and `orm.schema.refresh()` instead of `orm.schema.refreshDatabase()`. Decorators are now imported from `@mikro-orm/decorators/legacy` instead of `@mikro-orm/core`.
 
 :::note [About migrations]
 Migrations are an important part of database management, you can read more about them in the [Database Migrations](/lonestone-boilerplate/explanations/6_database-migrations) page.

@@ -1,5 +1,5 @@
+import { Collection } from '@mikro-orm/core'
 import {
-  Collection,
   Entity,
   Index,
   ManyToOne,
@@ -7,7 +7,7 @@ import {
   PrimaryKey,
   Property,
   Unique,
-} from '@mikro-orm/core'
+} from '@mikro-orm/decorators/legacy'
 import { User } from '../../auth/auth.entity'
 import { Comment } from '../../example/comments/comments.entity'
 
@@ -25,13 +25,13 @@ export class Post {
   @Index()
   user!: User
 
-  @Property({ fieldName: 'createdAt' })
+  @Property()
   createdAt: Date = new Date()
 
-  @Property({ fieldName: 'updatedAt', onUpdate: () => new Date() })
+  @Property({ onUpdate: () => new Date() })
   updatedAt: Date = new Date()
 
-  @Property({ fieldName: 'publishedAt', nullable: true })
+  @Property({ nullable: true })
   @Index()
   publishedAt?: Date
 
@@ -42,7 +42,7 @@ export class Post {
   comments = new Collection<Comment>(this)
 
   @Unique()
-  @Property({ fieldName: 'slug', nullable: true })
+  @Property({ nullable: true })
   @Index()
   slug?: string
 
@@ -70,6 +70,6 @@ export class PostVersion {
   @Property({ type: 'json' })
   content?: Content[]
 
-  @Property({ fieldName: 'createdAt' })
+  @Property()
   createdAt: Date = new Date()
 }

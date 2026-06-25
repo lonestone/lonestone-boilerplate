@@ -4,7 +4,7 @@
 // Use factories (src/factories/) for entity creation; these helpers combine user + session.
 
 import type { EntityManager } from '@mikro-orm/core'
-import type { BetterAuthSession } from '../../config/better-auth.config'
+import type { BetterAuthSession } from '../../modules/auth/auth.config'
 import type { User } from '../../modules/auth/auth.entity'
 import { createUserData } from '../../factories/user.factory'
 import { createSessionFromUser } from './test-auth.helper'

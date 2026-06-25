@@ -33,9 +33,10 @@ export function getLocaleConfig(locale: string) {
 
 // Initialize i18n
 export async function initializeI18n(i18n: i18n, resources: Resource): Promise<void> {
+  const i18nWithReact = i18n.use(initReactI18next)
+
   try {
-    await i18n
-      .use(initReactI18next)
+    await i18nWithReact
       .init({
         resources,
         lng: DEFAULT_LOCALE,
@@ -51,8 +52,7 @@ export async function initializeI18n(i18n: i18n, resources: Resource): Promise<v
   catch (error) {
     console.error('Failed to initialize i18n:', error)
     // Fallback with minimal configuration
-    await i18n
-      .use(initReactI18next)
+    await i18nWithReact
       .init({
         resources: {},
         lng: DEFAULT_LOCALE,
