@@ -808,6 +808,8 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
     // Boilerplate-only release tasks and maintainer rules
     'tasks/boilerplate-ai-upgrades',
     '.cursor/rules/boilerplate-rules.mdc',
+    // The curl installer is the boilerplate's own entry point, not the app's
+    'install.sh',
     // Maintainer-only documentation
     'docs/boilerplate-maintenance.md',
     '.boilerstone/docs/ai-upgrades-implementation.md',
