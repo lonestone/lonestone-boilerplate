@@ -5,19 +5,6 @@ import { Migrator } from '@mikro-orm/migrations'
 import { defineConfig } from '@mikro-orm/postgresql'
 import { SeedManager } from '@mikro-orm/seeder'
 import { config } from '../../config/env.config'
-import { Account, Session, User, Verification } from '../auth/auth.entity'
-import { Comment } from '../example/comments/comments.entity'
-import { Post, PostVersion } from '../example/posts/posts.entity'
-
-const entities = [
-  Account,
-  Comment,
-  Post,
-  PostVersion,
-  Session,
-  User,
-  Verification,
-]
 
 type CreateMikroOrmOptions = {
   isTest?: boolean
@@ -26,7 +13,7 @@ type CreateMikroOrmOptions = {
 export const entityGlobs = {
   entities: ['./dist/**/*.entity.js'],
   entitiesTs: ['./src/**/*.entity.ts'],
-} as const
+}
 
 export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
   return defineConfig({
@@ -35,8 +22,8 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
     user: config.database.user,
     password: config.database.password,
     dbName: config.database.name,
-    entities,
-    entitiesTs: entities,
+    entities: entityGlobs.entities,
+    entitiesTs: entityGlobs.entitiesTs,
     metadataProvider: ReflectMetadataProvider,
     // Column names mirror entity property names verbatim (camelCase),
     // matching the database schema. Relation FK columns still declare an
