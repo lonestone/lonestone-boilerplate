@@ -1,190 +1,59 @@
-# Upgrade Runbook
+# Upgrade runbook
 
-## Overview
+This is the procedure for applying a boilerplate upgrade to your project, once `upgrade prepare` has staged the work. It is the same for a human and for an AI agent — the `upgrade-boilerplate` skill follows this exact document. If you haven't read [how-it-works.md](./how-it-works.md) yet, read it first: it explains why intentions exist and what `prepare` produced.
 
-This is the canonical workflow for applying boilerplate upgrades to a consumer project. It is executor-neutral: a human developer can follow it step by step, and an AI agent (Claude Code, Cursor, ...) follows the exact same steps. Tool-specific entry points (such as `.claude/skills/upgrade-boilerplate/`) are thin shims that point here.
+Commands that accept `--json` emit machine-readable output; prefer it when the executor is a program.
 
-Commands that support `--json` emit machine-readable output — prefer it when the executor is a program.
+## Before you start
 
-## Prerequisites
+You need a valid `.boilerstone/boilerplate.json` (run `upgrade init`, or `bootstrap` on an older project), a clean git worktree, and the boilerplate release tags available locally. `upgrade doctor` checks all three and prints the exact `git remote add` / `git fetch --tags` commands when tags are missing — references can only be extracted from tags that exist locally.
 
-Before starting an upgrade session:
-
-1. Ensure the project has a `.boilerstone/boilerplate.json` file (run `pnpm boilerplate upgrade init` if not)
-2. Ensure the Git worktree is clean (`git status --porcelain` should be empty)
-3. Check where you stand: `pnpm boilerplate upgrade status --json`
-4. Diagnose readiness: `pnpm boilerplate upgrade doctor --json`
-5. Preview the path: `pnpm boilerplate upgrade path --to <target-version> --json`
-6. Run `pnpm boilerplate upgrade prepare --project <path> --to <target-version>`
-
-## Session Structure
-
-After preparation, the `.boilerstone/upgrade/` directory contains:
-
-```
-.boilerstone/
-  boilerplate.json       # Project tracking (committed)
-  upgrade/               # Temporary workspace (not committed)
-    reference/
-      source/            # Source version reference files (.boilerstone/ tree at the source tag)
-      target/            # Target version reference files (.boilerstone/ tree at the target tag)
-    intentions/          # Migration intention files
-    upgrade-session.md   # Main session prompt
-```
-
-Reference extraction requires the source and target git tags to exist locally. In a consumer project, run `pnpm boilerplate upgrade doctor` first; it prints the exact `git remote add ...` / `git fetch ... --tags` commands when tags are missing. For app-code references mentioned in an intention's "Reference Paths", compare against the boilerplate repository at the target tag.
-
-## Execution Workflow
-
-### For Each Intention
-
-1. **Read the intention file**
-   - Location: `.boilerstone/upgrade/intentions/<intention-id>.md`
-   - Check frontmatter metadata: `id`, `domain`, `classification`
-   - Understand the goal, why, and reference paths
-
-2. **Run applicability checks**
-   - Check "Applies when" conditions
-   - Check "Do not apply when" conditions
-   - If `classification` is `breaking-manual`, stop and ask for a human decision before editing
-   - If not applicable, record as skipped with reason
-
-3. **Compare with references** (if useful)
-   - Source: `.boilerstone/upgrade/reference/source/`
-   - Target: `.boilerstone/upgrade/reference/target/`
-   - Understand what changed and why
-
-4. **Apply the smallest safe change**
-   - Adapt existing code, don't replace wholesale
-   - Preserve all project-specific behavior
-   - Avoid cosmetic changes unless required
-
-5. **Run validation**
-   - Intention-specific validation from the file
-   - Global checks: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`
-
-6. **Update boilerplate.json**
-   - Add intention ID to `intentions.applied` with today's date
-   - Only after validation passes
-
-7. **Commit the change**
-   - One commit per intention
-   - Clear commit message: `feat: apply migration intention <intention-id>`
-
-### Stop Conditions
-
-Stop immediately if:
-- A "Do not apply when" condition matches
-- Validation fails after reasonable attempts
-- Unsafe ambiguity is detected
-- Project-specific behavior would be lost
-
-When the executor is an AI agent, stopping means writing a blocked report and handing back to a human — never guessing through.
-
-### Recording Results
-
-**Applied:**
-```json
-{
-  "intentions": {
-    "applied": [
-      { "id": "v1.6.0/add-s3-module", "appliedAt": "2026-04-30" }
-    ]
-  }
-}
-```
-
-**Skipped:**
-```json
-{
-  "intentions": {
-    "skipped": [
-      { "id": "v1.6.0/web-ssr-monitoring", "reason": "Project does not use web-ssr" }
-    ]
-  }
-}
-```
-
-**Blocked:**
-- Write to `.boilerstone/upgrade/blocked.md`
-- Include: intention ID, reason, failed checks, suggested next actions
-- Do NOT update boilerplate.json
-
-## Git Rules
-
-- **Never** stash automatically
-- **Never** push automatically
-- **Never** merge automatically
-- Create one commit per resolved intention
-- Keep successful commits if a later intention fails
-- Create a dedicated upgrade branch
-- If the expected upgrade branch already exists, check it out manually before re-running `upgrade prepare`
-
-## Validation Rules
-
-For each intention:
-1. Run intention-specific validation first
-2. Run global checks when available
-3. Report missing scripts as unavailable, not passed
-4. Block the intention if required validation fails
-
-### Global Checks
-
-- `pnpm lint` - Code style and quality
-- `pnpm typecheck` - TypeScript type checking
-- `pnpm test` - Unit and integration tests
-- `pnpm build` - Build verification
-
-## Reporting
-
-### During Execution
-
-- Mark intentions as applied/skipped/blocked in `.boilerstone/boilerplate.json`
-
-### On Completion
-
-- Set `source.currentVersion` to the target version in `.boilerstone/boilerplate.json` (final commit of the upgrade branch)
-- Generate final summary for PR description
-- Include:
-  - Total intentions processed
-  - Applied intentions list
-  - Skipped intentions with reasons
-  - Blocked intentions (if any)
-  - Validation results
-
-## Example Session
+Then stage the upgrade:
 
 ```bash
-# 1. Initialize (if needed)
-pnpm boilerplate upgrade init --project ./my-project
-
-# 2. Check status
-pnpm boilerplate upgrade status --project ./my-project --json
-
-# 3. Diagnose readiness
-pnpm boilerplate upgrade doctor --project ./my-project --json
-
-# 4. Preview the upgrade path
-pnpm boilerplate upgrade path --to 1.6.0 --project ./my-project --json
-
-# 5. Prepare upgrade context
-pnpm boilerplate upgrade prepare --project ./my-project --to 1.6.0
-
-# 6. Execute the intentions listed in .boilerstone/upgrade/upgrade-session.md,
-#    one at a time — yourself, or by handing the session to an AI agent
-
-# 7. Review the upgrade branch
-git log --oneline
-git diff main..upgrade/v1.5.0-to-v1.6.0
-
-# 8. Create PR when satisfied
+pnpm boilerplate upgrade prepare --to <version>   # or --to latest --fetch
 ```
 
-## Best Practices
+This creates the `upgrade/v<source>-to-v<target>` branch and the `.boilerstone/upgrade/` workspace:
 
-1. **Preserve project identity**: Never overwrite project-specific code
-2. **Minimal changes**: Apply only what's necessary for the intention
-3. **Validate early**: Run checks before committing
-4. **Document decisions**: Record clear reasons for skips and blocks
-5. **Atomic commits**: One intention = one commit
-6. **Safe failures**: Stop on ambiguity, don't guess
+```
+.boilerstone/upgrade/        # disposable, gitignored
+  intentions/                # the intentions to process, one file each
+  reference/source/          # .boilerstone tree at the source tag
+  reference/target/          # .boilerstone tree at the target tag
+  upgrade-session.md         # the session prompt / checklist
+```
+
+## Applying one intention
+
+Work through `upgrade-session.md` one intention at a time. For each:
+
+1. **Read it.** Note its `classification` and `domain` in the frontmatter, and understand the goal and the why.
+2. **Decide if it applies.** Check the "Applies when" and "Do not apply when" conditions against your project. If it doesn't apply, record it as skipped with a reason and move on. If its classification is `breaking-manual`, stop and get a human decision before touching anything.
+3. **Understand the change** by comparing `reference/source/` with `reference/target/` (and, for app-code intentions, the boilerplate at the target tag). You're after the *meaning* of the change, not a literal copy.
+4. **Make the smallest safe change.** Adapt your existing code; don't replace it wholesale. Preserve project-specific behavior. Avoid cosmetic edits.
+5. **Validate.** Run the intention's own validation first, then the global checks that exist in your project: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. Report a missing script as unavailable, not as passing.
+6. **Record and commit.** Only once validation passes, add the intention id to `intentions.applied` (with today's date) in `boilerplate.json`, and commit — **one commit per intention** (`feat: apply migration intention <id>`).
+
+Recorded outcomes look like this:
+
+```json
+{
+  "intentions": {
+    "applied": [{ "id": "v1.6.0/add-s3-module", "appliedAt": "2026-04-30" }],
+    "skipped": [{ "id": "v1.6.0/web-ssr-monitoring", "reason": "Project does not use web-ssr" }]
+  }
+}
+```
+
+## When to stop
+
+Stop — don't guess through — if a "Do not apply when" condition matches, if validation keeps failing, if there's unsafe ambiguity, or if applying the change would lose project-specific behavior. When the executor is an agent, stopping means writing a short blocked report to `.boilerstone/upgrade/blocked.md` (intention id, reason, failed checks, suggested next step) and handing back to a human — **without** updating `boilerplate.json`.
+
+## Git discipline
+
+Stay on the dedicated `upgrade/…` branch with one commit per resolved intention. Keep successful commits even if a later intention fails. Never stash, push, or merge automatically — those are the human's call. If the branch already exists, check it out manually before re-running `prepare`.
+
+## Finishing
+
+When every intention is applied or skipped, set `source.currentVersion` to the target version in `boilerplate.json` as the final commit, then open a PR. Summarize what happened: intentions applied, intentions skipped (with reasons), anything blocked, and the validation results.
