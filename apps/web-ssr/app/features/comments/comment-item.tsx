@@ -126,13 +126,16 @@ export function CommentItem({
   const isAuthor = currentUserId && comment.user?.id === currentUserId
   const isPostAuthor = currentUserId === postAuthorId
   const canDelete = isAuthor || isPostAuthor
-  const formattedDate = new Date(comment.createdAt).toLocaleDateString(
-    undefined,
-    {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    },
+  const formattedDate = useMemo(
+    () => new Date(comment.createdAt).toLocaleDateString(
+      undefined,
+      {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      },
+    ),
+    [comment.createdAt],
   )
   const [isHovered, setIsHovered] = useState(false)
 

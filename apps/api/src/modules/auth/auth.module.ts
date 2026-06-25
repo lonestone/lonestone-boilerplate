@@ -3,6 +3,7 @@ import type {
   NestModule,
 } from '@nestjs/common'
 import type {
+  Auth,
   AuthContext,
   MiddlewareContext,
   MiddlewareOptions,
@@ -14,8 +15,8 @@ import {
   DiscoveryService,
   MetadataScanner,
 } from '@nestjs/core'
+import { createAuthMiddleware } from 'better-auth/api'
 import { toNodeHandler } from 'better-auth/node'
-import { createAuthMiddleware } from 'better-auth/plugins'
 import { createBetterAuth } from '../../config/better-auth.config'
 import { config } from '../../config/env.config'
 import { EmailModule } from '../email/email.module'
@@ -60,7 +61,7 @@ import { AuthService } from './auth.service'
           },
         })
         return {
-          auth: betterAuth,
+          auth: betterAuth as unknown as Auth,
         }
       },
       inject: [EmailService],

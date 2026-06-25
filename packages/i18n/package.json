@@ -12,7 +12,6 @@
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-
   "publishConfig": {
     "exports": {
       ".": {
@@ -61,7 +60,7 @@
     "check-translations": "tsx ./src/i18n-sync.ts"
   },
   "dependencies": {
-    "glob": "^13.0.0",
+    "glob": "^13.0.6",
     "i18next": "catalog:frontend",
     "persist-and-sync": "^1.2.3",
     "react-i18next": "catalog:frontend"

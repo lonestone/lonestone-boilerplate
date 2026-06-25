@@ -14,6 +14,7 @@
   },
   "scripts": {
     "rock": "tsx ./cli/setup.ts",
+    "boilerplate": "tsx ./.boilerstone/cli/boilerplate.ts",
     "dev": "pnpm --parallel dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
@@ -28,18 +29,15 @@
     "docs-only": "pnpm --filter=@boilerstone/documentation run dev",
     "prepare": "husky"
   },
-  "dependencies": {
-    "typescript": "^5.9.3"
-  },
   "devDependencies": {
-    "@antfu/eslint-config": "^7.2.0",
-    "@eslint-react/eslint-plugin": "^2.8.1",
+    "@antfu/eslint-config": "^8.2.0",
+    "@eslint-react/eslint-plugin": "^3.0.0",
     "enquirer": "^2.4.1",
-    "eslint": "^9.39.2",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.26",
+    "eslint": "^10.2.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.7",
+    "lint-staged": "^16.4.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"

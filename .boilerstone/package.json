@@ -1,0 +1,14 @@
+{
+  "name": "@boilerstone/boilerplate",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Boilerplate upgrade system: state, migration intentions and CLI",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.5"
+  }
+}
