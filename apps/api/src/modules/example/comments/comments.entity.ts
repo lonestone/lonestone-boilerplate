@@ -30,7 +30,7 @@ export class Comment {
   @Property({ nullable: true })
   authorName?: string
 
-  @Property({ fieldName: 'createdAt' })
+  @Property()
   createdAt: Date = new Date()
 
   @ManyToOne(() => Comment, { fieldName: 'parentId', nullable: true })

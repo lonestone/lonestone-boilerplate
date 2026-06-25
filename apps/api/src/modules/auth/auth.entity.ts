@@ -18,16 +18,16 @@ export class User {
   @Unique()
   email!: string
 
-  @Property({ fieldName: 'emailVerified' })
+  @Property()
   emailVerified: boolean = false
 
   @Property({ nullable: true })
   image?: string
 
-  @Property({ fieldName: 'createdAt' })
+  @Property()
   createdAt: Date = new Date()
 
-  @Property({ fieldName: 'updatedAt', onUpdate: () => new Date() })
+  @Property({ onUpdate: () => new Date() })
   updatedAt: Date = new Date()
 }
 
@@ -36,23 +36,23 @@ export class Session {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
-  @Property({ fieldName: 'expiresAt' })
+  @Property()
   expiresAt!: Date
 
   @Property()
   @Unique()
   token!: string
 
-  @Property({ fieldName: 'createdAt' })
+  @Property()
   createdAt: Date = new Date()
 
-  @Property({ fieldName: 'updatedAt', onUpdate: () => new Date() })
+  @Property({ onUpdate: () => new Date() })
   updatedAt: Date = new Date()
 
-  @Property({ fieldName: 'ipAddress', nullable: true })
+  @Property({ nullable: true })
   ipAddress?: string
 
-  @Property({ fieldName: 'userAgent', nullable: true })
+  @Property({ nullable: true })
   userAgent?: string
 
   @ManyToOne(() => User, { fieldName: 'userId' })
@@ -64,28 +64,28 @@ export class Account {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
-  @Property({ fieldName: 'accountId' })
+  @Property()
   accountId!: string
 
-  @Property({ fieldName: 'providerId' })
+  @Property()
   providerId!: string
 
   @ManyToOne(() => User, { fieldName: 'userId' })
   user!: User
 
-  @Property({ fieldName: 'accessToken', nullable: true })
+  @Property({ nullable: true })
   accessToken?: string
 
-  @Property({ fieldName: 'refreshToken', nullable: true })
+  @Property({ nullable: true })
   refreshToken?: string
 
-  @Property({ fieldName: 'idToken', nullable: true })
+  @Property({ nullable: true })
   idToken?: string
 
-  @Property({ fieldName: 'accessTokenExpiresAt', nullable: true })
+  @Property({ nullable: true })
   accessTokenExpiresAt?: Date
 
-  @Property({ fieldName: 'refreshTokenExpiresAt', nullable: true })
+  @Property({ nullable: true })
   refreshTokenExpiresAt?: Date
 
   @Property({ nullable: true })
@@ -94,10 +94,10 @@ export class Account {
   @Property({ nullable: true })
   password?: string
 
-  @Property({ fieldName: 'createdAt' })
+  @Property()
   createdAt: Date = new Date()
 
-  @Property({ fieldName: 'updatedAt', onUpdate: () => new Date() })
+  @Property({ onUpdate: () => new Date() })
   updatedAt: Date = new Date()
 }
 
@@ -112,12 +112,12 @@ export class Verification {
   @Property()
   value!: string
 
-  @Property({ fieldName: 'expiresAt' })
+  @Property()
   expiresAt!: Date
 
-  @Property({ fieldName: 'createdAt' })
+  @Property()
   createdAt: Date = new Date()
 
-  @Property({ fieldName: 'updatedAt', onUpdate: () => new Date() })
+  @Property({ onUpdate: () => new Date() })
   updatedAt: Date = new Date()
 }

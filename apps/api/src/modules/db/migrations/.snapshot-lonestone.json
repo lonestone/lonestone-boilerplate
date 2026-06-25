@@ -493,8 +493,8 @@
           "length": 255,
           "mappedType": "string"
         },
-        "author_name": {
-          "name": "author_name",
+        "authorName": {
+          "name": "authorName",
           "type": "varchar(255)",
           "unsigned": false,
           "autoincrement": false,

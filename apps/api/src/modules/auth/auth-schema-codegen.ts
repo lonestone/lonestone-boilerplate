@@ -22,10 +22,6 @@ export function toPascalCase(name: string): string {
     .replace(/^\w/, char => char.toUpperCase())
 }
 
-export function toSnakeCase(name: string): string {
-  return name.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase()
-}
-
 export function toSourcePath(path: string): string {
   return path.replace(/([/\\])dist([/\\])/, '$1src$2').replace(/\.js$/, '.ts')
 }
@@ -126,9 +122,8 @@ function renderProperty(field: AuthSchemaField, resolveEntity: EntityResolver): 
   const options: string[] = []
   const stringType = String(attribute.type)
 
-  if (field.field !== toSnakeCase(field.field))
-    options.push(`fieldName: '${field.field}'`)
-
+  // Scalar columns mirror the property name verbatim under
+  // EntityCaseNamingStrategy, so no explicit `fieldName` is needed.
   if (stringType === 'json')
     options.push('type: \'json\'')
   if (stringType === 'string[]' || stringType === 'number[]')
@@ -196,14 +191,14 @@ function renderMissingEntity(diff: AuthSchemaModelDiff, orm: MikroORM, filePath:
   }
 
   const body = [
-    `@Entity({ tableName: '${toSnakeCase(diff.model)}' })`,
+    `@Entity({ tableName: '${diff.model}' })`,
     `export class ${className} {`,
     `  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })`,
     '  id!: string',
     '',
     properties.map(p => p.code).join('\n\n'),
     '}',
-  ].join('\n').replace(/^/gm, '')
+  ].join('\n')
 
   return { body, className, decorators, entityImports, typeImports }
 }
@@ -217,7 +212,7 @@ interface RenderedEntity {
 }
 
 /**
- * Enrichit l'import de décorateurs existant avec les décorateurs manquants.
+ * Enriches an existing decorator import with missing decorators.
  */
 function ensureDecoratorImport(content: string, neededDecorators: Set<string>): string {
   const importRegex = /import \{([\w,\s]+)\} from '@mikro-orm\/decorators\/legacy'/
@@ -309,7 +304,7 @@ function findClassEnd(content: string, className: string): number {
 }
 
 /**
- * Ajoute les propriétés manquantes dans le corps d'une classe.
+ * Inserts missing properties into a class body.
  */
 function insertPropertiesIntoClass(
   content: string,
@@ -334,7 +329,7 @@ function insertPropertiesIntoClass(
 }
 
 /**
- * Ajoute une ou plusieurs classes d'entité manquantes à la fin du fichier.
+ * Appends one or more missing entity classes at the end of the file.
  */
 function appendClasses(content: string, entities: RenderedEntity[]): string {
   const blocks = entities.map(e => `\n${e.body}\n`).join('\n')
@@ -343,16 +338,16 @@ function appendClasses(content: string, entities: RenderedEntity[]): string {
 }
 
 /**
- * Patch les fichiers d'entités découverts via la config MikroORM.
+ * Patches entity files discovered via MikroORM config.
  *
- * Lit chaque fichier source référencé par les métadonnées des entités,
- * y insère les propriétés manquantes dans les classes existantes
- * et ajoute les nouvelles classes d'entité manquantes.
+ * Reads each source file referenced by entity metadata,
+ * inserts missing properties into existing classes,
+ * and appends missing entity classes.
  *
- * Quand aucune entité existante n'est patchée, les nouvelles entités
- * sont écrites dans `fallbackEntityFilePath` (par défaut `src/modules/auth/auth.entity.ts`).
+ * When no existing entity is patched, new entities are written
+ * to `fallbackEntityFilePath` (defaults to `src/modules/auth/auth.entity.ts`).
  *
- * @returns La liste des fichiers modifiés (chemin → contenu final).
+ * @returns List of modified files (path → final content).
  */
 export function applyEntityPatches(
   diffs: AuthSchemaModelDiff[],
@@ -405,7 +400,7 @@ export function applyEntityPatches(
       content = insertPropertiesIntoClass(content, diff.metadata!.className, propertiesCode)
     }
 
-    // Ajoute les nouvelles classes d'entité manquantes (les orienter vers un fichier contenant une entité du même domaine)
+    // Append missing entity classes (route them to a file containing an entity from the same domain)
     if (missingEntities.length > 0 && filePath === missingEntitiesTarget) {
       const rendered = missingEntities.map(diff => renderMissingEntity(diff, orm, filePath))
       for (const entity of rendered) {
@@ -426,8 +421,8 @@ export function applyEntityPatches(
     files.set(filePath, content)
   }
 
-  // Si aucune entité existante n'est patchée mais qu'il y a des entités manquantes,
-  // on écrit les nouvelles entités dans le fichier de repli (auth.entity.ts par défaut).
+  // If no existing entity was patched but there are missing entities,
+  // write new entities to the fallback file (auth.entity.ts by default).
   if (bySourceFile.size === 0 && missingEntities.length > 0) {
     const filePath = absoluteFallbackPath
     let content = readFileSync(filePath, 'utf-8')
