@@ -10,7 +10,7 @@ import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
-import { colorize } from '../../cli/utils'
+import { colorize, isolatedGitEnv } from '../../cli/utils'
 import {
   compareVersions,
   computeUpgradePath,
@@ -62,18 +62,11 @@ function getProjectPath(projectPath: string): string {
   return isAbsolute(projectPath) ? projectPath : resolve(process.cwd(), projectPath)
 }
 
-function getGitEnv(): NodeJS.ProcessEnv {
-  const env = { ...process.env }
-  delete env.GIT_DIR
-  delete env.GIT_WORK_TREE
-  return env
-}
-
 function runGitCommand(args: string[], cwd = projectRoot): string {
   return execFileSync('git', args, {
     cwd,
     encoding: 'utf-8',
-    env: getGitEnv(),
+    env: isolatedGitEnv(),
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim()
 }
@@ -147,7 +140,7 @@ function printMissingReleaseTags(state: BoilerplateState | null): void {
 function archiveGitReference(reference: string, destination: string, cwd = projectRoot): void {
   // --output avoids buffering the archive on stdout (execFileSync caps stdout at 1MB by default)
   const tarFile = join(destination, '.reference.tar')
-  execFileSync('git', ['archive', '--format=tar', `--output=${tarFile}`, reference, '.boilerstone/'], { cwd, env: getGitEnv() })
+  execFileSync('git', ['archive', '--format=tar', `--output=${tarFile}`, reference, '.boilerstone/'], { cwd, env: isolatedGitEnv() })
   execFileSync('tar', ['-xf', tarFile, '-C', destination])
   rmSync(tarFile, { force: true })
 }
@@ -173,7 +166,7 @@ function listGitMarkdownFiles(reference: string, directory: string): string[] {
 }
 
 function readGitFile(reference: string, filePath: string): string {
-  return execFileSync('git', ['show', `${reference}:${filePath}`], { cwd: projectRoot, encoding: 'utf-8', env: getGitEnv() })
+  return execFileSync('git', ['show', `${reference}:${filePath}`], { cwd: projectRoot, encoding: 'utf-8', env: isolatedGitEnv() })
 }
 
 function listMarkdownFiles(directory: string, recursive = false): string[] {

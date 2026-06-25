@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { cleanupBoilerplateFiles } from '../../cli/setup'
+import { isolatedGitEnv } from '../../cli/utils'
 import { archiveGitReference } from './boilerplate'
 import {
   compareVersions,
@@ -19,13 +20,6 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = resolve(__dirname, '../..')
 const cliPath = join(projectRoot, '.boilerstone/cli/boilerplate.ts')
-
-function getGitEnv(): NodeJS.ProcessEnv {
-  const env = { ...process.env }
-  delete env.GIT_DIR
-  delete env.GIT_WORK_TREE
-  return env
-}
 
 function createIntentionContent(options: { id?: string, domain?: string, classification?: string }): string {
   const lines = [
@@ -48,7 +42,7 @@ function runCli(args: string[], projectPath?: string): { status: number | null, 
     cwd: projectRoot,
     encoding: 'utf-8',
     env: {
-      ...getGitEnv(),
+      ...isolatedGitEnv(),
       FORCE_COLOR: '0',
       NO_COLOR: '1',
     },
@@ -66,7 +60,7 @@ function runCli(args: string[], projectPath?: string): { status: number | null, 
 }
 
 function runGit(cwd: string, args: string[]): void {
-  const result = spawnSync('git', args, { cwd, encoding: 'utf-8', env: getGitEnv() })
+  const result = spawnSync('git', args, { cwd, encoding: 'utf-8', env: isolatedGitEnv() })
   if (result.status !== 0) {
     throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`)
   }
@@ -333,7 +327,7 @@ describe('boilerplate CLI smoke', () => {
       expect(result.status).toBe(0)
       expect(existsSync(join(projectPath, '.boilerstone', 'upgrade', 'upgrade-session.md'))).toBe(true)
 
-      const branch = spawnSync('git', ['branch', '--show-current'], { cwd: projectPath, encoding: 'utf-8', env: getGitEnv() }).stdout.trim()
+      const branch = spawnSync('git', ['branch', '--show-current'], { cwd: projectPath, encoding: 'utf-8', env: isolatedGitEnv() }).stdout.trim()
       expect(branch).toBe('upgrade/v0.9.0-to-v1.0.0')
     }
     finally {
