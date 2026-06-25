@@ -117,10 +117,18 @@ function normalizeGitRemote(value: string): string {
 
 function isBoilerplateMaintainerCheckout(rootPath: string): boolean {
   try {
+    // Strip GIT_DIR/GIT_WORK_TREE so a surrounding git hook (e.g. pre-push) cannot
+    // redirect this lookup to the ambient repo and misidentify any path as the
+    // boilerplate checkout. Mirrors getGitEnv() in .boilerstone/cli/boilerplate.ts.
+    const env = { ...process.env }
+    delete env.GIT_DIR
+    delete env.GIT_WORK_TREE
+
     const originUrl = execFileSync('git', ['remote', 'get-url', 'origin'], {
       cwd: rootPath,
       encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      env,
     })
 
     return normalizeGitRemote(originUrl) === normalizeGitRemote(defaultBoilerplateRemote)
@@ -804,9 +812,8 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
   // Files and directories that are only useful for maintaining or publishing the boilerplate itself.
   // Consumer projects keep the local upgrade state and CLI, but fetch published intentions from the boilerplate repository.
   const filesToRemove = [
-    // Release draft generation implementation
+    // Boilerplate-only release tasks and maintainer rules
     'tasks/boilerplate-ai-upgrades',
-    // Boilerplate-only release tasks
     '.cursor/rules/boilerplate-rules.mdc',
     // Maintainer-only documentation
     'docs/boilerplate-maintenance.md',
