@@ -12,12 +12,12 @@ import { DbModule } from './modules/db/db.module'
 import { EmailModule } from './modules/email/email.module'
 import { ExampleModule } from './modules/example/example.module'
 
-// Interface étendue pour les requêtes Express
+// Extended interface for Express requests
 interface ExpressRequest extends IncomingMessage {
   originalUrl?: string
 }
 
-// Interface étendue pour les réponses Express
+// Extended interface for Express responses
 interface ExpressResponse extends ServerResponse<IncomingMessage> {
   responseTime?: number
 }
