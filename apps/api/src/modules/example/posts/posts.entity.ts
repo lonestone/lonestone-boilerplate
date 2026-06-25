@@ -2,6 +2,7 @@ import { Collection } from '@mikro-orm/core'
 import {
   Entity,
   Index,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryKey,
@@ -10,6 +11,7 @@ import {
 } from '@mikro-orm/decorators/legacy'
 import { User } from '../../auth/auth.entity'
 import { Comment } from '../../example/comments/comments.entity'
+import { Tag } from '../../example/tags/tag.entity'
 
 export interface Content {
   type: 'text' | 'image' | 'video'
@@ -45,6 +47,15 @@ export class Post {
   @Property({ nullable: true })
   @Index()
   slug?: string
+
+  @Property({ nullable: true })
+  coverImage?: string
+
+  @Property({ default: 0 })
+  likesCount: number = 0
+
+  @ManyToMany(() => Tag, tag => tag.posts, { owner: true, pivotTable: 'post_tag' })
+  tags = new Collection<Tag>(this)
 
   async currentVersion() {
     if (this.publishedAt) {

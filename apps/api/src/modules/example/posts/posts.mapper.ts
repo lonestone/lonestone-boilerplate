@@ -1,12 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import {
+  PublicAuthorPosts,
   PublicPost,
   PublicPosts,
+  Tag,
   UserPost,
   UserPosts,
 } from './contracts/posts.contract'
 import { Content, Post, PostVersion } from './posts.entity'
 import {
+  PublicAuthorPostsResult,
   PublicPostResult,
   PublicPostsResult,
   UserPostsResult,
@@ -70,6 +73,9 @@ export class PostsMapper {
       publishedAt: post.publishedAt!,
       slug: post.slug,
       commentCount,
+      coverImage: post.coverImage,
+      likesCount: post.likesCount,
+      tags: this.mapTags(post),
     }
   }
 
@@ -92,6 +98,42 @@ export class PostsMapper {
           },
           contentPreview: this.findContentPreview(latestVersion.content),
           commentCount: commentCountByPostId.get(post.id) ?? 0,
+          coverImage: post.coverImage,
+          likesCount: post.likesCount,
+          tags: this.mapTags(post),
+        }
+      }),
+      meta: {
+        itemCount: total,
+        pageSize: pagination.pageSize,
+        offset: pagination.offset,
+        hasMore: pagination.offset + pagination.pageSize < total,
+      },
+    }
+  }
+
+  toPublicAuthorPosts({
+    posts,
+    total,
+    pagination,
+    commentCountByPostId,
+  }: PublicAuthorPostsResult): PublicAuthorPosts {
+    return {
+      data: posts.map((post) => {
+        const latestVersion = this.getLatestPublishedVersion(post)
+
+        return {
+          title: latestVersion.title,
+          publishedAt: post.publishedAt!,
+          slug: post.slug,
+          author: {
+            name: post.user.name,
+          },
+          contentPreview: this.findContentPreview(latestVersion.content),
+          commentCount: commentCountByPostId.get(post.id) ?? 0,
+          coverImage: post.coverImage,
+          likesCount: post.likesCount,
+          tags: this.mapTags(post),
         }
       }),
       meta: {
@@ -151,5 +193,16 @@ export class PostsMapper {
     }
 
     return latestVersion
+  }
+
+  private mapTags(post: Post): Tag[] {
+    if (!post.tags.isInitialized())
+      return []
+
+    return post.tags.getItems().map(tag => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+    }))
   }
 }
