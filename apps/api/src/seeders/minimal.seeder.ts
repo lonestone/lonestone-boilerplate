@@ -1,7 +1,6 @@
 import { EntityManager } from '@mikro-orm/core'
 import { Seeder } from '@mikro-orm/seeder'
-import { hashPassword } from 'better-auth/crypto'
-import { Account, User } from '../modules/auth/auth.entity'
+import { createUserData } from '../modules/auth/auth.factory'
 import { Comment } from '../modules/example/comments/comments.entity'
 import { Post, PostVersion } from '../modules/example/posts/posts.entity'
 
@@ -10,28 +9,16 @@ import { Post, PostVersion } from '../modules/example/posts/posts.entity'
  */
 export class MinimalSeeder extends Seeder {
   async run(em: EntityManager): Promise<void> {
-    // Create user
-    const user = new User()
-    user.name = 'Test User'
-    user.email = 'test@example.com'
-    user.emailVerified = true
-    await em.persist(user).flush()
+    const user = await createUserData(em, {
+      name: 'Test User',
+      email: 'test@example.com',
+      emailVerified: true,
+    })
 
-    // Create account with password
-    const account = new Account()
-    account.user = user
-    account.providerId = 'credential'
-    account.accountId = crypto.randomUUID()
-    account.password = await hashPassword('Password123!')
-    await em.persist(account).flush()
-
-    // Create post
     const post = new Post()
     post.user = user
     post.createdAt = new Date()
-    await em.persist(post).flush()
 
-    // Create post version
     const postVersion = new PostVersion()
     postVersion.post = post
     postVersion.createdAt = post.createdAt
@@ -42,15 +29,13 @@ export class MinimalSeeder extends Seeder {
         data: 'This is a test post content.',
       },
     ]
-    await em.persist(postVersion).flush()
     post.versions.add(postVersion)
-    await em.persist(post).flush()
 
-    // Create comment
     const comment = new Comment()
     comment.post = post
     comment.user = user
     comment.content = 'This is a test comment.'
-    await em.persist(comment).flush()
+
+    await em.persist([post, postVersion, comment]).flush()
   }
 }
