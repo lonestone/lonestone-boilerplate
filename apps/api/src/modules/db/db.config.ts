@@ -5,6 +5,21 @@ import { Migrator } from '@mikro-orm/migrations'
 import { defineConfig } from '@mikro-orm/postgresql'
 import { SeedManager } from '@mikro-orm/seeder'
 import { config } from '../../config/env.config'
+import { Account, Session, User, Verification } from '../auth/auth.entity'
+import { Comment } from '../example/comments/comments.entity'
+import { Post, PostVersion } from '../example/posts/posts.entity'
+import { Tag } from '../example/tags/tag.entity'
+
+const entities = [
+  Account,
+  Comment,
+  Post,
+  PostVersion,
+  Session,
+  Tag,
+  User,
+  Verification,
+]
 
 type CreateMikroOrmOptions = {
   isTest?: boolean

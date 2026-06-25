@@ -44,6 +44,7 @@ export type PostSorting = z.infer<typeof postSortingSchema>
 
 export const enabledPostFilteringKeys = [
   'title',
+  'tag',
 ] as const
 
 export const postFilteringSchema = createFilterQueryStringSchema(
@@ -120,6 +121,17 @@ export type UserPosts = z.infer<typeof userPostsSchema>
 // Public posts //
 // -------------//
 
+export const tagSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  slug: z.string(),
+}).meta({
+  title: 'TagSchema',
+  description: 'A tag attached to a post',
+})
+
+export type Tag = z.infer<typeof tagSchema>
+
 // Schema for the public view of a post
 export const publicPostSchema = z.object({
   title: z.string(),
@@ -130,6 +142,9 @@ export const publicPostSchema = z.object({
   publishedAt: z.date(),
   slug: z.string().optional(),
   commentCount: z.number().optional(),
+  coverImage: z.string().url().optional(),
+  likesCount: z.number(),
+  tags: z.array(tagSchema),
 }).meta({
   title: 'PublicPostSchema',
   description: 'A public post',
@@ -148,3 +163,15 @@ export const publicPostsSchema = paginatedSchema(publicPostSchema.omit({
 
 export type PublicPost = z.infer<typeof publicPostSchema>
 export type PublicPosts = z.infer<typeof publicPostsSchema>
+
+// Schema for the author posts list (public)
+export const publicAuthorPostsSchema = paginatedSchema(publicPostSchema.omit({
+  content: true,
+}).extend({
+  contentPreview: postContentSchema,
+})).meta({
+  title: 'PublicAuthorPostsSchema',
+  description: 'A list of posts from a specific author',
+})
+
+export type PublicAuthorPosts = z.infer<typeof publicAuthorPostsSchema>

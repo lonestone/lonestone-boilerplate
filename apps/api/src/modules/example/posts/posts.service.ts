@@ -31,6 +31,13 @@ export interface PublicPostsResult {
   commentCountByPostId: Map<string, number>
 }
 
+export interface PublicAuthorPostsResult {
+  posts: Post[]
+  total: number
+  pagination: PostPagination
+  commentCountByPostId: Map<string, number>
+}
+
 @Injectable()
 export class PostService {
   constructor(private readonly em: EntityManager) {}
@@ -216,28 +223,6 @@ export class PostService {
     }
   }
 
-  async getPublicPost(slug: string): Promise<PublicPostResult> {
-    const post = await this.em.findOne(
-      Post,
-      { slug, publishedAt: { $ne: null } },
-      {
-        populate: ['user', 'versions'],
-      },
-    )
-
-    if (!post)
-      throw new Error('Post not found')
-
-    const commentCount = await this.em.count(Comment, {
-      post: post.id,
-    })
-
-    return {
-      post,
-      commentCount,
-    }
-  }
-
   async getRandomPublicPost(): Promise<PublicPostResult> {
     const postsCount = await this.em.count(Post, {
       publishedAt: { $ne: null },
@@ -250,7 +235,7 @@ export class PostService {
       Post,
       { publishedAt: { $ne: null } },
       {
-        populate: ['user', 'versions'],
+        populate: ['user', 'versions', 'tags'],
         orderBy: { createdAt: 'DESC' },
         offset: randomIndex,
         limit: 1,
@@ -287,11 +272,14 @@ export class PostService {
         if (item.property === 'title') {
           where.versions = { title: { $like: `%${item.value}%` } }
         }
+        if (item.property === 'tag') {
+          where.tags = { $or: [{ slug: item.value }, { name: item.value }] }
+        }
       })
     }
 
     const [posts, total] = await this.em.findAndCount(Post, where, {
-      populate: ['user', 'versions'],
+      populate: ['user', 'versions', 'tags'],
       orderBy,
       limit: pagination.pageSize,
       offset: pagination.offset,
@@ -311,6 +299,83 @@ export class PostService {
       total,
       pagination,
       commentCountByPostId,
+    }
+  }
+
+  async getPublicPostsByAuthor(
+    authorSlug: string,
+    pagination: PostPagination,
+    sort?: PostSorting,
+  ): Promise<PublicAuthorPostsResult> {
+    const author = await this.em.findOne(User, { name: authorSlug })
+    if (!author)
+      throw new NotFoundException(`Author not found: ${authorSlug}`)
+
+    const orderBy = buildOrderBy({
+      sort,
+      allowedProperties: ['publishedAt', 'createdAt'] as const,
+      defaultProperty: 'publishedAt',
+      stableProperty: 'createdAt',
+    })
+
+    const where: FilterQuery<Post> = {
+      user: author.id,
+      publishedAt: { $ne: null },
+    }
+
+    const [posts, total] = await this.em.findAndCount(Post, where, {
+      populate: ['user', 'versions', 'tags'],
+      orderBy,
+      limit: pagination.pageSize,
+      offset: pagination.offset,
+    })
+
+    const commentCountsPromises = posts.map(post =>
+      this.em.count(Comment, { post: post.id }),
+    )
+    const commentCounts = await Promise.all(commentCountsPromises)
+    const commentCountByPostId = new Map<string, number>()
+    posts.forEach((post, index) => {
+      commentCountByPostId.set(post.id, commentCounts[index])
+    })
+
+    return { posts, total, pagination, commentCountByPostId }
+  }
+
+  async likePost(slug: string): Promise<Post> {
+    const post = await this.em.findOne(Post, {
+      slug,
+      publishedAt: { $ne: null },
+    })
+
+    if (!post)
+      throw new NotFoundException(`Post not found: ${slug}`)
+
+    post.likesCount += 1
+    await this.em.flush()
+
+    return post
+  }
+
+  async getPublicPost(slug: string): Promise<PublicPostResult> {
+    const post = await this.em.findOne(
+      Post,
+      { slug, publishedAt: { $ne: null } },
+      {
+        populate: ['user', 'versions', 'tags'],
+      },
+    )
+
+    if (!post)
+      throw new Error('Post not found')
+
+    const commentCount = await this.em.count(Comment, {
+      post: post.id,
+    })
+
+    return {
+      post,
+      commentCount,
     }
   }
 }
