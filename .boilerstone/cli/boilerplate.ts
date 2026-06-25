@@ -306,6 +306,30 @@ function cmdVersionsList(): void {
   console.log()
 }
 
+function assertBoilerplateState(value: unknown, filePath: string): asserts value is BoilerplateState {
+  const invalid = (reason: string): never => {
+    throw new Error(`Malformed ${filePath}: ${reason}. Fix it or re-run \`pnpm boilerplate upgrade init\`.`)
+  }
+
+  if (typeof value !== 'object' || value === null) {
+    invalid('expected a JSON object')
+  }
+
+  const state = value as Record<string, unknown>
+  const source = state.source as Record<string, unknown> | undefined
+  if (!source || typeof source.currentVersion !== 'string') {
+    invalid('source.currentVersion must be a string')
+  }
+  if (!Array.isArray(state.trackedDomains)) {
+    invalid('trackedDomains must be an array')
+  }
+
+  const intentions = state.intentions as Record<string, unknown> | undefined
+  if (!intentions || !Array.isArray(intentions.applied) || !Array.isArray(intentions.skipped)) {
+    invalid('intentions.applied and intentions.skipped must be arrays')
+  }
+}
+
 function readBoilerplateJson(projectPath: string): BoilerplateState | null {
   const boilerplateJsonPath = join(projectPath, '.boilerstone', 'boilerplate.json')
   if (!existsSync(boilerplateJsonPath)) {
@@ -313,7 +337,16 @@ function readBoilerplateJson(projectPath: string): BoilerplateState | null {
   }
 
   const content = readFileSync(boilerplateJsonPath, 'utf-8')
-  return JSON.parse(content) as BoilerplateState
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(content)
+  }
+  catch (error) {
+    throw new Error(`Invalid JSON in ${boilerplateJsonPath}: ${error instanceof Error ? error.message : String(error)}`)
+  }
+
+  assertBoilerplateState(parsed, boilerplateJsonPath)
+  return parsed
 }
 
 function writeBoilerplateJson(projectPath: string, state: BoilerplateState): void {
@@ -322,26 +355,23 @@ function writeBoilerplateJson(projectPath: string, state: BoilerplateState): voi
   writeFileSync(boilerplateJsonPath, `${JSON.stringify(state, null, 2)}\n`, 'utf-8')
 }
 
-function detectSourceVersion(projectPath: string): { version: string, confidence: 'high' | 'medium' | 'low' } | null {
+function detectSourceVersion(projectPath: string): { version: string, confidence: 'high' | 'medium' } | null {
   const state = readBoilerplateJson(projectPath)
   if (state) {
     return { version: state.source.currentVersion, confidence: 'high' }
   }
 
   try {
-    const mergeBase = runGitCommand(['merge-base', 'HEAD', 'v1.0.0'])
-    if (mergeBase) {
-      const tags = runGitCommand(['tag', '--points-at', mergeBase, '--sort=-v:refname'])
-      if (tags) {
-        const firstTag = tags.split('\n').find(t => t.startsWith('v'))
-        if (firstTag) {
-          return { version: firstTag.replace(/^v/, ''), confidence: 'medium' }
-        }
-      }
+    // Nearest release tag reachable from the project's own HEAD. Works when the
+    // project keeps shared history with the boilerplate (and has fetched its tags);
+    // otherwise it throws and we fall back to the manual prompt.
+    const tag = runGitCommand(['describe', '--tags', '--abbrev=0', '--match', 'v*'], projectPath)
+    if (tag) {
+      return { version: tag.replace(/^v/, ''), confidence: 'medium' }
     }
   }
   catch {
-    // Git detection failed
+    // No matching ancestor tag, or not a readable git worktree
   }
 
   return null

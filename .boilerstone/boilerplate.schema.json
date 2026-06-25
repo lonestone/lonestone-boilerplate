@@ -54,8 +54,8 @@
             "properties": {
               "id": {
                 "type": "string",
-                "description": "Intention ID in format `vX.Y.Z/slug`",
-                "pattern": "^v?\\d+\\.\\d+\\.\\d+/[a-z0-9-]+$"
+                "description": "Intention ID in format `vX.Y.Z/slug` (slug may be nested, e.g. `vX.Y.Z/api/logger`)",
+                "pattern": "^v?\\d+\\.\\d+\\.\\d+(/[a-z0-9-]+)+$"
               },
               "appliedAt": {
                 "type": "string",
@@ -74,8 +74,8 @@
             "properties": {
               "id": {
                 "type": "string",
-                "description": "Intention ID in format `vX.Y.Z/slug`",
-                "pattern": "^v?\\d+\\.\\d+\\.\\d+/[a-z0-9-]+$"
+                "description": "Intention ID in format `vX.Y.Z/slug` (slug may be nested, e.g. `vX.Y.Z/api/logger`)",
+                "pattern": "^v?\\d+\\.\\d+\\.\\d+(/[a-z0-9-]+)+$"
               },
               "reason": {
                 "type": "string",

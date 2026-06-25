@@ -214,6 +214,17 @@ describe('boilerplate core', () => {
   it('keeps nested fallback intention ids deterministic', () => {
     expect(getFallbackIntentionId('1.2.0', 'api/nested/update.md')).toBe('v1.2.0/api/nested/update')
   })
+
+  it('matches generated intention ids against the state schema pattern', () => {
+    const schema = JSON.parse(readFileSync(join(projectRoot, '.boilerstone/boilerplate.schema.json'), 'utf-8'))
+    const pattern = new RegExp(schema.properties.intentions.properties.applied.items.properties.id.pattern)
+
+    expect(pattern.test('v1.0.0/setup-boilerplate-tracking')).toBe(true)
+    // Nested fallback ids must satisfy the schema too (regression: generator vs validator)
+    expect(pattern.test(getFallbackIntentionId('1.1.0', 'api/nested/no-id.md'))).toBe(true)
+    expect(pattern.test('v1.0.0')).toBe(false)
+    expect(pattern.test('v1.0.0/Bad_Slug')).toBe(false)
+  })
 })
 
 describe('archiveGitReference', () => {
@@ -329,6 +340,44 @@ describe('boilerplate CLI smoke', () => {
       rmSync(projectPath, { recursive: true, force: true })
     }
   })
+
+  it('refuses to prepare when the upgrade branch already exists', () => {
+    const projectPath = createGitRepo('boilerplate-existing-branch-')
+
+    try {
+      mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
+      writeFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), `${JSON.stringify({
+        schemaVersion: 1,
+        source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.9.0' },
+        trackedDomains: [],
+        intentions: { applied: [], skipped: [] },
+      }, null, 2)}\n`)
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'init'])
+      // Pre-create the target branch without checking it out
+      runGit(projectPath, ['branch', 'upgrade/v0.9.0-to-v1.0.0'])
+
+      const result = runCli(['upgrade', 'prepare', '--project', projectPath, '--to', '1.0.0'])
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('already exists')
+    }
+    finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('fails clearly on a malformed boilerplate.json', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-malformed-'))
+
+    mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
+    writeFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), JSON.stringify({ schemaVersion: 1 }))
+
+    const result = runCli(['upgrade', 'status', '--project', projectPath], projectPath)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Malformed')
+  })
 })
 
 describe('setup cleanup', () => {
@@ -367,6 +416,35 @@ describe('setup cleanup', () => {
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/docs/pilot-rollout.md'))).toBe(false)
+    }
+    finally {
+      logSpy.mockRestore()
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps producer artifacts in a boilerplate maintainer checkout', () => {
+    const projectPath = createGitRepo('boilerplate-maintainer-cleanup-')
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+
+    try {
+      runGit(projectPath, ['remote', 'add', 'origin', 'https://github.com/lonestone/lonestone-boilerplate.git'])
+      writeProjectFile(projectPath, '.boilerstone/boilerplate.example.json', `${JSON.stringify({
+        schemaVersion: 1,
+        source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
+        trackedDomains: [],
+        intentions: { applied: [], skipped: [] },
+      }, null, 2)}\n`)
+      writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
+      writeProjectFile(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md', '# Internal')
+
+      cleanupBoilerplateFiles(projectPath)
+
+      // boilerplate.json is still created, but producer-side files are preserved
+      expect(existsSync(join(projectPath, '.boilerstone/boilerplate.json'))).toBe(true)
+      expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(true)
+      expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(true)
+      expect(existsSync(join(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md'))).toBe(true)
     }
     finally {
       logSpy.mockRestore()
