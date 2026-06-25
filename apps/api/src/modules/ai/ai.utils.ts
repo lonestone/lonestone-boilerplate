@@ -78,7 +78,7 @@ export function sanitizeAiJson(aiOutput: string) {
     .replace(/\t/g, '  ')
 
   // 3️⃣ Clean up weird control characters
-  // eslint-disable-next-line no-control-regex
+  // oxlint-disable-next-line no-control-regex
   jsonStr = jsonStr.replace(/[\x00-\x09\v\f\x0E-\x1F]/g, '')
 
   // 3️⃣½ Fix missing commas between string values and next keys

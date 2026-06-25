@@ -1,4 +1,4 @@
-/* eslint-disable node/prefer-global/process */
+/* oxlint-disable node/prefer-global/process */
 import type { SupportedLocale } from './i18n-config'
 import fs from 'node:fs'
 import path from 'node:path'

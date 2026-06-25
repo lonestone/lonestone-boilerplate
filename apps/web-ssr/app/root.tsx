@@ -48,7 +48,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <ScrollRestoration />
         <Scripts />
         {/* Inject the API URL into the window object */}
-        {/* eslint-disable-next-line react-dom/no-dangerously-set-innerhtml -- ignore */}
+        {/* oxlint-disable-next-line react-dom/no-dangerously-set-innerhtml -- ignore */}
         <script dangerouslySetInnerHTML={{
           __html: `window.ENV = ${JSON.stringify(data)}`,
         }}

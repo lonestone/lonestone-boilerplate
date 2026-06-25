@@ -2,10 +2,6 @@ packages:
   - packages/*
   - apps/*
 strictPeerDependencies: true
-peerDependencyRules:
-  allowedVersions:
-    # A lot of expo / react-native linting rules and packages are targeting eslint 8, but should work with eslint 9
-    eslint: "9"
 # We override dependencies here to ensure that the correct version of the dependency is used for each package
 catalogs:
   frontend:

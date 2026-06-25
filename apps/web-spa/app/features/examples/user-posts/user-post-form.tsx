@@ -339,7 +339,7 @@ export function UserPostFormSkeleton() {
         <div className="space-y-4">
           {/* Skeleton for content items */}
           {Array.from({ length: 1 }).map((_, index) => (
-            // eslint-disable-next-line react/no-array-index-key
+            // oxlint-disable-next-line react/no-array-index-key
             <div key={`skeleton-${index}`} className="space-y-2 border rounded-md p-4">
               <div className="flex justify-between items-center">
                 <Skeleton className="h-6 w-24" />

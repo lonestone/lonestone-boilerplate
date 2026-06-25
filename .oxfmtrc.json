@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semi": false,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "printWidth": 100,
+  "ignorePatterns": [
+    "**/.react-router/**",
+    "**/*.gen.ts",
+    "**/dist/**",
+    "**/temp/**",
+    "**/build/**",
+    "packages/schematics/src/files/**",
+    "packages/openapi-generator/client/**",
+    "**/.astro/**",
+    "node_modules/**",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "**/README.md",
+    "pnpm-workspace.yaml"
+  ]
+}

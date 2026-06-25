@@ -147,6 +147,7 @@ The project uses Docker Compose to provide the following services:
 - **Start development**: `pnpm dev`
 - **Build applications**: `pnpm build`
 - **Lint applications**: `pnpm lint`
+- **Format code**: `pnpm fmt`
 - **Generate OpenAPI clients**: `pnpm generate`
 
 ### Database (API)
@@ -195,7 +196,7 @@ The CI workflow (`ci.yml`) runs on every push to the `main` and `master` branche
 
 It includes the following jobs:
 
-- **Lint**: Checks code with ESLint
+- **Lint & Format**: Checks code with oxlint and oxfmt
 - **Type Check**: Checks TypeScript types for all packages and applications
 - **Build**: Builds all packages and applications
 
