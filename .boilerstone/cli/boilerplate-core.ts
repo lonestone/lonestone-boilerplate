@@ -227,10 +227,91 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
   }
 }
 
+const BOILERPLATE_SCRIPT_NAME = 'boilerplate'
+const BOILERPLATE_SCRIPT_COMMAND = 'tsx ./.boilerstone/cli/boilerplate.ts'
+
+// Producer-only artifacts that ship inside .boilerstone/ but are not maintained
+// in a consumer project. Mirrors the .boilerstone/ subset of cli/setup.ts's
+// cleanupBoilerplateFiles(). Paths are relative to the .boilerstone/ directory.
+const PRODUCER_ARTIFACTS = [
+  'migration-intentions',
+  'boilerplate.example.json',
+  'docs/pilot-rollout.md',
+  'docs/ai-upgrades-implementation.md',
+]
+
+interface PackageJsonShape {
+  scripts?: Record<string, string>
+  dependencies?: Record<string, string>
+  devDependencies?: Record<string, string>
+  [key: string]: unknown
+}
+
+interface PackageJsonWiring {
+  pkg: PackageJsonShape
+  changes: string[]
+}
+
+/**
+ * Returns a copy of the root package.json wired for the boilerplate CLI:
+ * adds the `boilerplate` script and a `tsx` devDependency when missing.
+ * Idempotent — existing entries are never overwritten.
+ */
+function ensurePackageJsonWiring(pkg: PackageJsonShape, tsxVersion: string): PackageJsonWiring {
+  const next: PackageJsonShape = { ...pkg }
+  const changes: string[] = []
+
+  const scripts = { ...(next.scripts ?? {}) }
+  if (!scripts[BOILERPLATE_SCRIPT_NAME]) {
+    scripts[BOILERPLATE_SCRIPT_NAME] = BOILERPLATE_SCRIPT_COMMAND
+    changes.push(`added "${BOILERPLATE_SCRIPT_NAME}" script`)
+  }
+  next.scripts = scripts
+
+  const hasTsx = Boolean(next.dependencies?.tsx) || Boolean(next.devDependencies?.tsx)
+  if (!hasTsx) {
+    next.devDependencies = { ...(next.devDependencies ?? {}), tsx: tsxVersion }
+    changes.push(`added "tsx" devDependency (${tsxVersion})`)
+  }
+
+  return { pkg: next, changes }
+}
+
+/**
+ * Appends a line to .gitignore content if it is not already present.
+ * Idempotent and newline-safe.
+ */
+/**
+ * Resolves a requested target version, expanding the `latest` keyword to the
+ * newest available release. Any other value is returned unchanged.
+ */
+function resolveTargetVersion(requested: string, releases: ReleaseInfo[]): string {
+  if (requested !== 'latest') {
+    return requested
+  }
+  if (releases.length === 0) {
+    throw new Error('Cannot resolve "latest": no boilerplate releases are available (fetch release tags first)')
+  }
+  return [...releases].sort((a, b) => compareVersions(b.version, a.version))[0].version
+}
+
+function ensureGitignoreLine(content: string, line: string): { content: string, changed: boolean } {
+  const exists = content.split(/\r?\n/).some(existing => existing.trim() === line)
+  if (exists) {
+    return { content, changed: false }
+  }
+  const needsLeadingNewline = content.length > 0 && !content.endsWith('\n')
+  return { content: `${content}${needsLeadingNewline ? '\n' : ''}${line}\n`, changed: true }
+}
+
 export {
+  BOILERPLATE_SCRIPT_COMMAND,
+  BOILERPLATE_SCRIPT_NAME,
   compareVersions,
   computeUpgradePath,
   type ComputeUpgradePathOptions,
+  ensureGitignoreLine,
+  ensurePackageJsonWiring,
   getFallbackIntentionId,
   getUpgradeBranchName,
   type IntentionClassification,
@@ -238,10 +319,13 @@ export {
   type IntentionMetadata,
   isIntentionClassification,
   type MigrationIntention,
+  type PackageJsonShape,
   type ParsedIntentionMetadata,
   parseIntentionMetadataContent,
+  PRODUCER_ARTIFACTS,
   readOptionValue,
   type ReleaseInfo,
+  resolveTargetVersion,
   type UpgradePath,
   versionGt,
   versionLte,

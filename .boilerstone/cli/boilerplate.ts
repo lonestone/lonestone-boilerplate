@@ -1,6 +1,7 @@
 import type {
   IntentionFileInput,
   MigrationIntention,
+  PackageJsonShape,
   ReleaseInfo,
   UpgradePath,
 } from './boilerplate-core'
@@ -8,36 +9,27 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import process from 'node:process'
+import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
-import Enquirer from 'enquirer'
-import { colorize, isolatedGitEnv } from '../../cli/utils'
 import {
   compareVersions,
   computeUpgradePath,
+  ensureGitignoreLine,
+  ensurePackageJsonWiring,
   getUpgradeBranchName,
+  PRODUCER_ARTIFACTS,
   readOptionValue,
+  resolveTargetVersion,
 } from './boilerplate-core'
+import { colorize, isolatedGitEnv } from './utils'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..', '..')
 const boilerplateDir = join(projectRoot, '.boilerstone')
 const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
-
-interface InputPromptOptions {
-  message: string
-  initial?: string
-}
-
-interface InputPrompt {
-  run: () => Promise<string>
-}
-
-interface EnquirerConstructors {
-  Input: new (options: InputPromptOptions) => InputPrompt
-}
-
-const { Input } = Enquirer as unknown as EnquirerConstructors
+// Pinned to match the boilerplate's own tsx version; used when wiring a consumer's package.json.
+const defaultTsxVersion = '^4.21.0'
 
 interface BoilerplateState {
   schemaVersion: number
@@ -53,9 +45,15 @@ interface BoilerplateState {
   }
 }
 
-function prompt(message: string, initial: string): Promise<string> {
-  const input = new Input({ message, initial })
-  return input.run()
+async function prompt(message: string, initial: string): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout })
+  try {
+    const answer = await rl.question(`${message}${initial ? ` (${initial})` : ''}: `)
+    return answer.trim() || initial
+  }
+  finally {
+    rl.close()
+  }
 }
 
 function getProjectPath(projectPath: string): string {
@@ -134,6 +132,22 @@ function printMissingReleaseTags(state: BoilerplateState | null): void {
   console.error(`  ${colorize('→', 'cyan')} Fetch the boilerplate release tags first:`)
   for (const command of getFetchTagsCommand(remoteUrl).split('\n')) {
     console.error(`    ${colorize(command, 'bright')}`)
+  }
+}
+
+// Fetch the boilerplate release tags straight from the remote URL, without adding
+// a persistent git remote. Required to resolve `latest` and to extract reference
+// trees, since intentions and references live in the release tags.
+function fetchBoilerplateTags(absolutePath: string, state: BoilerplateState | null): void {
+  const remoteUrl = getBoilerplateRemote(state)
+  console.log(`  ${colorize('→', 'cyan')} Fetching boilerplate release tags from ${remoteUrl}`)
+  try {
+    runGitCommand(['fetch', remoteUrl, '--tags'], absolutePath)
+    console.log(`  ${colorize('✓', 'green')} Release tags fetched`)
+  }
+  catch (error) {
+    console.error(`  ${colorize('❌', 'red')} Failed to fetch tags from ${remoteUrl}: ${error instanceof Error ? error.message : String(error)}`)
+    process.exit(1)
   }
 }
 
@@ -370,6 +384,72 @@ function detectSourceVersion(projectPath: string): { version: string, confidence
   return null
 }
 
+async function cmdBootstrap(projectPath: string): Promise<void> {
+  console.log(`\n${colorize('🪨  Onboarding project to the boilerplate upgrade system', 'cyan')}\n`)
+
+  const root = getProjectPath(projectPath)
+  const dir = join(root, '.boilerstone')
+
+  if (!existsSync(dir)) {
+    console.error(`  ${colorize('❌', 'red')} No .boilerstone/ directory found in ${root}`)
+    console.error(`  ${colorize('→', 'cyan')} Fetch it first, e.g. ${colorize('pnpm dlx tiged lonestone/lonestone-boilerplate/.boilerstone .boilerstone', 'bright')}`)
+    process.exit(1)
+  }
+
+  // 1. Wire the root package.json (boilerplate script + tsx runtime).
+  const pkgPath = join(root, 'package.json')
+  if (!existsSync(pkgPath)) {
+    console.error(`  ${colorize('❌', 'red')} No package.json found in ${root}`)
+    process.exit(1)
+  }
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as PackageJsonShape
+  const wiring = ensurePackageJsonWiring(pkg, defaultTsxVersion)
+  if (wiring.changes.length > 0) {
+    writeFileSync(pkgPath, `${JSON.stringify(wiring.pkg, null, 2)}\n`, 'utf-8')
+    for (const change of wiring.changes) {
+      console.log(`  ${colorize('✓', 'green')} package.json: ${change}`)
+    }
+  }
+  else {
+    console.log(`  ${colorize('✓', 'green')} package.json already wired`)
+  }
+
+  // 2. Ignore the temporary upgrade workspace.
+  const gitignorePath = join(root, '.gitignore')
+  const currentIgnore = existsSync(gitignorePath) ? readFileSync(gitignorePath, 'utf-8') : ''
+  const nextIgnore = ensureGitignoreLine(currentIgnore, '.boilerstone/upgrade/')
+  if (nextIgnore.changed) {
+    writeFileSync(gitignorePath, nextIgnore.content, 'utf-8')
+    console.log(`  ${colorize('✓', 'green')} .gitignore: ignored .boilerstone/upgrade/`)
+  }
+  else {
+    console.log(`  ${colorize('✓', 'green')} .gitignore already ignores .boilerstone/upgrade/`)
+  }
+
+  // 3. Switch .boilerstone/ to consumer mode (drop producer-only artifacts).
+  let removed = 0
+  for (const artifact of PRODUCER_ARTIFACTS) {
+    const target = join(dir, artifact)
+    if (existsSync(target)) {
+      rmSync(target, { recursive: true, force: true })
+      console.log(`  ${colorize('✓', 'green')} removed producer artifact .boilerstone/${artifact}`)
+      removed += 1
+    }
+  }
+  if (removed === 0) {
+    console.log(`  ${colorize('✓', 'green')} .boilerstone/ already in consumer mode`)
+  }
+
+  // 4. Initialize tracking state (detects/confirms the source version).
+  await cmdUpgradeInit(projectPath)
+
+  console.log(`\n${colorize('✅ Bootstrap complete', 'green')}`)
+  console.log(`\n${colorize('Next steps:', 'cyan')}`)
+  console.log(`  ${colorize('1.', 'bright')} Install the CLI runtime: ${colorize('pnpm install', 'blue')}`)
+  console.log(`  ${colorize('2.', 'bright')} Diagnose readiness:      ${colorize('pnpm boilerplate upgrade doctor', 'blue')}`)
+  console.log(`  ${colorize('3.', 'bright')} Commit the integration   ${colorize('(.boilerstone/, package.json, .gitignore)', 'dim')}\n`)
+}
+
 async function cmdUpgradeInit(projectPath: string): Promise<void> {
   console.log(`\n${colorize('🔧 Initializing Boilerplate Tracking', 'cyan')}\n`)
 
@@ -504,7 +584,7 @@ function resolveUpgradePath(sourceVersion: string, targetVersion: string, tracke
   })
 }
 
-function cmdUpgradePath(fromVersion: string, toVersion: string, projectPath: string, json = false): void {
+function cmdUpgradePath(fromVersion: string, toVersion: string, projectPath: string, json = false, fetch = false): void {
   const absolutePath = projectPath ? getProjectPath(projectPath) : projectRoot
   const state = readBoilerplateJson(absolutePath)
 
@@ -526,13 +606,18 @@ function cmdUpgradePath(fromVersion: string, toVersion: string, projectPath: str
     process.exit(1)
   }
 
+  if (fetch) {
+    fetchBoilerplateTags(absolutePath, state)
+  }
+
   const releases = getReleases()
   if (releases.length === 0) {
     printMissingReleaseTags(state)
     process.exit(1)
   }
 
-  const path = resolveUpgradePath(sourceVersion, toVersion, trackedDomains, appliedIntentions, skippedIntentions, releases)
+  const targetVersion = resolveTargetVersion(toVersion, releases)
+  const path = resolveUpgradePath(sourceVersion, targetVersion, trackedDomains, appliedIntentions, skippedIntentions, releases)
   const branchName = getUpgradeBranchName(path.sourceVersion, path.targetVersion)
 
   if (json) {
@@ -795,7 +880,7 @@ function cmdUpgradeDoctor(projectPath: string, json = false): void {
   }
 }
 
-async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promise<void> {
+async function cmdUpgradePrepare(projectPath: string, toVersion: string, fetch = false): Promise<void> {
   console.log(`\n${colorize('📦 Preparing Upgrade Context', 'cyan')}\n`)
 
   const absolutePath = projectPath ? getProjectPath(projectPath) : projectRoot
@@ -814,15 +899,21 @@ async function cmdUpgradePrepare(projectPath: string, toVersion: string): Promis
     process.exit(1)
   }
 
+  if (fetch) {
+    fetchBoilerplateTags(absolutePath, state)
+  }
+
   const releases = getReleases()
   if (releases.length === 0) {
     printMissingReleaseTags(state)
     process.exit(1)
   }
 
+  const targetVersion = resolveTargetVersion(toVersion, releases)
+
   const upgradePath = resolveUpgradePath(
     state.source.currentVersion,
-    toVersion,
+    targetVersion,
     state.trackedDomains,
     state.intentions.applied.map(i => i.id),
     state.intentions.skipped.map(i => i.id),
@@ -933,6 +1024,7 @@ ${colorize('Usage:', 'cyan')}
 
 ${colorize('Commands:', 'cyan')}
 
+  ${colorize('bootstrap', 'bright')}                  Onboard an existing project (wire CLI + init tracking)
   ${colorize('versions list', 'bright')}              List available boilerplate versions
   ${colorize('upgrade init', 'bright')}               Initialize boilerplate tracking for a project
   ${colorize('upgrade doctor', 'bright')}             Diagnose upgrade readiness
@@ -942,15 +1034,19 @@ ${colorize('Commands:', 'cyan')}
 ${colorize('Options:', 'cyan')}
 
   ${colorize('--project <path>', 'bright')}           Consumer project to operate on (default: this repository)
+  ${colorize('--to <version|latest>', 'bright')}      Target version; ${colorize('latest', 'dim')} resolves to the newest release
+  ${colorize('--fetch', 'bright')}                    Fetch boilerplate release tags first (needed for ${colorize('latest', 'dim')})
   ${colorize('--json', 'bright')}                     Machine-readable output for ${colorize('upgrade status', 'dim')} and ${colorize('upgrade path', 'dim')}
 
 ${colorize('Examples:', 'cyan')}
 
+  ${colorize('boilerplate bootstrap', 'dim')}
   ${colorize('boilerplate versions list', 'dim')}
   ${colorize('boilerplate upgrade init --project ./my-project', 'dim')}
   ${colorize('boilerplate upgrade doctor --project ./my-project', 'dim')}
   ${colorize('boilerplate upgrade path --from 1.0.0 --to 1.5.0', 'dim')}
   ${colorize('boilerplate upgrade prepare --project ./my-project --to 1.5.0', 'dim')}
+  ${colorize('boilerplate upgrade prepare --to latest --fetch', 'dim')}
   ${colorize('boilerplate upgrade status --project ./my-project --json', 'dim')}`)
 }
 
@@ -974,11 +1070,16 @@ async function main(): Promise<void> {
         printUsage()
       }
     }
+    else if (command === 'bootstrap') {
+      const project = readOptionValue(args, '--project') || '.'
+      await cmdBootstrap(project)
+    }
     else if (command === 'upgrade') {
       const from = readOptionValue(args, '--from')
       const to = readOptionValue(args, '--to')
       const project = readOptionValue(args, '--project') || '.'
       const json = args.includes('--json')
+      const fetch = args.includes('--fetch')
 
       if (subcommand === 'init') {
         await cmdUpgradeInit(project)
@@ -991,14 +1092,14 @@ async function main(): Promise<void> {
           console.error(`  ${colorize('❌', 'red')} --to is required`)
           process.exit(1)
         }
-        cmdUpgradePath(from || '', to, project, json)
+        cmdUpgradePath(from || '', to, project, json, fetch)
       }
       else if (subcommand === 'prepare') {
         if (!to) {
           console.error(`  ${colorize('❌', 'red')} --to is required`)
           process.exit(1)
         }
-        await cmdUpgradePrepare(project, to)
+        await cmdUpgradePrepare(project, to, fetch)
       }
       else if (subcommand === 'status') {
         cmdUpgradeStatus(project, json)

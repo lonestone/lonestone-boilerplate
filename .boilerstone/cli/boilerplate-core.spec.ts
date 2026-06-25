@@ -9,11 +9,17 @@ import { cleanupBoilerplateFiles } from '../../cli/setup'
 import { isolatedGitEnv } from '../../cli/utils'
 import { archiveGitReference } from './boilerplate'
 import {
+  BOILERPLATE_SCRIPT_COMMAND,
+  BOILERPLATE_SCRIPT_NAME,
   compareVersions,
   computeUpgradePath,
+  ensureGitignoreLine,
+  ensurePackageJsonWiring,
   getFallbackIntentionId,
   parseIntentionMetadataContent,
+  PRODUCER_ARTIFACTS,
   readOptionValue,
+  resolveTargetVersion,
 } from './boilerplate-core'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -209,6 +215,59 @@ describe('boilerplate core', () => {
     expect(getFallbackIntentionId('1.2.0', 'api/nested/update.md')).toBe('v1.2.0/api/nested/update')
   })
 
+  it('resolves the "latest" keyword to the newest release', () => {
+    const releases = [
+      { version: '1.0.0', tag: 'v1.0.0', date: '', hasMigrations: false },
+      { version: '1.10.0', tag: 'v1.10.0', date: '', hasMigrations: true },
+      { version: '1.2.0', tag: 'v1.2.0', date: '', hasMigrations: true },
+    ]
+    expect(resolveTargetVersion('latest', releases)).toBe('1.10.0')
+    expect(resolveTargetVersion('1.2.0', releases)).toBe('1.2.0')
+    expect(() => resolveTargetVersion('latest', [])).toThrow('Cannot resolve "latest"')
+  })
+
+  it('wires a package.json with the boilerplate script and tsx, idempotently', () => {
+    const first = ensurePackageJsonWiring({ name: 'app', scripts: { dev: 'vite' } }, '^4.21.0')
+    expect(first.pkg.scripts?.[BOILERPLATE_SCRIPT_NAME]).toBe(BOILERPLATE_SCRIPT_COMMAND)
+    expect(first.pkg.scripts?.dev).toBe('vite')
+    expect(first.pkg.devDependencies?.tsx).toBe('^4.21.0')
+    expect(first.changes).toHaveLength(2)
+
+    const second = ensurePackageJsonWiring(first.pkg, '^4.21.0')
+    expect(second.changes).toEqual([])
+  })
+
+  it('never overwrites an existing boilerplate script or tsx dependency', () => {
+    const result = ensurePackageJsonWiring({
+      scripts: { boilerplate: 'custom' },
+      dependencies: { tsx: '^3.0.0' },
+    }, '^4.21.0')
+
+    expect(result.pkg.scripts?.boilerplate).toBe('custom')
+    expect(result.pkg.devDependencies?.tsx).toBeUndefined()
+    expect(result.changes).toEqual([])
+  })
+
+  it('appends a gitignore line only when missing and stays newline-safe', () => {
+    expect(ensureGitignoreLine('node_modules', '.boilerstone/upgrade/')).toEqual({
+      content: 'node_modules\n.boilerstone/upgrade/\n',
+      changed: true,
+    })
+    expect(ensureGitignoreLine('node_modules\n.boilerstone/upgrade/\n', '.boilerstone/upgrade/')).toEqual({
+      content: 'node_modules\n.boilerstone/upgrade/\n',
+      changed: false,
+    })
+    expect(ensureGitignoreLine('', '.boilerstone/upgrade/')).toEqual({
+      content: '.boilerstone/upgrade/\n',
+      changed: true,
+    })
+  })
+
+  it('drops the producer-only artifacts in consumer mode', () => {
+    expect(PRODUCER_ARTIFACTS).toContain('migration-intentions')
+    expect(PRODUCER_ARTIFACTS).toContain('boilerplate.example.json')
+  })
+
   it('matches generated intention ids against the state schema pattern', () => {
     const schema = JSON.parse(readFileSync(join(projectRoot, '.boilerstone/boilerplate.schema.json'), 'utf-8'))
     const pattern = new RegExp(schema.properties.intentions.properties.applied.items.properties.id.pattern)
@@ -374,6 +433,45 @@ describe('boilerplate CLI smoke', () => {
   })
 })
 
+describe('bootstrap command', () => {
+  it('wires a consumer project and switches .boilerstone to consumer mode', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-bootstrap-'))
+
+    try {
+      writeProjectFile(projectPath, 'package.json', `${JSON.stringify({ name: 'legacy-app', scripts: { dev: 'vite' } }, null, 2)}\n`)
+      writeProjectFile(projectPath, '.gitignore', 'node_modules\n')
+      writeProjectFile(projectPath, '.boilerstone/boilerplate.json', `${JSON.stringify({
+        schemaVersion: 1,
+        source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
+        trackedDomains: [],
+        intentions: { applied: [], skipped: [] },
+      }, null, 2)}\n`)
+      writeProjectFile(projectPath, '.boilerstone/boilerplate.example.json', '{}')
+      writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
+      writeProjectFile(projectPath, '.boilerstone/docs/upgrade-runbook.md', '# Runbook')
+
+      // boilerplate.json already exists, so init returns early (no interactive prompt)
+      const result = runCli(['bootstrap', '--project', projectPath])
+
+      expect(result.status).toBe(0)
+
+      const pkg = JSON.parse(readFileSync(join(projectPath, 'package.json'), 'utf-8'))
+      expect(pkg.scripts.boilerplate).toBe('tsx ./.boilerstone/cli/boilerplate.ts')
+      expect(pkg.devDependencies.tsx).toBeTruthy()
+      expect(readFileSync(join(projectPath, '.gitignore'), 'utf-8')).toContain('.boilerstone/upgrade/')
+
+      // Producer-only artifacts dropped, consumer files preserved
+      expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
+      expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(false)
+      expect(existsSync(join(projectPath, '.boilerstone/docs/upgrade-runbook.md'))).toBe(true)
+      expect(existsSync(join(projectPath, '.boilerstone/boilerplate.json'))).toBe(true)
+    }
+    finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+})
+
 describe('setup cleanup', () => {
   it('switches .boilerstone to consumer mode without losing local upgrade state', () => {
     const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-consumer-cleanup-'))
@@ -397,6 +495,7 @@ describe('setup cleanup', () => {
       writeProjectFile(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md', '# Internal')
       writeProjectFile(projectPath, '.boilerstone/docs/pilot-rollout.md', '# Pilot')
       writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
+      writeProjectFile(projectPath, 'install.sh', '#!/usr/bin/env sh\n')
 
       cleanupBoilerplateFiles(projectPath)
 
@@ -410,6 +509,7 @@ describe('setup cleanup', () => {
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/docs/pilot-rollout.md'))).toBe(false)
+      expect(existsSync(join(projectPath, 'install.sh'))).toBe(false)
     }
     finally {
       logSpy.mockRestore()
