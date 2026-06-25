@@ -1,7 +1,7 @@
 import type { MikroORM } from '@mikro-orm/core'
 import type { AuthSchemaField, AuthSchemaModelDiff } from './auth-db.adapter'
-import { readFileSync } from 'node:fs'
-import { relative, resolve } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, relative, resolve } from 'node:path'
 
 const DEFAULT_FALLBACK_ENTITY_FILE = 'src/modules/auth/auth.entity.ts'
 
@@ -22,15 +22,51 @@ export function toPascalCase(name: string): string {
     .replace(/^\w/, char => char.toUpperCase())
 }
 
+export function toKebabCase(name: string): string {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/[-_\s]+/g, '-')
+    .toLowerCase()
+}
+
 export function toSourcePath(path: string): string {
   return path.replace(/([/\\])dist([/\\])/, '$1src$2').replace(/\.js$/, '.ts')
 }
 
-export function createEntityResolver(orm: MikroORM, fromDir: string): EntityResolver {
+interface GeneratedEntityTarget {
+  className: string
+  filePath: string
+}
+
+function toImportPath(fromDir: string, filePath: string): string {
+  let importPath = relative(fromDir, toSourcePath(filePath))
+    .replace(/\\/g, '/')
+    .replace(/\.ts$/, '')
+
+  if (!importPath.startsWith('.')) {
+    importPath = `./${importPath}`
+  }
+
+  return importPath
+}
+
+export function createEntityResolver(
+  orm: MikroORM,
+  fromDir: string,
+  generatedEntities: Map<string, GeneratedEntityTarget> = new Map(),
+): EntityResolver {
   const naming = orm.config.getNamingStrategy()
   const metadataStore = orm.getMetadata()
 
   return (model) => {
+    const generatedEntity = generatedEntities.get(model)
+    if (generatedEntity) {
+      return {
+        className: generatedEntity.className,
+        importPath: toImportPath(fromDir, generatedEntity.filePath),
+      }
+    }
+
     const entityName = naming.getEntityName(
       naming.classToTableName(model),
     )
@@ -40,15 +76,7 @@ export function createEntityResolver(orm: MikroORM, fromDir: string): EntityReso
       return undefined
     }
 
-    let importPath = relative(fromDir, toSourcePath(metadata.path))
-      .replace(/\\/g, '/')
-      .replace(/\.ts$/, '')
-
-    if (!importPath.startsWith('.')) {
-      importPath = `./${importPath}`
-    }
-
-    return { className: metadata.className, importPath }
+    return { className: metadata.className, importPath: toImportPath(fromDir, metadata.path) }
   }
 }
 
@@ -171,8 +199,13 @@ function renderProperty(field: AuthSchemaField, resolveEntity: EntityResolver): 
   return { code: lines.join('\n'), decorators, entityImports, typeImports }
 }
 
-function renderMissingEntity(diff: AuthSchemaModelDiff, orm: MikroORM, filePath: string): RenderedEntity {
-  const resolveEntity = createEntityResolver(orm, resolve(filePath, '..'))
+function renderMissingEntity(
+  diff: AuthSchemaModelDiff,
+  orm: MikroORM,
+  filePath: string,
+  generatedEntities: Map<string, GeneratedEntityTarget>,
+): RenderedEntity {
+  const resolveEntity = createEntityResolver(orm, resolve(filePath, '..'), generatedEntities)
   const className = toPascalCase(diff.model)
   const properties = diff.fields.map(field => renderProperty(field, resolveEntity))
 
@@ -273,6 +306,40 @@ function ensureEntityImports(content: string, entityImports: Map<string, string>
   return `${imports.join('\n')}\n${content}`
 }
 
+function renderEntityFile(entity: RenderedEntity): string {
+  const imports: string[] = []
+
+  if (entity.typeImports.size > 0) {
+    imports.push(`import type { ${[...entity.typeImports].toSorted().join(', ')} } from '@mikro-orm/core'`)
+  }
+
+  imports.push(`import { ${[...entity.decorators].toSorted().join(', ')} } from '@mikro-orm/decorators/legacy'`)
+
+  for (const [name, path] of [...entity.entityImports.entries()].toSorted(([left], [right]) => left.localeCompare(right))) {
+    imports.push(`import { ${name} } from '${path}'`)
+  }
+
+  return `${imports.join('\n')}\n\n${entity.body}\n`
+}
+
+function getMissingEntityFilePath(model: string, fallbackEntityFilePath: string): string {
+  return resolve(dirname(fallbackEntityFilePath), 'entities', `${toKebabCase(toPascalCase(model))}.entity.ts`)
+}
+
+function ensureBarrelExports(
+  content: string,
+  barrelPath: string,
+  renderedEntities: { entity: RenderedEntity, filePath: string }[],
+): string {
+  const lines = new Set(content.trimEnd().split('\n').filter(Boolean))
+
+  for (const { entity, filePath } of renderedEntities) {
+    lines.add(`export { ${entity.className} } from '${toImportPath(dirname(barrelPath), filePath)}'`)
+  }
+
+  return `${[...lines].join('\n')}\n`
+}
+
 /**
  * Trouve la position de fin d'une classe (le `}` de fermeture au bon niveau).
  */
@@ -357,15 +424,25 @@ export function applyEntityPatches(
   const cwd = process.cwd()
   const absoluteFallbackPath = resolve(cwd, fallbackEntityFilePath)
   const files = new Map<string, string>()
+  const generatedEntityTargets = new Map<string, GeneratedEntityTarget>()
 
   // Groupe les diffs par fichier source
   const missingEntities: AuthSchemaModelDiff[] = []
   const bySourceFile = new Map<string, { diff: AuthSchemaModelDiff, propertiesCode: string }[]>()
 
   for (const diff of diffs) {
+    if (!diff.metadata?.path) {
+      generatedEntityTargets.set(diff.model, {
+        className: toPascalCase(diff.model),
+        filePath: getMissingEntityFilePath(diff.model, absoluteFallbackPath),
+      })
+    }
+  }
+
+  for (const diff of diffs) {
     if (diff.metadata?.path) {
       const sourcePath = toSourcePath(diff.metadata.path)
-      const resolveEntity = createEntityResolver(orm, resolve(sourcePath, '..'))
+      const resolveEntity = createEntityResolver(orm, resolve(sourcePath, '..'), generatedEntityTargets)
       const propertiesCode = diff.missingFields
         .map(field => renderProperty(field, resolveEntity).code)
         .join('\n\n')
@@ -380,8 +457,6 @@ export function applyEntityPatches(
     }
   }
 
-  const missingEntitiesTarget = bySourceFile.keys().next().value
-
   // Applique les patchs pour chaque fichier existant
   for (const [filePath, patches] of bySourceFile) {
     let content = readFileSync(filePath, 'utf-8')
@@ -390,58 +465,44 @@ export function applyEntityPatches(
     const allEntityImports = new Map<string, string>()
 
     for (const { diff, propertiesCode } of patches) {
-      const resolveEntity = createEntityResolver(orm, resolve(filePath, '..'))
+      const resolveEntity = createEntityResolver(orm, resolve(filePath, '..'), generatedEntityTargets)
       for (const missingField of diff.missingFields) {
         const propertyAnnotations = renderProperty(missingField, resolveEntity)
         for (const decorator of propertyAnnotations.decorators) allDecorators.add(decorator)
         for (const typeImport of propertyAnnotations.typeImports) allTypeImports.add(typeImport)
+        for (const [name, path] of propertyAnnotations.entityImports) allEntityImports.set(name, path)
       }
 
       content = insertPropertiesIntoClass(content, diff.metadata!.className, propertiesCode)
     }
 
-    // Append missing entity classes (route them to a file containing an entity from the same domain)
-    if (missingEntities.length > 0 && filePath === missingEntitiesTarget) {
-      const rendered = missingEntities.map(diff => renderMissingEntity(diff, orm, filePath))
-      for (const entity of rendered) {
-        for (const dec of entity.decorators) allDecorators.add(dec)
-        for (const typeImport of entity.typeImports) allTypeImports.add(typeImport)
-        for (const [name, path] of entity.entityImports) allEntityImports.set(name, path)
-      }
-      content = ensureDecoratorImport(content, allDecorators)
-      content = ensureTypeImport(content, allTypeImports)
-      content = ensureEntityImports(content, allEntityImports)
-      content = appendClasses(content, rendered)
-    }
-    else {
-      content = ensureDecoratorImport(content, allDecorators)
-      content = ensureTypeImport(content, allTypeImports)
-    }
+    content = ensureDecoratorImport(content, allDecorators)
+    content = ensureTypeImport(content, allTypeImports)
+    content = ensureEntityImports(content, allEntityImports)
 
     files.set(filePath, content)
   }
 
-  // If no existing entity was patched but there are missing entities,
-  // write new entities to the fallback file (auth.entity.ts by default).
-  if (bySourceFile.size === 0 && missingEntities.length > 0) {
-    const filePath = absoluteFallbackPath
-    let content = readFileSync(filePath, 'utf-8')
-    const rendered = missingEntities.map(diff => renderMissingEntity(diff, orm, filePath))
-    const allDecorators = new Set<string>()
-    const allTypeImports = new Set<string>()
-    const allEntityImports = new Map<string, string>()
+  if (missingEntities.length > 0) {
+    const renderedMissingEntities: { entity: RenderedEntity, filePath: string }[] = []
 
-    for (const entity of rendered) {
-      for (const dec of entity.decorators) allDecorators.add(dec)
-      for (const typeImport of entity.typeImports) allTypeImports.add(typeImport)
-      for (const [name, path] of entity.entityImports) allEntityImports.set(name, path)
+    for (const diff of missingEntities) {
+      const target = generatedEntityTargets.get(diff.model)!
+      const entity = renderMissingEntity(diff, orm, target.filePath, generatedEntityTargets)
+
+      if (existsSync(target.filePath)) {
+        const content = appendClasses(readFileSync(target.filePath, 'utf-8'), [entity])
+        files.set(target.filePath, content)
+      }
+      else {
+        files.set(target.filePath, renderEntityFile(entity))
+      }
+
+      renderedMissingEntities.push({ entity, filePath: target.filePath })
     }
 
-    content = ensureDecoratorImport(content, allDecorators)
-    content = ensureTypeImport(content, allTypeImports)
-    content = ensureEntityImports(content, allEntityImports)
-    content = appendClasses(content, rendered)
-    files.set(filePath, content)
+    const barrelContent = readFileSync(absoluteFallbackPath, 'utf-8')
+    files.set(absoluteFallbackPath, ensureBarrelExports(barrelContent, absoluteFallbackPath, renderedMissingEntities))
   }
 
   return new Map([...files.entries()].map(([k, v]) => [relative(cwd, k), v]))
