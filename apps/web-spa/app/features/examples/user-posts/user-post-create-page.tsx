@@ -21,7 +21,7 @@ export default function UserPostCreatePage() {
         return
       }
       toast.success(t('toasts.postCreated'))
-      await new Promise(resolve => setTimeout(resolve, 800))
+      await new Promise((resolve) => setTimeout(resolve, 800))
       navigate(`/dashboard/posts/${result.data.id}/edit`)
     },
     onError: (error) => {
@@ -43,9 +43,7 @@ export default function UserPostCreatePage() {
           <h1 className="font-sans text-3xl font-black tracking-tight text-foreground">
             {t('posts.create.title')}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t('posts.create.description')}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{t('posts.create.description')}</p>
         </div>
         <UserPostForm onSubmit={onSubmit} isSubmitting={isPending} />
       </div>

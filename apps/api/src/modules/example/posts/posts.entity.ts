@@ -37,10 +37,10 @@ export class Post {
   @Index()
   publishedAt?: Date
 
-  @OneToMany(() => PostVersion, version => version.post)
+  @OneToMany(() => PostVersion, (version) => version.post)
   versions = new Collection<PostVersion>(this)
 
-  @OneToMany(() => Comment, comment => comment.post)
+  @OneToMany(() => Comment, (comment) => comment.post)
   comments = new Collection<Comment>(this)
 
   @Unique()
@@ -54,7 +54,7 @@ export class Post {
   @Property({ default: 0 })
   likesCount: number = 0
 
-  @ManyToMany(() => Tag, tag => tag.posts, { owner: true, pivotTable: 'post_tag' })
+  @ManyToMany(() => Tag, (tag) => tag.posts, { owner: true, pivotTable: 'post_tag' })
   tags = new Collection<Tag>(this)
 
   async currentVersion() {

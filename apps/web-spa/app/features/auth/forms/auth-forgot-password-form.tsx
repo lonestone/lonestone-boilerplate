@@ -25,7 +25,10 @@ interface AuthForgotPasswordFormProps {
   isPending: boolean
 }
 
-export const AuthForgotPasswordForm: React.FC<AuthForgotPasswordFormProps> = ({ onSubmit, isPending }) => {
+export const AuthForgotPasswordForm: React.FC<AuthForgotPasswordFormProps> = ({
+  onSubmit,
+  isPending,
+}) => {
   const { t } = useTranslation()
   const form = useForm<AuthForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -41,7 +44,13 @@ export const AuthForgotPasswordForm: React.FC<AuthForgotPasswordFormProps> = ({ 
             <FormItem>
               <FormLabel htmlFor="email">{t('auth.forgotPassword.email')}</FormLabel>
               <FormControl>
-                <Input id="email" {...field} type="email" autoComplete="email" placeholder="your@email.com" />
+                <Input
+                  id="email"
+                  {...field}
+                  type="email"
+                  autoComplete="email"
+                  placeholder="your@email.com"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

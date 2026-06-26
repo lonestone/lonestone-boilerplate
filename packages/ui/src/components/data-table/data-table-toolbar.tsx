@@ -18,10 +18,7 @@ interface DataTableToolbarProps {
   children?: ReactNode
 }
 
-function useDebounce<T extends (...args: Parameters<T>) => void>(
-  fn: T,
-  delay: number,
-): T {
+function useDebounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): T {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   return useCallback(
     ((...args: Parameters<T>) => {
@@ -55,9 +52,7 @@ export function DataTableToolbar({ search, children }: DataTableToolbarProps) {
           </InputGroup>
         ) : null}
       </div>
-      {children ? (
-        <div className="flex items-center gap-2">{children}</div>
-      ) : null}
+      {children ? <div className="flex items-center gap-2">{children}</div> : null}
     </div>
   )
 }

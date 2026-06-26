@@ -43,25 +43,23 @@ function findMissingKeys(
     if (!(key in target)) {
       // Key is completely missing in target
       missingKeys.push(fullKey)
-    }
-    else if (
-      typeof baseVal === 'object'
-      && baseVal !== null
-      && !Array.isArray(baseVal)
-      && typeof targetVal === 'object'
-      && targetVal !== null
-      && !Array.isArray(targetVal)
+    } else if (
+      typeof baseVal === 'object' &&
+      baseVal !== null &&
+      !Array.isArray(baseVal) &&
+      typeof targetVal === 'object' &&
+      targetVal !== null &&
+      !Array.isArray(targetVal)
     ) {
       // Both are objects, recurse
       missingKeys.push(
         ...findMissingKeys(baseVal as TranslationObject, targetVal as TranslationObject, fullKey),
       )
-    }
-    else if (
-      typeof baseVal === 'object'
-      && baseVal !== null
-      && !Array.isArray(baseVal)
-      && typeof targetVal === 'string'
+    } else if (
+      typeof baseVal === 'object' &&
+      baseVal !== null &&
+      !Array.isArray(baseVal) &&
+      typeof targetVal === 'string'
     ) {
       // Base is an object but target is a string - structure mismatch, report as missing
       missingKeys.push(fullKey)
@@ -77,7 +75,10 @@ function getDirname(metaUrl: string) {
 
 type LocalesData = Record<SupportedLocale, Record<string, Record<string, unknown>>>
 
-function loadLocalesForLocale(localesDir: string, locale: SupportedLocale): Record<string, Record<string, unknown>> {
+function loadLocalesForLocale(
+  localesDir: string,
+  locale: SupportedLocale,
+): Record<string, Record<string, unknown>> {
   const localeDir = path.join(localesDir, locale)
   const result: Record<string, Record<string, unknown>> = {}
 
@@ -85,7 +86,7 @@ function loadLocalesForLocale(localesDir: string, locale: SupportedLocale): Reco
     return result
   }
 
-  const files = fs.readdirSync(localeDir).filter(file => file.endsWith(`.locales.${locale}.json`))
+  const files = fs.readdirSync(localeDir).filter((file) => file.endsWith(`.locales.${locale}.json`))
   for (const file of files) {
     const namespace = file.replace(`.locales.${locale}.json`, '')
     const filePath = path.join(localeDir, file)
@@ -118,13 +119,11 @@ function generateI18nextTypes(localesDir: string, namespaces: string[]) {
 
   // Generate imports
   const imports = namespaces
-    .map(ns => `import type ${ns}En from './locales/en/${ns}.locales.en.json'`)
+    .map((ns) => `import type ${ns}En from './locales/en/${ns}.locales.en.json'`)
     .join('\n')
 
   // Generate resources object entries
-  const resourceEntries = namespaces
-    .map(ns => `      ${ns}: typeof ${ns}En`)
-    .join('\n')
+  const resourceEntries = namespaces.map((ns) => `      ${ns}: typeof ${ns}En`).join('\n')
 
   const content = `${imports}
 
@@ -155,7 +154,10 @@ interface CheckResult {
 async function checkTranslationsForDirectory(localesDir: string): Promise<CheckResult> {
   console.warn(`\n🔍 Checking translations for: ${localesDir}`)
 
-  const resources = loadLocalesForDirectory(localesDir) as Record<string, Record<string, TranslationObject>>
+  const resources = loadLocalesForDirectory(localesDir) as Record<
+    string,
+    Record<string, TranslationObject>
+  >
 
   const languages = Object.keys(resources)
 
@@ -163,7 +165,7 @@ async function checkTranslationsForDirectory(localesDir: string): Promise<CheckR
   const allNamespaces = new Set<string>()
   for (const lang of languages) {
     const langNamespaces = Object.keys(resources[lang] || {})
-    langNamespaces.forEach(namespace => allNamespaces.add(namespace))
+    langNamespaces.forEach((namespace) => allNamespaces.add(namespace))
   }
 
   const namespaces = Array.from(allNamespaces).sort()
@@ -181,8 +183,7 @@ async function checkTranslationsForDirectory(localesDir: string): Promise<CheckR
     const sourceData = resources.en?.[namespace] || {}
 
     for (const targetLang of languages) {
-      if (targetLang === 'en')
-        continue
+      if (targetLang === 'en') continue
 
       const targetData = resources[targetLang]?.[namespace] || {}
 
@@ -246,11 +247,7 @@ async function checkTranslations() {
   console.warn('🔍 Searching for locales directories in the monorepo...')
 
   // Find all locales directories in the monorepo
-  const localesPatterns = [
-    '**/locales',
-    '**/i18n/locales',
-    '**/lib/i18n/locales',
-  ]
+  const localesPatterns = ['**/locales', '**/i18n/locales', '**/lib/i18n/locales']
 
   const foundLocalesDirs: string[] = []
 
@@ -261,7 +258,7 @@ async function checkTranslations() {
       ignore: ['**/node_modules/**', '**/dist/**', '**/build/**'],
     })
     // Filter to only include directories
-    const dirMatches = matches.filter(match => fs.statSync(match).isDirectory())
+    const dirMatches = matches.filter((match) => fs.statSync(match).isDirectory())
     foundLocalesDirs.push(...dirMatches)
   }
 
@@ -287,8 +284,7 @@ async function checkTranslations() {
       const { missingKeys, orphanedKeys } = await checkTranslationsForDirectory(localesDir)
       allMissingReports.push(...missingKeys)
       allOrphanedReports.push(...orphanedKeys)
-    }
-    catch (error) {
+    } catch (error) {
       console.error(`❌ Failed to check ${localesDir}:`, error)
     }
   }
@@ -300,8 +296,7 @@ async function checkTranslations() {
 
   if (!hasIssues) {
     console.warn('✅ All translations are complete and clean!')
-  }
-  else {
+  } else {
     // Summary for missing keys
     if (allMissingReports.length > 0) {
       const missingByLocale = new Map<string, number>()

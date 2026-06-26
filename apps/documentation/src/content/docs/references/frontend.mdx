@@ -10,39 +10,40 @@ description: Guidelines for the front-end of the Lonestone project.
 See [Tech stack page](/lonestone-boilerplate/explanations/1_architecture) for the full tech stack.
 
 ## General Instructions
+
 In general, respect the current project structure and file names.
 
 If not specified otherwise, follow the following guidelines:
 
 - Use kebab-case for file names.
 - Use features folder to add route components or scoped components. Look at other features in the repo. It shoud look like this:
-    - features/
-        - common/ for common files, hooks, etc.
-            - hooks/
-            - utils/
-            - atoms/
-        - featureName/
-            - components/
-                - feature-component.tsx
-                - another-component.tsx
-            - hooks/ for hooks scoped to this feature
-            - utils/ for utils scoped to this feature
+  - features/
+    - common/ for common files, hooks, etc.
+      - hooks/
+      - utils/
+      - atoms/
+    - featureName/
+      - components/
+        - feature-component.tsx
+        - another-component.tsx
+      - hooks/ for hooks scoped to this feature
+      - utils/ for utils scoped to this feature
 - Use app folder to had global components that are used in multiple features.
 - Use utils folder to had utility functions.
 - Use components from @boilerstone/ui in ./packages/ui.
 - Check types, schemas and sdk from @boilerstone/openapi-generator in ./packages/openapi-generator.
-    - ./packages/openapi-generator/client/sdk.gen.ts
-    - ./packages/openapi-generator/client/schemas.gen.ts
-    - ./packages/openapi-generator/client/zod.gen.ts
-    - ./packages/openapi-generator/client/types.gen.ts
+  - ./packages/openapi-generator/client/sdk.gen.ts
+  - ./packages/openapi-generator/client/schemas.gen.ts
+  - ./packages/openapi-generator/client/zod.gen.ts
+  - ./packages/openapi-generator/client/types.gen.ts
 - Use shadcn/ui for components.
 - Use react-router for routing.
-    - routes are usually defined in a `routes.ts` file
+  - routes are usually defined in a `routes.ts` file
 - Use react-hook-form for form handling.
-- Use zod for form validation.    
+- Use zod for form validation.
 - Use @boilerstone/i18n for internationalization, no hardcoded strings.
 - Use tanstack-query for data fetching
-    - structure queries by features, put the queries options in /features/featureName/utils/featureName-queries.ts
+  - structure queries by features, put the queries options in /features/featureName/utils/featureName-queries.ts
 
 ```
 export function fetchOrganizationQueryOptions(options: { pageSize: number, page: number, search?: string }) {
@@ -64,4 +65,3 @@ export function fetchOrganizationQueryOptions(options: { pageSize: number, page:
     ...fetchOrganizationQueryOptions({ page: pageValue, search: searchValue, pageSize: PAGE_SIZE }),
   })
 ```
-

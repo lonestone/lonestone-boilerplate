@@ -20,9 +20,7 @@ function normalizeDirection(direction: SortDirectionInput): SortDirection {
   return direction.toUpperCase() === 'ASC' ? 'ASC' : 'DESC'
 }
 
-export function buildOrderBy<
-  TSortProperty extends string,
->({
+export function buildOrderBy<TSortProperty extends string>({
   sort,
   allowedProperties,
   defaultProperty,
@@ -35,8 +33,7 @@ export function buildOrderBy<
 
   if (sort?.length) {
     sort.forEach((sortItem) => {
-      if (!allowedPropertiesSet.has(sortItem.property))
-        return
+      if (!allowedPropertiesSet.has(sortItem.property)) return
 
       orderBy[sortItem.property] = normalizeDirection(sortItem.direction)
     })

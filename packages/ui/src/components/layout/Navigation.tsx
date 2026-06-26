@@ -7,7 +7,13 @@ import {
   DropdownMenuTrigger,
 } from '@boilerstone/ui/components/primitives/dropdown-menu'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@boilerstone/ui/components/primitives/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@boilerstone/ui/components/primitives/sheet'
 import { cn } from '@boilerstone/ui/lib/utils'
 import { Menu } from 'lucide-react'
 import * as React from 'react'
@@ -41,13 +47,19 @@ interface NavigationItemProps {
   className?: string
 }
 
-function NavigationItemComponent({ item, className, isMobile = false, onItemClick }: NavigationItemProps) {
+function NavigationItemComponent({
+  item,
+  className,
+  isMobile = false,
+  onItemClick,
+}: NavigationItemProps) {
   const baseClassName = cn(
     className,
     'flex items-center gap-2 px-3 py-2 rounded-md transition-colors',
     isMobile && 'w-full text-left',
     !isMobile && 'text-sm',
-    item.variant === 'destructive' && 'text-destructive hover:bg-destructive hover:text-destructive-foreground',
+    item.variant === 'destructive' &&
+      'text-destructive hover:bg-destructive hover:text-destructive-foreground',
     item.variant !== 'destructive' && 'hover:bg-accent hover:text-accent-foreground',
   )
 
@@ -69,11 +81,7 @@ function NavigationItemComponent({ item, className, isMobile = false, onItemClic
 
   if (isMobile) {
     return (
-      <Link
-        to={item.to}
-        onClick={onItemClick}
-        className={baseClassName}
-      >
+      <Link to={item.to} onClick={onItemClick} className={baseClassName}>
         {item.icon}
         <span>{item.label}</span>
       </Link>
@@ -83,10 +91,9 @@ function NavigationItemComponent({ item, className, isMobile = false, onItemClic
   return (
     <NavLink
       to={item.to}
-      className={({ isActive }) => cn(
-        baseClassName,
-        isActive && 'text-primary font-medium bg-primary/10',
-      )}
+      className={({ isActive }) =>
+        cn(baseClassName, isActive && 'text-primary font-medium bg-primary/10')
+      }
     >
       {item.icon}
       <span>{item.label}</span>
@@ -101,11 +108,15 @@ interface NavigationSectionProps {
   onItemClick?: () => void
 }
 
-function NavigationSectionComponent({ section, isMobile = false, onItemClick }: NavigationSectionProps) {
-  const visibleItems = section.items.filter(item =>
+function NavigationSectionComponent({
+  section,
+  isMobile = false,
+  onItemClick,
+}: NavigationSectionProps) {
+  const visibleItems = section.items.filter((item) =>
     isMobile ? !item.hideOnMobile : !item.hideOnDesktop,
   )
-  const sectionKey = visibleItems.map(item => item.to).join('-')
+  const sectionKey = visibleItems.map((item) => item.to).join('-')
 
   if (visibleItems.length === 0) {
     return null
@@ -116,11 +127,7 @@ function NavigationSectionComponent({ section, isMobile = false, onItemClick }: 
       {visibleItems.map((item, index) => (
         <React.Fragment key={item.to}>
           {item.separator && index > 0 && <Separator className="my-2" />}
-          <NavigationItemComponent
-            item={item}
-            isMobile={isMobile}
-            onItemClick={onItemClick}
-          />
+          <NavigationItemComponent item={item} isMobile={isMobile} onItemClick={onItemClick} />
         </React.Fragment>
       ))}
     </div>
@@ -133,7 +140,7 @@ interface NavigationDropdownProps {
 }
 
 function NavigationDropdown({ section }: NavigationDropdownProps) {
-  const visibleItems = section.items.filter(item => !item.hideOnDesktop)
+  const visibleItems = section.items.filter((item) => !item.hideOnDesktop)
 
   if (!section.dropdown || visibleItems.length === 0) {
     return null
@@ -141,7 +148,9 @@ function NavigationDropdown({ section }: NavigationDropdownProps) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="relative h-8 w-8 rounded-md" />}>
+      <DropdownMenuTrigger
+        render={<Button variant="outline" size="icon" className="relative h-8 w-8 rounded-md" />}
+      >
         {section.dropdown.icon}
         {section.dropdown.label && <span className="sr-only">{section.dropdown.label}</span>}
       </DropdownMenuTrigger>
@@ -150,11 +159,16 @@ function NavigationDropdown({ section }: NavigationDropdownProps) {
           <React.Fragment key={item.to}>
             {item.separator && index > 0 && <DropdownMenuSeparator />}
             <DropdownMenuItem
-              render={item.onClick ? undefined : <Link to={item.to} className="flex w-full items-center gap-2" />}
+              render={
+                item.onClick ? undefined : (
+                  <Link to={item.to} className="flex w-full items-center gap-2" />
+                )
+              }
               onClick={item.onClick}
               className={cn(
                 'flex items-center gap-2',
-                item.variant === 'destructive' && 'text-destructive hover:bg-destructive hover:text-destructive-foreground',
+                item.variant === 'destructive' &&
+                  'text-destructive hover:bg-destructive hover:text-destructive-foreground',
               )}
             >
               {item.icon}
@@ -173,11 +187,7 @@ interface NavigationBrandProps {
 }
 
 function NavigationBrand({ children }: NavigationBrandProps) {
-  return (
-    <div className="flex items-center gap-6">
-      {children}
-    </div>
-  )
+  return <div className="flex items-center gap-6">{children}</div>
 }
 NavigationBrand.displayName = 'NavigationBrand'
 
@@ -186,8 +196,8 @@ interface NavigationDesktopProps {
 }
 
 function NavigationDesktopSection({ section }: { section: NavigationSection }) {
-  const visibleItems = section.items.filter(item => !item.hideOnDesktop)
-  const sectionKey = visibleItems.map(item => item.to).join('-')
+  const visibleItems = section.items.filter((item) => !item.hideOnDesktop)
+  const sectionKey = visibleItems.map((item) => item.to).join('-')
 
   if (visibleItems.length === 0) {
     return null
@@ -200,7 +210,7 @@ function NavigationDesktopSection({ section }: { section: NavigationSection }) {
   return (
     <nav key={sectionKey}>
       <ul className="flex gap-2 text-sm">
-        {visibleItems.map(item => (
+        {visibleItems.map((item) => (
           <li key={item.to}>
             <NavigationItemComponent item={item} />
           </li>
@@ -212,30 +222,39 @@ function NavigationDesktopSection({ section }: { section: NavigationSection }) {
 NavigationDesktopSection.displayName = 'NavigationDesktopSection'
 
 function NavigationDesktop({ sections }: NavigationDesktopProps) {
-  const leftSections = sections.filter(s => s.position === 'left')
-  const centerSections = sections.filter(s => s.position === 'center')
-  const rightSections = sections.filter(s => !s.position || s.position === 'right')
+  const leftSections = sections.filter((s) => s.position === 'left')
+  const centerSections = sections.filter((s) => s.position === 'center')
+  const rightSections = sections.filter((s) => !s.position || s.position === 'right')
 
   return (
     <div className="hidden lg:flex items-center flex-1">
       {leftSections.length > 0 && (
         <div className="flex items-center gap-4">
-          {leftSections.map(section => (
-            <NavigationDesktopSection key={section.items.map(i => i.to).join('-')} section={section} />
+          {leftSections.map((section) => (
+            <NavigationDesktopSection
+              key={section.items.map((i) => i.to).join('-')}
+              section={section}
+            />
           ))}
         </div>
       )}
 
       <div className="flex-1 flex items-center justify-center gap-4">
-        {centerSections.map(section => (
-          <NavigationDesktopSection key={section.items.map(i => i.to).join('-')} section={section} />
+        {centerSections.map((section) => (
+          <NavigationDesktopSection
+            key={section.items.map((i) => i.to).join('-')}
+            section={section}
+          />
         ))}
       </div>
 
       {rightSections.length > 0 && (
         <div className="flex items-center gap-4">
-          {rightSections.map(section => (
-            <NavigationDesktopSection key={section.items.map(i => i.to).join('-')} section={section} />
+          {rightSections.map((section) => (
+            <NavigationDesktopSection
+              key={section.items.map((i) => i.to).join('-')}
+              section={section}
+            />
           ))}
         </div>
       )}
@@ -262,23 +281,15 @@ function NavigationMobile({ brand, sections }: NavigationMobileProps) {
       </SheetTrigger>
       <SheetContent side="right" className="overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>
-            {brand}
-          </SheetTitle>
+          <SheetTitle>{brand}</SheetTitle>
         </SheetHeader>
         <nav className="mt-6 space-y-1 pb-6">
           {sections.map((section, sectionIndex) => {
-            const sectionKey = section.items.map(item => item.to).join('-')
+            const sectionKey = section.items.map((item) => item.to).join('-')
             return (
               <React.Fragment key={sectionKey}>
-                {section.separator && sectionIndex > 0 && (
-                  <Separator className="my-2" />
-                )}
-                <NavigationSectionComponent
-                  section={section}
-                  isMobile
-                  onItemClick={closeMenu}
-                />
+                {section.separator && sectionIndex > 0 && <Separator className="my-2" />}
+                <NavigationSectionComponent section={section} isMobile onItemClick={closeMenu} />
               </React.Fragment>
             )
           })}
@@ -299,7 +310,12 @@ const defaultSections: NavigationSection[] = []
 
 export function Navigation({ brand, sections = defaultSections, className }: NavigationProps) {
   return (
-    <div className={cn('container mx-auto flex h-14 items-center justify-between gap-8 px-4', className)}>
+    <div
+      className={cn(
+        'container mx-auto flex h-14 items-center justify-between gap-8 px-4',
+        className,
+      )}
+    >
       <NavigationBrand>{brand}</NavigationBrand>
       <NavigationDesktop sections={sections} />
       <NavigationMobile brand={brand} sections={sections} />

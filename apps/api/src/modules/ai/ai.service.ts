@@ -62,7 +62,10 @@ export class AiService implements OnModuleInit {
     }
   }
 
-  private async executeGeneration(generateOptions: Parameters<typeof generateText>[0], options?: AiGenerateOptions) {
+  private async executeGeneration(
+    generateOptions: Parameters<typeof generateText>[0],
+    options?: AiGenerateOptions,
+  ) {
     if (options?.telemetry) {
       const traceId = await buildTraceId(options)
       return this.langfuseService.executeTracedGeneration(generateOptions, options, traceId)
@@ -70,7 +73,10 @@ export class AiService implements OnModuleInit {
     return generateText(generateOptions)
   }
 
-  private async executeStreaming(streamOptions: Parameters<typeof streamText>[0], options?: AiGenerateOptions) {
+  private async executeStreaming(
+    streamOptions: Parameters<typeof streamText>[0],
+    options?: AiGenerateOptions,
+  ) {
     if (options?.telemetry) {
       const traceId = await buildTraceId(options)
       return this.langfuseService.executeTracedStreaming(streamOptions, options, traceId)
@@ -187,10 +193,11 @@ export class AiService implements OnModuleInit {
     let parsed: T
     try {
       parsed = validateAndParse(result.text, schema)
-    }
-    catch (error) {
+    } catch (error) {
       this.logger.error('Schema validation failed', error)
-      throw new Error(`Schema validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Schema validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
     }
 
     return {
@@ -277,7 +284,11 @@ export class AiService implements OnModuleInit {
     const newHistory: AiCoreMessage[] = schema
       ? [
           ...messages.slice(0, -1),
-          { role: 'assistant' as const, content: createSchemaPromptCommandForChat(schema), metadata: { isConsideredSystemMessage: true } },
+          {
+            role: 'assistant' as const,
+            content: createSchemaPromptCommandForChat(schema),
+            metadata: { isConsideredSystemMessage: true },
+          },
           ...messages.slice(-1),
         ]
       : [...messages]
@@ -298,10 +309,11 @@ export class AiService implements OnModuleInit {
     if (schema) {
       try {
         validateAndParse(result.text, schema)
-      }
-      catch (error) {
+      } catch (error) {
         this.logger.error('Schema validation failed in chat', error)
-        throw new Error(`Schema validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        throw new Error(
+          `Schema validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        )
       }
     }
 
@@ -310,14 +322,17 @@ export class AiService implements OnModuleInit {
     // Build updated messages (includes schema instruction for traceability).We also add the metadata to the message itself
     const updatedMessages: AiCoreMessage[] = [
       ...newHistory,
-      { role: 'assistant', content: result.text, metadata:
-        {
+      {
+        role: 'assistant',
+        content: result.text,
+        metadata: {
           usage: lastStepUsage,
           finishReason: result.finishReason,
           timestamp: new Date().toISOString(),
           toolCalls: extractToolCalls(result.steps),
           reasonning: result.reasoningText,
-        } },
+        },
+      },
     ]
 
     return {
@@ -364,13 +379,10 @@ export class AiService implements OnModuleInit {
    *   if (event.type === 'done') console.log(event.fullText)
    * }
    */
-  async* streamTextGenerator({
-    prompt,
-    messages,
-    model,
-    options,
-    tools,
-  }: StreamGeneratorInput, signal?: AbortSignal): AsyncGenerator<AiStreamEvent> {
+  async *streamTextGenerator(
+    { prompt, messages, model, options, tools }: StreamGeneratorInput,
+    signal?: AbortSignal,
+  ): AsyncGenerator<AiStreamEvent> {
     const abortController = signal ? undefined : new AbortController()
     const abortSignal = signal || abortController!.signal
 
@@ -383,11 +395,9 @@ export class AiService implements OnModuleInit {
     if (messages && messages.length > 0) {
       conversationMessages = [...messages] as AiCoreMessage[]
       hasMessages = true
-    }
-    else if (prompt) {
+    } else if (prompt) {
       conversationMessages = [{ role: 'user', content: prompt }]
-    }
-    else {
+    } else {
       throw new Error('Either prompt or messages must be provided')
     }
 
@@ -419,16 +429,14 @@ export class AiService implements OnModuleInit {
       if (part.type === 'text-delta') {
         fullText += part.text
         yield { type: 'chunk' as const, text: part.text }
-      }
-      else if (part.type === 'tool-call') {
+      } else if (part.type === 'tool-call') {
         yield {
           type: 'tool-call' as const,
           toolCallId: part.toolCallId,
           toolName: part.toolName,
           args: part.input as Record<string, unknown>,
         }
-      }
-      else if (part.type === 'tool-result') {
+      } else if (part.type === 'tool-result') {
         yield {
           type: 'tool-result' as const,
           toolCallId: part.toolCallId,
@@ -448,7 +456,7 @@ export class AiService implements OnModuleInit {
         ? {
             promptTokens: usage.inputTokens ?? 0,
             completionTokens: usage.outputTokens ?? 0,
-            totalTokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
+            totalTokens: usage.totalTokens ?? (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),
           }
         : undefined,
       finishReason,

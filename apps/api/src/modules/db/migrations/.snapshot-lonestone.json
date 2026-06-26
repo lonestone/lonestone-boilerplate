@@ -1,7 +1,5 @@
 {
-  "namespaces": [
-    "public"
-  ],
+  "namespaces": ["public"],
   "name": "public",
   "tables": [
     {
@@ -81,9 +79,7 @@
       "schema": "public",
       "indexes": [
         {
-          "columnNames": [
-            "email"
-          ],
+          "columnNames": ["email"],
           "composite": false,
           "keyName": "user_email_unique",
           "constraint": true,
@@ -92,9 +88,7 @@
         },
         {
           "keyName": "user_pkey",
-          "columnNames": [
-            "id"
-          ],
+          "columnNames": ["id"],
           "composite": false,
           "constraint": true,
           "primary": true,
@@ -191,9 +185,7 @@
       "schema": "public",
       "indexes": [
         {
-          "columnNames": [
-            "token"
-          ],
+          "columnNames": ["token"],
           "composite": false,
           "keyName": "session_token_unique",
           "constraint": true,
@@ -202,9 +194,7 @@
         },
         {
           "keyName": "session_pkey",
-          "columnNames": [
-            "id"
-          ],
+          "columnNames": ["id"],
           "composite": false,
           "constraint": true,
           "primary": true,
@@ -215,13 +205,9 @@
       "foreignKeys": {
         "session_userId_foreign": {
           "constraintName": "session_userId_foreign",
-          "columnNames": [
-            "userId"
-          ],
+          "columnNames": ["userId"],
           "localTableName": "public.session",
-          "referencedColumnNames": [
-            "id"
-          ],
+          "referencedColumnNames": ["id"],
           "referencedTableName": "public.user",
           "updateRule": "cascade"
         }
@@ -328,9 +314,7 @@
       "schema": "public",
       "indexes": [
         {
-          "columnNames": [
-            "userId"
-          ],
+          "columnNames": ["userId"],
           "composite": false,
           "keyName": "post_userId_index",
           "constraint": false,
@@ -338,9 +322,7 @@
           "unique": false
         },
         {
-          "columnNames": [
-            "publishedAt"
-          ],
+          "columnNames": ["publishedAt"],
           "composite": false,
           "keyName": "post_publishedAt_index",
           "constraint": false,
@@ -348,9 +330,7 @@
           "unique": false
         },
         {
-          "columnNames": [
-            "slug"
-          ],
+          "columnNames": ["slug"],
           "composite": false,
           "keyName": "post_slug_index",
           "constraint": false,
@@ -358,9 +338,7 @@
           "unique": false
         },
         {
-          "columnNames": [
-            "slug"
-          ],
+          "columnNames": ["slug"],
           "composite": false,
           "keyName": "post_slug_unique",
           "constraint": true,
@@ -369,9 +347,7 @@
         },
         {
           "keyName": "post_pkey",
-          "columnNames": [
-            "id"
-          ],
+          "columnNames": ["id"],
           "composite": false,
           "constraint": true,
           "primary": true,
@@ -382,13 +358,9 @@
       "foreignKeys": {
         "post_userId_foreign": {
           "constraintName": "post_userId_foreign",
-          "columnNames": [
-            "userId"
-          ],
+          "columnNames": ["userId"],
           "localTableName": "public.post",
-          "referencedColumnNames": [
-            "id"
-          ],
+          "referencedColumnNames": ["id"],
           "referencedTableName": "public.user",
           "updateRule": "cascade"
         }
@@ -450,9 +422,7 @@
       "schema": "public",
       "indexes": [
         {
-          "columnNames": [
-            "title"
-          ],
+          "columnNames": ["title"],
           "composite": false,
           "keyName": "postVersion_title_index",
           "constraint": false,
@@ -461,9 +431,7 @@
         },
         {
           "keyName": "postVersion_pkey",
-          "columnNames": [
-            "id"
-          ],
+          "columnNames": ["id"],
           "composite": false,
           "constraint": true,
           "primary": true,
@@ -474,13 +442,9 @@
       "foreignKeys": {
         "postVersion_postId_foreign": {
           "constraintName": "postVersion_postId_foreign",
-          "columnNames": [
-            "postId"
-          ],
+          "columnNames": ["postId"],
           "localTableName": "public.postVersion",
-          "referencedColumnNames": [
-            "id"
-          ],
+          "referencedColumnNames": ["id"],
           "referencedTableName": "public.post",
           "updateRule": "cascade"
         }
@@ -561,9 +525,7 @@
       "schema": "public",
       "indexes": [
         {
-          "columnNames": [
-            "postId"
-          ],
+          "columnNames": ["postId"],
           "composite": false,
           "keyName": "comment_postId_index",
           "constraint": false,
@@ -571,9 +533,7 @@
           "unique": false
         },
         {
-          "columnNames": [
-            "userId"
-          ],
+          "columnNames": ["userId"],
           "composite": false,
           "keyName": "comment_userId_index",
           "constraint": false,
@@ -581,9 +541,7 @@
           "unique": false
         },
         {
-          "columnNames": [
-            "parentId"
-          ],
+          "columnNames": ["parentId"],
           "composite": false,
           "keyName": "comment_parentId_index",
           "constraint": false,
@@ -592,9 +550,7 @@
         },
         {
           "keyName": "comment_pkey",
-          "columnNames": [
-            "id"
-          ],
+          "columnNames": ["id"],
           "composite": false,
           "constraint": true,
           "primary": true,
@@ -605,38 +561,26 @@
       "foreignKeys": {
         "comment_postId_foreign": {
           "constraintName": "comment_postId_foreign",
-          "columnNames": [
-            "postId"
-          ],
+          "columnNames": ["postId"],
           "localTableName": "public.comment",
-          "referencedColumnNames": [
-            "id"
-          ],
+          "referencedColumnNames": ["id"],
           "referencedTableName": "public.post",
           "updateRule": "cascade"
         },
         "comment_userId_foreign": {
           "constraintName": "comment_userId_foreign",
-          "columnNames": [
-            "userId"
-          ],
+          "columnNames": ["userId"],
           "localTableName": "public.comment",
-          "referencedColumnNames": [
-            "id"
-          ],
+          "referencedColumnNames": ["id"],
           "referencedTableName": "public.user",
           "deleteRule": "set null",
           "updateRule": "cascade"
         },
         "comment_parentId_foreign": {
           "constraintName": "comment_parentId_foreign",
-          "columnNames": [
-            "parentId"
-          ],
+          "columnNames": ["parentId"],
           "localTableName": "public.comment",
-          "referencedColumnNames": [
-            "id"
-          ],
+          "referencedColumnNames": ["id"],
           "referencedTableName": "public.comment",
           "deleteRule": "set null",
           "updateRule": "cascade"
@@ -781,9 +725,7 @@
       "indexes": [
         {
           "keyName": "account_pkey",
-          "columnNames": [
-            "id"
-          ],
+          "columnNames": ["id"],
           "composite": false,
           "constraint": true,
           "primary": true,
@@ -794,13 +736,9 @@
       "foreignKeys": {
         "account_userId_foreign": {
           "constraintName": "account_userId_foreign",
-          "columnNames": [
-            "userId"
-          ],
+          "columnNames": ["userId"],
           "localTableName": "public.account",
-          "referencedColumnNames": [
-            "id"
-          ],
+          "referencedColumnNames": ["id"],
           "referencedTableName": "public.user",
           "updateRule": "cascade"
         }
@@ -875,9 +813,7 @@
       "indexes": [
         {
           "keyName": "verification_pkey",
-          "columnNames": [
-            "id"
-          ],
+          "columnNames": ["id"],
           "composite": false,
           "constraint": true,
           "primary": true,
@@ -946,9 +882,7 @@
       },
       "indexes": [
         {
-          "columnNames": [
-            "name"
-          ],
+          "columnNames": ["name"],
           "composite": false,
           "constraint": false,
           "keyName": "tag_name_index",
@@ -956,9 +890,7 @@
           "unique": false
         },
         {
-          "columnNames": [
-            "name"
-          ],
+          "columnNames": ["name"],
           "composite": false,
           "constraint": true,
           "keyName": "tag_name_unique",
@@ -966,9 +898,7 @@
           "unique": true
         },
         {
-          "columnNames": [
-            "id"
-          ],
+          "columnNames": ["id"],
           "composite": false,
           "constraint": true,
           "keyName": "tag_pkey",
@@ -976,9 +906,7 @@
           "unique": true
         },
         {
-          "columnNames": [
-            "slug"
-          ],
+          "columnNames": ["slug"],
           "composite": false,
           "constraint": false,
           "keyName": "tag_slug_index",
@@ -986,9 +914,7 @@
           "unique": false
         },
         {
-          "columnNames": [
-            "slug"
-          ],
+          "columnNames": ["slug"],
           "composite": false,
           "constraint": true,
           "keyName": "tag_slug_unique",
@@ -1042,10 +968,7 @@
       },
       "indexes": [
         {
-          "columnNames": [
-            "post",
-            "tag"
-          ],
+          "columnNames": ["post", "tag"],
           "composite": true,
           "constraint": true,
           "keyName": "post_tag_pkey",
@@ -1057,27 +980,19 @@
       "triggers": [],
       "foreignKeys": {
         "post_tag_post_foreign": {
-          "columnNames": [
-            "post"
-          ],
+          "columnNames": ["post"],
           "constraintName": "post_tag_post_foreign",
           "localTableName": "public.post_tag",
-          "referencedColumnNames": [
-            "id"
-          ],
+          "referencedColumnNames": ["id"],
           "referencedTableName": "public.post",
           "updateRule": "cascade",
           "deleteRule": "cascade"
         },
         "post_tag_tag_foreign": {
-          "columnNames": [
-            "tag"
-          ],
+          "columnNames": ["tag"],
           "constraintName": "post_tag_tag_foreign",
           "localTableName": "public.post_tag",
-          "referencedColumnNames": [
-            "id"
-          ],
+          "referencedColumnNames": ["id"],
           "referencedTableName": "public.tag",
           "updateRule": "cascade",
           "deleteRule": "cascade"

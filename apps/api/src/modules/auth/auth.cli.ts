@@ -1,5 +1,8 @@
 import type { EntityName, MikroORM as MikroORMClass } from '@mikro-orm/core'
-import type { createMikroOrmOptions as CreateMikroOrmOptions, entityGlobs as EntityGlobs } from '../db/db.config'
+import type {
+  createMikroOrmOptions as CreateMikroOrmOptions,
+  entityGlobs as EntityGlobs,
+} from '../db/db.config'
 import type { createBetterAuth as CreateBetterAuth } from './auth.config'
 
 import { readdirSync, statSync } from 'node:fs'
@@ -60,7 +63,9 @@ function loadEntitiesFromGlob(pattern: string): EntityName<object>[] {
 
   return listFiles(resolve(process.cwd(), rootPattern), suffix).flatMap((file) => {
     const moduleExports = require(file) as EntityModule
-    return Object.values(moduleExports).filter((value): value is EntityName<object> => typeof value === 'function')
+    return Object.values(moduleExports).filter(
+      (value): value is EntityName<object> => typeof value === 'function',
+    )
   })
 }
 

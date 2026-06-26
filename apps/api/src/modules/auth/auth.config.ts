@@ -12,11 +12,11 @@ interface BetterAuthOptionsDynamic {
   secret: string
   trustedOrigins: string[]
   sendResetPassword?: (
-    data: { user: User, url: string, token: string },
+    data: { user: User; url: string; token: string },
     request: Request | undefined,
   ) => Promise<void>
   sendVerificationEmail?: (
-    data: { user: User, url: string, token: string },
+    data: { user: User; url: string; token: string },
     request: Request | undefined,
   ) => Promise<void>
   beforeHook?: BetterAuthHooks['before']
@@ -30,7 +30,9 @@ interface BetterAuthOptionsDynamic {
 // export type BetterAuthSession = ReturnType<typeof createAuth>['$Infer']['Session']
 
 // My workaround to get the session type
-export type BetterAuthSession = Awaited<ReturnType<ReturnType<typeof createBetterAuth>['api']['getSession']>>
+export type BetterAuthSession = Awaited<
+  ReturnType<ReturnType<typeof createBetterAuth>['api']['getSession']>
+>
 export type LoggedInBetterAuthSession = NonNullable<BetterAuthSession>
 
 export type { BetterAuthType }
@@ -49,8 +51,7 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic): BetterAuthT
       enabled: true,
       autoSignIn: false,
       sendResetPassword: async (data, request) => {
-        if (!options?.sendResetPassword)
-          return
+        if (!options?.sendResetPassword) return
         return options?.sendResetPassword?.(data, request)
       },
     },
@@ -58,8 +59,7 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic): BetterAuthT
       sendOnSignUp: true,
       expiresIn: 60 * 60 * 24 * 10, // 10 days
       sendVerificationEmail: async (data, request) => {
-        if (!options?.sendVerificationEmail)
-          return
+        if (!options?.sendVerificationEmail) return
         return options?.sendVerificationEmail?.(data, request)
       },
     },
@@ -78,10 +78,7 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic): BetterAuthT
       before: options?.beforeHook,
       after: options?.afterHook,
     },
-    plugins: [
-      openAPI(),
-    ],
-
+    plugins: [openAPI()],
   } satisfies BetterAuthOptions
 
   // We need to pass the options to the customSession plugin to infer the type correctly
@@ -89,9 +86,6 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic): BetterAuthT
   // See https://www.better-auth.com/docs/concepts/session-management#customizing-session-response
   return betterAuth({
     ...authOptions,
-    plugins: [
-      ...(authOptions.plugins ?? []),
-    ],
-
+    plugins: [...(authOptions.plugins ?? [])],
   })
 }

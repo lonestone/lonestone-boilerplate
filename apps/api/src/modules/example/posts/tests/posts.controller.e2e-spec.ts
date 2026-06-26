@@ -16,9 +16,12 @@ import { PostModule } from '../posts.module'
 
 describe('postController (e2e)', () => {
   beforeEach(async (context) => {
-    const { orm, app } = await initializeTestApp({ orm: context.orm }, {
-      imports: [PostModule],
-    })
+    const { orm, app } = await initializeTestApp(
+      { orm: context.orm },
+      {
+        imports: [PostModule],
+      },
+    )
     context.app = app
     context.em = orm.em.fork()
     context.request = createRequest(app)
@@ -71,19 +74,24 @@ describe('postController (e2e)', () => {
       const { session } = await createUserWithSession(em)
 
       // First create a post
-      const createResponse = await request.withSession(session).post('/admin/posts').send({
-        title: 'Test Post',
-        content: [
-          {
-            type: 'text',
-            data: 'This is a test post content',
-          },
-        ],
-      })
+      const createResponse = await request
+        .withSession(session)
+        .post('/admin/posts')
+        .send({
+          title: 'Test Post',
+          content: [
+            {
+              type: 'text',
+              data: 'This is a test post content',
+            },
+          ],
+        })
       const postId = createResponse.body.id
 
       // Act - publish it
-      const publishResponse = await request.withSession(session).patch(`/admin/posts/${postId}/publish`)
+      const publishResponse = await request
+        .withSession(session)
+        .patch(`/admin/posts/${postId}/publish`)
 
       // Assert
       expect(publishResponse.body).toMatchObject({
@@ -102,15 +110,18 @@ describe('postController (e2e)', () => {
       const { session } = await createUserWithSession(em)
 
       // First create a post
-      const createResponse = await request.withSession(session).post('/admin/posts').send({
-        title: 'Test Post',
-        content: [
-          {
-            type: 'text',
-            data: 'This is a test post content',
-          },
-        ],
-      })
+      const createResponse = await request
+        .withSession(session)
+        .post('/admin/posts')
+        .send({
+          title: 'Test Post',
+          content: [
+            {
+              type: 'text',
+              data: 'This is a test post content',
+            },
+          ],
+        })
       const postId = createResponse.body.id
 
       // Publish it
@@ -134,12 +145,17 @@ describe('postController (e2e)', () => {
       const { em, request } = context
       // Arrange - create + publish a post
       const { session } = await createUserWithSession(em)
-      const createResponse = await request.withSession(session).post('/admin/posts').send({
-        title: 'Likeable Post',
-        content: [{ type: 'text', data: 'Content worth liking.' }],
-      })
+      const createResponse = await request
+        .withSession(session)
+        .post('/admin/posts')
+        .send({
+          title: 'Likeable Post',
+          content: [{ type: 'text', data: 'Content worth liking.' }],
+        })
       const postId = createResponse.body.id
-      const publishResponse = await request.withSession(session).patch(`/admin/posts/${postId}/publish`)
+      const publishResponse = await request
+        .withSession(session)
+        .patch(`/admin/posts/${postId}/publish`)
       const slug = publishResponse.body.slug
 
       // Act - anonymous like (no session)
@@ -159,10 +175,13 @@ describe('postController (e2e)', () => {
       const { em, request } = context
       // Arrange - User A creates a post
       const { session: sessionA } = await createUserWithSession(em, { name: 'Alice' })
-      await request.withSession(sessionA).post('/admin/posts').send({
-        title: 'Alice Post',
-        content: [{ type: 'text', data: 'content' }],
-      })
+      await request
+        .withSession(sessionA)
+        .post('/admin/posts')
+        .send({
+          title: 'Alice Post',
+          content: [{ type: 'text', data: 'content' }],
+        })
 
       // Arrange - User B
       const { session: sessionB } = await createUserWithSession(em, { name: 'Bob' })

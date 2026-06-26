@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback } from '@boilerstone/ui/components/primitives/av
 import { useTranslation } from 'react-i18next'
 import { authClient } from '@/lib/auth-client'
 
-function Field({ label, value }: { label: string, value: string }) {
+function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-background p-5">
       <dt className="mb-1 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const name = user?.name ?? user?.email ?? 'User'
   const initials = name
     .split(' ')
-    .map(part => part[0])
+    .map((part) => part[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)

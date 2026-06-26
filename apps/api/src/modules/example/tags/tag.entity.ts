@@ -24,6 +24,6 @@ export class Tag {
   @Index()
   slug!: string
 
-  @ManyToMany(() => Post, post => post.tags)
+  @ManyToMany(() => Post, (post) => post.tags)
   posts = new Collection<Post>(this)
 }

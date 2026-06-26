@@ -1,7 +1,7 @@
 {
   "name": "@boilerstone/documentation",
-  "type": "module",
   "version": "0.0.1",
+  "type": "module",
   "scripts": {
     "generate:index": "node ./scripts/generate-docs-index.mjs",
     "generate:index:watch": "node ./scripts/generate-docs-index.mjs --watch",

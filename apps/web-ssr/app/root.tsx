@@ -3,7 +3,15 @@ import process from 'node:process'
 import { client } from '@boilerstone/openapi-generator'
 import { HydrationBoundary, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData } from 'react-router'
+import {
+  isRouteErrorResponse,
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  useRouteLoaderData,
+} from 'react-router'
 import { useDehydratedState } from '@/hooks/use-dehydrated-state'
 import { useTheme } from '@/hooks/use-theme'
 import { queryClient } from '@/lib/query-client'
@@ -71,9 +79,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Scripts />
         {/* Inject the API URL into the window object */}
         {/* oxlint-disable-next-line react-dom/no-dangerously-set-innerhtml -- ignore */}
-        <script dangerouslySetInnerHTML={{
-          __html: `window.ENV = ${JSON.stringify(data)}`,
-        }}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(data)}`,
+          }}
         />
       </body>
     </html>
@@ -99,12 +108,9 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
   if (isRouteErrorResponse(error)) {
     message = error.status === 404 ? '404' : 'Error'
-    details
-      = error.status === 404
-        ? 'The requested page could not be found.'
-        : error.statusText || details
-  }
-  else if (import.meta.env.DEV && error && error instanceof Error) {
+    details =
+      error.status === 404 ? 'The requested page could not be found.' : error.statusText || details
+  } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message
     stack = error.stack
   }

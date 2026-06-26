@@ -7,11 +7,7 @@ import {
   TypedParam,
   TypedRoute,
 } from '@lonestone/nzoth/server'
-import {
-  HttpCode,
-  Param,
-  UseGuards,
-} from '@nestjs/common'
+import { HttpCode, Param, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
 import { LoggedInBetterAuthSession } from '../../auth/auth.config'
 import { Session } from '../../auth/auth.decorator'
@@ -52,10 +48,7 @@ export class PostController {
     @Session() session: LoggedInBetterAuthSession,
     @TypedBody(createPostSchema) body: CreatePostInput,
   ): Promise<UserPost> {
-    const post = await this.postService.createPost(
-      session.user.id,
-      body,
-    )
+    const post = await this.postService.createPost(session.user.id, body)
     return this.postsMapper.toUserPost(post)
   }
 
@@ -65,11 +58,7 @@ export class PostController {
     @TypedParam('id', z.string()) id: string,
     @TypedBody(updatePostSchema) body: UpdatePostInput,
   ): Promise<UserPost> {
-    const post = await this.postService.updatePost(
-      id,
-      session.user.id,
-      body,
-    )
+    const post = await this.postService.updatePost(id, session.user.id, body)
     return this.postsMapper.toUserPost(post)
   }
 
@@ -98,12 +87,7 @@ export class PostController {
     @SortingParams(postSortingSchema) sort?: PostSorting,
     @FilteringParams(postFilteringSchema) filter?: PostFiltering,
   ) {
-    const result = await this.postService.getUserPosts(
-      session.user.id,
-      pagination,
-      sort,
-      filter,
-    )
+    const result = await this.postService.getUserPosts(session.user.id, pagination, sort, filter)
     return this.postsMapper.toUserPosts(result)
   }
 

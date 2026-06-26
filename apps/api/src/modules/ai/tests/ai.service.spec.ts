@@ -49,7 +49,9 @@ vi.mock('ai', () => ({
 
 vi.mock('@langfuse/tracing', () => {
   const createTraceIdMock = vi.fn().mockResolvedValue('test-trace-id')
-  const startActiveObservationMock = vi.fn((_name: string, fn: () => unknown) => Promise.resolve(fn()))
+  const startActiveObservationMock = vi.fn((_name: string, fn: () => unknown) =>
+    Promise.resolve(fn()),
+  )
   return {
     getActiveSpanId: vi.fn(),
     getActiveTraceId: vi.fn(),
@@ -72,22 +74,24 @@ vi.mock('../ai.utils', () => ({
   createSchemaPromptCommand: vi.fn(() => 'IMPORTANT: You must respond with valid JSON'),
   createSchemaPromptCommandForChat: vi.fn(() => 'IMPORTANT: You must respond with valid JSON'),
   extractToolCalls: vi.fn((steps) => {
-    const toolCalls = steps?.flatMap((step: { toolCalls?: Array<{ toolCallId: string, toolName: string, input: unknown }> }) =>
-      (step.toolCalls || []).map(tc => ({
-        toolCallId: tc.toolCallId,
-        toolName: tc.toolName,
-        args: tc.input as Record<string, unknown>,
-      })),
+    const toolCalls = steps?.flatMap(
+      (step: { toolCalls?: Array<{ toolCallId: string; toolName: string; input: unknown }> }) =>
+        (step.toolCalls || []).map((tc) => ({
+          toolCallId: tc.toolCallId,
+          toolName: tc.toolName,
+          args: tc.input as Record<string, unknown>,
+        })),
     )
     return toolCalls && toolCalls.length > 0 ? toolCalls : undefined
   }),
   extractToolResults: vi.fn((steps) => {
-    const toolResults = steps?.flatMap((step: { toolResults?: Array<{ toolCallId: string, toolName: string, output: unknown }> }) =>
-      (step.toolResults || []).map(tr => ({
-        toolCallId: tr.toolCallId,
-        toolName: tr.toolName,
-        result: tr.output,
-      })),
+    const toolResults = steps?.flatMap(
+      (step: { toolResults?: Array<{ toolCallId: string; toolName: string; output: unknown }> }) =>
+        (step.toolResults || []).map((tr) => ({
+          toolCallId: tr.toolCallId,
+          toolName: tr.toolName,
+          result: tr.output,
+        })),
     )
     return toolResults && toolResults.length > 0 ? toolResults : undefined
   }),
@@ -284,14 +288,18 @@ describe('aiService', () => {
 
     it('should throw error when no default model is configured', async () => {
       vi.mocked(getModelInstance).mockRejectedValue(
-        new Error('No default model configured. Please specify a model or configure a default model.'),
+        new Error(
+          'No default model configured. Please specify a model or configure a default model.',
+        ),
       )
 
       await expect(
         service.generateText({
           prompt: 'Test',
         }),
-      ).rejects.toThrow('No default model configured. Please specify a model or configure a default model.')
+      ).rejects.toThrow(
+        'No default model configured. Please specify a model or configure a default model.',
+      )
     })
 
     it('should handle abort signal', async () => {
@@ -447,15 +455,17 @@ describe('aiService', () => {
         text: 'Hello!',
         usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
         finishReason: 'stop',
-        totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 } as GenerateTextResult['totalUsage'],
+        totalUsage: {
+          inputTokens: 10,
+          outputTokens: 5,
+          totalTokens: 15,
+        } as GenerateTextResult['totalUsage'],
       })
 
       vi.mocked(generateText).mockResolvedValue(mockResult)
 
       const result = await service.chat({
-        messages: [
-          { role: 'user', content: 'Hello' },
-        ],
+        messages: [{ role: 'user', content: 'Hello' }],
       })
 
       expect(result.result).toBe('Hello!')
@@ -508,7 +518,11 @@ describe('aiService', () => {
             ],
           } as GenerateTextResult['steps'][number],
         ],
-        totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 } as GenerateTextResult['totalUsage'],
+        totalUsage: {
+          inputTokens: 10,
+          outputTokens: 5,
+          totalTokens: 15,
+        } as GenerateTextResult['totalUsage'],
       })
 
       vi.mocked(generateText).mockResolvedValue(mockResult)
@@ -553,7 +567,11 @@ describe('aiService', () => {
             ],
           } as GenerateTextResult['steps'][number],
         ],
-        totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 } as GenerateTextResult['totalUsage'],
+        totalUsage: {
+          inputTokens: 10,
+          outputTokens: 5,
+          totalTokens: 15,
+        } as GenerateTextResult['totalUsage'],
       })
 
       vi.mocked(generateText).mockResolvedValue(mockResult)
@@ -580,7 +598,11 @@ describe('aiService', () => {
         text: 'Response',
         usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
         finishReason: 'stop',
-        totalUsage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 } as GenerateTextResult['totalUsage'],
+        totalUsage: {
+          inputTokens: 5,
+          outputTokens: 3,
+          totalTokens: 8,
+        } as GenerateTextResult['totalUsage'],
       })
 
       vi.mocked(generateText).mockResolvedValue(mockResult)
@@ -598,7 +620,11 @@ describe('aiService', () => {
         text: 'Response',
         usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
         finishReason: 'stop',
-        totalUsage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 } as GenerateTextResult['totalUsage'],
+        totalUsage: {
+          inputTokens: 5,
+          outputTokens: 3,
+          totalTokens: 8,
+        } as GenerateTextResult['totalUsage'],
       })
 
       vi.mocked(generateText).mockResolvedValue(mockResult)
@@ -622,7 +648,11 @@ describe('aiService', () => {
           text: '{"name": "John", "age": 30}',
           usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
           finishReason: 'stop',
-          totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 } as GenerateTextResult['totalUsage'],
+          totalUsage: {
+            inputTokens: 10,
+            outputTokens: 5,
+            totalTokens: 15,
+          } as GenerateTextResult['totalUsage'],
         })
 
         vi.mocked(generateText).mockResolvedValue(mockResult)
@@ -657,7 +687,11 @@ describe('aiService', () => {
           text: '{"name": "Jane", "age": 25}',
           usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
           finishReason: 'stop',
-          totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 } as GenerateTextResult['totalUsage'],
+          totalUsage: {
+            inputTokens: 10,
+            outputTokens: 5,
+            totalTokens: 15,
+          } as GenerateTextResult['totalUsage'],
         })
 
         vi.mocked(generateText).mockResolvedValue(mockResult)
@@ -680,7 +714,11 @@ describe('aiService', () => {
           text: '{"name": "Bob", "age": 35}',
           usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
           finishReason: 'stop',
-          totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 } as GenerateTextResult['totalUsage'],
+          totalUsage: {
+            inputTokens: 10,
+            outputTokens: 5,
+            totalTokens: 15,
+          } as GenerateTextResult['totalUsage'],
         })
 
         vi.mocked(generateText).mockResolvedValue(mockResult)
@@ -707,7 +745,11 @@ describe('aiService', () => {
           text: '{"invalid": "data"}',
           usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
           finishReason: 'stop',
-          totalUsage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 } as GenerateTextResult['totalUsage'],
+          totalUsage: {
+            inputTokens: 10,
+            outputTokens: 5,
+            totalTokens: 15,
+          } as GenerateTextResult['totalUsage'],
         })
 
         vi.mocked(generateText).mockResolvedValue(mockResult)
@@ -728,7 +770,11 @@ describe('aiService', () => {
           text: 'Hello, this is a normal response',
           usage: { inputTokens: 5, outputTokens: 10, totalTokens: 15 },
           finishReason: 'stop',
-          totalUsage: { inputTokens: 5, outputTokens: 10, totalTokens: 15 } as GenerateTextResult['totalUsage'],
+          totalUsage: {
+            inputTokens: 5,
+            outputTokens: 10,
+            totalTokens: 15,
+          } as GenerateTextResult['totalUsage'],
         })
 
         vi.mocked(generateText).mockResolvedValue(mockResult)

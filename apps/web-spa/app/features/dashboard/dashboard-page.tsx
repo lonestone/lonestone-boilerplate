@@ -25,10 +25,23 @@ import {
 } from '@boilerstone/ui/components/primitives/dropdown-menu'
 import { Avatar, AvatarFallback } from '@boilerstone/ui/components/primitives/avatar'
 import { Toaster } from '@boilerstone/ui/components/primitives/sonner'
-import { Brain, ChevronUp, Command, Component, Globe, LayoutDashboard, LogOut, Moon, Pen, PlusCircle, Sun, User } from 'lucide-react'
+import {
+  Brain,
+  ChevronUp,
+  Command,
+  Component,
+  Globe,
+  LayoutDashboard,
+  LogOut,
+  Moon,
+  Pen,
+  PlusCircle,
+  Sun,
+  User,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import useTheme from '@/hooks/useTheme'
 import { authClient } from '@/lib/auth-client'
 import { useI18nStore } from '@/lib/i18n/i18n-client'
@@ -39,6 +52,7 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
   const { t, i18n } = useTranslation()
   const { data: sessionData } = authClient.useSession()
   const navigate = useNavigate()
+  const location = useLocation()
   const { setLanguage } = useI18nStore()
   const [theme, setTheme] = useTheme()
 
@@ -113,22 +127,29 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map(item => (
-                <SidebarMenuItem key={item.to}>
-                  <NavLink
-                    to={item.to}
-                    end={item.to === '/dashboard'}
-                    className={({ isActive }) =>
-                      isActive
-                        ? 'flex w-full items-center gap-2 rounded-md bg-primary px-2 py-1.5 text-sm font-medium text-primary-foreground transition-colors'
-                        : 'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors'
-                    }
-                  >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    <span>{item.label}</span>
-                  </NavLink>
-                </SidebarMenuItem>
-              ))}
+              {navItems.map((item) => {
+                const isActive =
+                  item.to === '/dashboard'
+                    ? location.pathname === '/dashboard'
+                    : location.pathname.startsWith(item.to)
+                return (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton
+                      tooltip={item.label}
+                      isActive={isActive}
+                      render={<Link to={item.to} />}
+                      className={
+                        isActive
+                          ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+                          : ''
+                      }
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -166,9 +187,7 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
-              <DropdownMenuTrigger
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors outline-none"
-              >
+              <DropdownMenuTrigger className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors outline-none">
                 <Avatar size="sm">
                   <AvatarFallback>{userInitials}</AvatarFallback>
                 </Avatar>
@@ -182,11 +201,7 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
                 </div>
                 <ChevronUp className="ml-auto size-4 text-muted-foreground" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="top"
-                align="start"
-                className="w-56"
-              >
+              <DropdownMenuContent side="top" align="start" className="w-56">
                 <DropdownMenuItem render={<Link to="/dashboard/profile" />}>
                   <User className="mr-2 h-4 w-4" />
                   <span>{t('dashboard.profile')}</span>
@@ -195,10 +210,14 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
                 <DropdownMenuSeparator />
 
                 <DropdownMenuItem onClick={handleThemeToggle}>
-                  {theme === 'dark'
-                    ? <Sun className="mr-2 h-4 w-4" />
-                    : <Moon className="mr-2 h-4 w-4" />}
-                  <span>{theme === 'dark' ? t('dashboard.lightMode') : t('dashboard.darkMode')}</span>
+                  {theme === 'dark' ? (
+                    <Sun className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Moon className="mr-2 h-4 w-4" />
+                  )}
+                  <span>
+                    {theme === 'dark' ? t('dashboard.lightMode') : t('dashboard.darkMode')}
+                  </span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSub>
@@ -208,14 +227,9 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
                     {Object.entries(SUPPORTED_LOCALES).map(([key, config]) => (
-                      <DropdownMenuItem
-                        key={key}
-                        onClick={() => handleLanguageChange(key)}
-                      >
+                      <DropdownMenuItem key={key} onClick={() => handleLanguageChange(key)}>
                         <span>
-                          {config.flag}
-                          {' '}
-                          {config.name}
+                          {config.flag} {config.name}
                         </span>
                         {i18n.language === config.defaultLocale && (
                           <span className="ml-auto text-[10px] text-muted-foreground">Active</span>
@@ -267,7 +281,7 @@ export default function DashboardPage() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault()
-        setCommandOpen(prev => !prev)
+        setCommandOpen((prev) => !prev)
       }
     }
     window.addEventListener('keydown', handleKeyDown)

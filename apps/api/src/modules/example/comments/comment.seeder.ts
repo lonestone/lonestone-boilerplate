@@ -44,9 +44,7 @@ async function createComment(
   const randomUser: User = faker.helpers.arrayElement(users as User[])
   comment.user = faker.datatype.boolean(0.7) ? randomUser : undefined
 
-  comment.content = depth === 0
-    ? pickComment(TOP_LEVEL_COMMENTS)
-    : pickComment(REPLY_COMMENTS)
+  comment.content = depth === 0 ? pickComment(TOP_LEVEL_COMMENTS) : pickComment(REPLY_COMMENTS)
 
   if (parentComment) {
     comment.parent = parentComment
@@ -72,8 +70,7 @@ export class CommentSeeder extends Seeder {
     const users = context.users
 
     for (const post of posts) {
-      if (!post.publishedAt)
-        continue
+      if (!post.publishedAt) continue
 
       const numberOfComments = faker.number.int({ min: 0, max: 4 })
       for (let i = 0; i < numberOfComments; i++) {

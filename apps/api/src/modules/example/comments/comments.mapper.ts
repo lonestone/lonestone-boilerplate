@@ -1,21 +1,16 @@
 import { Injectable } from '@nestjs/common'
 import { Comment } from './comments.entity'
 import { CommentsResult } from './comments.service'
-import {
-  CommentResponse,
-  CommentsResponse,
-} from './contracts/comments.contract'
+import { CommentResponse, CommentsResponse } from './contracts/comments.contract'
 
 @Injectable()
 export class CommentsMapper {
   toComment(comment: Comment): CommentResponse {
     const replyIds = comment.replies.isInitialized()
-      ? comment.replies.getItems().map(reply => reply.id)
+      ? comment.replies.getItems().map((reply) => reply.id)
       : []
 
-    const replyCount = comment.replies.isInitialized()
-      ? comment.replies.count()
-      : 0
+    const replyCount = comment.replies.isInitialized() ? comment.replies.count() : 0
 
     return {
       id: comment.id,
@@ -34,13 +29,9 @@ export class CommentsMapper {
     }
   }
 
-  toCommentsResponse({
-    comments,
-    itemCount,
-    pagination,
-  }: CommentsResult): CommentsResponse {
+  toCommentsResponse({ comments, itemCount, pagination }: CommentsResult): CommentsResponse {
     return {
-      data: comments.map(comment => this.toComment(comment)),
+      data: comments.map((comment) => this.toComment(comment)),
       meta: {
         itemCount,
         pageSize: pagination.pageSize,

@@ -83,8 +83,7 @@ export default function UserPostEditPage() {
   const onSubmit = async (data: UpdatePostSchema) => {
     try {
       await updatePost(data)
-    }
-    catch (error) {
+    } catch (error) {
       console.error(error)
     }
   }
@@ -93,12 +92,10 @@ export default function UserPostEditPage() {
     try {
       if (post?.publishedAt) {
         await unpublishPost()
-      }
-      else {
+      } else {
         await publishPost()
       }
-    }
-    catch (error) {
+    } catch (error) {
       console.error(error)
     }
   }
@@ -136,7 +133,7 @@ export default function UserPostEditPage() {
           title: post?.title ?? '',
           content: post?.content ?? [],
           coverImage: post?.coverImage ?? '',
-          tags: post?.tags?.map(tag => tag.name) ?? [],
+          tags: post?.tags?.map((tag) => tag.name) ?? [],
         }}
         isSubmitting={isPending}
       />

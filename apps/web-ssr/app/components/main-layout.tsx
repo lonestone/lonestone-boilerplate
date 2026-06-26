@@ -41,7 +41,7 @@ export default function MainLayout() {
           {/* Right: nav links grouped with the theme toggle */}
           <div className="flex items-center gap-1">
             <nav className="flex items-center gap-1" aria-label="Main navigation">
-              {navLinks.map(link => (
+              {navLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
@@ -53,7 +53,8 @@ export default function MainLayout() {
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                    )}
+                    )
+                  }
                 >
                   {link.label}
                 </NavLink>
@@ -76,11 +77,9 @@ export default function MainLayout() {
             <span className="inline-block h-4 w-4 rounded-sm bg-primary" aria-hidden="true" />
             <span className="text-sm font-black tracking-tight text-foreground">LONESTONE</span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Built with the Lonestone boilerplate.
-          </p>
+          <p className="text-xs text-muted-foreground">Built with the Lonestone boilerplate.</p>
           <nav className="flex gap-4" aria-label="Footer navigation">
-            {navLinks.map(link => (
+            {navLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}

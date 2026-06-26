@@ -27,8 +27,7 @@ export default function PostCard({ post, index = 0 }: PostCardProps) {
     const newParams = new URLSearchParams(searchParams)
     if (activeTag === tagSlug) {
       newParams.delete('tag')
-    }
-    else {
+    } else {
       newParams.set('tag', tagSlug)
     }
     newParams.set('page', '1')
@@ -46,26 +45,24 @@ export default function PostCard({ post, index = 0 }: PostCardProps) {
           {/* Cover — image, or a branded fallback so every card stays consistent */}
           <div className="relative w-full shrink-0 overflow-hidden bg-muted md:w-64 lg:w-80">
             <div className="aspect-video md:h-full md:min-h-[13rem]">
-              {post.coverImage && !imgError
-                ? (
-                    <img
-                      src={post.coverImage}
-                      alt={post.title}
-                      onLoad={() => setImgLoaded(true)}
-                      onError={() => setImgError(true)}
-                      className={[
-                        'h-full w-full object-cover transition-all duration-700 group-hover:scale-105',
-                        imgLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-sm',
-                      ].join(' ')}
-                    />
-                  )
-                : (
-                    <div className="flex h-full w-full items-center justify-center bg-muted">
-                      <span className="select-none font-sans text-5xl font-black uppercase tracking-tight text-muted-foreground/20">
-                        {post.title.slice(0, 2)}
-                      </span>
-                    </div>
-                  )}
+              {post.coverImage && !imgError ? (
+                <img
+                  src={post.coverImage}
+                  alt={post.title}
+                  onLoad={() => setImgLoaded(true)}
+                  onError={() => setImgError(true)}
+                  className={[
+                    'h-full w-full object-cover transform-gpu transition-all duration-700 group-hover:scale-105',
+                    imgLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-sm',
+                  ].join(' ')}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-muted">
+                  <span className="select-none font-sans text-5xl font-black uppercase tracking-tight text-muted-foreground/20">
+                    {post.title.slice(0, 2)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -75,7 +72,7 @@ export default function PostCard({ post, index = 0 }: PostCardProps) {
               {/* Tags */}
               {post.tags && post.tags.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-1.5">
-                  {post.tags.map(tag => (
+                  {post.tags.map((tag) => (
                     <button
                       key={tag.id}
                       type="button"

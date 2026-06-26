@@ -14,10 +14,15 @@ async function loadGoogleProvider(apiKey: string): Promise<ProviderInstance> {
     try {
       const provider = createGoogleGenerativeAIProvider({ apiKey })
       googleProviderCache.set(apiKey, provider)
-    }
-    catch (error) {
-      if (error instanceof Error && (error.message.includes('Cannot find module') || error.message.includes('Failed to resolve'))) {
-        throw new Error('Google provider requires @ai-sdk/google package. Please install it: pnpm add @ai-sdk/google')
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.message.includes('Cannot find module') ||
+          error.message.includes('Failed to resolve'))
+      ) {
+        throw new Error(
+          'Google provider requires @ai-sdk/google package. Please install it: pnpm add @ai-sdk/google',
+        )
       }
       throw error
     }
@@ -30,10 +35,15 @@ async function loadAnthropicProvider(apiKey: string): Promise<ProviderInstance> 
     try {
       const provider = createAnthropicProvider({ apiKey })
       anthropicProviderCache.set(apiKey, provider)
-    }
-    catch (error) {
-      if (error instanceof Error && (error.message.includes('Cannot find module') || error.message.includes('Failed to resolve'))) {
-        throw new Error('Anthropic provider requires @ai-sdk/anthropic package. Please install it: pnpm add @ai-sdk/anthropic')
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.message.includes('Cannot find module') ||
+          error.message.includes('Failed to resolve'))
+      ) {
+        throw new Error(
+          'Anthropic provider requires @ai-sdk/anthropic package. Please install it: pnpm add @ai-sdk/anthropic',
+        )
       }
       throw error
     }
@@ -49,7 +59,11 @@ export function createOpenAI({ apiKey }: { apiKey?: string }): ProviderInstance 
   return (modelName: string) => provider(modelName)
 }
 
-export async function createGoogleGenerativeAI({ apiKey }: { apiKey?: string }): Promise<ProviderInstance> {
+export async function createGoogleGenerativeAI({
+  apiKey,
+}: {
+  apiKey?: string
+}): Promise<ProviderInstance> {
   if (!apiKey) {
     throw new Error('GOOGLE_API_KEY is required for Google provider')
   }

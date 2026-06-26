@@ -20,7 +20,7 @@ const baseResetPasswordSchema = z.object({
 })
 
 function getResetPasswordSchema(t: (key: string) => string) {
-  return baseResetPasswordSchema.refine(data => data.password === data.confirmPassword, {
+  return baseResetPasswordSchema.refine((data) => data.password === data.confirmPassword, {
     message: t('errorCodes.PASSWORDS_DO_NOT_MATCH'),
     path: ['confirmPassword'],
   })
@@ -33,7 +33,10 @@ interface AuthResetPasswordFormProps {
   isPending: boolean
 }
 
-export const AuthResetPasswordForm: React.FC<AuthResetPasswordFormProps> = ({ onSubmit, isPending }) => {
+export const AuthResetPasswordForm: React.FC<AuthResetPasswordFormProps> = ({
+  onSubmit,
+  isPending,
+}) => {
   const { t } = useTranslation()
   const resetPasswordSchema = getResetPasswordSchema(t)
   const form = useForm<AuthResetPasswordFormData>({
@@ -51,7 +54,13 @@ export const AuthResetPasswordForm: React.FC<AuthResetPasswordFormProps> = ({ on
             <FormItem>
               <FormLabel htmlFor="password">{t('auth.resetPassword.password')}</FormLabel>
               <FormControl>
-                <Input id="password" {...field} type="password" autoComplete="new-password" placeholder="••••••••" />
+                <Input
+                  id="password"
+                  {...field}
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -62,9 +71,17 @@ export const AuthResetPasswordForm: React.FC<AuthResetPasswordFormProps> = ({ on
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="confirmPassword">{t('auth.resetPassword.confirmPassword')}</FormLabel>
+              <FormLabel htmlFor="confirmPassword">
+                {t('auth.resetPassword.confirmPassword')}
+              </FormLabel>
               <FormControl>
-                <Input id="confirmPassword" {...field} type="password" autoComplete="new-password" placeholder="••••••••" />
+                <Input
+                  id="confirmPassword"
+                  {...field}
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

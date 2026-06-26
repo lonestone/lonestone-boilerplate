@@ -1,7 +1,12 @@
 import type { Recipe } from '@boilerstone/openapi-generator'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@boilerstone/ui/components/primitives/card'
 
 interface RecipeDisplayProps {
   recipe: Recipe
@@ -18,14 +23,8 @@ export function RecipeDisplay({ recipe }: RecipeDisplayProps) {
     <Card className="w-full">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg">
-            🥘
-            {' '}
-            {recipe.name}
-          </CardTitle>
-          <Badge className={difficultyColors[recipe.difficulty]}>
-            {recipe.difficulty}
-          </Badge>
+          <CardTitle className="text-lg">🥘 {recipe.name}</CardTitle>
+          <Badge className={difficultyColors[recipe.difficulty]}>{recipe.difficulty}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">{recipe.description}</p>
       </CardHeader>
@@ -48,7 +47,7 @@ export function RecipeDisplay({ recipe }: RecipeDisplayProps) {
         <div>
           <h4 className="font-semibold text-sm mb-2">Ingredients</h4>
           <ul className="space-y-1 text-sm">
-            {recipe.ingredients.map(ingredient => (
+            {recipe.ingredients.map((ingredient) => (
               <li key={`${ingredient.name}-${ingredient.quantity}`} className="flex gap-2">
                 <span className="text-muted-foreground">{ingredient.quantity}</span>
                 <span>{ingredient.name}</span>
@@ -60,7 +59,7 @@ export function RecipeDisplay({ recipe }: RecipeDisplayProps) {
         <div>
           <h4 className="font-semibold text-sm mb-2">Instructions</h4>
           <ol className="space-y-2 text-sm list-decimal list-inside">
-            {recipe.instructions.map(step => (
+            {recipe.instructions.map((step) => (
               <li key={step} className="text-muted-foreground">
                 <span className="text-foreground">{step}</span>
               </li>
@@ -72,11 +71,8 @@ export function RecipeDisplay({ recipe }: RecipeDisplayProps) {
           <div className="bg-muted/50 rounded-lg p-3">
             <h4 className="font-semibold text-sm mb-2">Tips</h4>
             <ul className="space-y-1 text-sm text-muted-foreground">
-              {recipe.tips.map(tip => (
-                <li key={tip}>
-                  •
-                  {tip}
-                </li>
+              {recipe.tips.map((tip) => (
+                <li key={tip}>•{tip}</li>
               ))}
             </ul>
           </div>

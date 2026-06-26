@@ -10,16 +10,7 @@ import { Comment } from '../example/comments/comments.entity'
 import { Post, PostVersion } from '../example/posts/posts.entity'
 import { Tag } from '../example/tags/tag.entity'
 
-const entities = [
-  Account,
-  Comment,
-  Post,
-  PostVersion,
-  Session,
-  Tag,
-  User,
-  Verification,
-]
+const entities = [Account, Comment, Post, PostVersion, Session, Tag, User, Verification]
 
 type CreateMikroOrmOptions = {
   isTest?: boolean

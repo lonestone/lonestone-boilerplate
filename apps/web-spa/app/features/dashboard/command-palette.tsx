@@ -95,13 +95,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         <CommandSeparator />
 
         <CommandGroup heading={t('commandPalette.groups.preferences')}>
-          <CommandItem
-            onSelect={handleToggleTheme}
-            keywords={['theme', 'dark', 'light', 'mode']}
-          >
-            {theme === 'dark'
-              ? <Sun className="h-4 w-4" />
-              : <Moon className="h-4 w-4" />}
+          <CommandItem onSelect={handleToggleTheme} keywords={['theme', 'dark', 'light', 'mode']}>
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             <span>
               {theme === 'dark'
                 ? t('commandPalette.items.lightMode')

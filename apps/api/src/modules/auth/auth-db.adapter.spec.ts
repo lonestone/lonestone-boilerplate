@@ -11,7 +11,9 @@ describe('better-auth schema drift', () => {
 
   beforeAll(async () => {
     const entities = Object.values(authEntities) as EntityName<object>[]
-    orm = await MikroORM.init(createMikroOrmOptions({ debug: false, entities, entitiesTs: entities }))
+    orm = await MikroORM.init(
+      createMikroOrmOptions({ debug: false, entities, entitiesTs: entities }),
+    )
   })
 
   afterAll(async () => {

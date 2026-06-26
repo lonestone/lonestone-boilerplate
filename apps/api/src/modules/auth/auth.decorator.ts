@@ -8,12 +8,10 @@ export const HOOK_KEY = Symbol('HOOK')
 export const Public = () => SetMetadata('PUBLIC', true)
 export const Optional = () => SetMetadata('OPTIONAL', true)
 
-export const Session = createParamDecorator(
-  (_data: never, context: ExecutionContext) => {
-    const request = context.switchToHttp().getRequest()
-    return request.session
-  },
-)
+export const Session = createParamDecorator((_data: never, context: ExecutionContext) => {
+  const request = context.switchToHttp().getRequest()
+  return request.session
+})
 
 export function BeforeHook(path: `/${string}`) {
   return SetMetadata(BEFORE_HOOK_KEY, path)

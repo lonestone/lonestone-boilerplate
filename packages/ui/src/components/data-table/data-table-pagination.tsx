@@ -1,10 +1,5 @@
 import type { Table as TanstackTable } from '@tanstack/react-table'
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from 'lucide-react'
+import { ArrowLeftIcon, ArrowRightIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import {
   Select,
@@ -50,8 +45,7 @@ export function DataTablePagination<TData>({
         </Select>
       </div>
       <div className="flex w-[120px] items-center justify-center text-sm font-medium">
-        {pageLabel} {table.getState().pagination.pageIndex + 1} {ofLabel}{' '}
-        {table.getPageCount()}
+        {pageLabel} {table.getState().pagination.pageIndex + 1} {ofLabel} {table.getPageCount()}
       </div>
       <div className="flex items-center space-x-2">
         <Button

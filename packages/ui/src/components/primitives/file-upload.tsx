@@ -26,18 +26,29 @@ function getFileIcon(file: File): React.ReactNode {
 
   if (type.startsWith('video/')) return <FileVideoIcon />
   if (type.startsWith('audio/')) return <FileAudioIcon />
-  if (type.startsWith('text/') || ['txt', 'md', 'rtf', 'pdf'].includes(ext))
-    return <FileTextIcon />
+  if (type.startsWith('text/') || ['txt', 'md', 'rtf', 'pdf'].includes(ext)) return <FileTextIcon />
   if (
-    ['html', 'css', 'js', 'jsx', 'ts', 'tsx', 'json', 'xml', 'php', 'py', 'rb', 'java', 'c', 'cpp', 'cs'].includes(ext)
+    [
+      'html',
+      'css',
+      'js',
+      'jsx',
+      'ts',
+      'tsx',
+      'json',
+      'xml',
+      'php',
+      'py',
+      'rb',
+      'java',
+      'c',
+      'cpp',
+      'cs',
+    ].includes(ext)
   )
     return <FileCodeIcon />
-  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext))
-    return <FileArchiveIcon />
-  if (
-    ['exe', 'msi', 'app', 'apk', 'deb', 'rpm'].includes(ext) ||
-    type.startsWith('application/')
-  )
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) return <FileArchiveIcon />
+  if (['exe', 'msi', 'app', 'apk', 'deb', 'rpm'].includes(ext) || type.startsWith('application/'))
     return <FileCogIcon />
   return <FileIcon />
 }
@@ -136,8 +147,7 @@ function useFileUploadContext(name: string): FileUploadContextValue {
 
 // ── FileUpload root ───────────────────────────────────────────────────────────
 
-interface FileUploadProps
-  extends Omit<React.ComponentProps<'div'>, 'defaultValue' | 'onChange'> {
+interface FileUploadProps extends Omit<React.ComponentProps<'div'>, 'defaultValue' | 'onChange'> {
   value?: File[]
   defaultValue?: File[]
   onValueChange?: (files: File[]) => void
@@ -219,9 +229,7 @@ function FileUpload(props: FileUploadProps) {
           for (const file of action.files) {
             filesMap.set(file, { file, progress: 0, status: 'idle' })
           }
-          propsRef.current.onValueChange?.(
-            Array.from(filesMap.values()).map((f) => f.file),
-          )
+          propsRef.current.onValueChange?.(Array.from(filesMap.values()).map((f) => f.file))
           return { ...s, files: filesMap }
         }
         case 'SET_FILES': {
@@ -238,7 +246,8 @@ function FileUpload(props: FileUploadProps) {
         }
         case 'SET_PROGRESS': {
           const fs = filesMap.get(action.file)
-          if (fs) filesMap.set(action.file, { ...fs, progress: action.progress, status: 'uploading' })
+          if (fs)
+            filesMap.set(action.file, { ...fs, progress: action.progress, status: 'uploading' })
           return { ...s, files: filesMap }
         }
         case 'SET_SUCCESS': {
@@ -253,25 +262,32 @@ function FileUpload(props: FileUploadProps) {
         }
         case 'REMOVE_FILE': {
           const cached = urlCache.get(action.file)
-          if (cached) { URL.revokeObjectURL(cached); urlCache.delete(action.file) }
+          if (cached) {
+            URL.revokeObjectURL(cached)
+            urlCache.delete(action.file)
+          }
           filesMap.delete(action.file)
-          propsRef.current.onValueChange?.(
-            Array.from(filesMap.values()).map((f) => f.file),
-          )
+          propsRef.current.onValueChange?.(Array.from(filesMap.values()).map((f) => f.file))
           return { ...s, files: filesMap }
         }
-        case 'SET_DRAG_OVER': return { ...s, dragOver: action.dragOver }
-        case 'SET_INVALID': return { ...s, invalid: action.invalid }
+        case 'SET_DRAG_OVER':
+          return { ...s, dragOver: action.dragOver }
+        case 'SET_INVALID':
+          return { ...s, invalid: action.invalid }
         case 'CLEAR': {
           for (const file of filesMap.keys()) {
             const cached = urlCache.get(file)
-            if (cached) { URL.revokeObjectURL(cached); urlCache.delete(file) }
+            if (cached) {
+              URL.revokeObjectURL(cached)
+              urlCache.delete(file)
+            }
           }
           filesMap.clear()
           propsRef.current.onValueChange?.([])
           return { ...s, files: filesMap, invalid: false }
         }
-        default: return s
+        default:
+          return s
       }
     }
 
@@ -289,10 +305,7 @@ function FileUpload(props: FileUploadProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listeners, filesMap, invalid, propsRef, urlCache])
 
-  const acceptTypes = React.useMemo(
-    () => accept?.split(',').map((t) => t.trim()) ?? null,
-    [accept],
-  )
+  const acceptTypes = React.useMemo(() => accept?.split(',').map((t) => t.trim()) ?? null, [accept])
 
   const onProgress = useLazyRef(() => {
     let frame = 0
@@ -300,7 +313,11 @@ function FileUpload(props: FileUploadProps) {
       if (frame) return
       frame = requestAnimationFrame(() => {
         frame = 0
-        store.dispatch({ type: 'SET_PROGRESS', file, progress: Math.min(Math.max(0, progress), 100) })
+        store.dispatch({
+          type: 'SET_PROGRESS',
+          file,
+          progress: Math.min(Math.max(0, progress), 100),
+        })
       })
     }
   }).current
@@ -308,8 +325,7 @@ function FileUpload(props: FileUploadProps) {
   React.useEffect(() => {
     if (isControlled) {
       store.dispatch({ type: 'SET_FILES', files: value })
-    }
-    else if (defaultValue && defaultValue.length > 0 && !store.getState().files.size) {
+    } else if (defaultValue && defaultValue.length > 0 && !store.getState().files.size) {
       store.dispatch({ type: 'SET_FILES', files: defaultValue })
     }
   }, [value, defaultValue, isControlled, store])
@@ -336,14 +352,12 @@ function FileUpload(props: FileUploadProps) {
             onError: (file, error) =>
               store.dispatch({ type: 'SET_ERROR', file, error: error.message ?? 'Upload failed' }),
           })
-        }
-        else {
+        } else {
           for (const file of files) {
             store.dispatch({ type: 'SET_SUCCESS', file })
           }
         }
-      }
-      catch (error) {
+      } catch (error) {
         const msg = error instanceof Error ? error.message : 'Upload failed'
         for (const file of files) {
           store.dispatch({ type: 'SET_ERROR', file, error: msg })
@@ -502,7 +516,15 @@ function FileUploadDropzone({
   const dragOver = useStore((s) => s.dragOver)
   const invalid = useStore((s) => s.invalid)
 
-  const propsRef = useAsRef({ onClickProp, onDragOverProp, onDragEnterProp, onDragLeaveProp, onDropProp, onPasteProp, onKeyDownProp })
+  const propsRef = useAsRef({
+    onClickProp,
+    onDragOverProp,
+    onDragEnterProp,
+    onDragLeaveProp,
+    onDropProp,
+    onPasteProp,
+    onKeyDownProp,
+  })
 
   const onClick = React.useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
@@ -540,7 +562,8 @@ function FileUploadDropzone({
     (event: React.DragEvent<HTMLDivElement>) => {
       propsRef.current.onDragLeaveProp?.(event)
       if (event.defaultPrevented) return
-      if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return
+      if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))
+        return
       event.preventDefault()
       store.dispatch({ type: 'SET_DRAG_OVER', dragOver: false })
     },
@@ -638,11 +661,7 @@ interface FileUploadTriggerProps extends React.ComponentProps<'button'> {
   asChild?: boolean
 }
 
-function FileUploadTrigger({
-  asChild,
-  onClick: onClickProp,
-  ...rest
-}: FileUploadTriggerProps) {
+function FileUploadTrigger({ asChild, onClick: onClickProp, ...rest }: FileUploadTriggerProps) {
   const context = useFileUploadContext('FileUploadTrigger')
 
   const onClick = React.useCallback(
@@ -778,7 +797,9 @@ function FileUploadItem({ value, asChild, className, ...rest }: FileUploadItemPr
         className={cn('relative flex items-center gap-2.5 rounded-md border p-3', className)}
       >
         {rest.children}
-        <span id={statusId} className="sr-only">{statusText}</span>
+        <span id={statusId} className="sr-only">
+          {statusText}
+        </span>
       </ItemPrimitive>
     </FileUploadItemContext>
   )
@@ -872,13 +893,19 @@ function FileUploadItemMetadata({
         <>
           <span
             id={itemContext.nameId}
-            className={cn('truncate font-medium text-sm', size === 'sm' && 'font-normal text-[13px] leading-snug')}
+            className={cn(
+              'truncate font-medium text-sm',
+              size === 'sm' && 'font-normal text-[13px] leading-snug',
+            )}
           >
             {itemContext.fileState.file.name}
           </span>
           <span
             id={itemContext.sizeId}
-            className={cn('truncate text-muted-foreground text-xs', size === 'sm' && 'text-[11px] leading-snug')}
+            className={cn(
+              'truncate text-muted-foreground text-xs',
+              size === 'sm' && 'text-[11px] leading-snug',
+            )}
           >
             {formatBytes(itemContext.fileState.file.size)}
           </span>
@@ -934,8 +961,21 @@ function FileUploadItemProgress({
         {...rest}
         className={cn('-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2', className)}
       >
-        <svg className="-rotate-90 transform" width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" stroke="currentColor">
-          <circle className="text-primary/20" strokeWidth="2" cx={size / 2} cy={size / 2} r={(size - 4) / 2} />
+        <svg
+          className="-rotate-90 transform"
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          fill="none"
+          stroke="currentColor"
+        >
+          <circle
+            className="text-primary/20"
+            strokeWidth="2"
+            cx={size / 2}
+            cy={size / 2}
+            r={(size - 4) / 2}
+          />
           <circle
             className="text-primary transition-[stroke-dashoffset] duration-300 ease-linear"
             strokeWidth="2"
@@ -962,7 +1002,10 @@ function FileUploadItemProgress({
         aria-labelledby={itemContext.nameId}
         data-slot="file-upload-progress"
         {...rest}
-        className={cn('absolute inset-0 bg-primary/50 transition-[clip-path] duration-300 ease-linear', className)}
+        className={cn(
+          'absolute inset-0 bg-primary/50 transition-[clip-path] duration-300 ease-linear',
+          className,
+        )}
         style={{ clipPath: `inset(${100 - itemContext.fileState.progress}% 0% 0% 0%)` }}
       />
     )

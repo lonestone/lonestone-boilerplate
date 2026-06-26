@@ -4,7 +4,10 @@
 // These helpers are for app setup/teardown and request helpers only.
 // Arrange-Act-Assert pattern should be followed in all test files.
 
-import { ZodSerializationExceptionFilter, ZodValidationExceptionFilter } from '@lonestone/nzoth/server'
+import {
+  ZodSerializationExceptionFilter,
+  ZodValidationExceptionFilter,
+} from '@lonestone/nzoth/server'
 import { MikroORM } from '@mikro-orm/core'
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { INestApplication, ModuleMetadata } from '@nestjs/common'
@@ -42,7 +45,10 @@ function registerMiddleware(app: INestApplication, middleware: express.RequestHa
  * @param options The options for the test application
  * @returns An object containing the app, ORM, and setSession/clearSession functions
  */
-export async function initializeTestApp(options: InitializeTestAppOptions, metadata: ModuleMetadata): Promise<TestAppContext> {
+export async function initializeTestApp(
+  options: InitializeTestAppOptions,
+  metadata: ModuleMetadata,
+): Promise<TestAppContext> {
   try {
     // Use test ORM config (entities as classes) to avoid require() on .ts paths → SyntaxError.
     // One DB per test (isolation): config comes from test-db.helper (contextName there is for the test ORM only).
@@ -57,11 +63,7 @@ export async function initializeTestApp(options: InitializeTestAppOptions, metad
     }
     const mikroOrmModule = await MikroOrmModule.forRoot(testOrmOptions)
     const moduleBuilder = Test.createTestingModule({
-      imports: [
-        mikroOrmModule,
-        AuthModule,
-        ...(metadata.imports ?? []),
-      ],
+      imports: [mikroOrmModule, AuthModule, ...(metadata.imports ?? [])],
       controllers: [...(metadata.controllers ?? [])],
     })
 
@@ -70,7 +72,12 @@ export async function initializeTestApp(options: InitializeTestAppOptions, metad
 
     if (metadata.providers) {
       for (const provider of metadata.providers) {
-        if (provider && typeof provider === 'object' && 'provide' in provider && 'useValue' in provider) {
+        if (
+          provider &&
+          typeof provider === 'object' &&
+          'provide' in provider &&
+          'useValue' in provider
+        ) {
           moduleBuilder.overrideProvider(provider.provide).useValue(provider.useValue)
         }
       }
@@ -86,10 +93,7 @@ export async function initializeTestApp(options: InitializeTestAppOptions, metad
     })
 
     // Add global filters for Zod error handling (as in main.ts)
-    app.useGlobalFilters(
-      new ZodValidationExceptionFilter(),
-      new ZodSerializationExceptionFilter(),
-    )
+    app.useGlobalFilters(new ZodValidationExceptionFilter(), new ZodSerializationExceptionFilter())
 
     registerMiddleware(app, testSessionMiddleware)
 
@@ -118,8 +122,7 @@ export async function initializeTestApp(options: InitializeTestAppOptions, metad
       setSession,
       clearSession,
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error during test app initialization:', error)
     throw error
   }
@@ -140,8 +143,7 @@ export async function closeTestApp(context: TestAppContext): Promise<void> {
 
   try {
     await context.app.close()
-  }
-  catch (error: unknown) {
+  } catch (error: unknown) {
     // Ignore "Connection is closed" errors from Redis as they're expected during cleanup
     // This happens when BullMQ closes Redis connections during app.close()
     if (error instanceof Error && error.message.includes('Connection is closed')) {

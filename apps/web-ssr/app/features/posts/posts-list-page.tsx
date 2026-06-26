@@ -17,7 +17,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const tag = searchParams.get('tag') || ''
   const page = Number.parseInt(searchParams.get('page') || '1')
 
-  const filters: Array<{ property: 'title' | 'tag', rule: 'like' | 'eq', value: string }> = []
+  const filters: Array<{ property: 'title' | 'tag'; rule: 'like' | 'eq'; value: string }> = []
   if (search) {
     filters.push({ property: 'title', rule: 'like', value: search })
   }
@@ -55,8 +55,7 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
     const newParams = new URLSearchParams(searchParams)
     if (value) {
       newParams.set('search', value)
-    }
-    else {
+    } else {
       newParams.delete('search')
     }
     newParams.set('page', '1')
@@ -77,8 +76,7 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
   }
 
   const totalPages = useMemo(() => {
-    if (!posts?.data?.meta.itemCount)
-      return 0
+    if (!posts?.data?.meta.itemCount) return 0
     return Math.ceil(posts.data.meta.itemCount / 10)
   }, [posts])
 
@@ -114,8 +112,7 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
             <Input
               placeholder="Search articles…"
               value={searchValue}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                handleSearch(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearch(e.target.value)}
               className="pl-9 text-sm"
             />
           </div>
@@ -139,57 +136,59 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
         </div>
 
         {/* Posts list */}
-        {postList.length === 0
-          ? (
-              <EmptyState
-                icon={<FileText className="h-6 w-6 text-muted-foreground" />}
-                title={tag ? `No articles tagged "${tag}"` : 'No articles found'}
-                description={tag ? 'Try clearing the tag filter or searching for something else.' : 'Try a different search term.'}
-                action={tag ? { label: 'Clear tag filter', onClick: handleClearTag } : undefined}
-                className="min-h-64 border border-dashed border-border rounded-none"
-              />
-            )
-          : (
-              <>
-                <div className="flex flex-col gap-px border border-border bg-border">
-                  {postList.map((post, index) => (
-                    <PostCard key={post.slug} post={post} index={index} />
-                  ))}
-                </div>
+        {postList.length === 0 ? (
+          <EmptyState
+            icon={<FileText className="h-6 w-6 text-muted-foreground" />}
+            title={tag ? `No articles tagged "${tag}"` : 'No articles found'}
+            description={
+              tag
+                ? 'Try clearing the tag filter or searching for something else.'
+                : 'Try a different search term.'
+            }
+            action={tag ? { label: 'Clear tag filter', onClick: handleClearTag } : undefined}
+            className="min-h-64 border border-dashed border-border rounded-none"
+          />
+        ) : (
+          <>
+            <div className="flex flex-col gap-px border border-border bg-border">
+              {postList.map((post, index) => (
+                <PostCard key={post.slug} post={post} index={index} />
+              ))}
+            </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="mt-8 flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground tabular-nums">
-                      {(page - 1) * 10 + 1}–{Math.min(page * 10, itemCount)} of {itemCount}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(page - 1)}
-                        disabled={page <= 1}
-                      >
-                        <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-                        Previous
-                      </Button>
-                      <span className="hidden text-xs text-muted-foreground sm:block">
-                        Page {page} of {totalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(page + 1)}
-                        disabled={page >= totalPages}
-                      >
-                        Next
-                        <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-between">
+                <div className="text-xs text-muted-foreground tabular-nums">
+                  {(page - 1) * 10 + 1}–{Math.min(page * 10, itemCount)} of {itemCount}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(page - 1)}
+                    disabled={page <= 1}
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                    Previous
+                  </Button>
+                  <span className="hidden text-xs text-muted-foreground sm:block">
+                    Page {page} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(page + 1)}
+                    disabled={page >= totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                  </Button>
+                </div>
+              </div>
             )}
+          </>
+        )}
       </div>
     </div>
   )
@@ -199,6 +198,9 @@ export function meta() {
   return [
     { title: 'Journal — Lonestone' },
     { property: 'og:title', content: 'Journal — Lonestone' },
-    { name: 'description', content: 'Engineering insights and product thinking from the Lonestone team.' },
+    {
+      name: 'description',
+      content: 'Engineering insights and product thinking from the Lonestone team.',
+    },
   ]
 }

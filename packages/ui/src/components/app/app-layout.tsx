@@ -35,9 +35,7 @@ export function AppLayout({
     <SidebarProvider defaultOpen={defaultOpen}>
       {sidebar}
       <SidebarInset className={cn('flex flex-col', className)}>
-        {header !== undefined ? (
-          <AppLayoutHeader>{header}</AppLayoutHeader>
-        ) : null}
+        {header !== undefined ? <AppLayoutHeader>{header}</AppLayoutHeader> : null}
         {children}
       </SidebarInset>
     </SidebarProvider>
@@ -50,11 +48,7 @@ interface AppLayoutHeaderProps {
   showTrigger?: boolean
 }
 
-export function AppLayoutHeader({
-  children,
-  className,
-  showTrigger = true,
-}: AppLayoutHeaderProps) {
+export function AppLayoutHeader({ children, className, showTrigger = true }: AppLayoutHeaderProps) {
   return (
     <header
       className={cn(
@@ -70,11 +64,7 @@ export function AppLayoutHeader({
           </div>
         </>
       ) : null}
-      {children ? (
-        <div className="flex flex-1 items-center gap-2 px-4">
-          {children}
-        </div>
-      ) : null}
+      {children ? <div className="flex flex-1 items-center gap-2 px-4">{children}</div> : null}
     </header>
   )
 }

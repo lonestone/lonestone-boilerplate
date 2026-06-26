@@ -2,11 +2,7 @@ import { LangfuseSpanProcessor } from '@langfuse/otel'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import * as Sentry from '@sentry/nestjs'
-import {
-  SentryPropagator,
-  SentrySampler,
-  SentrySpanProcessor,
-} from '@sentry/opentelemetry'
+import { SentryPropagator, SentrySampler, SentrySpanProcessor } from '@sentry/opentelemetry'
 import { config } from './config/env.config'
 
 const sentryConfig: Sentry.NodeOptions = {
@@ -40,9 +36,10 @@ function initialiazeTelemetry() {
 
     console.warn('Sentry initialized')
     console.warn('Langfuse not configured. AI tracing will be disabled.')
-  }
-  else if (!config.sentry.dsn && config.langfuse.secretKey) {
-    console.warn('Sentry DSN not configured. Base tracing, logging and error reporting will be disabled.')
+  } else if (!config.sentry.dsn && config.langfuse.secretKey) {
+    console.warn(
+      'Sentry DSN not configured. Base tracing, logging and error reporting will be disabled.',
+    )
 
     // Initialize Langfuse alone
     const sdk = new NodeSDK({
@@ -52,8 +49,7 @@ function initialiazeTelemetry() {
     sdk.start()
 
     console.warn('Langfuse initialized')
-  }
-  else if (config.sentry.dsn && config.langfuse.secretKey) {
+  } else if (config.sentry.dsn && config.langfuse.secretKey) {
     // REASONNING:
     // Option A: Shared TracerProvider (Recommended by Langfuse) - This gives distributed tracing across both Sentry and Langfuse, but it means Langfuse traces will appear in Sentry.
     // Option B: Add the Tracer to Langfuse manually. On paper, it is simpler, but we could not get it to work reliably.

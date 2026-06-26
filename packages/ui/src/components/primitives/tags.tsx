@@ -1,12 +1,6 @@
 import type { ComponentProps, MouseEventHandler, ReactNode } from 'react'
 import { XIcon } from 'lucide-react'
-import {
-  createContext,
-  use,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { createContext, use, useEffect, useRef, useState } from 'react'
 import { Badge } from './badge'
 import { Button } from './button'
 import {
@@ -97,7 +91,7 @@ type TagsTriggerProps = ComponentProps<typeof Button>
 function TagsTrigger({ className, children, ...props }: TagsTriggerProps) {
   return (
     <PopoverTrigger
-      render={(
+      render={
         <Button
           className={cn('h-auto w-full justify-between p-2', className)}
           // eslint-disable-next-line jsx-a11y/no-interactive-element-to-noninteractive-role
@@ -105,7 +99,7 @@ function TagsTrigger({ className, children, ...props }: TagsTriggerProps) {
           variant="outline"
           {...props}
         />
-      )}
+      }
     >
       <div className="flex flex-wrap items-center gap-1">
         {children}
@@ -147,11 +141,7 @@ function TagsContent({ className, children, ...props }: TagsContentProps) {
   const { width } = useTagsContext()
 
   return (
-    <PopoverContent
-      className={cn('p-0', className)}
-      style={{ width }}
-      {...props}
-    >
+    <PopoverContent className={cn('p-0', className)} style={{ width }} {...props}>
       <Command>{children}</Command>
     </PopoverContent>
   )

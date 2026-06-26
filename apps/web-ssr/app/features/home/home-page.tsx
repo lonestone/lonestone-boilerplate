@@ -9,7 +9,7 @@ import { Link } from 'react-router'
 
 type TeaserPost = PublicPostsSchema['data'][number]
 
-function TeaserCard({ post, index }: { post: TeaserPost, index: number }) {
+function TeaserCard({ post, index }: { post: TeaserPost; index: number }) {
   const [imgError, setImgError] = useState(false)
   const [imgLoaded, setImgLoaded] = useState(false)
   const reduced = useReducedMotion()
@@ -25,7 +25,7 @@ function TeaserCard({ post, index }: { post: TeaserPost, index: number }) {
       <Link
         to={`/posts/${post.slug}`}
         viewTransition
-        className="group relative flex flex-col bg-background p-6 transition-colors hover:bg-accent/50 md:p-8"
+        className="group relative flex h-full flex-col bg-background p-6 transition-colors hover:bg-accent/50 md:p-8"
       >
         {/* Index number */}
         <span className="mb-4 font-mono text-xs font-medium text-muted-foreground/50 tabular-nums">
@@ -33,33 +33,31 @@ function TeaserCard({ post, index }: { post: TeaserPost, index: number }) {
         </span>
 
         {/* Cover — always present (image or branded fallback) for consistent cards */}
-        <div className="mb-4 aspect-video overflow-hidden rounded-sm bg-muted border-gradient">
-          {post.coverImage && !imgError
-            ? (
-                <img
-                  src={post.coverImage}
-                  alt={post.title}
-                  onLoad={() => setImgLoaded(true)}
-                  onError={() => setImgError(true)}
-                  className={[
-                    'h-full w-full object-cover transition-all duration-700 group-hover:scale-105',
-                    imgLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-sm',
-                  ].join(' ')}
-                />
-              )
-            : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <span className="select-none font-sans text-4xl font-black uppercase tracking-tight text-muted-foreground/20">
-                    {post.title.slice(0, 2)}
-                  </span>
-                </div>
-              )}
+        <div className="mb-4 aspect-video overflow-hidden rounded-sm bg-muted">
+          {post.coverImage && !imgError ? (
+            <img
+              src={post.coverImage}
+              alt={post.title}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgError(true)}
+              className={[
+                'h-full w-full object-cover transform-gpu transition-all duration-700 group-hover:scale-105',
+                imgLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-sm',
+              ].join(' ')}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="select-none font-sans text-4xl font-black uppercase tracking-tight text-muted-foreground/20">
+                {post.title.slice(0, 2)}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-1">
-            {post.tags.slice(0, 2).map(tag => (
+            {post.tags.slice(0, 2).map((tag) => (
               <Badge key={tag.id} variant="outline" className="h-4 text-[10px]">
                 {tag.name}
               </Badge>
@@ -74,9 +72,7 @@ function TeaserCard({ post, index }: { post: TeaserPost, index: number }) {
 
         {/* Excerpt */}
         {excerpt && (
-          <p className="mb-4 line-clamp-2 flex-1 text-sm text-muted-foreground">
-            {excerpt}
-          </p>
+          <p className="mb-4 line-clamp-2 flex-1 text-sm text-muted-foreground">{excerpt}</p>
         )}
 
         {/* Meta */}
@@ -114,8 +110,7 @@ export async function loader() {
       latestPosts: result.data?.data ?? [],
       totalPosts: result.data?.meta.itemCount ?? 0,
     }
-  }
-  catch {
+  } catch {
     return {
       latestPosts: [],
       totalPosts: 0,

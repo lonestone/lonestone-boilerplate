@@ -27,8 +27,7 @@ export class CommentsService {
     userId?: string,
   ): Promise<Comment> {
     const post = await this.em.findOne(Post, { slug: postSlug })
-    if (!post)
-      throw new NotFoundException('Post not found')
+    if (!post) throw new NotFoundException('Post not found')
 
     const comment = new Comment()
     comment.post = post
@@ -40,8 +39,7 @@ export class CommentsService {
       if (user) {
         comment.user = user
       }
-    }
-    else {
+    } else {
       comment.authorName = 'Anonymous'
     }
 
@@ -67,8 +65,7 @@ export class CommentsService {
     filter?: CommentFiltering,
   ): Promise<CommentsResult> {
     const post = await this.em.findOne(Post, { slug: postSlug })
-    if (!post)
-      throw new NotFoundException('Post not found')
+    if (!post) throw new NotFoundException('Post not found')
 
     // Only get top-level comments (no parent)
     const whereFilter: FilterQuery<Comment> = {
@@ -78,7 +75,7 @@ export class CommentsService {
 
     // Apply content filter if provided
     if (filter && Array.isArray(filter) && filter.length > 0) {
-      const contentFilter = filter.find(f => f.property === 'content')
+      const contentFilter = filter.find((f) => f.property === 'content')
       if (contentFilter && contentFilter.value) {
         whereFilter.content = { $like: `%${contentFilter.value}%` }
       }
@@ -90,16 +87,12 @@ export class CommentsService {
       defaultProperty: 'createdAt',
     })
 
-    const [comments, itemCount] = await this.em.findAndCount(
-      Comment,
-      whereFilter,
-      {
-        limit: pagination.pageSize,
-        offset: pagination.offset,
-        orderBy,
-        populate: ['user', 'replies'],
-      },
-    )
+    const [comments, itemCount] = await this.em.findAndCount(Comment, whereFilter, {
+      limit: pagination.pageSize,
+      offset: pagination.offset,
+      orderBy,
+      populate: ['user', 'replies'],
+    })
 
     return {
       comments,
@@ -114,8 +107,7 @@ export class CommentsService {
     sort?: CommentSorting,
   ): Promise<CommentsResult> {
     const comment = await this.em.findOne(Comment, { id: commentId })
-    if (!comment)
-      throw new NotFoundException('Comment not found')
+    if (!comment) throw new NotFoundException('Comment not found')
 
     const orderBy: QueryOrderMap<Comment> = buildOrderBy({
       sort,
@@ -142,9 +134,12 @@ export class CommentsService {
   }
 
   async deleteComment(commentId: string, userId: string): Promise<void> {
-    const comment = await this.em.findOne(Comment, { id: commentId }, { populate: ['post', 'post.user'] })
-    if (!comment)
-      throw new NotFoundException('Comment not found')
+    const comment = await this.em.findOne(
+      Comment,
+      { id: commentId },
+      { populate: ['post', 'post.user'] },
+    )
+    if (!comment) throw new NotFoundException('Comment not found')
 
     // Check if user is the post author
     if (comment.post.user.id !== userId) {
@@ -161,8 +156,7 @@ export class CommentsService {
 
   async getCommentCount(postSlug: string): Promise<number> {
     const post = await this.em.findOne(Post, { slug: postSlug })
-    if (!post)
-      throw new NotFoundException('Post not found')
+    if (!post) throw new NotFoundException('Post not found')
     return await this.em.count(Comment, { post: post.id })
   }
 }

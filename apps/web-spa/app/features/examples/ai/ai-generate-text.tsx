@@ -2,7 +2,13 @@ import type { AiStreamEvent, GenerateTextResponse } from '@boilerstone/openapi-g
 import { aiExampleControllerGenerateText, createSseClient } from '@boilerstone/openapi-generator'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@boilerstone/ui/components/primitives/card'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Label } from '@boilerstone/ui/components/primitives/label'
 import {
@@ -37,7 +43,10 @@ export function AiGenerateText() {
   const [streamingState, setStreamingState] = React.useState<StreamingState | null>(null)
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-  const [model, setModel] = React.useState<Parameters<typeof aiExampleControllerGenerateText>[0]['body']['model']>('GOOGLE_GEMINI_3_FLASH')
+  const [model, setModel] =
+    React.useState<Parameters<typeof aiExampleControllerGenerateText>[0]['body']['model']>(
+      'GOOGLE_GEMINI_3_FLASH',
+    )
   const [useStreaming, setUseStreaming] = React.useState(false)
   const [abortController, setAbortController] = React.useState<AbortController | null>(null)
 
@@ -66,33 +75,30 @@ export function AiGenerateText() {
 
       for await (const event of stream as AsyncGenerator<AiStreamEvent>) {
         if (event.type === 'chunk') {
-          setStreamingState(prev => prev ? { ...prev, text: prev.text + event.text } : null)
-        }
-        else if (event.type === 'done') {
-          setStreamingState(prev => prev
-            ? {
-                ...prev,
-                isStreaming: false,
-                usage: event.usage,
-                finishReason: event.finishReason,
-              }
-            : null)
-        }
-        else if (event.type === 'error') {
+          setStreamingState((prev) => (prev ? { ...prev, text: prev.text + event.text } : null))
+        } else if (event.type === 'done') {
+          setStreamingState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  isStreaming: false,
+                  usage: event.usage,
+                  finishReason: event.finishReason,
+                }
+              : null,
+          )
+        } else if (event.type === 'error') {
           throw new Error(event.message)
         }
       }
-    }
-    catch (err) {
+    } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         setStreamingState(null)
-      }
-      else {
+      } else {
         setError(err instanceof Error ? err.message : 'An error occurred')
         setStreamingState(null)
       }
-    }
-    finally {
+    } finally {
       setIsLoading(false)
       setAbortController(null)
     }
@@ -113,11 +119,9 @@ export function AiGenerateText() {
       }
 
       setResponse(data ?? null)
-    }
-    catch (err) {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
-    }
-    finally {
+    } finally {
       setIsLoading(false)
     }
   }
@@ -137,8 +141,7 @@ export function AiGenerateText() {
 
     if (useStreaming) {
       await handleStreamingSubmit(promptText)
-    }
-    else {
+    } else {
       await handleRegularSubmit(promptText)
     }
   }
@@ -162,7 +165,8 @@ export function AiGenerateText() {
     }
   }
 
-  const displayResult = streamingState?.text ?? (typeof response?.result === 'string' ? response.result : null)
+  const displayResult =
+    streamingState?.text ?? (typeof response?.result === 'string' ? response.result : null)
   const displayUsage = streamingState?.usage ?? response?.usage
   const displayFinishReason = streamingState?.finishReason ?? response?.finishReason
   const hasResult = displayResult || streamingState?.isStreaming
@@ -192,7 +196,14 @@ export function AiGenerateText() {
           <div className="flex gap-4">
             <div className="flex-1 space-y-1">
               <Label htmlFor="model-select-text">Model</Label>
-              <Select value={model} onValueChange={value => setModel(value as Parameters<typeof aiExampleControllerGenerateText>[0]['body']['model'])}>
+              <Select
+                value={model}
+                onValueChange={(value) =>
+                  setModel(
+                    value as Parameters<typeof aiExampleControllerGenerateText>[0]['body']['model'],
+                  )
+                }
+              >
                 <SelectTrigger id="model-select-text" className="w-full">
                   <SelectValue placeholder="Select a model" />
                 </SelectTrigger>
@@ -219,22 +230,20 @@ export function AiGenerateText() {
           <div className="flex gap-2">
             <Input
               value={prompt}
-              onChange={e => setPrompt(e.target.value)}
+              onChange={(e) => setPrompt(e.target.value)}
               placeholder="Write a haiku about programming..."
               disabled={isLoading}
               className="flex-1"
             />
-            {streamingState?.isStreaming
-              ? (
-                  <Button type="button" onClick={handleStop} variant="destructive">
-                    Stop
-                  </Button>
-                )
-              : (
-                  <Button type="submit" disabled={!prompt.trim() || isLoading}>
-                    {isLoading ? 'Generating...' : 'Generate'}
-                  </Button>
-                )}
+            {streamingState?.isStreaming ? (
+              <Button type="button" onClick={handleStop} variant="destructive">
+                Stop
+              </Button>
+            ) : (
+              <Button type="submit" disabled={!prompt.trim() || isLoading}>
+                {isLoading ? 'Generating...' : 'Generate'}
+              </Button>
+            )}
           </div>
         </form>
 
@@ -250,7 +259,9 @@ export function AiGenerateText() {
             <div className="flex items-center gap-2">
               <Badge variant="secondary">Response</Badge>
               {streamingState?.isStreaming && (
-                <Badge variant="outline" className="animate-pulse">Streaming...</Badge>
+                <Badge variant="outline" className="animate-pulse">
+                  Streaming...
+                </Badge>
               )}
               {displayFinishReason && !streamingState?.isStreaming && (
                 <Badge variant="outline">{displayFinishReason}</Badge>
@@ -265,23 +276,9 @@ export function AiGenerateText() {
             {displayUsage && !streamingState?.isStreaming && (
               <div className="pt-2 border-t border-muted">
                 <div className="text-xs text-muted-foreground flex gap-4">
-                  <span>
-                    Total:
-                    {' '}
-                    {displayUsage.totalTokens}
-                    {' '}
-                    tokens
-                  </span>
-                  <span>
-                    Prompt:
-                    {' '}
-                    {displayUsage.promptTokens}
-                  </span>
-                  <span>
-                    Completion:
-                    {' '}
-                    {displayUsage.completionTokens}
-                  </span>
+                  <span>Total: {displayUsage.totalTokens} tokens</span>
+                  <span>Prompt: {displayUsage.promptTokens}</span>
+                  <span>Completion: {displayUsage.completionTokens}</span>
                 </div>
               </div>
             )}

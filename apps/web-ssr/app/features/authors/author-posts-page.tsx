@@ -89,55 +89,53 @@ export default function AuthorPostsPage({ loaderData }: Route.ComponentProps) {
 
       {/* Posts list */}
       <div className="container mx-auto px-4 py-8 md:px-6 md:py-10">
-        {postList.length === 0
-          ? (
-              <EmptyState
-                icon={<User className="h-6 w-6 text-muted-foreground" />}
-                title="No articles yet"
-                description="This author hasn't published any articles yet."
-                className="min-h-64 border border-dashed border-border rounded-none"
-              />
-            )
-          : (
-              <>
-                <div className="flex flex-col gap-px border border-border bg-border">
-                  {postList.map((post, index) => (
-                    <PostCard key={post.slug} post={post} index={index} />
-                  ))}
-                </div>
+        {postList.length === 0 ? (
+          <EmptyState
+            icon={<User className="h-6 w-6 text-muted-foreground" />}
+            title="No articles yet"
+            description="This author hasn't published any articles yet."
+            className="min-h-64 border border-dashed border-border rounded-none"
+          />
+        ) : (
+          <>
+            <div className="flex flex-col gap-px border border-border bg-border">
+              {postList.map((post, index) => (
+                <PostCard key={post.slug} post={post} index={index} />
+              ))}
+            </div>
 
-                {totalPages > 1 && (
-                  <div className="mt-8 flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground tabular-nums">
-                      {(page - 1) * 10 + 1}–{Math.min(page * 10, itemCount)} of {itemCount}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(page - 1)}
-                        disabled={page <= 1}
-                      >
-                        <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-                        Previous
-                      </Button>
-                      <span className="hidden text-xs text-muted-foreground sm:block">
-                        Page {page} of {totalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(page + 1)}
-                        disabled={page >= totalPages}
-                      >
-                        Next
-                        <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
+            {totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-between">
+                <div className="text-xs text-muted-foreground tabular-nums">
+                  {(page - 1) * 10 + 1}–{Math.min(page * 10, itemCount)} of {itemCount}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(page - 1)}
+                    disabled={page <= 1}
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                    Previous
+                  </Button>
+                  <span className="hidden text-xs text-muted-foreground sm:block">
+                    Page {page} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(page + 1)}
+                    disabled={page >= totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                  </Button>
+                </div>
+              </div>
             )}
+          </>
+        )}
       </div>
     </div>
   )

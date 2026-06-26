@@ -34,10 +34,7 @@ function useBreadcrumbs(): BreadcrumbItem[] {
   }
 
   if (path === '/ai') {
-    return [
-      { label: t('breadcrumbs.dashboard'), to: '/dashboard' },
-      { label: t('breadcrumbs.ai') },
-    ]
+    return [{ label: t('breadcrumbs.dashboard'), to: '/dashboard' }, { label: t('breadcrumbs.ai') }]
   }
 
   if (path === '/components') {
@@ -63,9 +60,7 @@ export function DashboardBreadcrumbs() {
   if (breadcrumbs.length <= 1) {
     return (
       <nav aria-label="Breadcrumb">
-        <span className="text-sm font-medium text-foreground">
-          {breadcrumbs[0]?.label}
-        </span>
+        <span className="text-sm font-medium text-foreground">{breadcrumbs[0]?.label}</span>
       </nav>
     )
   }
@@ -83,27 +78,25 @@ export function DashboardBreadcrumbs() {
                   aria-hidden="true"
                 />
               )}
-              {crumb.to && !isLast
-                ? (
-                    <Link
-                      to={crumb.to}
-                      className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {crumb.label}
-                    </Link>
-                  )
-                : (
-                    <span
-                      className={
-                        isLast
-                          ? 'text-sm font-medium text-foreground'
-                          : 'text-sm font-medium text-muted-foreground'
-                      }
-                      aria-current={isLast ? 'page' : undefined}
-                    >
-                      {crumb.label}
-                    </span>
-                  )}
+              {crumb.to && !isLast ? (
+                <Link
+                  to={crumb.to}
+                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span
+                  className={
+                    isLast
+                      ? 'text-sm font-medium text-foreground'
+                      : 'text-sm font-medium text-muted-foreground'
+                  }
+                  aria-current={isLast ? 'page' : undefined}
+                >
+                  {crumb.label}
+                </span>
+              )}
             </li>
           )
         })}

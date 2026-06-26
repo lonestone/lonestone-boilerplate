@@ -3,7 +3,7 @@ title: AI
 description: How to use LLMs in your code (Langfuse, Vercel AI SDK, etc.)
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside } from '@astrojs/starlight/components'
 
 # ❓ How it works
 
@@ -14,13 +14,16 @@ This brick is heavily opinionated. It combines:
 - A custom AI Module in the API, which provides a service to generate text, objects and chat with LLMs.
 
 <Aside type="note" title="Langfuse is optional">
-You can remove it (LangfuseService) from the codebase and use the Vercel AI SDK directly, and manage prompts as you see fit. Telemetry will still work via OTEL, and you will still see traces in Sentry.
+  You can remove it (LangfuseService) from the codebase and use the Vercel AI SDK directly, and
+  manage prompts as you see fit. Telemetry will still work via OTEL, and you will still see traces
+  in Sentry.
 </Aside>
 
 ## Prompt management - Langfuse
+
 Langfuse can be self hosted, and is entirely open source. See [their docs](https://langfuse.com/docs) for more advanced usage.
 
-Langfuse allows us to create, version and fetch prompts. 
+Langfuse allows us to create, version and fetch prompts.
 
 We found it was a better solution than storing the prompts in the codebase, as it allows the whole team to contribute to the prompts (including non developers) and to change a prompt without deploying the codebase.
 
@@ -33,6 +36,7 @@ The Vercel AI SDK allows us to easily call LLMs accross providers and is nativel
 The **Vercel AI SDK is OpenTelemetry compatible** and automatically emits spans for all LLM calls. Both Sentry and Langfuse simply pick up these spans through the shared TracerProvider, no additional instrumentation is required.
 
 The tracing system is initialized in `apps/api/src/instrument.ts` before the NestJS application starts. The shared TracerProvider uses:
+
 - **LangfuseSpanProcessor**: Filters and exports only LLM-related spans (instrumentation scope: `langfuse-sdk` or `ai`) to Langfuse
 - **SentrySpanProcessor**: Receives all spans for application monitoring in Sentry
 
@@ -43,8 +47,8 @@ Because the Vercel AI SDK emits OTEL spans and both processors receive them, **A
 - Debug issues where AI calls are part of a larger workflow
 
 See the [Monitoring documentation](/lonestone-boilerplate/core-features/2_monitoring) for details on the shared TracerProvider setup and how to optimize trace sampling in production.
-</Aside>
 
+</Aside>
 
 # 📝 How to use
 
@@ -66,6 +70,7 @@ Because we are filtering the spans that are sent to Langfuse, the spans are "orp
 **Without more work, all the spans would simply be unnamed, making it hard to search and browse traces.**
 
 That's why the next section is important if you want to log and debug your llm calls in Langfuse.
+
 </Aside>
 
 You can organize AI calls into meaningful traces using the `telemetry` option:
@@ -206,24 +211,23 @@ You can do this by using `traceMode: 'split'` and the same `traceId` for all the
 You may also want to use the session feature to group traces across requests for something else than a chat (e.g. a long-running job that loops on a huge list of items).
 
 <Aside type="tip" title="Generating trace id">
-Always use `await LangfuseService.createTraceId('your-trace-string')` to generate a trace id, as it ensures the trace id is unique and deterministic.
+  Always use `await LangfuseService.createTraceId('your-trace-string')` to generate a trace id, as
+  it ensures the trace id is unique and deterministic.
 </Aside>
 
 ![Langfuse chat turns merged](../../../assets/langfuse_same_traceId.png)
-
 
 ## Trace use-case examples
 
 The API exposes five example endpoints that demonstrate each trace pattern. Call them under `POST /ai/examples/use-case-*` (see OpenAPI for request bodies):
 
-| Use case | Endpoint | Description |
-|----------|----------|-------------|
-| 1. Single generation | `POST /ai/examples/use-case-1-single-generation` | One REST call, one LLM call; trace is finalized with name/output so Langfuse shows them. |
-| 2. Grouped calls | `POST /ai/examples/use-case-2-grouped-calls` | One REST call, several LLM calls in one trace (inherit); finalizeTrace at end. |
-| 3. Logical units | `POST /ai/examples/use-case-3-logical-units` | One REST call, each “workflow” gets its own trace (split per unit). |
-| 4. Chat session | `POST /ai/examples/use-case-4-chat-session` | Chat with explicit `sessionId` to group traces across requests. |
+| Use case                                              | Endpoint                                                      | Description                                                                                           |
+| ----------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 1. Single generation                                  | `POST /ai/examples/use-case-1-single-generation`              | One REST call, one LLM call; trace is finalized with name/output so Langfuse shows them.              |
+| 2. Grouped calls                                      | `POST /ai/examples/use-case-2-grouped-calls`                  | One REST call, several LLM calls in one trace (inherit); finalizeTrace at end.                        |
+| 3. Logical units                                      | `POST /ai/examples/use-case-3-logical-units`                  | One REST call, each “workflow” gets its own trace (split per unit).                                   |
+| 4. Chat session                                       | `POST /ai/examples/use-case-4-chat-session`                   | Chat with explicit `sessionId` to group traces across requests.                                       |
 | 5. Chat session with turns merged into a single trace | `POST /ai/examples/use-case-5-chat-session-with-turns-merged` | Chat with explicit `sessionId` to group traces across requests, and turns merged into a single trace. |
-
 
 ## API Reference
 

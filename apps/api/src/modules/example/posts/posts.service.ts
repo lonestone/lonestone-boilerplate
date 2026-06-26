@@ -62,8 +62,7 @@ export class PostService {
 
   async createPost(userId: string, data: CreatePostInput): Promise<Post> {
     const user = await this.em.findOne(User, { id: userId })
-    if (!user)
-      throw new Error('User not found')
+    if (!user) throw new Error('User not found')
 
     const post = new Post()
     post.user = user
@@ -75,26 +74,20 @@ export class PostService {
     post.versions.add(version)
 
     post.coverImage = data.coverImage
-    if (data.tags)
-      post.tags.set(await this.resolveTags(data.tags))
+    if (data.tags) post.tags.set(await this.resolveTags(data.tags))
 
     this.em.persist([post, version])
     await this.em.flush()
     return post
   }
 
-  async updatePost(
-    postId: string,
-    userId: string,
-    data: UpdatePostInput,
-  ): Promise<Post> {
+  async updatePost(postId: string, userId: string, data: UpdatePostInput): Promise<Post> {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
       { populate: ['versions', 'tags'] },
     )
-    if (!post)
-      throw new Error('Post not found')
+    if (!post) throw new Error('Post not found')
 
     const latestVersion = await this.em.findOne(
       PostVersion,
@@ -103,13 +96,11 @@ export class PostService {
         orderBy: { createdAt: 'DESC' },
       },
     )
-    if (!latestVersion)
-      throw new Error('No version found')
+    if (!latestVersion) throw new Error('No version found')
 
     // We create a new version only if the post is published and the last version
     // was created before the publication
-    const shouldCreateNewVersion
-      = post.publishedAt && post.publishedAt < latestVersion.createdAt
+    const shouldCreateNewVersion = post.publishedAt && post.publishedAt < latestVersion.createdAt
 
     if (shouldCreateNewVersion) {
       const version = new PostVersion()
@@ -119,28 +110,22 @@ export class PostService {
       post.versions.add(version)
       this.em.persist(version)
       await this.em.flush()
-    }
-    else {
+    } else {
       // Otherwise we update the last version
-      if (data.title)
-        latestVersion.title = data.title
-      if (data.content)
-        latestVersion.content = data.content
+      if (data.title) latestVersion.title = data.title
+      if (data.content) latestVersion.content = data.content
       await this.em.flush()
     }
 
-    if (data.coverImage !== undefined)
-      post.coverImage = data.coverImage
-    if (data.tags)
-      post.tags.set(await this.resolveTags(data.tags))
+    if (data.coverImage !== undefined) post.coverImage = data.coverImage
+    if (data.tags) post.tags.set(await this.resolveTags(data.tags))
     await this.em.flush()
 
     return post
   }
 
   async computeSlug(post: Post) {
-    if (post.versions.length === 0)
-      return
+    if (post.versions.length === 0) return
 
     const baseSlug = slugify(post.versions.getItems()[0].title, {
       lower: true,
@@ -156,8 +141,7 @@ export class PostService {
       { id: postId, user: userId },
       { populate: ['versions', 'tags'] },
     )
-    if (!post)
-      throw new Error('Post not found')
+    if (!post) throw new Error('Post not found')
 
     const latestVersion = await this.em.findOne(
       PostVersion,
@@ -166,15 +150,12 @@ export class PostService {
         orderBy: { createdAt: 'DESC' },
       },
     )
-    if (!latestVersion)
-      throw new Error('No version found')
+    if (!latestVersion) throw new Error('No version found')
 
     const now = new Date()
     // We check that the last version is older than the publication date
     if (latestVersion.createdAt > now) {
-      throw new Error(
-        'Cannot publish: latest version is newer than publication date',
-      )
+      throw new Error('Cannot publish: latest version is newer than publication date')
     }
 
     if (!post.publishedAt) {
@@ -194,8 +175,7 @@ export class PostService {
       { id: postId, user: userId },
       { populate: ['versions', 'tags'] },
     )
-    if (!post)
-      throw new Error('Post not found')
+    if (!post) throw new Error('Post not found')
 
     post.publishedAt = undefined
     await this.em.flush()
@@ -210,8 +190,7 @@ export class PostService {
         populate: ['versions', 'user'],
       },
     )
-    if (!post)
-      throw new Error('Post not found')
+    if (!post) throw new Error('Post not found')
 
     return post
   }
@@ -255,8 +234,7 @@ export class PostService {
     const postsCount = await this.em.count(Post, {
       publishedAt: { $ne: null },
     })
-    if (postsCount === 0)
-      throw new NotFoundException('No post found')
+    if (postsCount === 0) throw new NotFoundException('No post found')
 
     const randomIndex = Math.floor(Math.random() * postsCount)
     const posts = await this.em.find(
@@ -271,8 +249,7 @@ export class PostService {
     )
 
     const randomPost = posts[0]
-    if (!randomPost?.slug)
-      throw new NotFoundException('No post found')
+    if (!randomPost?.slug) throw new NotFoundException('No post found')
 
     const commentCount = await this.em.count(Comment, { post: randomPost.id })
 
@@ -313,9 +290,7 @@ export class PostService {
       offset: pagination.offset,
     })
 
-    const commentCountsPromises = posts.map(post =>
-      this.em.count(Comment, { post: post.id }),
-    )
+    const commentCountsPromises = posts.map((post) => this.em.count(Comment, { post: post.id }))
     const commentCounts = await Promise.all(commentCountsPromises)
     const commentCountByPostId = new Map<string, number>()
     posts.forEach((post, index) => {
@@ -336,8 +311,7 @@ export class PostService {
     sort?: PostSorting,
   ): Promise<PublicAuthorPostsResult> {
     const author = await this.em.findOne(User, { name: authorSlug })
-    if (!author)
-      throw new NotFoundException(`Author not found: ${authorSlug}`)
+    if (!author) throw new NotFoundException(`Author not found: ${authorSlug}`)
 
     const orderBy = buildOrderBy({
       sort,
@@ -358,9 +332,7 @@ export class PostService {
       offset: pagination.offset,
     })
 
-    const commentCountsPromises = posts.map(post =>
-      this.em.count(Comment, { post: post.id }),
-    )
+    const commentCountsPromises = posts.map((post) => this.em.count(Comment, { post: post.id }))
     const commentCounts = await Promise.all(commentCountsPromises)
     const commentCountByPostId = new Map<string, number>()
     posts.forEach((post, index) => {
@@ -377,8 +349,7 @@ export class PostService {
       { populate: ['user', 'versions', 'tags'] },
     )
 
-    if (!post)
-      throw new NotFoundException(`Post not found: ${slug}`)
+    if (!post) throw new NotFoundException(`Post not found: ${slug}`)
 
     post.likesCount += 1
     await this.em.flush()
@@ -395,8 +366,7 @@ export class PostService {
       },
     )
 
-    if (!post)
-      throw new Error('Post not found')
+    if (!post) throw new Error('Post not found')
 
     const commentCount = await this.em.count(Comment, {
       post: post.id,

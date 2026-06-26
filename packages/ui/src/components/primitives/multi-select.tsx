@@ -3,12 +3,7 @@ import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from './badge'
 import { Button } from './button'
-import {
-  Command,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-} from './command'
+import { Command, CommandGroup, CommandItem, CommandList } from './command'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 import { cn } from '@boilerstone/ui/lib/utils'
 
@@ -49,11 +44,7 @@ export function MultiSelect({
 
   const renderTriggerContent = () => {
     if (selectedValues.length === 0) {
-      return (
-        <span className="text-muted-foreground">
-          {placeholder ?? 'Select items...'}
-        </span>
-      )
+      return <span className="text-muted-foreground">{placeholder ?? 'Select items...'}</span>
     }
 
     const badges = selectedValues
@@ -80,14 +71,14 @@ export function MultiSelect({
   return (
     <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger
-        render={(
+        render={
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={open}
             className={cn('w-full justify-between', className)}
           />
-        )}
+        }
       >
         {renderTriggerContent()}
         <ChevronsUpDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
@@ -106,10 +97,7 @@ export function MultiSelect({
                   >
                     <div className="flex items-center gap-2 w-full">
                       <CheckIcon
-                        className={cn(
-                          'size-4',
-                          isSelected ? 'opacity-100' : 'opacity-0',
-                        )}
+                        className={cn('size-4', isSelected ? 'opacity-100' : 'opacity-0')}
                       />
                       {renderOptionContent ? renderOptionContent(option) : option.label}
                     </div>

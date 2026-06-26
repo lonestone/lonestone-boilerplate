@@ -10,7 +10,11 @@ export default function AuthVerifyEmailPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { mutate: verifyEmailMutation, isPending, isSuccess } = useMutation({
+  const {
+    mutate: verifyEmailMutation,
+    isPending,
+    isSuccess,
+  } = useMutation({
     mutationFn: async (token: string) => {
       const response = await authClient.verifyEmail({
         query: {
@@ -36,13 +40,16 @@ export default function AuthVerifyEmailPage() {
     if (token) {
       verifyEmailMutation(token)
     }
-  // oxlint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
   if (isPending) {
     return (
       <div>
-        <AuthPageHeader title={t('auth.verifyEmail.verifying')} description={t('auth.verifyEmail.pleaseWait')} />
+        <AuthPageHeader
+          title={t('auth.verifyEmail.verifying')}
+          description={t('auth.verifyEmail.pleaseWait')}
+        />
         <div className="flex h-full">
           <Loader2 className="w-10 h-10 animate-spin" />
         </div>
@@ -53,7 +60,10 @@ export default function AuthVerifyEmailPage() {
   if (isSuccess) {
     return (
       <div>
-        <AuthPageHeader title={t('auth.verifyEmail.verified')} description={t('auth.verifyEmail.redirecting')} />
+        <AuthPageHeader
+          title={t('auth.verifyEmail.verified')}
+          description={t('auth.verifyEmail.redirecting')}
+        />
         <div className="flex h-full">
           <Loader2 className="w-10 h-10 animate-spin" />
         </div>

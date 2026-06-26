@@ -41,17 +41,17 @@ We use Testcontainers to mock the infrastructure, mainly for things like databas
 You will find an example of launching the database in the `test/test.utils.ts` file:
 
 ```typescript
-  // Initialize DB with test containers
-  postgresContainer = await new PostgreSqlContainer('postgres:16-alpine').start()
+// Initialize DB with test containers
+postgresContainer = await new PostgreSqlContainer('postgres:16-alpine').start()
 
-  const mikroOrmOptions = createTestMikroOrmOptions({
-    allowGlobalContext: true,
-    dbName: postgresContainer.getDatabase(),
-    host: postgresContainer.getHost(),
-    port: postgresContainer.getPort(),
-    user: postgresContainer.getUsername(),
-    password: postgresContainer.getPassword(),
-  })
+const mikroOrmOptions = createTestMikroOrmOptions({
+  allowGlobalContext: true,
+  dbName: postgresContainer.getDatabase(),
+  host: postgresContainer.getHost(),
+  port: postgresContainer.getPort(),
+  user: postgresContainer.getUsername(),
+  password: postgresContainer.getPassword(),
+})
 ```
 
 Note that we use the default mikro-orm configuration for the test database (`createTestMikroOrmOptions`), but we override the database name, host, port, user and password to use the test container.
@@ -59,28 +59,28 @@ Note that we use the default mikro-orm configuration for the test database (`cre
 You will want to stop the test container at the end of your test suite, and you'll probably want to clean the database at the beginning of each test.
 
 ```typescript
-  // We initialize the NestJS app and the database
-  beforeAll(async () => {
-    // Initialize the test application (this will launch the test container)
-    testContext = await initializeTestApp({
-      imports: [PostModule],
-    })
-    app = testContext.app
-    orm = testContext.orm
-    em = orm.em.fork()
+// We initialize the NestJS app and the database
+beforeAll(async () => {
+  // Initialize the test application (this will launch the test container)
+  testContext = await initializeTestApp({
+    imports: [PostModule],
   })
+  app = testContext.app
+  orm = testContext.orm
+  em = orm.em.fork()
+})
 
-  // Before each test we clean the database to ensure we start with a fresh state
-  beforeEach(async () => {
-    await orm.schema.refreshDatabase()
-    testUser = await createUserData(em)
-    requestWithAuth = initRequestWithAuth(app, testUser.id)
-  })
+// Before each test we clean the database to ensure we start with a fresh state
+beforeEach(async () => {
+  await orm.schema.refreshDatabase()
+  testUser = await createUserData(em)
+  requestWithAuth = initRequestWithAuth(app, testUser.id)
+})
 
-  // After all tests we close the NestJS app and the database, the testcontainer is shut down
-  afterAll(async () => {
-    await closeTestApp(testContext)
-  })
+// After all tests we close the NestJS app and the database, the testcontainer is shut down
+afterAll(async () => {
+  await closeTestApp(testContext)
+})
 ```
 
 ## Service mocking
@@ -88,6 +88,7 @@ You will want to stop the test container at the end of your test suite, and you'
 You can mock some services or external services by using the `vi.mock` function.
 
 Here is an example of mocking the `EmailService` in the `test/test.e2e-setup.ts` file.
+
 ```typescript
 vi.mock('../modules/email/email.service', () => ({
   EmailService: vi.fn().mockImplementation(() => ({
@@ -97,7 +98,9 @@ vi.mock('../modules/email/email.service', () => ({
 
 // Mocking the ai service example
 vi.mock('ai', () => ({
-  generateObject: vi.fn().mockResolvedValue({ object: { analysisResult: 'mocked result' } } as never),
+  generateObject: vi
+    .fn()
+    .mockResolvedValue({ object: { analysisResult: 'mocked result' } } as never),
 }))
 
 // Mock langfuse at module level

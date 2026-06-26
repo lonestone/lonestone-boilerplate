@@ -2,12 +2,7 @@ import { CalendarIcon } from 'lucide-react'
 import * as React from 'react'
 import { cn } from '@boilerstone/ui/lib/utils'
 import { Calendar } from './calendar'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from './input-group'
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from './input-group'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 function formatDate(date: Date): string {
@@ -51,9 +46,7 @@ export function DatePicker({
   const [open, setOpen] = React.useState(false)
   const [date, setDate] = React.useState<Date | undefined>(initialDate)
   const [month, setMonth] = React.useState<Date | undefined>(initialDate)
-  const [inputValue, setInputValue] = React.useState(
-    initialDate ? formatDate(initialDate) : '',
-  )
+  const [inputValue, setInputValue] = React.useState(initialDate ? formatDate(initialDate) : '')
 
   const handleDateChange = (next: Date | undefined) => {
     setDate(next)
@@ -64,8 +57,7 @@ export function DatePicker({
   const handleInputBlur = () => {
     if (date) {
       setInputValue(formatDate(date))
-    }
-    else {
+    } else {
       setInputValue('')
     }
   }
@@ -89,8 +81,7 @@ export function DatePicker({
           if (e.key === 'ArrowDown') {
             e.preventDefault()
             setOpen(true)
-          }
-          else if (e.key === 'Enter') {
+          } else if (e.key === 'Enter') {
             e.preventDefault()
             handleDateChange(date)
           }
@@ -99,14 +90,14 @@ export function DatePicker({
       <InputGroupAddon align="inline-end">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
-            render={(
+            render={
               <InputGroupButton
                 variant="ghost"
                 size="icon-xs"
                 aria-label="Open date picker"
                 disabled={disabled}
               />
-            )}
+            }
           >
             <CalendarIcon />
             <span className="sr-only">Select date</span>

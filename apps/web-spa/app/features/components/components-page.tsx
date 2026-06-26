@@ -7,7 +7,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@boilerstone/ui/components/primitives/accordion'
-import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarImage } from '@boilerstone/ui/components/primitives/avatar'
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+  AvatarImage,
+} from '@boilerstone/ui/components/primitives/avatar'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { DatePicker } from '@boilerstone/ui/components/primitives/date-picker'
@@ -110,12 +116,8 @@ function Section({
         <p className="mb-0.5 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
           {eyebrow}
         </p>
-        <h2 className="font-sans text-2xl font-black tracking-tight text-foreground">
-          {title}
-        </h2>
-        {description && (
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        )}
+        <h2 className="font-sans text-2xl font-black tracking-tight text-foreground">{title}</h2>
+        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>
       <div className={cn('space-y-4', className)}>{children}</div>
     </section>
@@ -151,7 +153,7 @@ function SortableHeader({
   column,
   label,
 }: {
-  column: { getIsSorted: () => false | 'asc' | 'desc', toggleSorting: (desc?: boolean) => void }
+  column: { getIsSorted: () => false | 'asc' | 'desc'; toggleSorting: (desc?: boolean) => void }
   label: string
 }) {
   const sorted = column.getIsSorted()
@@ -208,63 +210,64 @@ export default function ComponentsPage() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
 
-  const allTableData: ComponentRow[] = useMemo(() => [
-    { name: 'Button', category: 'Action', status: 'Stable', version: '1.0' },
-    { name: 'Badge', category: 'Display', status: 'Stable', version: '1.0' },
-    { name: 'Input', category: 'Form', status: 'Stable', version: '1.0' },
-    { name: 'Sidebar', category: 'Layout', status: 'Stable', version: '1.0' },
-    { name: 'DataTable', category: 'Data', status: 'Beta', version: '0.9' },
-    { name: 'Command', category: 'Overlay', status: 'Stable', version: '1.0' },
-    { name: 'Dialog', category: 'Overlay', status: 'Stable', version: '1.0' },
-    { name: 'Tabs', category: 'Layout', status: 'Stable', version: '1.0' },
-    { name: 'Accordion', category: 'Layout', status: 'Stable', version: '1.0' },
-    { name: 'Progress', category: 'Display', status: 'Beta', version: '0.8' },
-  ], [])
+  const allTableData: ComponentRow[] = useMemo(
+    () => [
+      { name: 'Button', category: 'Action', status: 'Stable', version: '1.0' },
+      { name: 'Badge', category: 'Display', status: 'Stable', version: '1.0' },
+      { name: 'Input', category: 'Form', status: 'Stable', version: '1.0' },
+      { name: 'Sidebar', category: 'Layout', status: 'Stable', version: '1.0' },
+      { name: 'DataTable', category: 'Data', status: 'Beta', version: '0.9' },
+      { name: 'Command', category: 'Overlay', status: 'Stable', version: '1.0' },
+      { name: 'Dialog', category: 'Overlay', status: 'Stable', version: '1.0' },
+      { name: 'Tabs', category: 'Layout', status: 'Stable', version: '1.0' },
+      { name: 'Accordion', category: 'Layout', status: 'Stable', version: '1.0' },
+      { name: 'Progress', category: 'Display', status: 'Beta', version: '0.8' },
+    ],
+    [],
+  )
 
-  const columns = useMemo<ColumnDef<ComponentRow>[]>(() => [
-    {
-      accessorKey: 'name',
-      header: ({ column }) => <SortableHeader column={column} label="Component" />,
-      cell: info => (
-        <span className="font-medium text-foreground text-sm">
-          {info.getValue() as string}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'category',
-      header: ({ column }) => <SortableHeader column={column} label="Category" />,
-      cell: info => (
-        <Badge variant="outline" className="text-[10px]">
-          {info.getValue() as string}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: 'status',
-      header: ({ column }) => <SortableHeader column={column} label="Status" />,
-      cell: info => {
-        const value = info.getValue() as string
-        return (
-          <Badge
-            variant={value === 'Stable' ? 'default' : 'secondary'}
-            className="text-[10px]"
-          >
-            {value}
-          </Badge>
-        )
+  const columns = useMemo<ColumnDef<ComponentRow>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: ({ column }) => <SortableHeader column={column} label="Component" />,
+        cell: (info) => (
+          <span className="font-medium text-foreground text-sm">{info.getValue() as string}</span>
+        ),
       },
-    },
-    {
-      accessorKey: 'version',
-      header: ({ column }) => <SortableHeader column={column} label="Version" />,
-      cell: info => (
-        <span className="font-mono text-xs text-muted-foreground">
-          {info.getValue() as string}
-        </span>
-      ),
-    },
-  ], [])
+      {
+        accessorKey: 'category',
+        header: ({ column }) => <SortableHeader column={column} label="Category" />,
+        cell: (info) => (
+          <Badge variant="outline" className="text-[10px]">
+            {info.getValue() as string}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: ({ column }) => <SortableHeader column={column} label="Status" />,
+        cell: (info) => {
+          const value = info.getValue() as string
+          return (
+            <Badge variant={value === 'Stable' ? 'default' : 'secondary'} className="text-[10px]">
+              {value}
+            </Badge>
+          )
+        },
+      },
+      {
+        accessorKey: 'version',
+        header: ({ column }) => <SortableHeader column={column} label="Version" />,
+        cell: (info) => (
+          <span className="font-mono text-xs text-muted-foreground">
+            {info.getValue() as string}
+          </span>
+        ),
+      },
+    ],
+    [],
+  )
 
   const table = useReactTable({
     data: allTableData,
@@ -286,7 +289,7 @@ export default function ComponentsPage() {
             <p className="mb-3 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
               Sections
             </p>
-            {SECTIONS.map(s => (
+            {SECTIONS.map((s) => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
@@ -302,9 +305,15 @@ export default function ComponentsPage() {
         <div className="flex-1 min-w-0 space-y-12">
           {/* Page header */}
           <div className="relative overflow-hidden rounded-lg border border-border bg-card p-8">
-            <div aria-hidden className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-primary/10 blur-3xl"
+            />
             {/* Grain texture on hero */}
-            <div aria-hidden className="pointer-events-none absolute inset-0 bg-grain opacity-[0.05] mix-blend-overlay rounded-lg" />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-grain opacity-[0.05] mix-blend-overlay rounded-lg"
+            />
             <div className="relative">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1">
                 <Grid3X3 className="h-3 w-3 text-muted-foreground" />
@@ -362,7 +371,9 @@ export default function ComponentsPage() {
               <Button size="icon-sm">
                 <Search />
               </Button>
-              <Button variant="outline" disabled>Disabled</Button>
+              <Button variant="outline" disabled>
+                Disabled
+              </Button>
             </DemoBlock>
 
             <DemoBlock label="With icons">
@@ -382,11 +393,7 @@ export default function ComponentsPage() {
           </Section>
 
           {/* ── Badges ──────────────────────────────────────────────────── */}
-          <Section
-            id="badges"
-            eyebrow="02"
-            title={t('components.sections.badges')}
-          >
+          <Section id="badges" eyebrow="02" title={t('components.sections.badges')}>
             <DemoBlock label="Variants">
               <Badge>Default</Badge>
               <Badge variant="secondary">Secondary</Badge>
@@ -416,12 +423,11 @@ export default function ComponentsPage() {
           </Section>
 
           {/* ── Inputs ──────────────────────────────────────────────────── */}
-          <Section
-            id="inputs"
-            eyebrow="03"
-            title={t('components.sections.inputs')}
-          >
-            <DemoBlock label="Input variants" className="grid grid-cols-1 gap-4 sm:grid-cols-2 w-full">
+          <Section id="inputs" eyebrow="03" title={t('components.sections.inputs')}>
+            <DemoBlock
+              label="Input variants"
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2 w-full"
+            >
               <div className="space-y-1.5">
                 <Label htmlFor="demo-input">Default</Label>
                 <Input id="demo-input" placeholder="Enter value..." />
@@ -477,17 +483,13 @@ export default function ComponentsPage() {
           </Section>
 
           {/* ── Controls ────────────────────────────────────────────────── */}
-          <Section
-            id="controls"
-            eyebrow="04"
-            title={t('components.sections.controls')}
-          >
+          <Section id="controls" eyebrow="04" title={t('components.sections.controls')}>
             <DemoBlock label="Checkbox">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="demo-cb1"
                   checked={checkboxState === true}
-                  onCheckedChange={v => setCheckboxState(v)}
+                  onCheckedChange={(v) => setCheckboxState(v)}
                 />
                 <Label htmlFor="demo-cb1">Accept terms</Label>
               </div>
@@ -497,7 +499,9 @@ export default function ComponentsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox id="demo-cb3" disabled />
-                <Label htmlFor="demo-cb3" className="opacity-50">Disabled</Label>
+                <Label htmlFor="demo-cb3" className="opacity-50">
+                  Disabled
+                </Label>
               </div>
             </DemoBlock>
 
@@ -507,10 +511,12 @@ export default function ComponentsPage() {
                 onValueChange={setRadioValue}
                 className="flex flex-row gap-6"
               >
-                {['option1', 'option2', 'option3'].map(opt => (
+                {['option1', 'option2', 'option3'].map((opt) => (
                   <div key={opt} className="flex items-center gap-2">
                     <RadioGroupItem value={opt} id={`radio-${opt}`} />
-                    <Label htmlFor={`radio-${opt}`} className="capitalize">{opt}</Label>
+                    <Label htmlFor={`radio-${opt}`} className="capitalize">
+                      {opt}
+                    </Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -518,14 +524,8 @@ export default function ComponentsPage() {
 
             <DemoBlock label="Switch">
               <div className="flex items-center gap-2">
-                <Switch
-                  id="demo-switch"
-                  checked={switchState}
-                  onCheckedChange={setSwitchState}
-                />
-                <Label htmlFor="demo-switch">
-                  {switchState ? 'On' : 'Off'}
-                </Label>
+                <Switch id="demo-switch" checked={switchState} onCheckedChange={setSwitchState} />
+                <Label htmlFor="demo-switch">{switchState ? 'On' : 'Off'}</Label>
               </div>
               <div className="flex items-center gap-2">
                 <Switch id="demo-switch-sm" size="sm" defaultChecked />
@@ -533,17 +533,15 @@ export default function ComponentsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Switch id="demo-switch-d" disabled />
-                <Label htmlFor="demo-switch-d" className="opacity-50">Disabled</Label>
+                <Label htmlFor="demo-switch-d" className="opacity-50">
+                  Disabled
+                </Label>
               </div>
             </DemoBlock>
           </Section>
 
           {/* ── Display (Tabs, Accordion, Avatar, Progress, Skeleton) ───── */}
-          <Section
-            id="display"
-            eyebrow="05"
-            title={t('components.sections.layout')}
-          >
+          <Section id="display" eyebrow="05" title={t('components.sections.layout')}>
             <DemoBlock label="Tabs — default">
               <Tabs defaultValue="overview" className="w-full">
                 <TabsList>
@@ -576,19 +574,40 @@ export default function ComponentsPage() {
                   <TabsTrigger value="tab2">Published</TabsTrigger>
                   <TabsTrigger value="tab3">Drafts</TabsTrigger>
                 </TabsList>
-                <TabsContent value="tab1" className="mt-2 text-sm text-muted-foreground">All posts</TabsContent>
-                <TabsContent value="tab2" className="mt-2 text-sm text-muted-foreground">Published posts</TabsContent>
-                <TabsContent value="tab3" className="mt-2 text-sm text-muted-foreground">Draft posts</TabsContent>
+                <TabsContent value="tab1" className="mt-2 text-sm text-muted-foreground">
+                  All posts
+                </TabsContent>
+                <TabsContent value="tab2" className="mt-2 text-sm text-muted-foreground">
+                  Published posts
+                </TabsContent>
+                <TabsContent value="tab3" className="mt-2 text-sm text-muted-foreground">
+                  Draft posts
+                </TabsContent>
               </Tabs>
             </DemoBlock>
 
             <DemoBlock label="Accordion">
               <Accordion className="w-full border border-border rounded-lg px-4">
                 {[
-                  { value: 'q1', trigger: 'What is the Lonestone boilerplate?', content: 'A production-ready monorepo template with NestJS, React, and a curated component library.' },
-                  { value: 'q2', trigger: 'Which UI components are included?', content: 'Buttons, Badges, Inputs, Tables, Sidebars, Data tables, and many more — all built on Base UI and Tailwind v4.' },
-                  { value: 'q3', trigger: 'How is authentication handled?', content: 'Via Better Auth — a lightweight, fully-typed auth library with session management and email verification.' },
-                ].map(item => (
+                  {
+                    value: 'q1',
+                    trigger: 'What is the Lonestone boilerplate?',
+                    content:
+                      'A production-ready monorepo template with NestJS, React, and a curated component library.',
+                  },
+                  {
+                    value: 'q2',
+                    trigger: 'Which UI components are included?',
+                    content:
+                      'Buttons, Badges, Inputs, Tables, Sidebars, Data tables, and many more — all built on Base UI and Tailwind v4.',
+                  },
+                  {
+                    value: 'q3',
+                    trigger: 'How is authentication handled?',
+                    content:
+                      'Via Better Auth — a lightweight, fully-typed auth library with session management and email verification.',
+                  },
+                ].map((item) => (
                   <AccordionItem key={item.value} value={item.value}>
                     <AccordionTrigger>{item.trigger}</AccordionTrigger>
                     <AccordionContent>{item.content}</AccordionContent>
@@ -609,7 +628,7 @@ export default function ComponentsPage() {
                 <AvatarFallback>CD</AvatarFallback>
               </Avatar>
               <AvatarGroup>
-                {['JD', 'AB', 'EF', 'GH'].map(initials => (
+                {['JD', 'AB', 'EF', 'GH'].map((initials) => (
                   <Avatar key={initials}>
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
@@ -619,10 +638,16 @@ export default function ComponentsPage() {
             </DemoBlock>
 
             <DemoBlock label="Progress" className="flex-col items-stretch">
-              {[25, 50, 75, 100].map(v => (
+              {[25, 50, 75, 100].map((v) => (
                 <Progress key={v} value={v}>
                   <ProgressLabel>
-                    {v === 25 ? 'Getting started' : v === 50 ? 'Halfway there' : v === 75 ? 'Almost done' : 'Complete'}
+                    {v === 25
+                      ? 'Getting started'
+                      : v === 50
+                        ? 'Halfway there'
+                        : v === 75
+                          ? 'Almost done'
+                          : 'Complete'}
                   </ProgressLabel>
                   <ProgressValue />
                 </Progress>
@@ -641,11 +666,7 @@ export default function ComponentsPage() {
           </Section>
 
           {/* ── Feedback (EmptyState, AppLoader) ────────────────────────── */}
-          <Section
-            id="feedback"
-            eyebrow="06"
-            title={t('components.sections.feedback')}
-          >
+          <Section id="feedback" eyebrow="06" title={t('components.sections.feedback')}>
             <DemoBlock label="EmptyState">
               <div className="w-full">
                 <EmptyState
@@ -693,7 +714,7 @@ export default function ComponentsPage() {
                   <Input
                     placeholder="Filter components…"
                     value={globalFilter}
-                    onChange={e => setGlobalFilter(e.target.value)}
+                    onChange={(e) => setGlobalFilter(e.target.value)}
                     className="pl-8 h-8 text-sm"
                     aria-label="Filter table rows"
                   />
@@ -709,13 +730,7 @@ export default function ComponentsPage() {
                   </Button>
                 )}
                 <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                  {table.getRowModel().rows.length}
-                  {' '}
-                  /
-                  {' '}
-                  {allTableData.length}
-                  {' '}
-                  rows
+                  {table.getRowModel().rows.length} / {allTableData.length} rows
                 </span>
               </div>
 
@@ -723,9 +738,9 @@ export default function ComponentsPage() {
               <div className="border border-border rounded-lg overflow-hidden bg-card">
                 <Table>
                   <TableHeader>
-                    {table.getHeaderGroups().map(headerGroup => (
+                    {table.getHeaderGroups().map((headerGroup) => (
                       <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map(header => (
+                        {headerGroup.headers.map((header) => (
                           <TableHead key={header.id}>
                             {header.isPlaceholder
                               ? null
@@ -736,39 +751,39 @@ export default function ComponentsPage() {
                     ))}
                   </TableHeader>
                   <TableBody>
-                    {table.getRowModel().rows.length > 0
-                      ? table.getRowModel().rows.map(row => (
-                          <TableRow key={row.id}>
-                            {row.getVisibleCells().map(cell => (
-                              <TableCell key={cell.id}>
-                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))
-                      : (
-                          <TableRow>
-                            <TableCell colSpan={columns.length} className="h-20 text-center text-sm text-muted-foreground">
-                              No components match your filter.
+                    {table.getRowModel().rows.length > 0 ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id}>
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </TableCell>
-                          </TableRow>
-                        )}
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length}
+                          className="h-20 text-center text-sm text-muted-foreground"
+                        >
+                          No components match your filter.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
 
               <p className="text-[10px] text-muted-foreground">
-                Click any column header to sort ascending / descending. Type in the filter to narrow rows by any field.
+                Click any column header to sort ascending / descending. Type in the filter to narrow
+                rows by any field.
               </p>
             </div>
           </Section>
 
           {/* ── Overlays (Tooltip, Popover, Separator) ──────────────────── */}
-          <Section
-            id="overlays"
-            eyebrow="08"
-            title={t('components.sections.overlays')}
-          >
+          <Section id="overlays" eyebrow="08" title={t('components.sections.overlays')}>
             <DemoBlock label="Tooltip">
               <Tooltip>
                 <TooltipTrigger>
@@ -792,9 +807,7 @@ export default function ComponentsPage() {
 
             <DemoBlock label="Popover">
               <Popover>
-                <PopoverTrigger
-                  render={<Button variant="outline" />}
-                >
+                <PopoverTrigger render={<Button variant="outline" />}>
                   <FileText className="h-4 w-4" />
                   Open popover
                 </PopoverTrigger>
@@ -803,7 +816,8 @@ export default function ComponentsPage() {
                     <PopoverTitle>More information</PopoverTitle>
                   </PopoverHeader>
                   <p className="text-sm text-muted-foreground">
-                    Popovers are great for contextual actions and supplementary content without navigating away.
+                    Popovers are great for contextual actions and supplementary content without
+                    navigating away.
                   </p>
                 </PopoverContent>
               </Popover>

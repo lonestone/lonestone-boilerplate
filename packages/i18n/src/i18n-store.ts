@@ -10,7 +10,7 @@ interface I18nStore {
 export function createI18nStore(i18nInstance: i18n) {
   return create<I18nStore>()(
     persistNSync(
-      set => ({
+      (set) => ({
         language: i18nInstance.language,
         setLanguage: (language: string) => {
           i18nInstance.changeLanguage(language)

@@ -47,10 +47,7 @@ export function DataTableContent<TData>({
             ))
           ) : (
             <TableRow>
-              <TableCell
-                colSpan={table.getAllColumns().length}
-                className="h-24 text-center"
-              >
+              <TableCell colSpan={table.getAllColumns().length} className="h-24 text-center">
                 {emptyMessage}
               </TableCell>
             </TableRow>

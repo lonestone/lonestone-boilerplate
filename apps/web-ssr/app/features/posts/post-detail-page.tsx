@@ -1,5 +1,9 @@
 import type { Route } from './+types/post-detail-page'
-import { publicPostControllerGetPost, publicPostControllerGetPosts, publicPostControllerLikePost } from '@boilerstone/openapi-generator/client/sdk.gen'
+import {
+  publicPostControllerGetPost,
+  publicPostControllerGetPosts,
+  publicPostControllerLikePost,
+} from '@boilerstone/openapi-generator/client/sdk.gen'
 import PostContent from '@boilerstone/ui/components/posts/PostContent'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
@@ -15,7 +19,7 @@ function estimateReadTime(content: unknown[] | null | undefined): number {
   const words = content
     .map((block: unknown) => {
       if (typeof block === 'object' && block !== null && 'data' in block) {
-        const b = block as { type?: string, data?: string }
+        const b = block as { type?: string; data?: string }
         return b.type === 'text' ? (b.data ?? '') : ''
       }
       return ''
@@ -57,7 +61,14 @@ interface RelatedCardProps {
   index: number
 }
 
-function RelatedCard({ slug, title, authorName, publishedAt, coverImage, index }: RelatedCardProps) {
+function RelatedCard({
+  slug,
+  title,
+  authorName,
+  publishedAt,
+  coverImage,
+  index,
+}: RelatedCardProps) {
   const [imgLoaded, setImgLoaded] = useState(false)
   const [imgError, setImgError] = useState(false)
   const reduced = useReducedMotion()
@@ -75,26 +86,24 @@ function RelatedCard({ slug, title, authorName, publishedAt, coverImage, index }
       >
         {/* Thumbnail */}
         <div className="h-16 w-24 shrink-0 overflow-hidden rounded-sm bg-muted">
-          {coverImage && !imgError
-            ? (
-                <img
-                  src={coverImage}
-                  alt={title}
-                  onLoad={() => setImgLoaded(true)}
-                  onError={() => setImgError(true)}
-                  className={[
-                    'h-full w-full object-cover transition-all duration-500 group-hover:scale-105',
-                    imgLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-sm',
-                  ].join(' ')}
-                />
-              )
-            : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <span className="select-none font-sans text-lg font-black uppercase tracking-tight text-muted-foreground/20">
-                    {title.slice(0, 2)}
-                  </span>
-                </div>
-              )}
+          {coverImage && !imgError ? (
+            <img
+              src={coverImage}
+              alt={title}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgError(true)}
+              className={[
+                'h-full w-full object-cover transform-gpu transition-all duration-500 group-hover:scale-105',
+                imgLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-sm',
+              ].join(' ')}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="select-none font-sans text-lg font-black uppercase tracking-tight text-muted-foreground/20">
+                {title.slice(0, 2)}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Text */}
@@ -105,7 +114,9 @@ function RelatedCard({ slug, title, authorName, publishedAt, coverImage, index }
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{authorName}</span>
             <span aria-hidden="true">·</span>
-            <span>{new Date(publishedAt).toLocaleDateString('en', { month: 'short', year: 'numeric' })}</span>
+            <span>
+              {new Date(publishedAt).toLocaleDateString('en', { month: 'short', year: 'numeric' })}
+            </span>
           </div>
         </div>
 
@@ -121,7 +132,9 @@ function RelatedCard({ slug, title, authorName, publishedAt, coverImage, index }
 export async function loader({ params }: { params: { slug: string } }) {
   const [postResult, relatedResult] = await Promise.all([
     publicPostControllerGetPost({ path: { slug: params.slug } }),
-    publicPostControllerGetPosts({ query: { offset: 0, pageSize: 4, filter: [] } }).catch(() => null),
+    publicPostControllerGetPosts({ query: { offset: 0, pageSize: 4, filter: [] } }).catch(
+      () => null,
+    ),
   ])
 
   if (postResult.error) {
@@ -129,7 +142,7 @@ export async function loader({ params }: { params: { slug: string } }) {
   }
 
   const allPosts = relatedResult?.data?.data ?? []
-  const related = allPosts.filter(p => p.slug !== params.slug).slice(0, 3)
+  const related = allPosts.filter((p) => p.slug !== params.slug).slice(0, 3)
 
   return {
     post: postResult.data,
@@ -204,7 +217,7 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
           {/* Tags */}
           {post?.tags && post.tags.length > 0 && (
             <div className="mb-4 flex flex-wrap gap-2">
-              {post.tags.map(tag => (
+              {post.tags.map((tag) => (
                 <Badge
                   key={tag.id}
                   variant={activeTag === tag.slug ? 'default' : 'outline'}
@@ -270,23 +283,24 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
       <div className="container mx-auto px-4 md:px-6">
         <div className="mx-auto max-w-2xl py-12 md:py-16">
           {post?.content && (
-            <div className={[
-              'prose prose-neutral dark:prose-invert max-w-none text-foreground leading-relaxed',
-              // Paragraphs
-              '[&_p]:mb-5 [&_p]:text-base [&_p]:md:text-lg [&_p]:leading-[1.8]',
-              // Drop cap on first paragraph
-              '[&_p:first-of-type::first-letter]:float-left [&_p:first-of-type::first-letter]:mr-2 [&_p:first-of-type::first-letter]:mt-0.5 [&_p:first-of-type::first-letter]:font-black [&_p:first-of-type::first-letter]:text-5xl [&_p:first-of-type::first-letter]:leading-[0.85] [&_p:first-of-type::first-letter]:text-foreground md:[&_p:first-of-type::first-letter]:text-6xl',
-              // Images
-              '[&_img]:rounded-md [&_img]:my-8 [&_img]:border [&_img]:border-border/60 [&_img]:shadow-sm',
-              '[&_video]:rounded-md [&_video]:my-8',
-              // Blockquote as pull-quote
-              '[&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-5 [&_blockquote]:py-1 [&_blockquote]:my-8 [&_blockquote]:not-italic',
-              '[&_blockquote_p]:text-xl [&_blockquote_p]:md:text-2xl [&_blockquote_p]:font-semibold [&_blockquote_p]:leading-snug [&_blockquote_p]:text-foreground [&_blockquote_p]:mb-0',
-              // Code blocks
-              '[&_pre]:rounded-md [&_pre]:border [&_pre]:border-border/60 [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:my-6 [&_pre]:overflow-x-auto',
-              '[&_code]:text-sm [&_code]:font-mono',
-              '[&_:not(pre)_code]:rounded [&_:not(pre)_code]:bg-muted [&_:not(pre)_code]:px-1.5 [&_:not(pre)_code]:py-0.5 [&_:not(pre)_code]:text-sm',
-            ].join(' ')}
+            <div
+              className={[
+                'prose prose-neutral dark:prose-invert max-w-none text-foreground leading-relaxed',
+                // Paragraphs
+                '[&_p]:mb-5 [&_p]:text-base [&_p]:md:text-lg [&_p]:leading-[1.8]',
+                // Drop cap on first paragraph
+                '[&_p:first-of-type::first-letter]:float-left [&_p:first-of-type::first-letter]:mr-2 [&_p:first-of-type::first-letter]:mt-0.5 [&_p:first-of-type::first-letter]:font-black [&_p:first-of-type::first-letter]:text-5xl [&_p:first-of-type::first-letter]:leading-[0.85] [&_p:first-of-type::first-letter]:text-foreground md:[&_p:first-of-type::first-letter]:text-6xl',
+                // Images
+                '[&_img]:rounded-md [&_img]:my-8 [&_img]:border [&_img]:border-border/60 [&_img]:shadow-sm',
+                '[&_video]:rounded-md [&_video]:my-8',
+                // Blockquote as pull-quote
+                '[&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-5 [&_blockquote]:py-1 [&_blockquote]:my-8 [&_blockquote]:not-italic',
+                '[&_blockquote_p]:text-xl [&_blockquote_p]:md:text-2xl [&_blockquote_p]:font-semibold [&_blockquote_p]:leading-snug [&_blockquote_p]:text-foreground [&_blockquote_p]:mb-0',
+                // Code blocks
+                '[&_pre]:rounded-md [&_pre]:border [&_pre]:border-border/60 [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:my-6 [&_pre]:overflow-x-auto',
+                '[&_code]:text-sm [&_code]:font-mono',
+                '[&_:not(pre)_code]:rounded [&_:not(pre)_code]:bg-muted [&_:not(pre)_code]:px-1.5 [&_:not(pre)_code]:py-0.5 [&_:not(pre)_code]:text-sm',
+              ].join(' ')}
             >
               <PostContent content={post.content} />
             </div>
@@ -294,9 +308,7 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
 
           {/* End-of-article like CTA */}
           <div className="mt-12 flex flex-col items-center gap-4 border-t border-border pt-12">
-            <p className="text-sm font-medium text-muted-foreground">
-              Enjoyed this article?
-            </p>
+            <p className="text-sm font-medium text-muted-foreground">Enjoyed this article?</p>
             <fetcher.Form method="post">
               <button
                 type="submit"
@@ -319,17 +331,19 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
                 Related articles
               </h2>
               <div className="flex flex-col gap-px border border-border bg-border">
-                {related.filter(p => !!p.slug).map((relPost, idx) => (
-                  <RelatedCard
-                    key={relPost.slug}
-                    slug={relPost.slug!}
-                    title={relPost.title}
-                    authorName={relPost.author.name}
-                    publishedAt={relPost.publishedAt}
-                    coverImage={relPost.coverImage}
-                    index={idx}
-                  />
-                ))}
+                {related
+                  .filter((p) => !!p.slug)
+                  .map((relPost, idx) => (
+                    <RelatedCard
+                      key={relPost.slug}
+                      slug={relPost.slug!}
+                      title={relPost.title}
+                      authorName={relPost.author.name}
+                      publishedAt={relPost.publishedAt}
+                      coverImage={relPost.coverImage}
+                      index={idx}
+                    />
+                  ))}
               </div>
             </div>
           )}
@@ -337,10 +351,7 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
           {/* Comments */}
           {post && (
             <div className="mt-16">
-              <CommentsList
-                postId={postSlug}
-                postAuthorId={post.author.name}
-              />
+              <CommentsList postId={postSlug} postAuthorId={post.author.name} />
             </div>
           )}
         </div>

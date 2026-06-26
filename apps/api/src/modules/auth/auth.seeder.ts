@@ -21,11 +21,15 @@ export class AuthSeeder extends Seeder {
   async run(em: EntityManager, context: Dictionary): Promise<void> {
     context.users = []
     for (const userData of [defaultUser, ...users]) {
-      const user = await createUserData(em, {
-        name: userData.name,
-        email: userData.email.toLowerCase(),
-        emailVerified: true,
-      }, userData.password)
+      const user = await createUserData(
+        em,
+        {
+          name: userData.name,
+          email: userData.email.toLowerCase(),
+          emailVerified: true,
+        },
+        userData.password,
+      )
       context.users.push(user)
     }
   }

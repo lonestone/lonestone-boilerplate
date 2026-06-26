@@ -44,12 +44,7 @@ export class EmailService {
     this.transporter = createTransport(transportConfig)
   }
 
-  async sendEmail({
-    to,
-    subject,
-    content,
-    html,
-  }: EmailOptions): Promise<void> {
+  async sendEmail({ to, subject, content, html }: EmailOptions): Promise<void> {
     try {
       const mailOptions = {
         from: config.email.from,
@@ -62,10 +57,11 @@ export class EmailService {
       const info = await this.transporter.sendMail(mailOptions)
 
       this.logger.log(`Email sent successfully to ${to}: ${info.messageId}`)
-    }
-    catch (error) {
+    } catch (error) {
       this.logger.error(`Failed to send email to ${to}:`, error)
-      throw new Error(`Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
     }
   }
 
@@ -74,8 +70,7 @@ export class EmailService {
       await this.transporter.verify()
       this.logger.log('Email service connection verified successfully')
       return true
-    }
-    catch (error) {
+    } catch (error) {
       this.logger.error('Email service connection verification failed:', error)
       return false
     }
