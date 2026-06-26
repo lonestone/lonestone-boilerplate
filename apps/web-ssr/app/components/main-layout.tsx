@@ -39,7 +39,7 @@ export default function MainLayout() {
 
           {/* Right: nav links grouped with the theme toggle */}
           <div className="flex items-center gap-1">
-            <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
+            <nav className="flex items-center gap-1" aria-label="Main navigation">
               {navLinks.map(link => (
                 <NavLink
                   key={link.to}
