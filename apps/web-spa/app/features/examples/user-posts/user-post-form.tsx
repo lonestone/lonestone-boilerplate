@@ -14,6 +14,8 @@ interface PostContentItem {
 interface PostFormData {
   title: string
   content: PostContentItem[]
+  coverImage?: string
+  tags?: string[]
 }
 
 interface UserPostFormProps {
@@ -38,6 +40,8 @@ export default function UserPostForm({
     defaultValues: initialData || {
       title: '',
       content: [{ type: 'text', data: '' }],
+      coverImage: '',
+      tags: [],
     },
   })
 
@@ -48,7 +52,11 @@ export default function UserPostForm({
 
   const handleFormSubmit = async (data: PostFormData) => {
     try {
-      await onSubmit(data)
+      await onSubmit({
+        ...data,
+        coverImage: data.coverImage?.trim() ? data.coverImage.trim() : undefined,
+        tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
+      })
       // Optionally reset the form after successful submission
       // reset();
     }
@@ -84,6 +92,46 @@ export default function UserPostForm({
           {errors.title && (
             <p className="text-sm text-destructive mt-1">{errors.title.message}</p>
           )}
+        </div>
+
+        {/* Cover image */}
+        <div className="space-y-2">
+          <label htmlFor="coverImage" className="block text-sm font-medium">
+            Cover image URL
+          </label>
+          <Input
+            id="coverImage"
+            type="url"
+            placeholder="https://images.example.com/cover.jpg"
+            className="w-full"
+            {...register('coverImage')}
+          />
+        </div>
+
+        {/* Tags */}
+        <div className="space-y-2">
+          <label htmlFor="tags" className="block text-sm font-medium">
+            Tags
+          </label>
+          <Controller
+            control={control}
+            name="tags"
+            render={({ field }) => (
+              <Input
+                id="tags"
+                placeholder="Comma-separated, e.g. TypeScript, React"
+                className="w-full"
+                value={(field.value ?? []).join(', ')}
+                onChange={event =>
+                  field.onChange(
+                    event.target.value
+                      .split(',')
+                      .map(tag => tag.trim())
+                      .filter(Boolean),
+                  )}
+              />
+            )}
+          />
         </div>
 
         {/* Content Items */}

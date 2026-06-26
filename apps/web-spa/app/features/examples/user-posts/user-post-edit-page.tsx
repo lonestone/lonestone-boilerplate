@@ -126,6 +126,8 @@ export default function UserPostEditPage() {
         initialData={{
           title: post?.title ?? '',
           content: post?.content ?? [],
+          coverImage: post?.coverImage ?? '',
+          tags: post?.tags?.map(tag => tag.name) ?? [],
         }}
         isSubmitting={isPending}
       />
