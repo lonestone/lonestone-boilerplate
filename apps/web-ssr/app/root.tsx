@@ -2,10 +2,11 @@ import type { Route } from './+types/root'
 import process from 'node:process'
 import { client } from '@boilerstone/openapi-generator'
 import { HydrationBoundary, QueryClientProvider } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData } from 'react-router'
 import { useDehydratedState } from '@/hooks/use-dehydrated-state'
+import { useTheme } from '@/hooks/use-theme'
 import { queryClient } from '@/lib/query-client'
-import '@fontsource/source-sans-pro'
 import '@boilerstone/ui/globals.css'
 
 client.setConfig({
@@ -34,16 +35,22 @@ export async function loader() {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const data = useRouteLoaderData<typeof loader>('root')
+  const [theme] = useTheme()
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+    document.documentElement.classList.toggle('light', theme === 'light')
+  }, [theme])
 
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body className="dark font-display min-h-screen bg-background">
+      <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
         <ScrollRestoration />
         <Scripts />

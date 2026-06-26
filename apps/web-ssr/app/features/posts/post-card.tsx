@@ -1,85 +1,120 @@
 import type { PublicPostsSchema } from '@boilerstone/openapi-generator'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
-import { ArrowUpRight, Calendar, Heart, MessageCircle, User } from 'lucide-react'
-
+import { ArrowRight, Calendar, Heart, MessageCircle } from 'lucide-react'
 import { useMemo } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 
 interface PostCardProps {
   post: PublicPostsSchema['data'][number]
 }
 
 export default function PostCard({ post }: PostCardProps) {
-  const getFirstTextContent = useMemo(() => {
-    const textContent = post.contentPreview
-    if (!textContent)
-      return ''
-    return textContent.data.length > 150
-      ? `${textContent.data.slice(0, 150)}...`
-      : textContent.data
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTag = searchParams.get('tag')
+
+  const excerpt = useMemo(() => {
+    const text = post.contentPreview?.data ?? ''
+    return text.length > 160 ? `${text.slice(0, 160)}…` : text
   }, [post.contentPreview])
 
+  const handleTagClick = (e: React.MouseEvent, tagSlug: string) => {
+    e.preventDefault()
+    const newParams = new URLSearchParams(searchParams)
+    if (activeTag === tagSlug) {
+      newParams.delete('tag')
+    }
+    else {
+      newParams.set('tag', tagSlug)
+    }
+    newParams.set('page', '1')
+    setSearchParams(newParams)
+  }
+
   return (
-    <Link to={`/posts/${post.slug}`} className="block">
-      <Card className="group/card-post overflow-hidden transition-all hover:shadow-lg hover:bg-muted/50">
+    <Link to={`/posts/${post.slug}`} className="group block">
+      <article className="flex flex-col overflow-hidden border border-border bg-background transition-all duration-200 hover:border-foreground/20 hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)] md:flex-row dark:hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)]">
+        {/* Cover image */}
         {post.coverImage && (
-          <div className="aspect-video overflow-hidden">
-            <img
-              src={post.coverImage}
-              alt={post.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none'
-              }}
-            />
+          <div className="relative w-full shrink-0 overflow-hidden bg-muted md:w-64 lg:w-80">
+            <div className="aspect-video md:aspect-auto md:h-full">
+              <img
+                src={post.coverImage}
+                alt={post.title}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                onError={(e) => { e.currentTarget.parentElement!.style.display = 'none' }}
+              />
+            </div>
           </div>
         )}
-        <div className="p-6">
-          <CardHeader className="flex flex-row justify-between p-0 pb-2">
-            <CardTitle>{post.title}</CardTitle>
-            <div className="flex items-center gap-2 group-hover/card-post:bg-primary group-hover/card-post:text-primary-foreground text-muted-foreground rounded-full p-1">
-              <ArrowUpRight className="h-5 w-5" />
-            </div>
-          </CardHeader>
-          {post.tags && post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 pb-2">
-              {post.tags.map(tag => (
-                <Badge key={tag.id} variant="outline">{tag.name}</Badge>
-              ))}
-            </div>
-          )}
-          <CardContent className="p-0 pb-4">
-            <p className="text-muted-foreground text-sm">{getFirstTextContent}</p>
-          </CardContent>
-          <CardFooter className="p-0">
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <User className="h-4 w-4" />
-                <span>{post.author.name}</span>
+
+        {/* Content */}
+        <div className="flex flex-1 flex-col justify-between p-6 md:p-8">
+          <div>
+            {/* Tags */}
+            {post.tags && post.tags.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {post.tags.map(tag => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={(e) => handleTagClick(e, tag.slug)}
+                    className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+                  >
+                    <Badge
+                      variant={activeTag === tag.slug ? 'default' : 'outline'}
+                      className="cursor-pointer transition-colors hover:border-foreground/40"
+                    >
+                      {tag.name}
+                    </Badge>
+                  </button>
+                ))}
               </div>
-              <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                <span>{new Date(post.publishedAt).toLocaleDateString()}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Heart className="h-4 w-4" />
-                <span>{post.likesCount}</span>
-              </div>
+            )}
+
+            {/* Title */}
+            <h2 className="mb-2 font-sans text-xl font-bold leading-snug tracking-tight text-foreground transition-colors group-hover:text-foreground md:text-2xl">
+              {post.title}
+            </h2>
+
+            {/* Excerpt */}
+            {excerpt && (
+              <p className="mb-4 text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                {excerpt}
+              </p>
+            )}
+          </div>
+
+          {/* Footer meta */}
+          <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/80">{post.author.name}</span>
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {new Date(post.publishedAt).toLocaleDateString('en', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </span>
+              <span className="flex items-center gap-1">
+                <Heart className="h-3 w-3" />
+                {post.likesCount}
+              </span>
               {post.commentCount !== undefined && (
-                <div className="flex items-center gap-1">
-                  <MessageCircle className="h-4 w-4" />
-                  <span>
-                    {post.commentCount}
-                    {' '}
-                    {post.commentCount === 1 ? 'comment' : 'comments'}
-                  </span>
-                </div>
+                <span className="flex items-center gap-1">
+                  <MessageCircle className="h-3 w-3" />
+                  {post.commentCount}
+                </span>
               )}
             </div>
-          </CardFooter>
+
+            {/* Read arrow */}
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground">
+              <ArrowRight className="h-3.5 w-3.5" />
+            </div>
+          </div>
         </div>
-      </Card>
+      </article>
     </Link>
   )
 }
