@@ -129,6 +129,31 @@ describe('postController (e2e)', () => {
     })
   })
 
+  describe('pOST /public/posts/:slug/like', () => {
+    it('should increment likes and return the public post', async (context) => {
+      const { em, request } = context
+      // Arrange - create + publish a post
+      const { session } = await createUserWithSession(em)
+      const createResponse = await request.withSession(session).post('/admin/posts').send({
+        title: 'Likeable Post',
+        content: [{ type: 'text', data: 'Content worth liking.' }],
+      })
+      const postId = createResponse.body.id
+      const publishResponse = await request.withSession(session).patch(`/admin/posts/${postId}/publish`)
+      const slug = publishResponse.body.slug
+
+      // Act - anonymous like (no session)
+      const likeResponse = await request.post(`/public/posts/${slug}/like`)
+
+      // Assert - 200 (not 404) and the mapped public post with incremented count
+      expect(likeResponse.status).toBe(200)
+      expect(likeResponse.body).toMatchObject({
+        title: 'Likeable Post',
+        likesCount: 1,
+      })
+    })
+  })
+
   describe('session flexibility', () => {
     it('should isolate posts per user', async (context) => {
       const { em, request } = context

@@ -371,10 +371,11 @@ export class PostService {
   }
 
   async likePost(slug: string): Promise<Post> {
-    const post = await this.em.findOne(Post, {
-      slug,
-      publishedAt: { $ne: null },
-    })
+    const post = await this.em.findOne(
+      Post,
+      { slug, publishedAt: { $ne: null } },
+      { populate: ['user', 'versions', 'tags'] },
+    )
 
     if (!post)
       throw new NotFoundException(`Post not found: ${slug}`)
