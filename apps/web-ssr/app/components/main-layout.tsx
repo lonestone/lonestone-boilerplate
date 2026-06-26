@@ -19,6 +19,7 @@ function ThemeToggle() {
 }
 
 const navLinks = [
+  { to: '/', label: 'Home', end: true },
   { to: '/posts', label: 'Journal' },
 ]
 
@@ -36,27 +37,29 @@ export default function MainLayout() {
             LONESTONE
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
-            {navLinks.map(link => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  cn(
-                    'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                  )}
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
+          {/* Right: nav links grouped with the theme toggle */}
+          <div className="flex items-center gap-1">
+            <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
+              {navLinks.map(link => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={link.end}
+                  className={({ isActive }) =>
+                    cn(
+                      'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                    )}
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+            </nav>
+            <div className="ml-1 border-l border-border/60 pl-2">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>

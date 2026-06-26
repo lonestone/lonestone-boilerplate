@@ -1,8 +1,94 @@
 import type { Route } from './+types/home-page'
+import type { PublicPostsSchema } from '@boilerstone/openapi-generator'
 import { publicPostControllerGetPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { ArrowRight, BookOpen, Pen } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router'
+
+type TeaserPost = PublicPostsSchema['data'][number]
+
+function TeaserCard({ post, index }: { post: TeaserPost, index: number }) {
+  const [imgError, setImgError] = useState(false)
+  const preview = post.contentPreview?.data ?? ''
+  const excerpt = preview.length > 120 ? `${preview.slice(0, 120)}…` : preview
+
+  return (
+    <Link
+      to={`/posts/${post.slug}`}
+      className="group relative flex flex-col bg-background p-6 transition-colors hover:bg-accent/50 md:p-8"
+    >
+      {/* Index number */}
+      <span className="mb-4 font-mono text-xs font-medium text-muted-foreground/50 tabular-nums">
+        0{index + 1}
+      </span>
+
+      {/* Cover — always present (image or branded fallback) for consistent cards */}
+      <div className="mb-4 aspect-video overflow-hidden rounded-sm bg-muted">
+        {post.coverImage && !imgError
+          ? (
+              <img
+                src={post.coverImage}
+                alt={post.title}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                onError={() => setImgError(true)}
+              />
+            )
+          : (
+              <div className="flex h-full w-full items-center justify-center">
+                <span className="select-none font-sans text-4xl font-black uppercase tracking-tight text-muted-foreground/20">
+                  {post.title.slice(0, 2)}
+                </span>
+              </div>
+            )}
+      </div>
+
+      {/* Tags */}
+      {post.tags && post.tags.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-1">
+          {post.tags.slice(0, 2).map(tag => (
+            <Badge key={tag.id} variant="outline" className="h-4 text-[10px]">
+              {tag.name}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Title */}
+      <h3 className="mb-2 font-sans text-lg font-bold leading-snug tracking-tight text-foreground md:text-xl">
+        {post.title}
+      </h3>
+
+      {/* Excerpt */}
+      {excerpt && (
+        <p className="mb-4 line-clamp-2 flex-1 text-sm text-muted-foreground">
+          {excerpt}
+        </p>
+      )}
+
+      {/* Meta */}
+      <div className="mt-auto flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Pen className="h-3 w-3" />
+          {post.author.name}
+        </span>
+        <span className="flex items-center gap-1">
+          <BookOpen className="h-3 w-3" />
+          {new Date(post.publishedAt).toLocaleDateString('en', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })}
+        </span>
+      </div>
+
+      {/* Arrow indicator */}
+      <div className="absolute right-5 top-5 flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground opacity-0 transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:opacity-100 md:right-6 md:top-6">
+        <ArrowRight className="h-3.5 w-3.5" />
+      </div>
+    </Link>
+  )
+}
 
 export async function loader() {
   try {
@@ -104,74 +190,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
 
           <div className="grid gap-px border border-border bg-border md:grid-cols-3">
             {latestPosts.map((post, index) => (
-              <Link
-                key={post.slug}
-                to={`/posts/${post.slug}`}
-                className="group relative flex flex-col bg-background p-6 transition-colors hover:bg-accent/50 md:p-8"
-              >
-                {/* Index number */}
-                <span className="mb-4 font-mono text-xs font-medium text-muted-foreground/50 tabular-nums">
-                  0{index + 1}
-                </span>
-
-                {/* Cover image (small) */}
-                {post.coverImage && (
-                  <div className="mb-4 aspect-video overflow-hidden rounded-sm">
-                    <img
-                      src={post.coverImage}
-                      alt={post.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      onError={(e) => { e.currentTarget.style.display = 'none' }}
-                    />
-                  </div>
-                )}
-
-                {/* Tags */}
-                {post.tags && post.tags.length > 0 && (
-                  <div className="mb-3 flex flex-wrap gap-1">
-                    {post.tags.slice(0, 2).map(tag => (
-                      <Badge key={tag.id} variant="outline" className="h-4 text-[10px]">
-                        {tag.name}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                {/* Title */}
-                <h3 className="mb-2 font-sans text-lg font-bold leading-snug tracking-tight text-foreground md:text-xl">
-                  {post.title}
-                </h3>
-
-                {/* Excerpt */}
-                {post.contentPreview && (
-                  <p className="mb-4 line-clamp-2 flex-1 text-sm text-muted-foreground">
-                    {post.contentPreview.data.length > 120
-                      ? `${post.contentPreview.data.slice(0, 120)}…`
-                      : post.contentPreview.data}
-                  </p>
-                )}
-
-                {/* Meta */}
-                <div className="mt-auto flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Pen className="h-3 w-3" />
-                    {post.author.name}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <BookOpen className="h-3 w-3" />
-                    {new Date(post.publishedAt).toLocaleDateString('en', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </span>
-                </div>
-
-                {/* Arrow indicator */}
-                <div className="absolute right-5 top-5 flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground opacity-0 transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:opacity-100 md:right-6 md:top-6">
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </div>
-              </Link>
+              <TeaserCard key={post.slug} post={post} index={index} />
             ))}
           </div>
 
