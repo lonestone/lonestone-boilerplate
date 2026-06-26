@@ -367,6 +367,16 @@
                       "description": "Schema for content items (text, image, video)",
                       "type": "object"
                     }
+                  },
+                  "coverImage": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 },
                 "required": [
@@ -406,7 +416,7 @@
             "schema": {
               "$ref": "#/components/schemas/PostController_getUserPosts_filterArray"
             },
-            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title",
+            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title, tag",
             "style": "form",
             "explode": false
           },
@@ -547,6 +557,16 @@
                       "title": "PostContentSchema",
                       "description": "Schema for content items (text, image, video)",
                       "type": "object"
+                    }
+                  },
+                  "coverImage": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
                     }
                   }
                 },
@@ -710,7 +730,7 @@
             "schema": {
               "$ref": "#/components/schemas/PublicPostController_getPosts_filterArray"
             },
-            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title",
+            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title, tag",
             "style": "form",
             "explode": false
           },
@@ -757,6 +777,101 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PublicPostsSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/posts/{slug}/like": {
+      "post": {
+        "operationId": "PublicPostController_likePost",
+        "tags": [
+          "Public Posts"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A public post",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPostSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/authors/{slug}/posts": {
+      "get": {
+        "operationId": "PublicAuthorController_getAuthorPosts",
+        "tags": [
+          "Public Authors"
+        ],
+        "parameters": [
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PublicAuthorController_getAuthorPosts_sortArray"
+            },
+            "description": "Schema for sorting items",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "description": "Starting position of the query",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "description": "Number of items to return",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of posts from a specific author",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicAuthorPostsSchema"
                 }
               }
             }
@@ -831,22 +946,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -962,22 +1098,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -1195,22 +1352,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -1329,22 +1507,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -1453,22 +1652,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -1679,22 +1899,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -1726,10 +1967,514 @@
           }
         }
       }
+    },
+    "/api/ai/examples/use-case-1-single-generation": {
+      "post": {
+        "operationId": "AiExampleUseCasesController_useCase1SingleGeneration",
+        "tags": [
+          "AiExampleUseCases"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Single generation; trace is finalized with name/output so Langfuse shows them",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
+                            "type": "string",
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  }
+                },
+                "required": [
+                  "prompt"
+                ],
+                "additionalProperties": false,
+                "title": "UseCase1SingleGenerationRequest",
+                "description": "Single generation; trace is finalized with name/output so Langfuse shows them"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response from text generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateTextResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/examples/use-case-2-grouped-calls": {
+      "post": {
+        "operationId": "AiExampleUseCasesController_useCase2GroupedCalls",
+        "tags": [
+          "AiExampleUseCases"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompts": {
+                    "minItems": 1,
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "Prompts for each step (same trace)"
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  }
+                },
+                "required": [
+                  "prompts"
+                ],
+                "additionalProperties": false,
+                "title": "UseCase2GroupedCallsRequest",
+                "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Combined results from grouped LLM calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UseCase2GroupedCallsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/examples/use-case-3-logical-units": {
+      "post": {
+        "operationId": "AiExampleUseCasesController_useCase3LogicalUnits",
+        "tags": [
+          "AiExampleUseCases"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "workflowPrompts": {
+                    "minItems": 1,
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "One prompt per logical workflow; each gets its own trace"
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  }
+                },
+                "required": [
+                  "workflowPrompts"
+                ],
+                "additionalProperties": false,
+                "title": "UseCase3LogicalUnitsRequest",
+                "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One result per workflow (each in its own trace)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UseCase3LogicalUnitsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/examples/use-case-4-chat-session": {
+      "post": {
+        "operationId": "AiExampleUseCasesController_useCase4ChatSession",
+        "tags": [
+          "AiExampleUseCases"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Simple generateText with sessionId for grouping traces across requests",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Session ID to group traces in Langfuse (e.g. conversation or thread)"
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  }
+                },
+                "required": [
+                  "prompt",
+                  "sessionId"
+                ],
+                "additionalProperties": false,
+                "title": "UseCase4ChatSessionRequest",
+                "description": "Simple generateText with sessionId for grouping traces across requests"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response from text generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateTextResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/examples/use-case-5-chat-session-with-turns-merged": {
+      "post": {
+        "operationId": "AiExampleUseCasesController_useCase5ChatSessionWithTurnsMerged",
+        "tags": [
+          "AiExampleUseCases"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Simple generateText with sessionId for grouping traces across requests",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Session ID to group traces in Langfuse (e.g. conversation or thread)"
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  }
+                },
+                "required": [
+                  "prompt",
+                  "sessionId"
+                ],
+                "additionalProperties": false,
+                "title": "UseCase4ChatSessionRequest",
+                "description": "Simple generateText with sessionId for grouping traces across requests"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response from text generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateTextResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "UseCase1SingleGenerationRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase1SingleGenerationRequest",
+        "description": "Single generation; trace is finalized with name/output so Langfuse shows them"
+      },
+      "UseCase2GroupedCallsRequest": {
+        "type": "object",
+        "properties": {
+          "prompts": {
+            "minItems": 1,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Prompts for each step (same trace)"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          }
+        },
+        "required": [
+          "prompts"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase2GroupedCallsRequest",
+        "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end"
+      },
+      "UseCase3LogicalUnitsRequest": {
+        "type": "object",
+        "properties": {
+          "workflowPrompts": {
+            "minItems": 1,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "One prompt per logical workflow; each gets its own trace"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          }
+        },
+        "required": [
+          "workflowPrompts"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase3LogicalUnitsRequest",
+        "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)"
+      },
+      "UseCase4ChatSessionRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sessionId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Session ID to group traces in Langfuse (e.g. conversation or thread)"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          }
+        },
+        "required": [
+          "prompt",
+          "sessionId"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase4ChatSessionRequest",
+        "description": "Simple generateText with sessionId for grouping traces across requests"
+      },
       "GenerateTextRequest": {
         "type": "object",
         "properties": {
@@ -1960,6 +2705,16 @@
             "items": {
               "$ref": "#/components/schemas/PostContentSchema"
             }
+          },
+          "coverImage": {
+            "type": "string",
+            "format": "uri"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -1982,6 +2737,16 @@
             "items": {
               "$ref": "#/components/schemas/PostContentSchema"
             }
+          },
+          "coverImage": {
+            "type": "string",
+            "format": "uri"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": false,
@@ -1996,6 +2761,18 @@
           },
           "finishReason": {
             "type": "string"
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "toolResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolResult"
+            }
           },
           "result": {
             "type": "string"
@@ -2030,6 +2807,109 @@
         "title": "TokenUsage",
         "description": "Token usage information for an AI generation"
       },
+      "ToolCall": {
+        "type": "object",
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "args": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "toolCallId",
+          "toolName",
+          "args"
+        ],
+        "additionalProperties": false,
+        "title": "ToolCall",
+        "description": "A tool call made by the AI"
+      },
+      "ToolResult": {
+        "type": "object",
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "result": {}
+        },
+        "required": [
+          "toolCallId",
+          "toolName",
+          "result"
+        ],
+        "additionalProperties": false,
+        "title": "ToolResult",
+        "description": "The result of a tool call"
+      },
+      "UseCase2GroupedCallsResponse": {
+        "type": "object",
+        "properties": {
+          "traceName": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          }
+        },
+        "required": [
+          "traceName",
+          "results"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase2GroupedCallsResponse",
+        "description": "Combined results from grouped LLM calls"
+      },
+      "UseCase3LogicalUnitsResponse": {
+        "type": "object",
+        "properties": {
+          "workflows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "number"
+                },
+                "result": {
+                  "type": "string"
+                },
+                "usage": {
+                  "$ref": "#/components/schemas/TokenUsage"
+                }
+              },
+              "required": [
+                "index",
+                "result"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "workflows"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase3LogicalUnitsResponse",
+        "description": "One result per workflow (each in its own trace)"
+      },
       "GenerateObjectResponse": {
         "type": "object",
         "properties": {
@@ -2038,6 +2918,18 @@
           },
           "finishReason": {
             "type": "string"
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "toolResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolResult"
+            }
           },
           "result": {}
         },
@@ -2057,15 +2949,6 @@
           "finishReason": {
             "type": "string"
           },
-          "result": {
-            "type": "string"
-          },
-          "messages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
-            }
-          },
           "toolCalls": {
             "type": "array",
             "items": {
@@ -2076,6 +2959,15 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ToolResult"
+            }
+          },
+          "result": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
             }
           }
         },
@@ -2197,32 +3089,6 @@
         "title": "ChatMessageWithSchemaType",
         "description": "A message with optional schemaType metadata for identifying structured output"
       },
-      "ToolCall": {
-        "type": "object",
-        "properties": {
-          "toolCallId": {
-            "type": "string"
-          },
-          "toolName": {
-            "type": "string"
-          },
-          "args": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {}
-          }
-        },
-        "required": [
-          "toolCallId",
-          "toolName",
-          "args"
-        ],
-        "additionalProperties": false,
-        "title": "ToolCall",
-        "description": "A tool call made by the AI"
-      },
       "ChatSchemaType": {
         "type": "string",
         "enum": [
@@ -2234,26 +3100,6 @@
         ],
         "title": "ChatSchemaType",
         "description": "Predefined schema types for testing structured output"
-      },
-      "ToolResult": {
-        "type": "object",
-        "properties": {
-          "toolCallId": {
-            "type": "string"
-          },
-          "toolName": {
-            "type": "string"
-          },
-          "result": {}
-        },
-        "required": [
-          "toolCallId",
-          "toolName",
-          "result"
-        ],
-        "additionalProperties": false,
-        "title": "ToolResult",
-        "description": "The result of a tool call"
       },
       "CommentSchema": {
         "type": "object",
@@ -2434,6 +3280,16 @@
           },
           "commentCount": {
             "type": "number"
+          },
+          "coverImage": {
+            "type": "string",
+            "format": "uri"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagSchema"
+            }
           }
         },
         "required": [
@@ -2441,7 +3297,8 @@
           "title",
           "content",
           "versions",
-          "type"
+          "type",
+          "tags"
         ],
         "additionalProperties": false,
         "title": "UserPostSchema",
@@ -2529,6 +3386,30 @@
         "title": "PostVersionSchema",
         "description": "Schema for a post version"
       },
+      "TagSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ],
+        "additionalProperties": false,
+        "title": "TagSchema",
+        "description": "A tag attached to a post"
+      },
       "UserPostsSchema": {
         "type": "object",
         "properties": {
@@ -2581,6 +3462,16 @@
                 "commentCount": {
                   "type": "number"
                 },
+                "coverImage": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagSchema"
+                  }
+                },
                 "contentPreview": {
                   "$ref": "#/components/schemas/PostContentSchema"
                 }
@@ -2590,6 +3481,7 @@
                 "title",
                 "versions",
                 "type",
+                "tags",
                 "contentPreview"
               ],
               "additionalProperties": false
@@ -2660,13 +3552,28 @@
           },
           "commentCount": {
             "type": "number"
+          },
+          "coverImage": {
+            "type": "string",
+            "format": "uri"
+          },
+          "likesCount": {
+            "type": "number"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagSchema"
+            }
           }
         },
         "required": [
           "title",
           "author",
           "content",
-          "publishedAt"
+          "publishedAt",
+          "likesCount",
+          "tags"
         ],
         "additionalProperties": false,
         "title": "PublicPostSchema",
@@ -2704,6 +3611,19 @@
                 "commentCount": {
                   "type": "number"
                 },
+                "coverImage": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "likesCount": {
+                  "type": "number"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagSchema"
+                  }
+                },
                 "contentPreview": {
                   "$ref": "#/components/schemas/PostContentSchema"
                 }
@@ -2712,6 +3632,8 @@
                 "title",
                 "author",
                 "publishedAt",
+                "likesCount",
+                "tags",
                 "contentPreview"
               ],
               "additionalProperties": false
@@ -2749,6 +3671,99 @@
         "additionalProperties": false,
         "title": "PublicPostsSchema",
         "description": "A list of public posts"
+      },
+      "PublicAuthorPostsSchema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "author": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ],
+                  "additionalProperties": false
+                },
+                "publishedAt": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "commentCount": {
+                  "type": "number"
+                },
+                "coverImage": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "likesCount": {
+                  "type": "number"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagSchema"
+                  }
+                },
+                "contentPreview": {
+                  "$ref": "#/components/schemas/PostContentSchema"
+                }
+              },
+              "required": [
+                "title",
+                "author",
+                "publishedAt",
+                "likesCount",
+                "tags",
+                "contentPreview"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "offset": {
+                "type": "number"
+              },
+              "pageSize": {
+                "type": "number"
+              },
+              "itemCount": {
+                "type": "number"
+              },
+              "hasMore": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "offset",
+              "pageSize",
+              "itemCount",
+              "hasMore"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false,
+        "title": "PublicAuthorPostsSchema",
+        "description": "A list of posts from a specific author"
       },
       "AiCoreMessage": {
         "type": "object",
@@ -3166,22 +4181,43 @@
           "telemetry": {
             "type": "object",
             "properties": {
-              "langfuseTraceName": {
+              "traceMode": {
+                "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                 "type": "string",
-                "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                "enum": [
+                  "inherit",
+                  "split"
+                ]
+              },
+              "traceId": {
+                "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                "type": "string"
+              },
+              "traceName": {
+                "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                "type": "string"
+              },
+              "spanName": {
+                "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                "type": "string"
+              },
+              "sessionId": {
+                "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                "type": "string"
+              },
+              "metadata": {
+                "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "langfuseOriginalPrompt": {
                 "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                 "type": "string"
-              },
-              "functionId": {
-                "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                "type": "string"
               }
             },
-            "required": [
-              "langfuseTraceName"
-            ],
             "additionalProperties": false
           },
           "metadata": {
@@ -3262,7 +4298,7 @@
       },
       "FilterQueryStringSchema": {
         "title": "FilterQueryStringSchema",
-        "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title",
+        "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title, tag",
         "example": "name:eq:John;age:gt:30",
         "type": "string",
         "items": {
@@ -3273,6 +4309,10 @@
                 {
                   "type": "string",
                   "const": "title"
+                },
+                {
+                  "type": "string",
+                  "const": "tag"
                 }
               ]
             },
@@ -3432,6 +4472,10 @@
               {
                 "type": "string",
                 "const": "title"
+              },
+              {
+                "type": "string",
+                "const": "tag"
               }
             ]
           },
@@ -3511,6 +4555,10 @@
               {
                 "type": "string",
                 "const": "title"
+              },
+              {
+                "type": "string",
+                "const": "tag"
               }
             ]
           },
@@ -3580,6 +4628,41 @@
         "type": "array",
         "items": {
           "$ref": "#/components/schemas/PublicPostController_getPosts_sortItem"
+        }
+      },
+      "PublicAuthorController_getAuthorPosts_sortItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "title"
+              },
+              {
+                "type": "string",
+                "const": "createdAt"
+              }
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "property",
+          "direction"
+        ],
+        "additionalProperties": false
+      },
+      "PublicAuthorController_getAuthorPosts_sortArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PublicAuthorController_getAuthorPosts_sortItem"
         }
       }
     }
