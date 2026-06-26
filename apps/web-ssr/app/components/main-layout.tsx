@@ -31,6 +31,7 @@ export default function MainLayout() {
           {/* Wordmark */}
           <Link
             to="/"
+            viewTransition
             className="group flex items-center gap-2 font-sans text-base font-black tracking-tight text-foreground transition-opacity hover:opacity-80"
           >
             <span className="inline-block h-5 w-5 rounded-sm bg-primary" aria-hidden="true" />
@@ -45,6 +46,7 @@ export default function MainLayout() {
                   key={link.to}
                   to={link.to}
                   end={link.end}
+                  viewTransition
                   className={({ isActive }) =>
                     cn(
                       'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
@@ -82,6 +84,7 @@ export default function MainLayout() {
               <Link
                 key={link.to}
                 to={link.to}
+                viewTransition
                 className="text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
                 {link.label}

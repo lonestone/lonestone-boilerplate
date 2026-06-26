@@ -27,6 +27,19 @@ export const links: Route.LinksFunction = () => [
   },
 ]
 
+// View-transition cross-fade injected once into the document
+const VIEW_TRANSITION_STYLE = `
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: 180ms ease-out both fade-out; }
+::view-transition-new(root) { animation: 220ms ease-out both fade-in; }
+@keyframes fade-out { from { opacity: 1 } to { opacity: 0 } }
+@keyframes fade-in  { from { opacity: 0 } to { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+}
+`
+
 export async function loader() {
   return {
     API_URL: process.env.VITE_API_URL as string,
@@ -49,6 +62,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        {/* oxlint-disable-next-line react-dom/no-dangerously-set-innerhtml -- view transition styles */}
+        <style dangerouslySetInnerHTML={{ __html: VIEW_TRANSITION_STYLE }} />
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         {children}

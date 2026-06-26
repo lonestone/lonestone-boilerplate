@@ -101,8 +101,8 @@ export default function AuthorPostsPage({ loaderData }: Route.ComponentProps) {
           : (
               <>
                 <div className="flex flex-col gap-px border border-border bg-border">
-                  {postList.map(post => (
-                    <PostCard key={post.slug} post={post} />
+                  {postList.map((post, index) => (
+                    <PostCard key={post.slug} post={post} index={index} />
                   ))}
                 </div>
 
