@@ -11,6 +11,7 @@ import {
   PostSorting,
   UpdatePostInput,
 } from './contracts/posts.contract'
+import { Tag } from '../tags/tag.entity'
 import { Post, PostVersion } from './posts.entity'
 
 export interface UserPostsResult {
@@ -42,6 +43,23 @@ export interface PublicAuthorPostsResult {
 export class PostService {
   constructor(private readonly em: EntityManager) {}
 
+  // Find existing tags by slug or create them on the fly (used by create/update).
+  private async resolveTags(names: string[]): Promise<Tag[]> {
+    const tags: Tag[] = []
+    for (const name of names) {
+      const slug = slugify(name, { lower: true, strict: true })
+      let tag = await this.em.findOne(Tag, { slug })
+      if (!tag) {
+        tag = new Tag()
+        tag.name = name
+        tag.slug = slug
+        this.em.persist(tag)
+      }
+      tags.push(tag)
+    }
+    return tags
+  }
+
   async createPost(userId: string, data: CreatePostInput): Promise<Post> {
     const user = await this.em.findOne(User, { id: userId })
     if (!user)
@@ -56,6 +74,10 @@ export class PostService {
     version.content = data.content
     post.versions.add(version)
 
+    post.coverImage = data.coverImage
+    if (data.tags)
+      post.tags.set(await this.resolveTags(data.tags))
+
     this.em.persist([post, version])
     await this.em.flush()
     return post
@@ -69,7 +91,7 @@ export class PostService {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
-      { populate: ['versions'] },
+      { populate: ['versions', 'tags'] },
     )
     if (!post)
       throw new Error('Post not found')
@@ -107,6 +129,12 @@ export class PostService {
       await this.em.flush()
     }
 
+    if (data.coverImage !== undefined)
+      post.coverImage = data.coverImage
+    if (data.tags)
+      post.tags.set(await this.resolveTags(data.tags))
+    await this.em.flush()
+
     return post
   }
 
@@ -126,7 +154,7 @@ export class PostService {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
-      { populate: ['versions'] },
+      { populate: ['versions', 'tags'] },
     )
     if (!post)
       throw new Error('Post not found')
@@ -164,7 +192,7 @@ export class PostService {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
-      { populate: ['versions'] },
+      { populate: ['versions', 'tags'] },
     )
     if (!post)
       throw new Error('Post not found')

@@ -66,6 +66,17 @@ export const postVersionSchema = z.object({
   description: 'Schema for a post version',
 })
 
+export const tagSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  slug: z.string(),
+}).meta({
+  title: 'TagSchema',
+  description: 'A tag attached to a post',
+})
+
+export type Tag = z.infer<typeof tagSchema>
+
 // ----------------------------
 // Create/update post schemas //
 // ----------------------------
@@ -74,6 +85,8 @@ export const postVersionSchema = z.object({
 export const createPostSchema = z.object({
   title: z.string().min(1),
   content: z.array(postContentSchema),
+  coverImage: z.string().url().optional(),
+  tags: z.array(z.string()).optional(),
 }).meta({
   title: 'CreatePostSchema',
   description: 'Schema for creating/updating a post',
@@ -84,6 +97,8 @@ export type CreatePostInput = z.infer<typeof createPostSchema>
 export const updatePostSchema = z.object({
   title: z.string().min(1).optional(),
   content: z.array(postContentSchema).optional(),
+  coverImage: z.string().url().optional(),
+  tags: z.array(z.string()).optional(),
 }).meta({
   title: 'UpdatePostSchema',
   description: 'Schema for updating a post',
@@ -100,6 +115,8 @@ export const userPostSchema = z.object({
   publishedAt: z.date().nullish(),
   type: z.enum(['published', 'draft']),
   commentCount: z.number().optional(),
+  coverImage: z.string().url().optional(),
+  tags: z.array(tagSchema),
 }).meta({
   title: 'UserPostSchema',
   description: 'Schema for a user\'s post',
@@ -120,17 +137,6 @@ export type UserPosts = z.infer<typeof userPostsSchema>
 // -------------//
 // Public posts //
 // -------------//
-
-export const tagSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  slug: z.string(),
-}).meta({
-  title: 'TagSchema',
-  description: 'A tag attached to a post',
-})
-
-export type Tag = z.infer<typeof tagSchema>
 
 // Schema for the public view of a post
 export const publicPostSchema = z.object({
