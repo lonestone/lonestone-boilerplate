@@ -13,6 +13,7 @@ import type {
   DBAdapterDebugLogOption,
 } from 'better-auth/adapters'
 import type { DBFieldAttribute } from 'better-auth/db'
+import { writeFileSync } from 'node:fs'
 import { ReferenceKind, serialize } from '@mikro-orm/core'
 import { BetterAuthError } from 'better-auth'
 import { createAdapterFactory } from 'better-auth/adapters'
@@ -465,17 +466,15 @@ export function mikroOrmAdapter(
 
           const patchedFiles = applyEntityPatches(diffs, orm, defaultPath)
 
-          if (patchedFiles.size > 1) {
-            const paths = [...patchedFiles.keys()].join(', ')
-            throwAdapterError(
-              `Better Auth schema changes span multiple entity files (${paths}). `
-              + `Consolidate the affected auth entities into a single file (e.g. src/modules/auth/auth.entity.ts) and re-run \`pnpm auth:generate\`.`,
-            )
-          }
+          if (patchedFiles.size > 0) {
+            const entries = [...patchedFiles.entries()].toSorted(([left], [right]) => left.localeCompare(right))
+            const [schemaPath, schemaContent] = entries.at(-1)!
 
-          if (patchedFiles.size === 1) {
-            const [firstPath, firstContent] = [...patchedFiles.entries()][0]!
-            return { code: firstContent, path: firstPath, overwrite: true }
+            for (const [path, content] of entries.slice(0, -1)) {
+              writeFileSync(path, content)
+            }
+
+            return { code: schemaContent, path: schemaPath, overwrite: true }
           }
 
           throwAdapterError(

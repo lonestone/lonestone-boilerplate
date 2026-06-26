@@ -64,7 +64,7 @@ function loadEntitiesFromGlob(pattern: string): EntityName<object>[] {
   })
 }
 
-const entities = entityGlobs.entitiesTs.flatMap(loadEntitiesFromGlob)
+const entities = Array.from(new Set(entityGlobs.entitiesTs.flatMap(loadEntitiesFromGlob)))
 
 export const auth = createBetterAuth({
   orm: new MikroORM(createMikroOrmOptions({ debug: false, entities, entitiesTs: entities })),

@@ -6,7 +6,7 @@
 import type { EntityManager } from '@mikro-orm/core'
 import type { BetterAuthSession } from '../../modules/auth/auth.config'
 import type { User } from '../../modules/auth/auth.entity'
-import { createUserData } from '../../factories/user.factory'
+import { createUserData } from '../../modules/auth/auth.factory'
 import { createSessionFromUser } from './test-auth.helper'
 
 export interface UserWithSession {

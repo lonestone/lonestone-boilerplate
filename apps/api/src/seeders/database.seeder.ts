@@ -2,9 +2,9 @@
 
 import { Dictionary, EntityManager } from '@mikro-orm/core'
 import { Seeder } from '@mikro-orm/seeder'
+import { AuthSeeder } from '../modules/auth/auth.seeder'
 import { CommentSeeder } from '../modules/example/comments/comment.seeder'
 import { PostSeeder } from '../modules/example/posts/post.seeder'
-import { AuthSeeder } from './auth.seeder'
 
 export class DatabaseSeeder extends Seeder {
   async run(em: EntityManager): Promise<void> {
