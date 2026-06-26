@@ -18,10 +18,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@boilerstone/ui/components/primitives/dropdown-menu'
 import { Avatar, AvatarFallback } from '@boilerstone/ui/components/primitives/avatar'
-import { Brain, ChevronUp, Component, Globe, LayoutDashboard, LogOut, Moon, Pen, PlusCircle, Sun } from 'lucide-react'
+import { Brain, ChevronUp, Component, Globe, LayoutDashboard, LogOut, Moon, Pen, PlusCircle, Sun, User } from 'lucide-react'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
@@ -171,6 +174,13 @@ function AppSidebar() {
                 align="start"
                 className="w-56"
               >
+                <DropdownMenuItem render={<Link to="/dashboard/profile" />}>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>{t('dashboard.profile')}</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
                 <DropdownMenuItem onClick={handleThemeToggle}>
                   {theme === 'dark'
                     ? <Sun className="mr-2 h-4 w-4" />
@@ -178,24 +188,29 @@ function AppSidebar() {
                   <span>{theme === 'dark' ? t('dashboard.lightMode') : t('dashboard.darkMode')}</span>
                 </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
-
-                {Object.entries(SUPPORTED_LOCALES).map(([key, config]) => (
-                  <DropdownMenuItem
-                    key={key}
-                    onClick={() => handleLanguageChange(key)}
-                  >
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
                     <Globe className="mr-2 h-4 w-4" />
-                    <span>
-                      {config.flag}
-                      {' '}
-                      {config.name}
-                    </span>
-                    {i18n.language === config.defaultLocale && (
-                      <span className="ml-auto text-[10px] text-muted-foreground">Active</span>
-                    )}
-                  </DropdownMenuItem>
-                ))}
+                    <span>{t('dashboard.language')}</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {Object.entries(SUPPORTED_LOCALES).map(([key, config]) => (
+                      <DropdownMenuItem
+                        key={key}
+                        onClick={() => handleLanguageChange(key)}
+                      >
+                        <span>
+                          {config.flag}
+                          {' '}
+                          {config.name}
+                        </span>
+                        {i18n.language === config.defaultLocale && (
+                          <span className="ml-auto text-[10px] text-muted-foreground">Active</span>
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
 
                 <DropdownMenuSeparator />
 

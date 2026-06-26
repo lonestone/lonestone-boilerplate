@@ -77,7 +77,8 @@
     "logOut": "Se déconnecter",
     "language": "Langue",
     "navigation": "Navigation",
-    "actions": "Actions rapides"
+    "actions": "Actions rapides",
+    "profile": "Profil"
   },
   "components": {
     "title": "Composants",
@@ -123,5 +124,16 @@
       "created": "Créé !",
       "error": "Une erreur s'est produite lors de la création de l'article"
     }
+  },
+  "profile": {
+    "eyebrow": "Compte",
+    "title": "Profil",
+    "description": "Les détails de votre compte.",
+    "name": "Nom",
+    "email": "Email",
+    "emailVerified": "Statut de l'email",
+    "verified": "Vérifié",
+    "unverified": "Non vérifié",
+    "userId": "ID utilisateur"
   }
 }
