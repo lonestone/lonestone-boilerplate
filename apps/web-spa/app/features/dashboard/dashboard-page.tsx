@@ -24,15 +24,18 @@ import {
   DropdownMenuTrigger,
 } from '@boilerstone/ui/components/primitives/dropdown-menu'
 import { Avatar, AvatarFallback } from '@boilerstone/ui/components/primitives/avatar'
-import { Brain, ChevronUp, Component, Globe, LayoutDashboard, LogOut, Moon, Pen, PlusCircle, Sun, User } from 'lucide-react'
-import { useEffect } from 'react'
+import { Toaster } from '@boilerstone/ui/components/primitives/sonner'
+import { Brain, ChevronUp, Command, Component, Globe, LayoutDashboard, LogOut, Moon, Pen, PlusCircle, Sun, User } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import useTheme from '@/hooks/useTheme'
 import { authClient } from '@/lib/auth-client'
 import { useI18nStore } from '@/lib/i18n/i18n-client'
+import { CommandPalette } from './command-palette'
+import { DashboardBreadcrumbs } from './dashboard-breadcrumbs'
 
-function AppSidebar() {
+function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void }) {
   const { t, i18n } = useTranslation()
   const { data: sessionData } = authClient.useSession()
   const navigate = useNavigate()
@@ -75,7 +78,7 @@ function AppSidebar() {
       icon: Brain,
     },
     {
-      label: t('components.title'),
+      label: t('dashboard.components'),
       to: '/components',
       icon: Component,
     },
@@ -142,6 +145,16 @@ function AppSidebar() {
                 <SidebarMenuButton render={<Link to="/dashboard/posts/new" />}>
                   <PlusCircle className="h-4 w-4" />
                   <span>{t('dashboard.newPost')}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {/* Command palette trigger */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={onOpenCommandPalette}>
+                  <Command className="h-4 w-4" />
+                  <span className="flex-1">{t('commandPalette.title')}</span>
+                  <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground opacity-100">
+                    <span className="text-xs">⌘</span>K
+                  </kbd>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -231,10 +244,11 @@ function AppSidebar() {
 }
 
 export default function DashboardPage() {
-  const { t, i18n } = useTranslation()
+  const { i18n } = useTranslation()
   const { data: sessionData, isPending } = authClient.useSession()
   const navigate = useNavigate()
   const { language } = useI18nStore()
+  const [commandOpen, setCommandOpen] = useState(false)
 
   useEffect(() => {
     if (!isPending && !sessionData) {
@@ -248,6 +262,18 @@ export default function DashboardPage() {
     }
   }, [language, i18n])
 
+  // Global ⌘K / Ctrl+K listener
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        event.preventDefault()
+        setCommandOpen(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   if (isPending) {
     return <AppLoader />
   }
@@ -257,17 +283,21 @@ export default function DashboardPage() {
   }
 
   return (
-    <AppLayout sidebar={<AppSidebar />}>
-      <AppLayoutHeader>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground">
-            {t('dashboard.title')}
-          </span>
-        </div>
-      </AppLayoutHeader>
-      <main className="flex-1 overflow-auto p-6">
-        <Outlet />
-      </main>
-    </AppLayout>
+    <>
+      <AppLayout sidebar={<AppSidebar onOpenCommandPalette={() => setCommandOpen(true)} />}>
+        <AppLayoutHeader>
+          <DashboardBreadcrumbs />
+        </AppLayoutHeader>
+        <main className="flex-1 overflow-auto p-6">
+          <Outlet />
+        </main>
+      </AppLayout>
+
+      {/* Command palette — global overlay */}
+      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+
+      {/* Single Toaster mount for the entire dashboard */}
+      <Toaster position="bottom-right" richColors />
+    </>
   )
 }

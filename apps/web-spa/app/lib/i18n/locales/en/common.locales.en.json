@@ -79,7 +79,47 @@
     "language": "Language",
     "navigation": "Navigation",
     "actions": "Quick actions",
+    "profile": "Profile",
+    "components": "Components"
+  },
+  "commandPalette": {
+    "placeholder": "Search commands…",
+    "noResults": "No results found.",
+    "title": "Command Palette",
+    "description": "Search for a command to run",
+    "groups": {
+      "navigate": "Navigate",
+      "actions": "Actions",
+      "preferences": "Preferences"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "newPost": "New post",
+      "ai": "AI Playground",
+      "components": "Components",
+      "profile": "Profile",
+      "toggleTheme": "Toggle theme",
+      "lightMode": "Switch to light mode",
+      "darkMode": "Switch to dark mode"
+    }
+  },
+  "breadcrumbs": {
+    "dashboard": "Dashboard",
+    "posts": "Posts",
+    "newPost": "New post",
+    "editPost": "Edit post",
+    "ai": "AI",
+    "components": "Components",
     "profile": "Profile"
+  },
+  "toasts": {
+    "postCreated": "Post created successfully",
+    "postUpdated": "Post saved",
+    "postPublished": "Post published",
+    "postUnpublished": "Post unpublished",
+    "postCreateError": "Failed to create post",
+    "postUpdateError": "Failed to save post",
+    "postPublishError": "Failed to publish post"
   },
   "components": {
     "title": "Components",

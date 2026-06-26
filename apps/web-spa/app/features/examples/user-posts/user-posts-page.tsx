@@ -5,6 +5,7 @@ import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { FilterRule } from '@lonestone/nzoth/client'
 import { useQuery } from '@tanstack/react-query'
+import { motion, useReducedMotion } from 'motion/react'
 import { ChevronLeft, ChevronRight, FileText, PlusCircle, SearchIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -20,8 +21,8 @@ export default function PostsListPage() {
   const [searchValue, setSearchValue] = useState(
     searchParams.get('search') || '',
   )
-
   const [pageValue, setPageValue] = useState(1)
+  const reduced = useReducedMotion()
 
   const handleSearch = (value: string) => {
     setSearchValue(value)
@@ -71,7 +72,12 @@ export default function PostsListPage() {
   return (
     <div className="space-y-8">
       {/* Page header */}
-      <div className="flex items-end justify-between border-b border-border pb-6">
+      <motion.div
+        className="flex items-end justify-between border-b border-border pb-6"
+        initial={reduced ? false : { opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+      >
         <div>
           <p className="mb-1 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
             Content
@@ -85,10 +91,15 @@ export default function PostsListPage() {
           <PlusCircle className="h-4 w-4" />
           {t('posts.createNew')}
         </Button>
-      </div>
+      </motion.div>
 
       {/* Search bar */}
-      <div className="relative">
+      <motion.div
+        className="relative"
+        initial={reduced ? false : { opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut', delay: 0.05 }}
+      >
         <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
         <Input
           placeholder={t('posts.searchPlaceholder')}
@@ -97,7 +108,7 @@ export default function PostsListPage() {
             handleSearch(e.target.value)}
           className="pl-9"
         />
-      </div>
+      </motion.div>
 
       {/* Content */}
       {isLoading
@@ -120,8 +131,19 @@ export default function PostsListPage() {
           ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {posts.data.map(post => (
-                    <UserPostCard key={post.id} post={post} />
+                  {posts.data.map((post, index) => (
+                    <motion.div
+                      key={post.id}
+                      initial={reduced ? false : { opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.38,
+                        ease: 'easeOut',
+                        delay: index * 0.05,
+                      }}
+                    >
+                      <UserPostCard post={post} />
+                    </motion.div>
                   ))}
                 </div>
 

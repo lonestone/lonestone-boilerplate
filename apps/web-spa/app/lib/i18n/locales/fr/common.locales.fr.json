@@ -78,7 +78,47 @@
     "language": "Langue",
     "navigation": "Navigation",
     "actions": "Actions rapides",
+    "profile": "Profil",
+    "components": "Composants"
+  },
+  "commandPalette": {
+    "placeholder": "Rechercher des commandes…",
+    "noResults": "Aucun résultat.",
+    "title": "Palette de commandes",
+    "description": "Rechercher une commande à exécuter",
+    "groups": {
+      "navigate": "Naviguer",
+      "actions": "Actions",
+      "preferences": "Préférences"
+    },
+    "items": {
+      "dashboard": "Tableau de bord",
+      "newPost": "Nouveau post",
+      "ai": "Terrain de jeu IA",
+      "components": "Composants",
+      "profile": "Profil",
+      "toggleTheme": "Changer le thème",
+      "lightMode": "Passer en mode clair",
+      "darkMode": "Passer en mode sombre"
+    }
+  },
+  "breadcrumbs": {
+    "dashboard": "Tableau de bord",
+    "posts": "Articles",
+    "newPost": "Nouvel article",
+    "editPost": "Modifier l'article",
+    "ai": "IA",
+    "components": "Composants",
     "profile": "Profil"
+  },
+  "toasts": {
+    "postCreated": "Article créé avec succès",
+    "postUpdated": "Article sauvegardé",
+    "postPublished": "Article publié",
+    "postUnpublished": "Article dépublié",
+    "postCreateError": "Échec de la création de l'article",
+    "postUpdateError": "Échec de la sauvegarde de l'article",
+    "postPublishError": "Échec de la publication de l'article"
   },
   "components": {
     "title": "Composants",

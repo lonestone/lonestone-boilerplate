@@ -1,3 +1,4 @@
+import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import { AppLoader } from '@boilerstone/ui/components/app'
 import { EmptyState } from '@boilerstone/ui/components/app'
 import {
@@ -58,6 +59,14 @@ import {
 } from '@boilerstone/ui/components/primitives/tooltip'
 import { cn } from '@boilerstone/ui/lib/utils'
 import {
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  useReactTable,
+  flexRender,
+} from '@tanstack/react-table'
+import {
+  ArrowUpDown,
   Bell,
   Check,
   ChevronRight,
@@ -76,7 +85,7 @@ import {
   User,
   Zap,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 /* ─── Section wrapper ──────────────────────────────────────────────────────── */
@@ -137,6 +146,42 @@ function DemoBlock({
   )
 }
 
+/* ─── Sortable column header ─────────────────────────────────────────────── */
+function SortableHeader({
+  column,
+  label,
+}: {
+  column: { getIsSorted: () => false | 'asc' | 'desc', toggleSorting: (desc?: boolean) => void }
+  label: string
+}) {
+  const sorted = column.getIsSorted()
+  return (
+    <button
+      type="button"
+      onClick={() => column.toggleSorting(sorted === 'asc')}
+      className="flex items-center gap-1.5 text-xs font-medium tracking-widest text-muted-foreground uppercase hover:text-foreground transition-colors group"
+      aria-label={`Sort by ${label}`}
+    >
+      {label}
+      <ArrowUpDown
+        className={cn(
+          'h-3 w-3 transition-colors',
+          sorted ? 'text-foreground' : 'text-muted-foreground/50 group-hover:text-muted-foreground',
+        )}
+        aria-hidden="true"
+      />
+    </button>
+  )
+}
+
+/* ─── Component data row type ────────────────────────────────────────────── */
+interface ComponentRow {
+  name: string
+  category: string
+  status: string
+  version: string
+}
+
 /* ─── TOC sidebar item ──────────────────────────────────────────────────────── */
 const SECTIONS = [
   { id: 'buttons', label: 'Buttons' },
@@ -159,13 +204,78 @@ export default function ComponentsPage() {
   const [multiSelectValues, setMultiSelectValues] = useState<string[]>([])
   const [loaderVisible, setLoaderVisible] = useState(false)
 
-  const tableData = [
+  // ── Data table state ────────────────────────────────────────────────────
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [globalFilter, setGlobalFilter] = useState('')
+
+  const allTableData: ComponentRow[] = useMemo(() => [
     { name: 'Button', category: 'Action', status: 'Stable', version: '1.0' },
     { name: 'Badge', category: 'Display', status: 'Stable', version: '1.0' },
     { name: 'Input', category: 'Form', status: 'Stable', version: '1.0' },
     { name: 'Sidebar', category: 'Layout', status: 'Stable', version: '1.0' },
     { name: 'DataTable', category: 'Data', status: 'Beta', version: '0.9' },
-  ]
+    { name: 'Command', category: 'Overlay', status: 'Stable', version: '1.0' },
+    { name: 'Dialog', category: 'Overlay', status: 'Stable', version: '1.0' },
+    { name: 'Tabs', category: 'Layout', status: 'Stable', version: '1.0' },
+    { name: 'Accordion', category: 'Layout', status: 'Stable', version: '1.0' },
+    { name: 'Progress', category: 'Display', status: 'Beta', version: '0.8' },
+  ], [])
+
+  const columns = useMemo<ColumnDef<ComponentRow>[]>(() => [
+    {
+      accessorKey: 'name',
+      header: ({ column }) => <SortableHeader column={column} label="Component" />,
+      cell: info => (
+        <span className="font-medium text-foreground text-sm">
+          {info.getValue() as string}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'category',
+      header: ({ column }) => <SortableHeader column={column} label="Category" />,
+      cell: info => (
+        <Badge variant="outline" className="text-[10px]">
+          {info.getValue() as string}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <SortableHeader column={column} label="Status" />,
+      cell: info => {
+        const value = info.getValue() as string
+        return (
+          <Badge
+            variant={value === 'Stable' ? 'default' : 'secondary'}
+            className="text-[10px]"
+          >
+            {value}
+          </Badge>
+        )
+      },
+    },
+    {
+      accessorKey: 'version',
+      header: ({ column }) => <SortableHeader column={column} label="Version" />,
+      cell: info => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {info.getValue() as string}
+        </span>
+      ),
+    },
+  ], [])
+
+  const table = useReactTable({
+    data: allTableData,
+    columns,
+    state: { sorting, globalFilter },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  })
 
   return (
     <TooltipProvider>
@@ -193,6 +303,8 @@ export default function ComponentsPage() {
           {/* Page header */}
           <div className="relative overflow-hidden rounded-lg border border-border bg-card p-8">
             <div aria-hidden className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+            {/* Grain texture on hero */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 bg-grain opacity-[0.05] mix-blend-overlay rounded-lg" />
             <div className="relative">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1">
                 <Grid3X3 className="h-3 w-3 text-muted-foreground" />
@@ -566,40 +678,88 @@ export default function ComponentsPage() {
             </DemoBlock>
           </Section>
 
-          {/* ── Data table ──────────────────────────────────────────────── */}
+          {/* ── Data table — sortable + filterable ──────────────────────── */}
           <Section
             id="data"
             eyebrow="07"
             title={t('components.sections.dataDisplay')}
-            description="Static table built from primitives. For sortable/filterable tables use DataTableContent from @boilerstone/ui."
+            description="Interactive table with TanStack sorting and global filter. Click column headers to sort; type to filter."
           >
-            <div className="border border-border rounded-lg overflow-hidden bg-card">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Component</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Version</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tableData.map(row => (
-                    <TableRow key={row.name}>
-                      <TableCell className="font-medium">{row.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[10px]">{row.category}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={row.status === 'Stable' ? 'default' : 'secondary'} className="text-[10px]">
-                          {row.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{row.version}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="space-y-3">
+              {/* Toolbar: filter input */}
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1 max-w-xs">
+                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <Input
+                    placeholder="Filter components…"
+                    value={globalFilter}
+                    onChange={e => setGlobalFilter(e.target.value)}
+                    className="pl-8 h-8 text-sm"
+                    aria-label="Filter table rows"
+                  />
+                </div>
+                {sorting.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSorting([])}
+                    className="text-xs text-muted-foreground h-8"
+                  >
+                    Reset sort
+                  </Button>
+                )}
+                <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+                  {table.getRowModel().rows.length}
+                  {' '}
+                  /
+                  {' '}
+                  {allTableData.length}
+                  {' '}
+                  rows
+                </span>
+              </div>
+
+              {/* Table */}
+              <div className="border border-border rounded-lg overflow-hidden bg-card">
+                <Table>
+                  <TableHeader>
+                    {table.getHeaderGroups().map(headerGroup => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map(header => (
+                          <TableHead key={header.id}>
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {table.getRowModel().rows.length > 0
+                      ? table.getRowModel().rows.map(row => (
+                          <TableRow key={row.id}>
+                            {row.getVisibleCells().map(cell => (
+                              <TableCell key={cell.id}>
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))
+                      : (
+                          <TableRow>
+                            <TableCell colSpan={columns.length} className="h-20 text-center text-sm text-muted-foreground">
+                              No components match your filter.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground">
+                Click any column header to sort ascending / descending. Type in the filter to narrow rows by any field.
+              </p>
             </div>
           </Section>
 

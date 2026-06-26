@@ -6,15 +6,17 @@ import {
   postControllerUpdatePost,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Button } from '@boilerstone/ui/components/primitives/button'
+import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { SendIcon } from '@boilerstone/ui/icons'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router'
+import { useTranslation } from 'react-i18next'
+import { useParams } from 'react-router'
 import { queryClient } from '@/lib/query-client'
 import UserPostForm, { UserPostFormSkeleton } from './user-post-form'
 
 export default function UserPostEditPage() {
   const { userPostId } = useParams()
-  const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const { data: post, isLoading } = useQuery({
     queryKey: ['userPost', userPostId],
@@ -33,7 +35,7 @@ export default function UserPostEditPage() {
     },
   })
 
-  const { mutate: UpdatePost, isPending } = useMutation({
+  const { mutate: updatePost, isPending } = useMutation({
     mutationFn: (data: UpdatePostSchema) =>
       postControllerUpdatePost({
         body: data,
@@ -41,34 +43,46 @@ export default function UserPostEditPage() {
           id: userPostId as string,
         },
       }),
-    onSuccess: (result) => {
-      navigate(`/dashboard/posts/${result.data?.id}/edit`)
+    onSuccess: () => {
+      toast.success(t('toasts.postUpdated'))
+      queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+    },
+    onError: () => {
+      toast.error(t('toasts.postUpdateError'))
     },
   })
 
-  const { mutate: PublishPost, isPending: isPublishing } = useMutation({
+  const { mutate: publishPost, isPending: isPublishing } = useMutation({
     mutationFn: () =>
       postControllerPublishPost({
         path: { id: userPostId as string },
       }),
     onSuccess: () => {
+      toast.success(t('toasts.postPublished'))
       queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+    },
+    onError: () => {
+      toast.error(t('toasts.postPublishError'))
     },
   })
 
-  const { mutate: UnpublishPost, isPending: isUnpublishing } = useMutation({
+  const { mutate: unpublishPost, isPending: isUnpublishing } = useMutation({
     mutationFn: () =>
       postControllerUnpublishPost({
         path: { id: userPostId as string },
       }),
     onSuccess: () => {
+      toast.success(t('toasts.postUnpublished'))
       queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+    },
+    onError: () => {
+      toast.error(t('toasts.postPublishError'))
     },
   })
 
   const onSubmit = async (data: UpdatePostSchema) => {
     try {
-      await UpdatePost(data)
+      await updatePost(data)
     }
     catch (error) {
       console.error(error)
@@ -78,10 +92,10 @@ export default function UserPostEditPage() {
   const onPublish = async () => {
     try {
       if (post?.publishedAt) {
-        await UnpublishPost()
+        await unpublishPost()
       }
       else {
-        await PublishPost()
+        await publishPost()
       }
     }
     catch (error) {
@@ -89,37 +103,32 @@ export default function UserPostEditPage() {
     }
   }
 
-  // Show skeleton while loading
   if (isLoading) {
     return <UserPostFormSkeleton />
   }
 
   return (
-    <div className="space-y-4 max-w-3xl">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 max-w-3xl">
+      <div className="flex items-end justify-between border-b border-border pb-6">
         <div>
-          <h1 className="text-2xl font-bold">Edit Post</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mb-1 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+            {t('posts.title')}
+          </p>
+          <h1 className="font-sans text-3xl font-black tracking-tight text-foreground">
+            Edit Post
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Share your thoughts, images, and videos with the world.
           </p>
         </div>
-        <div>
-          <Button size="sm" onClick={onPublish} disabled={isPublishing || isUnpublishing || isPending}>
-            {post?.publishedAt
-              ? (
-                  <>
-                    <SendIcon className="size-4" />
-                    Unpublish
-                  </>
-                )
-              : (
-                  <>
-                    <SendIcon className="size-4" />
-                    Publish
-                  </>
-                )}
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          onClick={onPublish}
+          disabled={isPublishing || isUnpublishing || isPending}
+        >
+          <SendIcon className="size-4" />
+          {post?.publishedAt ? 'Unpublish' : 'Publish'}
+        </Button>
       </div>
       <UserPostForm
         onSubmit={onSubmit}
