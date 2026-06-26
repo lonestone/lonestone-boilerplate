@@ -152,8 +152,7 @@ export class AiExampleUseCasesController {
         prompt: 'This is a second LLM call in the same trace',
         model: body.model,
         options: {
-          telemetry:
-          {
+          telemetry: {
             // We also use split for the second LLM call (else it would be in the original OTEL trace), but we reuse the same traceId to group the two LLM calls in the same Langfuse trace.
             traceMode: 'split',
             traceId,
@@ -169,7 +168,8 @@ export class AiExampleUseCasesController {
         result: result.result,
         usage: {
           promptTokens: (result.usage?.promptTokens ?? 0) + (result2.usage?.promptTokens ?? 0),
-          completionTokens: (result.usage?.completionTokens ?? 0) + (result2.usage?.completionTokens ?? 0),
+          completionTokens:
+            (result.usage?.completionTokens ?? 0) + (result2.usage?.completionTokens ?? 0),
           totalTokens: (result.usage?.totalTokens ?? 0) + (result2.usage?.totalTokens ?? 0),
         },
       })

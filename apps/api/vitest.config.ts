@@ -37,12 +37,8 @@ export default defineConfig({
           name: 'unit',
           globals: true,
           environment: 'node',
-          include: [
-            '../**/*.spec.ts',
-          ],
-          setupFiles: [
-            resolve(__dirname, './src/test/setup/test.setup.ts'),
-          ],
+          include: ['../**/*.spec.ts'],
+          setupFiles: [resolve(__dirname, './src/test/setup/test.setup.ts')],
         },
       },
       {
@@ -52,9 +48,7 @@ export default defineConfig({
           name: 'e2e',
           globals: true,
           environment: 'node',
-          include: [
-            '../**/*.e2e-spec.ts',
-          ],
+          include: ['../**/*.e2e-spec.ts'],
           setupFiles: [
             resolve(__dirname, './src/test/setup/test.setup.ts'),
             resolve(__dirname, './src/test/setup/test.e2e-setup.ts'),

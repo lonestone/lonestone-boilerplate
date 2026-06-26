@@ -4,12 +4,13 @@ description: How to work with your DB
 ---
 
 ## ❓ How it works
+
 The project uses MikroORM for ORM and database management. The implementation is based on the [MikroORM NestJS module](https://github.com/mikro-orm/nestjs) provided by the MikroORM team.
 
 ## 💡 Why we use MikroORM
 
 MikroORM is a solid ORM, supported by a strong community (and an excellent developer), and provides really good default for the technology we use.
- 
+
 - Very stable and proven
 - Very close to SQL, no fancy abstraction
 - Easy to extend as needed (e.g. custom columns)
@@ -23,8 +24,8 @@ MikroORM is a solid ORM, supported by a strong community (and an excellent devel
 
 The project is not longer maintained by a dedicated team, and its stability and performance are not great.
 
-
 ### Why not Prisma?
+
 We have tested [Prisma](https://www.prisma.io/) extensively, and even use it in production for some projects. However we chose to stick to MikroORM because:
 
 - Prisma adds a compilation step, which slows down the development process (often need to restart the ts-server, and this can get slow on large projects)
@@ -34,7 +35,9 @@ We have tested [Prisma](https://www.prisma.io/) extensively, and even use it in 
 - The experience with Nest.JS is very bad if you need to extend the Prisma client. I lost hours to find a clean solution, and I’m not convinced yet. [Issue Github](https://github.com/prisma/prisma/issues/18628)
 
 ### Why not Drizzle?
- A lot of great things with [Drizzle](https://orm.drizzle.team/), which we like quite a lot:
+
+A lot of great things with [Drizzle](https://orm.drizzle.team/), which we like quite a lot:
+
 - It's really easy to set up, even more than Prisma
 - It's nice to define your entities in Typescript, even if the relations are more verbose than Prisma
 - The migrations and `drizzle kit pusb` work well
@@ -43,6 +46,7 @@ We have tested [Prisma](https://www.prisma.io/) extensively, and even use it in 
 - Easy to setup hooks on events
 
 But some drawbacks:
+
 - There are some quite basic Typing which are not exported by Drizzle. For example, if you want to type an object `filters` that you would use in `select(…).where(filters)`, you need to use inference to get this type.
 - You lose a lot of "magic" proposed by default in Prisma or Mikro. For example, it's not possible to add relations in an object you would want to persist, you will need to make several requests. This makes things more difficult for dynamic helpers, etc.
 - The query builder is less practical than the one of Mikro

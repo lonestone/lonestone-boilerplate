@@ -76,7 +76,75 @@
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
     "logOut": "Log out",
-    "language": "Language"
+    "language": "Language",
+    "navigation": "Navigation",
+    "actions": "Quick actions",
+    "profile": "Profile",
+    "components": "Components"
+  },
+  "commandPalette": {
+    "placeholder": "Search commands…",
+    "noResults": "No results found.",
+    "title": "Command Palette",
+    "description": "Search for a command to run",
+    "groups": {
+      "navigate": "Navigate",
+      "actions": "Actions",
+      "preferences": "Preferences"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "newPost": "New post",
+      "ai": "AI Playground",
+      "components": "Components",
+      "profile": "Profile",
+      "toggleTheme": "Toggle theme",
+      "lightMode": "Switch to light mode",
+      "darkMode": "Switch to dark mode"
+    }
+  },
+  "breadcrumbs": {
+    "dashboard": "Dashboard",
+    "posts": "Posts",
+    "newPost": "New post",
+    "editPost": "Edit post",
+    "ai": "AI",
+    "components": "Components",
+    "profile": "Profile"
+  },
+  "toasts": {
+    "postCreated": "Post created successfully",
+    "postUpdated": "Post saved",
+    "postPublished": "Post published",
+    "postUnpublished": "Post unpublished",
+    "postCreateError": "Failed to create post",
+    "postUpdateError": "Failed to save post",
+    "postPublishError": "Failed to publish post"
+  },
+  "components": {
+    "title": "Components",
+    "description": "Explore the full @boilerstone/ui component library — everything included in this boilerplate.",
+    "subtitle": "Kitchen-sink gallery",
+    "sections": {
+      "buttons": "Buttons",
+      "badges": "Badges",
+      "inputs": "Inputs",
+      "controls": "Controls",
+      "layout": "Layout & Display",
+      "feedback": "Feedback",
+      "dataDisplay": "Data & Tables",
+      "overlays": "Overlays"
+    }
+  },
+  "ai": {
+    "title": "AI Playground",
+    "subtitle": "Interactive demos",
+    "description": "Explore real AI capabilities powered by the Lonestone boilerplate. Each demo connects to the live API.",
+    "sections": {
+      "textGeneration": "Text generation",
+      "structuredOutput": "Structured output",
+      "chatStream": "Chat with streaming"
+    }
   },
   "posts": {
     "title": "Blog posts",
@@ -97,5 +165,16 @@
       "created": "Created!",
       "error": "An error occurred while creating the post"
     }
+  },
+  "profile": {
+    "eyebrow": "Account",
+    "title": "Profile",
+    "description": "Your account details.",
+    "name": "Name",
+    "email": "Email",
+    "emailVerified": "Email status",
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "userId": "User ID"
   }
 }

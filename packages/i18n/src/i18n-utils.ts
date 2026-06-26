@@ -5,7 +5,10 @@ import type { SupportedLocale } from './i18n-config'
 function extractFileName(path: string): string | null {
   // Handle both Windows and Unix path separators
   const normalizedPath = path.replace(/\\/g, '/')
-  const fileName = normalizedPath.split('/').pop()?.replace(/\.locales\.[a-z]{2}\.json$/, '')
+  const fileName = normalizedPath
+    .split('/')
+    .pop()
+    ?.replace(/\.locales\.[a-z]{2}\.json$/, '')
   return fileName || null
 }
 
@@ -13,7 +16,7 @@ function extractFileName(path: string): string | null {
 function extractLocaleFromPath(path: string): string | null {
   const normalizedPath = path.replace(/\\/g, '/')
   const match = normalizedPath.match(/\.locales\.([a-z]{2})\.json$/)
-  return match ? match[1] as SupportedLocale : null
+  return match ? (match[1] as SupportedLocale) : null
 }
 
 // Load locale modules for a given language
@@ -49,7 +52,9 @@ export function extractAvailableLocales(modules: Record<string, unknown>): strin
 }
 
 // Group modules by locale dynamically
-export function groupModulesByLocale(modules: Record<string, unknown>): Record<string, Record<string, unknown>> {
+export function groupModulesByLocale(
+  modules: Record<string, unknown>,
+): Record<string, Record<string, unknown>> {
   const grouped: Record<string, Record<string, unknown>> = {}
 
   Object.entries(modules).forEach(([path, module]) => {
@@ -71,8 +76,7 @@ export function modulesToResources(modules: Record<string, Record<string, unknow
   for (const [locale, data] of Object.entries(modules)) {
     try {
       resources[locale] = extractLocaleModules(data)
-    }
-    catch (error) {
+    } catch (error) {
       console.error(`Failed to load locale modules for ${locale}:`, error)
       resources[locale] = {}
     }

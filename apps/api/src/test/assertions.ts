@@ -1,9 +1,6 @@
 import { Response } from 'supertest'
 
-export function expectPaginatedResponse(
-  response: Response,
-  expectedLength: number,
-) {
+export function expectPaginatedResponse(response: Response, expectedLength: number) {
   expect(response.body.data).toHaveLength(expectedLength)
   expect(response.body.meta).toMatchObject({
     pageSize: expect.any(Number),

@@ -22,7 +22,7 @@ const baseRegisterSchema = z.object({
 })
 
 function getRegisterSchema(t: (key: string) => string) {
-  return baseRegisterSchema.refine(data => data.password === data.confirmPassword, {
+  return baseRegisterSchema.refine((data) => data.password === data.confirmPassword, {
     message: t('errorCodes.PASSWORDS_DO_NOT_MATCH'),
     path: ['confirmPassword'],
   })
@@ -66,7 +66,13 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({ onSubmit, is
             <FormItem>
               <FormLabel htmlFor="email">{t('auth.register.email')}</FormLabel>
               <FormControl>
-                <Input id="email" {...field} type="email" autoComplete="email" placeholder="your@email.com" />
+                <Input
+                  id="email"
+                  {...field}
+                  type="email"
+                  autoComplete="email"
+                  placeholder="your@email.com"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -79,7 +85,13 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({ onSubmit, is
             <FormItem>
               <FormLabel htmlFor="password">{t('auth.register.password')}</FormLabel>
               <FormControl>
-                <Input id="password" {...field} type="password" autoComplete="new-password" placeholder="••••••••" />
+                <Input
+                  id="password"
+                  {...field}
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -92,7 +104,13 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({ onSubmit, is
             <FormItem>
               <FormLabel htmlFor="confirmPassword">{t('auth.register.confirmPassword')}</FormLabel>
               <FormControl>
-                <Input id="confirmPassword" {...field} type="password" autoComplete="new-password" placeholder="••••••••" />
+                <Input
+                  id="confirmPassword"
+                  {...field}
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

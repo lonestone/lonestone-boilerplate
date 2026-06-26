@@ -17,12 +17,7 @@ interface CommentFormProps {
   onCancel?: () => void
 }
 
-export function CommentForm({
-  initialData,
-  onSubmit,
-  isPending,
-  onCancel,
-}: CommentFormProps) {
+export function CommentForm({ initialData, onSubmit, isPending, onCancel }: CommentFormProps) {
   // Form for adding comments
   const {
     register,
@@ -57,8 +52,7 @@ export function CommentForm({
       if (!initialData?.parentId) {
         reset({ content: '', parentId: undefined })
       }
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error adding comment:', error)
     }
   }
@@ -84,17 +78,13 @@ export function CommentForm({
                 isReply ? 'h-6 w-6' : 'h-8 w-8',
               )}
             >
-              <User
-                className={cn('text-primary', isReply ? 'h-3 w-3' : 'h-4 w-4')}
-              />
+              <User className={cn('text-primary', isReply ? 'h-3 w-3' : 'h-4 w-4')} />
             </div>
 
             <div className="flex-1 space-y-2">
               <Textarea
                 {...register('content')}
-                placeholder={
-                  isReply ? 'Write your reply...' : 'Write your comment...'
-                }
+                placeholder={isReply ? 'Write your reply...' : 'Write your comment...'}
                 className={cn(
                   'resize-none transition-all focus-visible:ring-primary/30',
                   isReply ? 'min-h-[80px] text-sm' : 'min-h-[100px]',
@@ -102,9 +92,7 @@ export function CommentForm({
                 )}
               />
               {errors.content && (
-                <p className="text-xs text-destructive font-medium">
-                  {errors.content.message}
-                </p>
+                <p className="text-xs text-destructive font-medium">{errors.content.message}</p>
               )}
 
               <div
@@ -113,19 +101,17 @@ export function CommentForm({
                   isReply ? 'justify-end gap-2 mt-2' : 'justify-between mt-3',
                 )}
               >
-                {isReply
-                  ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={onCancel}
-                        className="h-8 px-3 text-xs"
-                      >
-                        Cancel
-                      </Button>
-                    )
-                  : null}
+                {isReply ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={onCancel}
+                    className="h-8 px-3 text-xs"
+                  >
+                    Cancel
+                  </Button>
+                ) : null}
 
                 <Button
                   type="submit"
@@ -138,24 +124,17 @@ export function CommentForm({
                   )}
                   disabled={isSubmitting || isPending || !isDirty || !isValid}
                 >
-                  {isPending || isSubmitting
-                    ? (
-                        <>
-                          <Loader2
-                            className={cn(
-                              'animate-spin',
-                              isReply ? 'h-3 w-3' : 'h-4 w-4',
-                            )}
-                          />
-                          <span>{isReply ? 'Sending...' : 'Posting...'}</span>
-                        </>
-                      )
-                    : (
-                        <>
-                          <Send className={cn(isReply ? 'h-3 w-3' : 'h-4 w-4')} />
-                          <span>{isReply ? 'Reply' : 'Post Comment'}</span>
-                        </>
-                      )}
+                  {isPending || isSubmitting ? (
+                    <>
+                      <Loader2 className={cn('animate-spin', isReply ? 'h-3 w-3' : 'h-4 w-4')} />
+                      <span>{isReply ? 'Sending...' : 'Posting...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className={cn(isReply ? 'h-3 w-3' : 'h-4 w-4')} />
+                      <span>{isReply ? 'Reply' : 'Post Comment'}</span>
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

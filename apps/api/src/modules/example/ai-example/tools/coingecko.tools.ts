@@ -5,12 +5,21 @@ import { z } from 'zod'
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3'
 
 const cryptoPriceSchema = z.object({
-  ids: z.string().describe('Comma-separated list of cryptocurrency IDs (e.g., "bitcoin,ethereum"). Common IDs: bitcoin, ethereum, cardano, solana, polkadot, dogecoin, etc.'),
-  vs_currencies: z.string().describe('Comma-separated list of fiat currencies (e.g., "usd,eur"). Common currencies: usd, eur, gbp, jpy, cad, aud, etc.'),
+  ids: z
+    .string()
+    .describe(
+      'Comma-separated list of cryptocurrency IDs (e.g., "bitcoin,ethereum"). Common IDs: bitcoin, ethereum, cardano, solana, polkadot, dogecoin, etc.',
+    ),
+  vs_currencies: z
+    .string()
+    .describe(
+      'Comma-separated list of fiat currencies (e.g., "usd,eur"). Common currencies: usd, eur, gbp, jpy, cad, aud, etc.',
+    ),
 })
 
 export const getCryptoPriceTool = tool({
-  description: 'Get the current price of cryptocurrencies in various fiat currencies from CoinGecko. Supports multiple cryptocurrencies and currencies. Default currency is USD if not specified.',
+  description:
+    'Get the current price of cryptocurrencies in various fiat currencies from CoinGecko. Supports multiple cryptocurrencies and currencies. Default currency is USD if not specified.',
   inputSchema: cryptoPriceSchema,
   outputSchema: z.object({
     success: z.boolean(),
@@ -30,7 +39,9 @@ export const getCryptoPriceTool = tool({
 
       if (!response.ok) {
         const errorText = await response.text()
-        throw new Error(`CoinGecko API error: ${response.status} ${response.statusText}. ${errorText}`)
+        throw new Error(
+          `CoinGecko API error: ${response.status} ${response.statusText}. ${errorText}`,
+        )
       }
 
       const data = await response.json()
@@ -39,8 +50,7 @@ export const getCryptoPriceTool = tool({
         data,
         timestamp: new Date().toISOString(),
       }
-    }
-    catch (error) {
+    } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred',

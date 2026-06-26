@@ -7,10 +7,7 @@ import {
   TypedParam,
   TypedRoute,
 } from '@lonestone/nzoth/server'
-import {
-  Optional,
-  UseGuards,
-} from '@nestjs/common'
+import { Optional, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
 import { Session } from '../../auth/auth.decorator'
 import { AuthGuard } from '../../auth/auth.guard'
@@ -31,9 +28,12 @@ import {
   createCommentSchema,
 } from './contracts/comments.contract'
 
-@TypedController('posts/:postSlug/comments', z.object({
-  postSlug: z.string(),
-}))
+@TypedController(
+  'posts/:postSlug/comments',
+  z.object({
+    postSlug: z.string(),
+  }),
+)
 export class CommentsController {
   constructor(
     private readonly commentsService: CommentsService,
@@ -58,12 +58,7 @@ export class CommentsController {
     @SortingParams(commentSortingSchema) sort?: CommentSorting,
     @FilteringParams(commentFilteringSchema) filter?: CommentFiltering,
   ): Promise<CommentsResponse> {
-    const result = await this.commentsService.getCommentsByPost(
-      postSlug,
-      pagination,
-      sort,
-      filter,
-    )
+    const result = await this.commentsService.getCommentsByPost(postSlug, pagination, sort, filter)
     return this.commentsMapper.toCommentsResponse(result)
   }
 
@@ -79,11 +74,7 @@ export class CommentsController {
     @PaginationParams(commentPaginationSchema) pagination: CommentPagination,
     @SortingParams(commentSortingSchema) sort?: CommentSorting,
   ): Promise<CommentsResponse> {
-    const result = await this.commentsService.getCommentReplies(
-      commentId,
-      pagination,
-      sort,
-    )
+    const result = await this.commentsService.getCommentReplies(commentId, pagination, sort)
     return this.commentsMapper.toCommentsResponse(result)
   }
 

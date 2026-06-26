@@ -16,9 +16,7 @@ const passthroughConfig = { getFieldName: ({ field }: { field: string }) => fiel
  * Helper to construct a fully-populated CleanedWhere (= Required<Where>).
  * CleanedWhere requires connector, mode, and operator to be present (not optional).
  */
-function w(
-  partial: Pick<CleanedWhere, 'field' | 'value'> & Partial<CleanedWhere>,
-): CleanedWhere {
+function w(partial: Pick<CleanedWhere, 'field' | 'value'> & Partial<CleanedWhere>): CleanedWhere {
   return {
     connector: 'AND',
     mode: 'sensitive',
@@ -32,7 +30,9 @@ describe('createAdapterUtils', () => {
 
   beforeAll(async () => {
     const entities = Object.values(authEntities) as EntityName<object>[]
-    orm = await MikroORM.init(createMikroOrmOptions({ debug: false, entities, entitiesTs: entities }))
+    orm = await MikroORM.init(
+      createMikroOrmOptions({ debug: false, entities, entitiesTs: entities }),
+    )
   })
 
   afterAll(async () => {
@@ -232,7 +232,10 @@ describe('createAdapterUtils', () => {
     it('applies getFieldName transformation when a custom config is used', () => {
       const prefixConfig = { getFieldName: ({ field }: { field: string }) => `prefix_${field}` }
       const utils = createAdapterUtils(orm, prefixConfig)
-      expect(utils.normalizeSelect('user', ['email', 'name'])).toEqual(['prefix_email', 'prefix_name'])
+      expect(utils.normalizeSelect('user', ['email', 'name'])).toEqual([
+        'prefix_email',
+        'prefix_name',
+      ])
     })
   })
 

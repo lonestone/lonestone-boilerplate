@@ -9,7 +9,13 @@ import {
 } from '@langfuse/tracing'
 import { Injectable, Logger } from '@nestjs/common'
 import { SpanContext, trace } from '@opentelemetry/api'
-import { generateText, streamText, StreamTextOnErrorCallback, StreamTextOnFinishCallback, ToolSet } from 'ai'
+import {
+  generateText,
+  streamText,
+  StreamTextOnErrorCallback,
+  StreamTextOnFinishCallback,
+  ToolSet,
+} from 'ai'
 import { config } from '../../config/env.config'
 import { AiGenerateOptions } from './contracts/ai.contract'
 
@@ -22,9 +28,10 @@ export interface FinalizeTraceInput {
   sessionId?: string
 }
 
-function toPropagateMetadata(metadata: Record<string, unknown> | undefined): Record<string, string> | undefined {
-  if (!metadata || Object.keys(metadata).length === 0)
-    return undefined
+function toPropagateMetadata(
+  metadata: Record<string, unknown> | undefined,
+): Record<string, string> | undefined {
+  if (!metadata || Object.keys(metadata).length === 0) return undefined
   return Object.fromEntries(
     Object.entries(metadata).map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)]),
   )
@@ -44,8 +51,7 @@ export class LangfuseService {
         baseUrl: config.langfuse.host,
       })
       this.logger.log('Langfuse client initialized')
-    }
-    else {
+    } else {
       this.logger.warn('Langfuse secret key not configured. All Langfuse services will be disabled')
     }
   }
@@ -108,10 +114,12 @@ export class LangfuseService {
     const traceName = options?.telemetry?.traceName ?? 'ai.generate'
     const spanName = options?.telemetry?.spanName ?? traceName
     const metadata = {
-      ...(options?.metadata ?? {}),
-      ...(options?.telemetry?.metadata ?? {}),
+      ...options?.metadata,
+      ...options?.telemetry?.metadata,
     }
-    const propagateMeta = toPropagateMetadata(Object.keys(metadata).length > 0 ? metadata : undefined)
+    const propagateMeta = toPropagateMetadata(
+      Object.keys(metadata).length > 0 ? metadata : undefined,
+    )
 
     return propagateAttributes(
       {
@@ -148,8 +156,8 @@ export class LangfuseService {
     const traceName = options?.telemetry?.traceName ?? 'ai.streamText'
     const spanName = options?.telemetry?.spanName ?? traceName
     const metadata = {
-      ...(options?.metadata ?? {}),
-      ...(options?.telemetry?.metadata ?? {}),
+      ...options?.metadata,
+      ...options?.telemetry?.metadata,
     }
     const logger = this.logger
 
@@ -170,7 +178,9 @@ export class LangfuseService {
       })
     }
 
-    const propagateMeta = toPropagateMetadata(Object.keys(metadata).length > 0 ? metadata : undefined)
+    const propagateMeta = toPropagateMetadata(
+      Object.keys(metadata).length > 0 ? metadata : undefined,
+    )
 
     return propagateAttributes(
       {

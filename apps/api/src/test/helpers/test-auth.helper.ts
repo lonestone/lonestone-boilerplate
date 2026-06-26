@@ -61,8 +61,7 @@ export function testSessionMiddleware(req: Request, res: Response, next: NextFun
   const session = id ? getTestSession(id) : null
   if (session) {
     testSessionStorage.run(session, () => next())
-  }
-  else {
+  } else {
     next()
   }
 }

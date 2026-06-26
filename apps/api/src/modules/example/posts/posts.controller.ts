@@ -7,10 +7,7 @@ import {
   TypedParam,
   TypedRoute,
 } from '@lonestone/nzoth/server'
-import {
-  Param,
-  UseGuards,
-} from '@nestjs/common'
+import { HttpCode, Param, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
 import { LoggedInBetterAuthSession } from '../../auth/auth.config'
 import { Session } from '../../auth/auth.decorator'
@@ -24,6 +21,7 @@ import {
   postPaginationSchema,
   PostSorting,
   postSortingSchema,
+  publicAuthorPostsSchema,
   publicPostSchema,
   publicPostsSchema,
   UpdatePostInput,
@@ -50,10 +48,7 @@ export class PostController {
     @Session() session: LoggedInBetterAuthSession,
     @TypedBody(createPostSchema) body: CreatePostInput,
   ): Promise<UserPost> {
-    const post = await this.postService.createPost(
-      session.user.id,
-      body,
-    )
+    const post = await this.postService.createPost(session.user.id, body)
     return this.postsMapper.toUserPost(post)
   }
 
@@ -63,11 +58,7 @@ export class PostController {
     @TypedParam('id', z.string()) id: string,
     @TypedBody(updatePostSchema) body: UpdatePostInput,
   ): Promise<UserPost> {
-    const post = await this.postService.updatePost(
-      id,
-      session.user.id,
-      body,
-    )
+    const post = await this.postService.updatePost(id, session.user.id, body)
     return this.postsMapper.toUserPost(post)
   }
 
@@ -96,12 +87,7 @@ export class PostController {
     @SortingParams(postSortingSchema) sort?: PostSorting,
     @FilteringParams(postFilteringSchema) filter?: PostFiltering,
   ) {
-    const result = await this.postService.getUserPosts(
-      session.user.id,
-      pagination,
-      sort,
-      filter,
-    )
+    const result = await this.postService.getUserPosts(session.user.id, pagination, sort, filter)
     return this.postsMapper.toUserPosts(result)
   }
 
@@ -144,5 +130,33 @@ export class PublicPostController {
   ) {
     const result = await this.postService.getPublicPosts(pagination, sort, filter)
     return this.postsMapper.toPublicPosts(result)
+  }
+
+  @TypedRoute.Post(':slug/like', publicPostSchema)
+  @HttpCode(200)
+  async likePost(@TypedParam('slug', z.string()) slug: string) {
+    const post = await this.postService.likePost(slug)
+    const commentCount = 0
+    return this.postsMapper.toPublicPost({ post, commentCount })
+  }
+}
+
+@TypedController('public/authors', undefined, {
+  tags: ['Public Authors'],
+})
+export class PublicAuthorController {
+  constructor(
+    private readonly postService: PostService,
+    private readonly postsMapper: PostsMapper,
+  ) {}
+
+  @TypedRoute.Get(':slug/posts', publicAuthorPostsSchema)
+  async getAuthorPosts(
+    @TypedParam('slug', z.string()) slug: string,
+    @PaginationParams(postPaginationSchema) pagination: PostPagination,
+    @SortingParams(postSortingSchema) sort?: PostSorting,
+  ) {
+    const result = await this.postService.getPublicPostsByAuthor(slug, pagination, sort)
+    return this.postsMapper.toPublicAuthorPosts(result)
   }
 }

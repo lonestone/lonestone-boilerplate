@@ -32,7 +32,12 @@ export interface WithRetryAfterOptions {
 
 const DEFAULT_OPTIONS: Required<Omit<WithRetryAfterOptions, 'shouldRetry' | 'calculateDelay'>> & {
   shouldRetry: (error: RetryableError) => boolean
-  calculateDelay: (retryCount: number, retryAfter?: string, baseDelay?: number, maxDelay?: number) => number
+  calculateDelay: (
+    retryCount: number,
+    retryAfter?: string,
+    baseDelay?: number,
+    maxDelay?: number,
+  ) => number
 } = {
   maxRetries: 3,
   baseDelay: 1000,
@@ -41,9 +46,12 @@ const DEFAULT_OPTIONS: Required<Omit<WithRetryAfterOptions, 'shouldRetry' | 'cal
   shouldRetry: (error: RetryableError) => {
     if (error && typeof error === 'object') {
       const err = error as RateLimitError
-      return err.status === 429
-        || (typeof err.message === 'string' && (err.message.includes('rate limit') || err.message.includes('429')))
-        || err.code === 'rate_limit_exceeded'
+      return (
+        err.status === 429 ||
+        (typeof err.message === 'string' &&
+          (err.message.includes('rate limit') || err.message.includes('429'))) ||
+        err.code === 'rate_limit_exceeded'
+      )
     }
     return false
   },
@@ -55,10 +63,7 @@ const DEFAULT_OPTIONS: Required<Omit<WithRetryAfterOptions, 'shouldRetry' | 'cal
       }
     }
 
-    const delay = Math.min(
-      baseDelay * 2 ** retryCount,
-      maxDelay,
-    )
+    const delay = Math.min(baseDelay * 2 ** retryCount, maxDelay)
 
     const jitter = Math.random() * 0.1 * delay
     return delay + jitter
@@ -66,7 +71,7 @@ const DEFAULT_OPTIONS: Required<Omit<WithRetryAfterOptions, 'shouldRetry' | 'cal
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function extractRetryAfter(error: RetryableError): string | undefined {
@@ -97,11 +102,12 @@ function extractRetryAfter(error: RetryableError): string | undefined {
     return undefined
   }
 
-  const retryAfter = getHeaderValue(headers, 'retry-after')
-    || getHeaderValue(headers, 'Retry-After')
-    || getHeaderValue(headers, 'retry-after-ms')
-    || getHeaderValue(headers, 'Retry-After-Ms')
-    || undefined
+  const retryAfter =
+    getHeaderValue(headers, 'retry-after') ||
+    getHeaderValue(headers, 'Retry-After') ||
+    getHeaderValue(headers, 'retry-after-ms') ||
+    getHeaderValue(headers, 'Retry-After-Ms') ||
+    undefined
 
   return retryAfter
 }
@@ -118,8 +124,10 @@ export function withRetryAfter(
     ...options,
     baseDelay,
     maxDelay,
-    calculateDelay: options.calculateDelay || ((retryCount, retryAfter) =>
-      DEFAULT_OPTIONS.calculateDelay(retryCount, retryAfter, baseDelay, maxDelay)),
+    calculateDelay:
+      options.calculateDelay ||
+      ((retryCount, retryAfter) =>
+        DEFAULT_OPTIONS.calculateDelay(retryCount, retryAfter, baseDelay, maxDelay)),
   }
 
   const log = logger || new Logger('AiRateLimitMiddleware')
@@ -134,8 +142,7 @@ export function withRetryAfter(
       while (retryCount <= opts.maxRetries) {
         try {
           return await doGenerate()
-        }
-        catch (error) {
+        } catch (error) {
           lastError = error
 
           if (!opts.shouldRetry(error)) {
@@ -152,11 +159,14 @@ export function withRetryAfter(
           const retryAfter = extractRetryAfter(error)
           const delay = opts.calculateDelay(retryCount, retryAfter)
 
-          log.warn(`Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${opts.maxRetries + 1})`, {
-            retryAfter,
-            retryCount: retryCount + 1,
-            maxRetries: opts.maxRetries,
-          })
+          log.warn(
+            `Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${opts.maxRetries + 1})`,
+            {
+              retryAfter,
+              retryCount: retryCount + 1,
+              maxRetries: opts.maxRetries,
+            },
+          )
 
           await sleep(delay)
           retryCount++
@@ -173,8 +183,7 @@ export function withRetryAfter(
       while (retryCount <= opts.maxRetries) {
         try {
           return await doStream()
-        }
-        catch (error) {
+        } catch (error) {
           lastError = error
 
           if (!opts.shouldRetry(error)) {
@@ -191,11 +200,14 @@ export function withRetryAfter(
           const retryAfter = extractRetryAfter(error)
           const delay = opts.calculateDelay(retryCount, retryAfter)
 
-          log.warn(`Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${opts.maxRetries + 1})`, {
-            retryAfter,
-            retryCount: retryCount + 1,
-            maxRetries: opts.maxRetries,
-          })
+          log.warn(
+            `Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${opts.maxRetries + 1})`,
+            {
+              retryAfter,
+              retryCount: retryCount + 1,
+              maxRetries: opts.maxRetries,
+            },
+          )
 
           await sleep(delay)
           retryCount++

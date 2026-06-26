@@ -60,8 +60,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
         customLogLevel: (req: ExpressRequest, res: ExpressResponse, error?: Error) => {
           if (res.statusCode >= 500 || error) {
             return 'error'
-          }
-          else if (res.statusCode >= 400) {
+          } else if (res.statusCode >= 400) {
             return 'warn'
           }
           return 'info'
@@ -98,9 +97,11 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     ExampleModule,
   ],
   controllers: [AppController],
-  providers: [{
-    provide: APP_FILTER,
-    useClass: SentryGlobalFilter,
-  }],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
+    },
+  ],
 })
 export class AppModule {}

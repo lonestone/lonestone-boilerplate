@@ -28,9 +28,9 @@ apps/api/src/
 
 ### Installation
 
-<br/>
+<br />
 
-import { Steps } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components'
 
 <Steps>
 
@@ -39,7 +39,7 @@ import { Steps } from '@astrojs/starlight/components';
    In your Better Auth configuration file `apps/api/src/modules/auth/auth.config.ts` on the API side, enable teams in the `organization` plugin:
 
    ```typescript title="apps/api/src/modules/auth/auth.config.ts"
-   import { organization } from "better-auth/plugins"
+   import { organization } from 'better-auth/plugins'
 
    export const auth = betterAuth({
      // ... your existing config
@@ -47,9 +47,9 @@ import { Steps } from '@astrojs/starlight/components';
        organization({
          teams: {
            enabled: true, // Enable teams feature
-         }
-       })
-     ]
+         },
+       }),
+     ],
    })
    ```
 
@@ -59,9 +59,9 @@ import { Steps } from '@astrojs/starlight/components';
    - `maximumTeams`: Limit the number of teams per organization (number or async function)
    - `maximumMembersPerTeam`: Limit the number of members per team (number or async function)
    - `allowRemovingAllTeams`: Control whether the last team can be removed (default: `true`)
-   :::
+     :::
 
-   <br/>
+   <br />
 
 2. ### Add Team entities
 
@@ -81,22 +81,22 @@ import { Steps } from '@astrojs/starlight/components';
    @Entity({ tableName: 'team' })
    export class Team {
      @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
-     id!: string;
+     id!: string
 
      @Property()
-     name!: string;
+     name!: string
 
      @ManyToOne(() => Organization, { fieldName: 'organizationId' })
-     organization!: Organization;
+     organization!: Organization
 
      @Property({ fieldName: 'createdAt' })
-     createdAt: Date = new Date();
+     createdAt: Date = new Date()
 
      @Property({ fieldName: 'updatedAt', nullable: true, onUpdate: () => new Date() })
-     updatedAt?: Date;
+     updatedAt?: Date
 
      @OneToMany(() => TeamMember, (teamMember) => teamMember.team)
-     members = new Collection<TeamMember>(this);
+     members = new Collection<TeamMember>(this)
    }
 
    /**
@@ -105,16 +105,16 @@ import { Steps } from '@astrojs/starlight/components';
    @Entity({ tableName: 'teamMember' })
    export class TeamMember {
      @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
-     id!: string;
+     id!: string
 
      @ManyToOne(() => Team, { fieldName: 'teamId' })
-     team!: Team;
+     team!: Team
 
      @ManyToOne(() => User, { fieldName: 'userId' })
-     user!: User;
+     user!: User
 
      @Property({ fieldName: 'createdAt' })
-     createdAt: Date = new Date();
+     createdAt: Date = new Date()
    }
    ```
 
@@ -133,7 +133,7 @@ import { Steps } from '@astrojs/starlight/components';
      // ... your existing properties
 
      @OneToMany(() => Team, (team) => team.organization)
-     teams = new Collection<Team>(this);
+     teams = new Collection<Team>(this)
    }
    ```
 
@@ -148,7 +148,7 @@ import { Steps } from '@astrojs/starlight/components';
      // ... your existing properties
 
      @OneToMany(() => TeamMember, (teamMember) => teamMember.user)
-     teamMembers = new Collection<TeamMember>(this);
+     teamMembers = new Collection<TeamMember>(this)
    }
    ```
 
@@ -163,7 +163,7 @@ import { Steps } from '@astrojs/starlight/components';
      // ... your existing properties
 
      @ManyToOne(() => Team, { fieldName: 'teamId', nullable: true })
-     team?: Team;
+     team?: Team
    }
    ```
 
@@ -178,10 +178,10 @@ import { Steps } from '@astrojs/starlight/components';
      // ... your existing properties
 
      @Property({ fieldName: 'activeOrganizationId', nullable: true })
-     activeOrganizationId?: string;
+     activeOrganizationId?: string
 
      @Property({ fieldName: 'activeTeamId', nullable: true })
-     activeTeamId?: string;
+     activeTeamId?: string
    }
    ```
 
@@ -191,7 +191,7 @@ import { Steps } from '@astrojs/starlight/components';
    For detailed information on managing active teams, see the [Better Auth Teams documentation](https://www.better-auth.com/docs/plugins/organization#teams).
    :::
 
-   <br/>
+   <br />
 
 3. ### Update the database
 
@@ -203,15 +203,15 @@ import { Steps } from '@astrojs/starlight/components';
    For detailed instructions on database migrations and schema updates, check out the [Migrations explanation](/lonestone-boilerplate/explanations/6_database-migrations).
    :::
 
-   <br/>
+   <br />
 
 4. ### Configure the client-side plugin
 
    Enable teams in your frontend auth client configuration:
 
    ```typescript title="apps/web-spa/app/lib/auth-client.ts"
-   import { createAuthClient } from "better-auth/client"
-   import { organizationClient } from "better-auth/client/plugins"
+   import { createAuthClient } from 'better-auth/client'
+   import { organizationClient } from 'better-auth/client/plugins'
 
    export const authClient = createAuthClient({
      plugins: [
@@ -228,7 +228,7 @@ import { Steps } from '@astrojs/starlight/components';
    The client-side configuration must match the server-side configuration. If teams are enabled on the server, they must also be enabled on the client to use team-related methods.
    :::
 
-   <br/>
+   <br />
 
 5. ### Use the client on the frontend
 
@@ -239,24 +239,24 @@ import { Steps } from '@astrojs/starlight/components';
    ```typescript
    // Create a team within an organization
    const { data, error } = await authClient.organization.createTeam({
-     name: "Development Team",
-     organizationId: "org-id-here", // optional, defaults to active organization
+     name: 'Development Team',
+     organizationId: 'org-id-here', // optional, defaults to active organization
    })
 
    // List teams in an organization
    const { data, error } = await authClient.organization.listTeams({
-     organizationId: "org-id-here", // optional, defaults to active organization
+     organizationId: 'org-id-here', // optional, defaults to active organization
    })
 
    // Set active team
    const { data, error } = await authClient.organization.setActiveTeam({
-     teamId: "team-id-here", // optional, pass null to unset
+     teamId: 'team-id-here', // optional, pass null to unset
    })
 
    // Add a member to a team
    const { data, error } = await authClient.organization.addTeamMember({
-     teamId: "team-id-here",
-     userId: "user-id-here",
+     teamId: 'team-id-here',
+     userId: 'user-id-here',
    })
    ```
 
@@ -264,7 +264,7 @@ import { Steps } from '@astrojs/starlight/components';
    All available routes and methods are documented in the [official Better Auth - Teams documentation](https://www.better-auth.com/docs/plugins/organization#teams).
    :::
 
-    <br/>
+   <br />
 
 </Steps>
 
@@ -274,14 +274,14 @@ The Teams plugin is now configured and operational. You can create teams within 
 
 Teams follow the organization's permission system. To manage teams, users need the following permissions:
 
-* `team:create` - Create new teams
-* `team:update` - Update team details
-* `team:delete` - Remove teams
+- `team:create` - Create new teams
+- `team:update` - Update team details
+- `team:delete` - Remove teams
 
 By default:
 
-* Organization owners and admins can manage teams
-* Regular members cannot create, update, or delete teams
+- Organization owners and admins can manage teams
+- Regular members cannot create, update, or delete teams
 
 ## Team Configuration Options
 
@@ -369,30 +369,32 @@ export class TeamService {
 
   @EnsureRequestContext()
   async getTeamMembers(teamId: string): Promise<User[]> {
-    const teamMembers = await this.em.find(TeamMember, 
+    const teamMembers = await this.em.find(
+      TeamMember,
       { team: { id: teamId } },
-      { populate: ['user'] }
+      { populate: ['user'] },
     )
-    return teamMembers.map(tm => tm.user)
+    return teamMembers.map((tm) => tm.user)
   }
 
   @EnsureRequestContext()
   async getUserTeamsInOrganization(userId: string, organizationId: string): Promise<Team[]> {
-    const teamMembers = await this.em.find(TeamMember, 
-      { 
+    const teamMembers = await this.em.find(
+      TeamMember,
+      {
         user: { id: userId },
-        team: { organization: { id: organizationId } }
+        team: { organization: { id: organizationId } },
       },
-      { populate: ['team'] }
+      { populate: ['team'] },
     )
-    return teamMembers.map(tm => tm.team)
+    return teamMembers.map((tm) => tm.team)
   }
 
   @EnsureRequestContext()
   async isUserInTeam(userId: string, teamId: string): Promise<boolean> {
     const teamMember = await this.em.findOne(TeamMember, {
       user: { id: userId },
-      team: { id: teamId }
+      team: { id: teamId },
     })
     return teamMember !== null
   }
@@ -436,9 +438,9 @@ export class TeamMemberGuard implements CanActivate {
     }
 
     // Verify team exists and belongs to active organization
-    const team = await this.em.findOne(Team, { 
+    const team = await this.em.findOne(Team, {
       id: teamId,
-      organization: { id: session.session.activeOrganizationId }
+      organization: { id: session.session.activeOrganizationId },
     })
 
     if (!team) {
@@ -448,7 +450,7 @@ export class TeamMemberGuard implements CanActivate {
     // Check if user is a member of the team
     const teamMember = await this.em.findOne(TeamMember, {
       team: { id: teamId },
-      user: { id: userId }
+      user: { id: userId },
     })
 
     if (!teamMember) {
@@ -484,7 +486,7 @@ You can add custom fields to the team entities to match your business needs. Sin
 **Server-side configuration:**
 
 ```typescript title="apps/api/src/modules/auth/auth.config.ts"
-import { organization } from "better-auth/plugins"
+import { organization } from 'better-auth/plugins'
 
 export const auth = betterAuth({
   plugins: [
@@ -496,12 +498,12 @@ export const auth = betterAuth({
         team: {
           additionalFields: {
             description: {
-              type: "string",
+              type: 'string',
               input: true,
               required: false,
             },
             color: {
-              type: "string",
+              type: 'string',
               input: true,
               required: false,
             },
@@ -521,22 +523,19 @@ export class Team {
   // ... existing properties
 
   @Property({ nullable: true })
-  description?: string;
+  description?: string
 
   @Property({ nullable: true })
-  color?: string;
+  color?: string
 }
 ```
 
 **Client-side type inference:**
 
 ```typescript title="apps/web-spa/app/lib/auth-client.ts"
-import { createAuthClient } from "better-auth/client"
-import {
-  inferOrgAdditionalFields,
-  organizationClient,
-} from "better-auth/client/plugins"
-import type { auth } from "apps/api/src/modules/auth/auth.config"
+import { createAuthClient } from 'better-auth/client'
+import { inferOrgAdditionalFields, organizationClient } from 'better-auth/client/plugins'
+import type { auth } from 'apps/api/src/modules/auth/auth.config'
 
 const client = createAuthClient({
   plugins: [
@@ -551,10 +550,10 @@ const client = createAuthClient({
 
 // Now you can use custom fields
 await client.organization.createTeam({
-  name: "Development Team",
-  organizationId: "org-id",
-  description: "Team responsible for development",
-  color: "#3b82f6",
+  name: 'Development Team',
+  organizationId: 'org-id',
+  description: 'Team responsible for development',
+  color: '#3b82f6',
 })
 ```
 
@@ -567,10 +566,10 @@ When inviting users to an organization, you can optionally specify a team. The i
 ```typescript
 // Invite user to organization and specific team
 const { data, error } = await authClient.organization.inviteMember({
-  email: "user@example.com",
-  organizationId: "org-id",
-  role: "member",
-  teamId: "team-id", // Optional: add user to team upon acceptance
+  email: 'user@example.com',
+  organizationId: 'org-id',
+  role: 'member',
+  teamId: 'team-id', // Optional: add user to team upon acceptance
 })
 ```
 

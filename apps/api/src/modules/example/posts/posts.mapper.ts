@@ -1,12 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import {
+  PublicAuthorPosts,
   PublicPost,
   PublicPosts,
+  Tag,
   UserPost,
   UserPosts,
 } from './contracts/posts.contract'
 import { Content, Post, PostVersion } from './posts.entity'
 import {
+  PublicAuthorPostsResult,
   PublicPostResult,
   PublicPostsResult,
   UserPostsResult,
@@ -27,13 +30,15 @@ export class PostsMapper {
       slug: post.slug,
       title: latestVersion?.title ?? '',
       content: (latestVersion?.content ?? []) as PostContentItem[],
-      versions: versions.map(version => ({
+      versions: versions.map((version) => ({
         id: version.id,
         title: version.title,
         createdAt: version.createdAt,
       })),
       publishedAt: post.publishedAt,
       type: this.computePostType(post, latestVersion),
+      coverImage: post.coverImage ?? undefined,
+      tags: this.mapTags(post),
     }
   }
 
@@ -70,6 +75,9 @@ export class PostsMapper {
       publishedAt: post.publishedAt!,
       slug: post.slug,
       commentCount,
+      coverImage: post.coverImage ?? undefined,
+      likesCount: post.likesCount,
+      tags: this.mapTags(post),
     }
   }
 
@@ -92,6 +100,42 @@ export class PostsMapper {
           },
           contentPreview: this.findContentPreview(latestVersion.content),
           commentCount: commentCountByPostId.get(post.id) ?? 0,
+          coverImage: post.coverImage ?? undefined,
+          likesCount: post.likesCount,
+          tags: this.mapTags(post),
+        }
+      }),
+      meta: {
+        itemCount: total,
+        pageSize: pagination.pageSize,
+        offset: pagination.offset,
+        hasMore: pagination.offset + pagination.pageSize < total,
+      },
+    }
+  }
+
+  toPublicAuthorPosts({
+    posts,
+    total,
+    pagination,
+    commentCountByPostId,
+  }: PublicAuthorPostsResult): PublicAuthorPosts {
+    return {
+      data: posts.map((post) => {
+        const latestVersion = this.getLatestPublishedVersion(post)
+
+        return {
+          title: latestVersion.title,
+          publishedAt: post.publishedAt!,
+          slug: post.slug,
+          author: {
+            name: post.user.name,
+          },
+          contentPreview: this.findContentPreview(latestVersion.content),
+          commentCount: commentCountByPostId.get(post.id) ?? 0,
+          coverImage: post.coverImage ?? undefined,
+          likesCount: post.likesCount,
+          tags: this.mapTags(post),
         }
       }),
       meta: {
@@ -104,32 +148,24 @@ export class PostsMapper {
   }
 
   private getSortedVersions(post: Post): PostVersion[] {
-    if (!post.versions.isInitialized())
-      return []
+    if (!post.versions.isInitialized()) return []
 
     return [...post.versions.getItems()].sort(
       (left, right) => left.createdAt.getTime() - right.createdAt.getTime(),
     )
   }
 
-  private computePostType(
-    post: Post,
-    latestVersion?: PostVersion,
-  ): UserPost['type'] {
-    if (!latestVersion)
-      return 'draft'
+  private computePostType(post: Post, latestVersion?: PostVersion): UserPost['type'] {
+    if (!latestVersion) return 'draft'
 
     const hasBeenPublished = Boolean(post.publishedAt)
-    const hasDraftAfterPublication = hasBeenPublished
-      && latestVersion.createdAt > post.publishedAt!
+    const hasDraftAfterPublication = hasBeenPublished && latestVersion.createdAt > post.publishedAt!
 
-    return hasBeenPublished && !hasDraftAfterPublication
-      ? 'published'
-      : 'draft'
+    return hasBeenPublished && !hasDraftAfterPublication ? 'published' : 'draft'
   }
 
   private findContentPreview(content?: Content[]): PostContentItem {
-    const firstTextContent = content?.find(item => item.type === 'text')
+    const firstTextContent = content?.find((item) => item.type === 'text')
     if (firstTextContent) {
       return firstTextContent as PostContentItem
     }
@@ -142,7 +178,7 @@ export class PostsMapper {
 
   private getLatestPublishedVersion(post: Post): PostVersion {
     const versions = this.getSortedVersions(post)
-      .filter(version => version.createdAt <= post.publishedAt!)
+      .filter((version) => version.createdAt <= post.publishedAt!)
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
 
     const latestVersion = versions[0]
@@ -151,5 +187,15 @@ export class PostsMapper {
     }
 
     return latestVersion
+  }
+
+  private mapTags(post: Post): Tag[] {
+    if (!post.tags.isInitialized()) return []
+
+    return post.tags.getItems().map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+    }))
   }
 }

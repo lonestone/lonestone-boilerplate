@@ -4,6 +4,7 @@ description: Overview of the tech stack used in the project
 ---
 
 ## Monorepo architecture
+
 This project uses a "monorepo" architecture. The advantages are numerous, but primarily:
 
 - Ability to develop full-stack features without context switching, making a single PR for a complete feature
@@ -11,7 +12,7 @@ This project uses a "monorepo" architecture. The advantages are numerous, but pr
 - Strong end-to-end typing, easier refactoring
 - Simplified and unified tooling (linter, build, etc.)
 
-:::note 
+:::note
 While this approach could cause problems on really large codebase, with a lot of developers making changes at the same time, it's a good fit for small to medium-sized projects like we handle at Lonestone.
 :::
 
@@ -20,7 +21,6 @@ While this approach could cause problems on really large codebase, with a lot of
 When working on a fullstack project, we found that having compile time error and warnings are a godsend, but this requires a strategy to sync the typings between the backend and the frontend.
 
 After years using GraphQL, we went back to REST (you can find the reasoning in the [Network Architecture page](/lonestone-boilerplate/explanations/4_network-architecture)), but we kept most benefits of GraphQL: full typing, documentation, caching, etc.
-
 
 ## Tech Stack
 

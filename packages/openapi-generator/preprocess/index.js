@@ -23,12 +23,14 @@ async function main() {
       const parameters = op.parameters || []
       op.parameters = parameters.map((param) => {
         // Only process sort and filter schemas
-        if (param.in === 'query'
-          && param.schema?.type === 'string'
-          && param.schema.items
-          && param.schema.items.type === 'object'
-          && (param.name.includes('sort') || param.name.includes('filter'))
-          && (param.schema?.format === 'filter' || param.schema?.format === 'sort')) {
+        if (
+          param.in === 'query' &&
+          param.schema?.type === 'string' &&
+          param.schema.items &&
+          param.schema.items.type === 'object' &&
+          (param.name.includes('sort') || param.name.includes('filter')) &&
+          (param.schema?.format === 'filter' || param.schema?.format === 'sort')
+        ) {
           const item = param.schema.items
           const baseName = `${op.operationId}_${param.name}`
 

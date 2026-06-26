@@ -24,11 +24,13 @@ export const FALLBACK_LOCALE = 'fr-FR'
 
 // Get locale configuration dynamically
 export function getLocaleConfig(locale: string) {
-  return SUPPORTED_LOCALES[locale as SupportedLocale] || {
-    name: locale.toUpperCase(),
-    defaultLocale: locale,
-    flag: '🌐',
-  }
+  return (
+    SUPPORTED_LOCALES[locale as SupportedLocale] || {
+      name: locale.toUpperCase(),
+      defaultLocale: locale,
+      flag: '🌐',
+    }
+  )
 }
 
 // Initialize i18n
@@ -36,30 +38,27 @@ export async function initializeI18n(i18n: i18n, resources: Resource): Promise<v
   const i18nWithReact = i18n.use(initReactI18next)
 
   try {
-    await i18nWithReact
-      .init({
-        resources,
-        lng: DEFAULT_LOCALE,
-        fallbackLng: FALLBACK_LOCALE,
-        interpolation: {
-          escapeValue: false,
-        },
-        defaultNS: 'common',
-        keySeparator: '.',
-        nsSeparator: ':',
-      })
-  }
-  catch (error) {
+    await i18nWithReact.init({
+      resources,
+      lng: DEFAULT_LOCALE,
+      fallbackLng: FALLBACK_LOCALE,
+      interpolation: {
+        escapeValue: false,
+      },
+      defaultNS: 'common',
+      keySeparator: '.',
+      nsSeparator: ':',
+    })
+  } catch (error) {
     console.error('Failed to initialize i18n:', error)
     // Fallback with minimal configuration
-    await i18nWithReact
-      .init({
-        resources: {},
-        lng: DEFAULT_LOCALE,
-        fallbackLng: FALLBACK_LOCALE,
-        interpolation: {
-          escapeValue: false,
-        },
-      })
+    await i18nWithReact.init({
+      resources: {},
+      lng: DEFAULT_LOCALE,
+      fallbackLng: FALLBACK_LOCALE,
+      interpolation: {
+        escapeValue: false,
+      },
+    })
   }
 }

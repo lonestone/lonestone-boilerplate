@@ -35,7 +35,10 @@ import { getCryptoPriceTool } from './tools/coingecko.tools'
 @TypedController('ai')
 export class AiExampleController {
   private readonly logger = new Logger(AiExampleController.name)
-  constructor(private readonly aiService: AiService, private readonly langfuseService: LangfuseService) { }
+  constructor(
+    private readonly aiService: AiService,
+    private readonly langfuseService: LangfuseService,
+  ) {}
 
   // ============================================================================
   // Synchronous Routes
@@ -47,7 +50,9 @@ export class AiExampleController {
    * @returns GenerateTextResponse
    */
   @TypedRoute.Post('generate-text', generateTextResponseSchema)
-  async generateText(@TypedBody(generateTextRequestSchema) body: GenerateTextRequest): Promise<GenerateTextResponse> {
+  async generateText(
+    @TypedBody(generateTextRequestSchema) body: GenerateTextRequest,
+  ): Promise<GenerateTextResponse> {
     const prompt = await this.langfuseService.getLangfusePrompt('Boilerplate tests')
 
     const result = await this.aiService.generateText({
@@ -78,7 +83,9 @@ export class AiExampleController {
    * @returns GenerateObjectResponse
    */
   @TypedRoute.Post('generate-object', generateObjectResponseSchema)
-  async generateObject(@TypedBody(generateObjectRequestSchema) body: GenerateObjectRequest): Promise<GenerateObjectResponse> {
+  async generateObject(
+    @TypedBody(generateObjectRequestSchema) body: GenerateObjectRequest,
+  ): Promise<GenerateObjectResponse> {
     const schema = chatSchemas[body.schemaType]
     const prompt = await this.langfuseService.getLangfusePrompt('Boilerplate tests')
 
@@ -115,7 +122,8 @@ export class AiExampleController {
    */
   @TypedRoute.Post('chat', chatResponseSchema)
   async chat(@TypedBody(chatRequestSchema) body: ChatRequest): Promise<ChatResponse> {
-    const schema = body.schemaType && body.schemaType !== 'none' ? chatSchemas[body.schemaType] : undefined
+    const schema =
+      body.schemaType && body.schemaType !== 'none' ? chatSchemas[body.schemaType] : undefined
 
     // 🔧 The chat API supports tools
     const tools = {
@@ -151,7 +159,8 @@ export class AiExampleController {
 
     // 💡 The AI service does not add the schemaType to the messages metadata. This is to keep the Service agnostic (our use of a `schemaType` here is a single example of how you could use it)
     // As we want to keep track of the schemaType — because we use it on the frontend for custom display— we add it to the last assistant message metadata.
-    const schemaTypeValue = body.schemaType && body.schemaType !== 'none' ? body.schemaType : undefined
+    const schemaTypeValue =
+      body.schemaType && body.schemaType !== 'none' ? body.schemaType : undefined
     const messagesWithSchemaType = result.messages.map((msg, idx) => {
       if (idx === result.messages.length - 1 && msg.role === 'assistant' && schemaTypeValue) {
         return { ...msg, metadata: { ...msg.metadata, schemaType: schemaTypeValue } }
@@ -175,19 +184,25 @@ export class AiExampleController {
 
   @TypedRoute.Post('stream-text')
   @Sse('stream-text')
-  streamText(@TypedBody(streamTextRequestSchema) body: StreamTextRequest): Observable<MessageEvent> {
+  streamText(
+    @TypedBody(streamTextRequestSchema) body: StreamTextRequest,
+  ): Observable<MessageEvent> {
     return this.createStreamObservable(body, 'stream-text')
   }
 
   @TypedRoute.Post('stream-object')
   @Sse('stream-object')
-  streamObject(@TypedBody(streamObjectRequestSchema) body: StreamObjectRequest): Observable<MessageEvent> {
+  streamObject(
+    @TypedBody(streamObjectRequestSchema) body: StreamObjectRequest,
+  ): Observable<MessageEvent> {
     return this.createStreamObservable(body, 'stream-object')
   }
 
   @TypedRoute.Post('stream-chat')
   @Sse('stream-chat')
-  streamChat(@TypedBody(streamChatRequestSchema) body: StreamChatRequest): Observable<MessageEvent> {
+  streamChat(
+    @TypedBody(streamChatRequestSchema) body: StreamChatRequest,
+  ): Observable<MessageEvent> {
     return this.createStreamObservable(body, 'stream-chat')
   }
 
@@ -209,7 +224,10 @@ export class AiExampleController {
           // Build stream input based on request type
           const streamInput = this.buildStreamInput(body, tools, spanName)
 
-          for await (const event of this.aiService.streamTextGenerator(streamInput, abortController.signal)) {
+          for await (const event of this.aiService.streamTextGenerator(
+            streamInput,
+            abortController.signal,
+          )) {
             if (subscriber.closed) {
               break
             }
@@ -218,8 +236,7 @@ export class AiExampleController {
           if (!subscriber.closed) {
             subscriber.complete()
           }
-        }
-        catch (error) {
+        } catch (error) {
           if (subscriber.closed) {
             return
           }
