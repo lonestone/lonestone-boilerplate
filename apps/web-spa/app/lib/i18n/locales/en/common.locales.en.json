@@ -76,7 +76,34 @@
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
     "logOut": "Log out",
-    "language": "Language"
+    "language": "Language",
+    "navigation": "Navigation",
+    "actions": "Quick actions"
+  },
+  "components": {
+    "title": "Components",
+    "description": "Explore the full @boilerstone/ui component library — everything included in this boilerplate.",
+    "subtitle": "Kitchen-sink gallery",
+    "sections": {
+      "buttons": "Buttons",
+      "badges": "Badges",
+      "inputs": "Inputs",
+      "controls": "Controls",
+      "layout": "Layout & Display",
+      "feedback": "Feedback",
+      "dataDisplay": "Data & Tables",
+      "overlays": "Overlays"
+    }
+  },
+  "ai": {
+    "title": "AI Playground",
+    "subtitle": "Interactive demos",
+    "description": "Explore real AI capabilities powered by the Lonestone boilerplate. Each demo connects to the live API.",
+    "sections": {
+      "textGeneration": "Text generation",
+      "structuredOutput": "Structured output",
+      "chatStream": "Chat with streaming"
+    }
   },
   "posts": {
     "title": "Blog posts",

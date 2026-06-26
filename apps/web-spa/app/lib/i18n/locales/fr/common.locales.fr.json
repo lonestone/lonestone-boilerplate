@@ -75,7 +75,34 @@
     "lightMode": "Mode clair",
     "darkMode": "Mode sombre",
     "logOut": "Se déconnecter",
-    "language": "Langue"
+    "language": "Langue",
+    "navigation": "Navigation",
+    "actions": "Actions rapides"
+  },
+  "components": {
+    "title": "Composants",
+    "description": "Explorez la bibliothèque de composants @boilerstone/ui — tout ce qui est inclus dans ce boilerplate.",
+    "subtitle": "Galerie complète",
+    "sections": {
+      "buttons": "Boutons",
+      "badges": "Badges",
+      "inputs": "Champs",
+      "controls": "Contrôles",
+      "layout": "Mise en page & Affichage",
+      "feedback": "Retour utilisateur",
+      "dataDisplay": "Données & Tableaux",
+      "overlays": "Superpositions"
+    }
+  },
+  "ai": {
+    "title": "Terrain de jeu IA",
+    "subtitle": "Démos interactives",
+    "description": "Explorez les vraies capacités IA propulsées par le boilerplate Lonestone. Chaque démo se connecte à l'API en direct.",
+    "sections": {
+      "textGeneration": "Génération de texte",
+      "structuredOutput": "Sortie structurée",
+      "chatStream": "Chat en streaming"
+    }
   },
   "posts": {
     "title": "Articles de blog",
