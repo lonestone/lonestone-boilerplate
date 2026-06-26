@@ -224,4 +224,52 @@
       radial-gradient(at 61% 77%, oklch(0.95 0.18 105 / 7%) 0px, transparent 50%),
       radial-gradient(at 10% 3%,  oklch(0.95 0.18 105 / 8%) 0px, transparent 50%);
   }
+
+  /* ── Premium texture & details ──────────────────────────────────────── */
+
+  /* Brand text selection */
+  ::selection {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Refined, themed scrollbars */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted-foreground);
+  }
+
+  /* Subtle film grain — overlay on an absolutely-positioned, low-opacity layer:
+     <div class="pointer-events-none absolute inset-0 bg-grain opacity-[0.15] mix-blend-overlay" /> */
+  .bg-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Gradient hairline border (fades toward transparent) */
+  .border-gradient {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--background), var(--background)) padding-box,
+      linear-gradient(135deg, var(--border), transparent 70%) border-box;
+  }
 }
