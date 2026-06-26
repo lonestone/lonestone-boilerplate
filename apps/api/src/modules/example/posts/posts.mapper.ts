@@ -37,6 +37,8 @@ export class PostsMapper {
       })),
       publishedAt: post.publishedAt,
       type: this.computePostType(post, latestVersion),
+      coverImage: post.coverImage ?? undefined,
+      tags: this.mapTags(post),
     }
   }
 
@@ -73,7 +75,7 @@ export class PostsMapper {
       publishedAt: post.publishedAt!,
       slug: post.slug,
       commentCount,
-      coverImage: post.coverImage,
+      coverImage: post.coverImage ?? undefined,
       likesCount: post.likesCount,
       tags: this.mapTags(post),
     }
@@ -98,7 +100,7 @@ export class PostsMapper {
           },
           contentPreview: this.findContentPreview(latestVersion.content),
           commentCount: commentCountByPostId.get(post.id) ?? 0,
-          coverImage: post.coverImage,
+          coverImage: post.coverImage ?? undefined,
           likesCount: post.likesCount,
           tags: this.mapTags(post),
         }
@@ -131,7 +133,7 @@ export class PostsMapper {
           },
           contentPreview: this.findContentPreview(latestVersion.content),
           commentCount: commentCountByPostId.get(post.id) ?? 0,
-          coverImage: post.coverImage,
+          coverImage: post.coverImage ?? undefined,
           likesCount: post.likesCount,
           tags: this.mapTags(post),
         }
