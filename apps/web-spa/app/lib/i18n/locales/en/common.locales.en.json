@@ -78,7 +78,8 @@
     "logOut": "Log out",
     "language": "Language",
     "navigation": "Navigation",
-    "actions": "Quick actions"
+    "actions": "Quick actions",
+    "profile": "Profile"
   },
   "components": {
     "title": "Components",
@@ -124,5 +125,16 @@
       "created": "Created!",
       "error": "An error occurred while creating the post"
     }
+  },
+  "profile": {
+    "eyebrow": "Account",
+    "title": "Profile",
+    "description": "Your account details.",
+    "name": "Name",
+    "email": "Email",
+    "emailVerified": "Email status",
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "userId": "User ID"
   }
 }
