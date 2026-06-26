@@ -1,7 +1,7 @@
 import type { PublicPostsSchema } from '@boilerstone/openapi-generator'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { ArrowRight, Calendar, Heart, MessageCircle } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
 interface PostCardProps {
@@ -10,6 +10,7 @@ interface PostCardProps {
 
 export default function PostCard({ post }: PostCardProps) {
   const [searchParams, setSearchParams] = useSearchParams()
+  const [imgError, setImgError] = useState(false)
   const activeTag = searchParams.get('tag')
 
   const excerpt = useMemo(() => {
@@ -33,19 +34,27 @@ export default function PostCard({ post }: PostCardProps) {
   return (
     <Link to={`/posts/${post.slug}`} className="group block">
       <article className="flex flex-col overflow-hidden border border-border bg-background transition-all duration-200 hover:border-foreground/20 hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)] md:flex-row dark:hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)]">
-        {/* Cover image */}
-        {post.coverImage && (
-          <div className="relative w-full shrink-0 overflow-hidden bg-muted md:w-64 lg:w-80">
-            <div className="aspect-video md:aspect-auto md:h-full">
-              <img
-                src={post.coverImage}
-                alt={post.title}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                onError={(e) => { e.currentTarget.parentElement!.style.display = 'none' }}
-              />
-            </div>
+        {/* Cover — image, or a branded fallback so every card stays consistent */}
+        <div className="relative w-full shrink-0 overflow-hidden bg-muted md:w-64 lg:w-80">
+          <div className="aspect-video md:h-full md:min-h-[13rem]">
+            {post.coverImage && !imgError
+              ? (
+                  <img
+                    src={post.coverImage}
+                    alt={post.title}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={() => setImgError(true)}
+                  />
+                )
+              : (
+                  <div className="flex h-full w-full items-center justify-center bg-muted">
+                    <span className="select-none font-sans text-5xl font-black uppercase tracking-tight text-muted-foreground/20">
+                      {post.title.slice(0, 2)}
+                    </span>
+                  </div>
+                )}
           </div>
-        )}
+        </div>
 
         {/* Content */}
         <div className="flex flex-1 flex-col justify-between p-6 md:p-8">
