@@ -98,16 +98,18 @@ export function DatePicker({
       />
       <InputGroupAddon align="inline-end">
         <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <InputGroupButton
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Open date picker"
-              disabled={disabled}
-            >
-              <CalendarIcon />
-              <span className="sr-only">Select date</span>
-            </InputGroupButton>
+          <PopoverTrigger
+            render={(
+              <InputGroupButton
+                variant="ghost"
+                size="icon-xs"
+                aria-label="Open date picker"
+                disabled={disabled}
+              />
+            )}
+          >
+            <CalendarIcon />
+            <span className="sr-only">Select date</span>
           </PopoverTrigger>
           <PopoverContent
             className="w-auto overflow-hidden p-0"

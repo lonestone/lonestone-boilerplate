@@ -1,17 +1,14 @@
 import * as React from "react"
-import { Slot } from "radix-ui"
 
 import { cn } from "@boilerstone/ui/lib/utils"
 
 function Card({
   className,
   size = "default",
-  asChild = false,
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm"; asChild?: boolean }) {
-  const Comp = asChild ? Slot.Root : "div"
+}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
   return (
-    <Comp
+    <div
       data-slot="card"
       data-size={size}
       className={cn(
