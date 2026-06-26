@@ -28,11 +28,9 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="container mx-auto py-8 px-4 space-y-6">
-      <Button variant="outline" asChild>
-        <Link to="/posts">
-          <ArrowLeft className="h-4 w-4" />
-          Back to posts
-        </Link>
+      <Button variant="outline" render={<Link to="/posts" />}>
+        <ArrowLeft className="h-4 w-4" />
+        Back to posts
       </Button>
       <h1 className="text-4xl font-bold">{loaderData.post?.title}</h1>
       <div className="flex items-center gap-6 text-sm text-muted-foreground">

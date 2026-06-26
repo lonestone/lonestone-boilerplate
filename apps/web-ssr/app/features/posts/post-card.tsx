@@ -20,8 +20,8 @@ export default function PostCard({ post }: PostCardProps) {
   }, [post.contentPreview])
 
   return (
-    <Card className="group/card-post overflow-hidden transition-all hover:shadow-lg" asChild>
-      <Link to={`/posts/${post.slug}`} className="block p-6 hover:bg-muted/50">
+    <Link to={`/posts/${post.slug}`} className="block">
+      <Card className="group/card-post overflow-hidden transition-all hover:shadow-lg p-6 hover:bg-muted/50">
         <CardHeader className="flex flex-row justify-between">
           <CardTitle>{post.title}</CardTitle>
           <div className="flex items-center gap-2 group-hover/card-post:bg-primary group-hover/card-post:text-primary-foreground text-muted-foreground rounded-full p-1">
@@ -53,7 +53,7 @@ export default function PostCard({ post }: PostCardProps) {
             )}
           </div>
         </CardFooter>
-      </Link>
-    </Card>
+      </Card>
+    </Link>
   )
 }

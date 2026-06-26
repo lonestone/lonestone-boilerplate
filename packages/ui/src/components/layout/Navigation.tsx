@@ -141,37 +141,24 @@ function NavigationDropdown({ section }: NavigationDropdownProps) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="relative h-8 w-8 rounded-md">
-          {section.dropdown.icon}
-          {section.dropdown.label && <span className="sr-only">{section.dropdown.label}</span>}
-        </Button>
+      <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="relative h-8 w-8 rounded-md" />}>
+        {section.dropdown.icon}
+        {section.dropdown.label && <span className="sr-only">{section.dropdown.label}</span>}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         {visibleItems.map((item, index) => (
           <React.Fragment key={item.to}>
             {item.separator && index > 0 && <DropdownMenuSeparator />}
             <DropdownMenuItem
-              asChild={!item.onClick}
+              render={item.onClick ? undefined : <Link to={item.to} className="flex w-full items-center gap-2" />}
               onClick={item.onClick}
               className={cn(
                 'flex items-center gap-2',
                 item.variant === 'destructive' && 'text-destructive hover:bg-destructive hover:text-destructive-foreground',
               )}
             >
-              {item.onClick
-                ? (
-                    <>
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </>
-                  )
-                : (
-                    <Link to={item.to} className="flex w-full items-center gap-2">
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </Link>
-                  )}
+              {item.icon}
+              <span>{item.label}</span>
             </DropdownMenuItem>
           </React.Fragment>
         ))}
@@ -269,11 +256,9 @@ function NavigationMobile({ brand, sections }: NavigationMobileProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="lg:hidden">
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">Open menu</span>
-        </Button>
+      <SheetTrigger render={<Button variant="ghost" size="icon" className="lg:hidden" />}>
+        <Menu className="h-5 w-5" />
+        <span className="sr-only">Open menu</span>
       </SheetTrigger>
       <SheetContent side="right" className="overflow-y-auto">
         <SheetHeader>

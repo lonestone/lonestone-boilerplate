@@ -96,19 +96,21 @@ type TagsTriggerProps = ComponentProps<typeof Button>
 
 function TagsTrigger({ className, children, ...props }: TagsTriggerProps) {
   return (
-    <PopoverTrigger asChild>
-      <Button
-        className={cn('h-auto w-full justify-between p-2', className)}
-        // eslint-disable-next-line jsx-a11y/no-interactive-element-to-noninteractive-role
-        role="combobox"
-        variant="outline"
-        {...props}
-      >
-        <div className="flex flex-wrap items-center gap-1">
-          {children}
-          <span className="px-2 py-px text-muted-foreground">Select a tag...</span>
-        </div>
-      </Button>
+    <PopoverTrigger
+      render={(
+        <Button
+          className={cn('h-auto w-full justify-between p-2', className)}
+          // eslint-disable-next-line jsx-a11y/no-interactive-element-to-noninteractive-role
+          role="combobox"
+          variant="outline"
+          {...props}
+        />
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-1">
+        {children}
+        <span className="px-2 py-px text-muted-foreground">Select a tag...</span>
+      </div>
     </PopoverTrigger>
   )
 }

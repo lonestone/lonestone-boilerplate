@@ -146,11 +146,9 @@ export default function PostsListPage() {
         : (
             <div className="space-y-2 ">
               <div className="text-muted-foreground">{t('posts.noPosts')}</div>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="./posts/new">
-                  <PlusCircleIcon className="h-4 w-4" />
-                  {t('posts.createNew')}
-                </Link>
+              <Button variant="outline" size="sm" render={<Link to="./posts/new" />}>
+                <PlusCircleIcon className="h-4 w-4" />
+                {t('posts.createNew')}
               </Button>
             </div>
           )}

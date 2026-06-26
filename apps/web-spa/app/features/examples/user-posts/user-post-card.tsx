@@ -5,8 +5,8 @@ import { Link } from 'react-router'
 
 export function UserPostCard({ post }: { post: Omit<UserPostSchema, 'content'> }) {
   return (
-    <Card className="hover:bg-background transition-colors bg-background/50 duration-200 backdrop-blur-sm" asChild>
-      <Link to={`/dashboard/posts/${post.id}/edit`}>
+    <Link to={`/dashboard/posts/${post.id}/edit`} className="block">
+      <Card className="hover:bg-background transition-colors bg-background/50 duration-200 backdrop-blur-sm">
         <CardHeader>
           <CardTitle>
             {post.title}
@@ -30,7 +30,7 @@ export function UserPostCard({ post }: { post: Omit<UserPostSchema, 'content'> }
             </span>
           </div>
         </CardFooter>
-      </Link>
-    </Card>
+      </Card>
+    </Link>
   )
 }
