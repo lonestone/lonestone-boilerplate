@@ -11,5 +11,6 @@ export default [
     index('features/home/home-page.tsx'),
     route('posts', 'features/posts/posts-list-page.tsx'),
     route('posts/:slug', 'features/posts/post-detail-page.tsx'),
+    route('authors/:slug', 'features/authors/author-posts-page.tsx'),
   ]),
 ] satisfies RouteConfig
