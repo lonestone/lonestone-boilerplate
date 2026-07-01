@@ -341,8 +341,8 @@ importers:
         specifier: ^0.19.2
         version: 0.19.2(@astrojs/starlight@0.34.8(astro@5.18.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.60.2)(terser@5.46.2)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)))(astro@5.18.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.60.2)(terser@5.46.2)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3))
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: catalog:validation
+        version: 4.3.6
 
   apps/web-spa:
     dependencies:
@@ -388,6 +388,9 @@ importers:
       react-router:
         specifier: catalog:frontend
         version: 7.14.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      zod:
+        specifier: catalog:validation
+        version: 4.3.6
     devDependencies:
       '@react-router/dev':
         specifier: catalog:frontend
@@ -464,6 +467,9 @@ importers:
       react-router:
         specifier: catalog:frontend
         version: 7.14.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      zod:
+        specifier: catalog:validation
+        version: 4.3.6
     devDependencies:
       '@react-router/dev':
         specifier: catalog:frontend
@@ -536,7 +542,7 @@ importers:
   packages/openapi-generator:
     dependencies:
       zod:
-        specifier: catalog:validation
+        specifier: ~4.3.6
         version: 4.3.6
     devDependencies:
       '@dotenvx/dotenvx':

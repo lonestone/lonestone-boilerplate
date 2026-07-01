@@ -3,13 +3,19 @@
   "version": "0.0.1",
   "private": true,
   "main": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./client": "./client/index.ts",
+    "./client/*": "./client/*.ts",
+    "./client/core/*": "./client/core/*.ts"
+  },
   "scripts": {
     "dev": "dotenvx run -- wait-on ${API_URL}/docs-json && pnpm generate --watch",
     "preprocess": "node ./preprocess/index.js",
     "generate": "cross-env dotenvx run -- pnpm preprocess && dotenvx run -- openapi-ts -f ./openapi-ts.config.ts"
   },
   "peerDependencies": {
-    "zod": "catalog:validation"
+    "zod": "~4.3.6"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
