@@ -2,6 +2,9 @@
   "name": "@boilerstone/web-spa",
   "private": true,
   "type": "module",
+  "files": [
+    "build"
+  ],
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
@@ -22,7 +25,8 @@
     "react": "catalog:frontend",
     "react-dom": "catalog:frontend",
     "react-hook-form": "catalog:frontend",
-    "react-router": "catalog:frontend"
+    "react-router": "catalog:frontend",
+    "zod": "catalog:validation"
   },
   "devDependencies": {
     "@react-router/dev": "catalog:frontend",
