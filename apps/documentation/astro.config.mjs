@@ -22,27 +22,27 @@ export default defineConfig({
         { slug: 'quickstart' },
         {
           label: 'Explanations',
-          autogenerate: { directory: 'explanations' },
+          items: [{ autogenerate: { directory: 'explanations' } }],
         },
         {
           label: 'Core Features',
-          autogenerate: { directory: 'core-features' },
+          items: [{ autogenerate: { directory: 'core-features' } }],
         },
         {
           label: 'Adding features',
-          autogenerate: { directory: 'addons' },
+          items: [{ autogenerate: { directory: 'addons' } }],
         },
         {
           label: 'Guides',
-          autogenerate: { directory: 'guides' },
+          items: [{ autogenerate: { directory: 'guides' } }],
         },
         {
           label: 'Tutorials',
-          autogenerate: { directory: 'tutorials' },
+          items: [{ autogenerate: { directory: 'tutorials' } }],
         },
         {
           label: 'References',
-          autogenerate: { directory: 'references' },
+          items: [{ autogenerate: { directory: 'references' } }],
         },
       ],
     }),
