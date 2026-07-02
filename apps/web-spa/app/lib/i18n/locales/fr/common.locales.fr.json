@@ -75,7 +75,75 @@
     "lightMode": "Mode clair",
     "darkMode": "Mode sombre",
     "logOut": "Se déconnecter",
-    "language": "Langue"
+    "language": "Langue",
+    "navigation": "Navigation",
+    "actions": "Actions rapides",
+    "profile": "Profil",
+    "components": "Composants"
+  },
+  "commandPalette": {
+    "placeholder": "Rechercher des commandes…",
+    "noResults": "Aucun résultat.",
+    "title": "Palette de commandes",
+    "description": "Rechercher une commande à exécuter",
+    "groups": {
+      "navigate": "Naviguer",
+      "actions": "Actions",
+      "preferences": "Préférences"
+    },
+    "items": {
+      "dashboard": "Tableau de bord",
+      "newPost": "Nouveau post",
+      "ai": "Terrain de jeu IA",
+      "components": "Composants",
+      "profile": "Profil",
+      "toggleTheme": "Changer le thème",
+      "lightMode": "Passer en mode clair",
+      "darkMode": "Passer en mode sombre"
+    }
+  },
+  "breadcrumbs": {
+    "dashboard": "Tableau de bord",
+    "posts": "Articles",
+    "newPost": "Nouvel article",
+    "editPost": "Modifier l'article",
+    "ai": "IA",
+    "components": "Composants",
+    "profile": "Profil"
+  },
+  "toasts": {
+    "postCreated": "Article créé avec succès",
+    "postUpdated": "Article sauvegardé",
+    "postPublished": "Article publié",
+    "postUnpublished": "Article dépublié",
+    "postCreateError": "Échec de la création de l'article",
+    "postUpdateError": "Échec de la sauvegarde de l'article",
+    "postPublishError": "Échec de la publication de l'article"
+  },
+  "components": {
+    "title": "Composants",
+    "description": "Explorez la bibliothèque de composants @boilerstone/ui — tout ce qui est inclus dans ce boilerplate.",
+    "subtitle": "Galerie complète",
+    "sections": {
+      "buttons": "Boutons",
+      "badges": "Badges",
+      "inputs": "Champs",
+      "controls": "Contrôles",
+      "layout": "Mise en page & Affichage",
+      "feedback": "Retour utilisateur",
+      "dataDisplay": "Données & Tableaux",
+      "overlays": "Superpositions"
+    }
+  },
+  "ai": {
+    "title": "Terrain de jeu IA",
+    "subtitle": "Démos interactives",
+    "description": "Explorez les vraies capacités IA propulsées par le boilerplate Lonestone. Chaque démo se connecte à l'API en direct.",
+    "sections": {
+      "textGeneration": "Génération de texte",
+      "structuredOutput": "Sortie structurée",
+      "chatStream": "Chat en streaming"
+    }
   },
   "posts": {
     "title": "Articles de blog",
@@ -96,5 +164,16 @@
       "created": "Créé !",
       "error": "Une erreur s'est produite lors de la création de l'article"
     }
+  },
+  "profile": {
+    "eyebrow": "Compte",
+    "title": "Profil",
+    "description": "Les détails de votre compte.",
+    "name": "Nom",
+    "email": "Email",
+    "emailVerified": "Statut de l'email",
+    "verified": "Vérifié",
+    "unverified": "Non vérifié",
+    "userId": "ID utilisateur"
   }
 }

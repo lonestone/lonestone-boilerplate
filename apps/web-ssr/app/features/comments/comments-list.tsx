@@ -23,11 +23,7 @@ interface CommentsListProps {
   currentUserId?: string
 }
 
-export function CommentsList({
-  postId,
-  postAuthorId,
-  currentUserId,
-}: CommentsListProps) {
+export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsListProps) {
   const { ref, inView } = useInView()
 
   // Add comment mutation
@@ -58,8 +54,7 @@ export function CommentsList({
         ...data,
         parentId: data.parentId,
       })
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error adding comment:', error)
     }
   }
@@ -92,7 +87,10 @@ export function CommentsList({
       return res.data
     },
     getNextPageParam: (lastPage) => {
-      if (lastPage?.meta?.hasMore && lastPage.meta.offset + lastPage.meta.pageSize < lastPage.meta.itemCount) {
+      if (
+        lastPage?.meta?.hasMore &&
+        lastPage.meta.offset + lastPage.meta.pageSize < lastPage.meta.itemCount
+      ) {
         return lastPage.meta.offset + lastPage.meta.pageSize
       }
       return undefined
@@ -119,7 +117,7 @@ export function CommentsList({
   })
 
   const allComments = useMemo(() => {
-    return commentsPages?.pages.flatMap(page => page?.data || []) || []
+    return commentsPages?.pages.flatMap((page) => page?.data || []) || []
   }, [commentsPages])
 
   // Check if we need to load more comments when scrolling
@@ -157,63 +155,57 @@ export function CommentsList({
 
       <Separator className="my-6" />
 
-      {isLoading
-        ? (
-            <div className="space-y-4">
-              <CommentSkeleton />
-              <CommentSkeleton />
-              <CommentSkeleton />
-            </div>
-          )
-        : allComments.length > 0
-          ? (
-              <div className="space-y-4">
-                {allComments.map(comment => (
-                  <CommentItem
-                    key={comment.id}
-                    comment={comment}
-                    currentUserId={currentUserId}
-                    postAuthorId={postAuthorId}
-                    isAddingComment={isAddingComment}
-                    onDelete={commentId => deleteCommentMutation.mutate(commentId)}
-                    onReplySubmit={async (data) => {
-                      await onSubmit(data)
-                    }}
-                  />
-                ))}
+      {isLoading ? (
+        <div className="space-y-4">
+          <CommentSkeleton />
+          <CommentSkeleton />
+          <CommentSkeleton />
+        </div>
+      ) : allComments.length > 0 ? (
+        <div className="space-y-4">
+          {allComments.map((comment) => (
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              currentUserId={currentUserId}
+              postAuthorId={postAuthorId}
+              isAddingComment={isAddingComment}
+              onDelete={(commentId) => deleteCommentMutation.mutate(commentId)}
+              onReplySubmit={async (data) => {
+                await onSubmit(data)
+              }}
+            />
+          ))}
 
-                {/* Intersection observer target for infinite scroll */}
-                {hasNextPage && (
-                  <div
-                    ref={ref}
-                    className={cn(
-                      'h-10 flex items-center justify-center',
-                      isFetchingNextPage ? 'opacity-100' : 'opacity-0',
-                    )}
-                  >
-                    {isFetchingNextPage && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Loading more comments...</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          : (
-              <Card className="border-dashed border-2 bg-muted/30">
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-center text-muted-foreground font-medium mb-1">
-                    No comments yet
-                  </p>
-                  <p className="text-center text-sm text-muted-foreground/70">
-                    Be the first to share your thoughts!
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+          {/* Intersection observer target for infinite scroll */}
+          {hasNextPage && (
+            <div
+              ref={ref}
+              className={cn(
+                'h-10 flex items-center justify-center',
+                isFetchingNextPage ? 'opacity-100' : 'opacity-0',
+              )}
+            >
+              {isFetchingNextPage && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Loading more comments...</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <Card className="border-dashed border-2 bg-muted/30">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
+            <p className="text-center text-muted-foreground font-medium mb-1">No comments yet</p>
+            <p className="text-center text-sm text-muted-foreground/70">
+              Be the first to share your thoughts!
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

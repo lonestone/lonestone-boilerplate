@@ -11,7 +11,12 @@ export default function Register() {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const { mutate: register, isPending, isSuccess, error: errorRegister } = useMutation({
+  const {
+    mutate: register,
+    isPending,
+    isSuccess,
+    error: errorRegister,
+  } = useMutation({
     mutationFn: async (data: AuthRegisterFormData) => {
       const response = await authClient.signUp.email({
         email: data.email,
@@ -36,34 +41,37 @@ export default function Register() {
     register(data)
   }
 
-  return isSuccess || searchParams.get('email')
-    ? (
-        <div>
-          <AuthPageHeader title={t('auth.register.success.title')} description={t('auth.register.success.description')} />
-          <div className="text-sm text-center mt-4">
-            <Link to="/login" className="font-medium transition-colors">
-              {t('auth.register.backToLogin')}
-            </Link>
+  return isSuccess || searchParams.get('email') ? (
+    <div>
+      <AuthPageHeader
+        title={t('auth.register.success.title')}
+        description={t('auth.register.success.description')}
+      />
+      <div className="text-sm text-center mt-4">
+        <Link to="/login" className="font-medium transition-colors">
+          {t('auth.register.backToLogin')}
+        </Link>
+      </div>
+    </div>
+  ) : (
+    <div className="space-y-6">
+      <AuthPageHeader
+        title={t('auth.register.title')}
+        description={t('auth.register.description')}
+      />
+      <AuthRegisterForm onSubmit={handleRegister} isPending={isPending} />
+      <div className="h-10">
+        {errorRegister ? (
+          <div className="text-sm font-medium text-red-500">
+            {t('auth.register.failedToRegister')}
           </div>
-        </div>
-      )
-    : (
-        <div className="space-y-6">
-          <AuthPageHeader title={t('auth.register.title')} description={t('auth.register.description')} />
-          <AuthRegisterForm
-            onSubmit={handleRegister}
-            isPending={isPending}
-          />
-          <div className="h-10">
-            {errorRegister ? <div className="text-sm font-medium text-red-500">{t('auth.register.failedToRegister')}</div> : null}
-          </div>
-          <div className="text-sm text-center">
-            <Link to="/login" className="font-medium transition-colors">
-              {t('auth.register.hasAccount')}
-              {' '}
-              {t('auth.register.login')}
-            </Link>
-          </div>
-        </div>
-      )
+        ) : null}
+      </div>
+      <div className="text-sm text-center">
+        <Link to="/login" className="font-medium transition-colors">
+          {t('auth.register.hasAccount')} {t('auth.register.login')}
+        </Link>
+      </div>
+    </div>
+  )
 }

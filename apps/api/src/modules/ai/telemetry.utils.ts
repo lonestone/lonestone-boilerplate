@@ -22,7 +22,10 @@ export async function buildTraceId(
   return LangfuseService.createTraceId(randomUUID())
 }
 
-export function buildTelemetryOptions(options?: AiGenerateOptions, defaultTraceName = 'ai.generate') {
+export function buildTelemetryOptions(
+  options?: AiGenerateOptions,
+  defaultTraceName = 'ai.generate',
+) {
   return {
     isEnabled: true,
     recordInputs: true,

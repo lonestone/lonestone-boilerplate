@@ -6,7 +6,7 @@ import { dirname, relative, resolve } from 'node:path'
 const DEFAULT_FALLBACK_ENTITY_FILE = 'src/modules/auth/auth.entity.ts'
 
 export interface EntityResolver {
-  (model: string): { className: string, importPath: string } | undefined
+  (model: string): { className: string; importPath: string } | undefined
 }
 
 const SCALAR_TYPES: Record<string, string> = {
@@ -19,7 +19,7 @@ const SCALAR_TYPES: Record<string, string> = {
 export function toPascalCase(name: string): string {
   return name
     .replace(/[-_\s]+(\w)/g, (_, char: string) => char.toUpperCase())
-    .replace(/^\w/, char => char.toUpperCase())
+    .replace(/^\w/, (char) => char.toUpperCase())
 }
 
 export function toKebabCase(name: string): string {
@@ -64,10 +64,10 @@ export function createEntityResolver(
       }
     }
 
-    const entityName = naming.getEntityName(
-      naming.classToTableName(model),
+    const entityName = naming.getEntityName(naming.classToTableName(model))
+    const metadata = [...metadataStore.getAll().values()].find(
+      (meta) => meta.className === entityName,
     )
-    const metadata = [...metadataStore.getAll().values()].find(meta => meta.className === entityName)
 
     if (!metadata?.path) {
       return undefined
@@ -87,21 +87,16 @@ interface RenderedProperty {
 function getTypescriptType(attribute: AuthSchemaField['attribute']): string {
   const type = String(attribute.type)
 
-  if (type === 'string[]')
-    return 'string[]'
-  if (type === 'number[]')
-    return 'number[]'
-  if (type === 'json')
-    return 'object'
+  if (type === 'string[]') return 'string[]'
+  if (type === 'number[]') return 'number[]'
+  if (type === 'json') return 'object'
 
   return SCALAR_TYPES[type] ?? 'string'
 }
 
 function renderLiteral(value: AuthSchemaField['attribute']['defaultValue']): string | undefined {
-  if (typeof value === 'string')
-    return `'${value}'`
-  if (typeof value === 'number' || typeof value === 'boolean')
-    return String(value)
+  if (typeof value === 'string') return `'${value}'`
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
 
   return undefined
 }
@@ -125,16 +120,14 @@ function renderProperty(field: AuthSchemaField, resolveEntity: EntityResolver): 
       const propertyName = field.field.replace(/Id$/, '')
       const options: string[] = [`fieldName: '${field.field}'`]
 
-      if (!attribute.required)
-        options.push('nullable: true')
-      if (attribute.references.onDelete === 'cascade')
-        options.push('deleteRule: \'cascade\'')
-      if (attribute.references.onDelete === 'set null')
-        options.push('deleteRule: \'set null\'')
+      if (!attribute.required) options.push('nullable: true')
+      if (attribute.references.onDelete === 'cascade') options.push("deleteRule: 'cascade'")
+      if (attribute.references.onDelete === 'set null') options.push("deleteRule: 'set null'")
 
-      const args = options.length > 0
-        ? `() => ${target.className}, { ${options.join(', ')} }`
-        : `() => ${target.className}`
+      const args =
+        options.length > 0
+          ? `() => ${target.className}, { ${options.join(', ')} }`
+          : `() => ${target.className}`
 
       lines.push(`  @ManyToOne(${args})`)
       lines.push(`  ${propertyName}${attribute.required ? '!' : '?'}: Rel<${target.className}>`)
@@ -149,10 +142,8 @@ function renderProperty(field: AuthSchemaField, resolveEntity: EntityResolver): 
 
   // Scalar columns mirror the property name verbatim under
   // EntityCaseNamingStrategy, so no explicit `fieldName` is needed.
-  if (stringType === 'json')
-    options.push('type: \'json\'')
-  if (stringType === 'string[]' || stringType === 'number[]')
-    options.push('type: \'array\'')
+  if (stringType === 'json') options.push("type: 'json'")
+  if (stringType === 'string[]' || stringType === 'number[]') options.push("type: 'array'")
 
   if (stringType === 'date' && (field.field === 'createdAt' || field.field === 'updatedAt')) {
     typeImports.add('Opt')
@@ -181,8 +172,7 @@ function renderProperty(field: AuthSchemaField, resolveEntity: EntityResolver): 
     return { code: lines.join('\n'), decorators, entityImports, typeImports }
   }
 
-  if (!attribute.required)
-    options.push('nullable: true')
+  if (!attribute.required) options.push('nullable: true')
 
   lines.push(options.length > 0 ? `  @Property({ ${options.join(', ')} })` : '  @Property()')
 
@@ -204,7 +194,7 @@ function renderMissingEntity(
 ): RenderedEntity {
   const resolveEntity = createEntityResolver(orm, resolve(filePath, '..'), generatedEntities)
   const className = toPascalCase(diff.model)
-  const properties = diff.fields.map(field => renderProperty(field, resolveEntity))
+  const properties = diff.fields.map((field) => renderProperty(field, resolveEntity))
 
   const decorators = new Set<string>(['Entity', 'PrimaryKey'])
   const entityImports = new Map<string, string>()
@@ -226,7 +216,7 @@ function renderMissingEntity(
     `  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })`,
     '  id!: string',
     '',
-    properties.map(p => p.code).join('\n\n'),
+    properties.map((p) => p.code).join('\n\n'),
     '}',
   ].join('\n')
 
@@ -252,15 +242,23 @@ function ensureDecoratorImport(content: string, neededDecorators: Set<string>): 
     return content
   }
 
-  const existing = new Set(match[1]!.split(',').map(s => s.trim()).filter(Boolean))
-  const missing = [...neededDecorators].filter(d => !existing.has(d))
+  const existing = new Set(
+    match[1]!
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  )
+  const missing = [...neededDecorators].filter((d) => !existing.has(d))
 
   if (missing.length === 0) {
     return content
   }
 
   const all = [...existing, ...missing].toSorted()
-  return content.replace(importRegex, `import { ${all.join(', ')} } from '@mikro-orm/decorators/legacy'`)
+  return content.replace(
+    importRegex,
+    `import { ${all.join(', ')} } from '@mikro-orm/decorators/legacy'`,
+  )
 }
 
 function ensureTypeImport(content: string, neededTypes: Set<string>): string {
@@ -275,8 +273,13 @@ function ensureTypeImport(content: string, neededTypes: Set<string>): string {
     return `import type { ${[...neededTypes].toSorted().join(', ')} } from '@mikro-orm/core'\n${content}`
   }
 
-  const existing = new Set(match[1]!.split(',').map(s => s.trim()).filter(Boolean))
-  const missing = [...neededTypes].filter(typeName => !existing.has(typeName))
+  const existing = new Set(
+    match[1]!
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  )
+  const missing = [...neededTypes].filter((typeName) => !existing.has(typeName))
 
   if (missing.length === 0) {
     return content
@@ -307,12 +310,18 @@ function renderEntityFile(entity: RenderedEntity): string {
   const imports: string[] = []
 
   if (entity.typeImports.size > 0) {
-    imports.push(`import type { ${[...entity.typeImports].toSorted().join(', ')} } from '@mikro-orm/core'`)
+    imports.push(
+      `import type { ${[...entity.typeImports].toSorted().join(', ')} } from '@mikro-orm/core'`,
+    )
   }
 
-  imports.push(`import { ${[...entity.decorators].toSorted().join(', ')} } from '@mikro-orm/decorators/legacy'`)
+  imports.push(
+    `import { ${[...entity.decorators].toSorted().join(', ')} } from '@mikro-orm/decorators/legacy'`,
+  )
 
-  for (const [name, path] of [...entity.entityImports.entries()].toSorted(([left], [right]) => left.localeCompare(right))) {
+  for (const [name, path] of [...entity.entityImports.entries()].toSorted(([left], [right]) =>
+    left.localeCompare(right),
+  )) {
     imports.push(`import { ${name} } from '${path}'`)
   }
 
@@ -320,27 +329,35 @@ function renderEntityFile(entity: RenderedEntity): string {
 }
 
 function getMissingEntityFilePath(model: string, fallbackEntityFilePath: string): string {
-  return resolve(dirname(fallbackEntityFilePath), 'entities', `${toKebabCase(toPascalCase(model))}.entity.ts`)
+  return resolve(
+    dirname(fallbackEntityFilePath),
+    'entities',
+    `${toKebabCase(toPascalCase(model))}.entity.ts`,
+  )
 }
 
 function getGeneratedEntityFiles(
   diffs: AuthSchemaModelDiff[],
   fallbackEntityFilePath: string,
 ): GeneratedEntityFiles {
-  return new Map(diffs
-    .filter(diff => !diff.metadata?.path)
-    .map(diff => [diff.model, getMissingEntityFilePath(diff.model, fallbackEntityFilePath)]))
+  return new Map(
+    diffs
+      .filter((diff) => !diff.metadata?.path)
+      .map((diff) => [diff.model, getMissingEntityFilePath(diff.model, fallbackEntityFilePath)]),
+  )
 }
 
 function ensureBarrelExports(
   content: string,
   barrelPath: string,
-  renderedEntities: { entity: RenderedEntity, filePath: string }[],
+  renderedEntities: { entity: RenderedEntity; filePath: string }[],
 ): string {
   const lines = new Set(content.trimEnd().split('\n').filter(Boolean))
 
   for (const { entity, filePath } of renderedEntities) {
-    lines.add(`export { ${entity.className} } from '${toImportPath(dirname(barrelPath), filePath)}'`)
+    lines.add(
+      `export { ${entity.className} } from '${toImportPath(dirname(barrelPath), filePath)}'`,
+    )
   }
 
   return `${[...lines].join('\n')}\n`
@@ -364,8 +381,7 @@ function findClassEnd(content: string, className: string): number {
     const char = content[i]
     if (char === '{') {
       depth++
-    }
-    else if (char === '}') {
+    } else if (char === '}') {
       depth--
       if (depth === 0) {
         return i
@@ -421,7 +437,7 @@ function groupExistingEntityPatches(
     const sourcePath = toSourcePath(diff.metadata.path)
     const resolveEntity = createEntityResolver(orm, resolve(sourcePath, '..'), generatedEntityFiles)
     const propertiesCode = diff.missingFields
-      .map(field => renderProperty(field, resolveEntity).code)
+      .map((field) => renderProperty(field, resolveEntity).code)
       .join('\n\n')
 
     patchesByFile.set(sourcePath, [
@@ -457,10 +473,7 @@ function patchExistingEntityFile(
   }
 
   return ensureEntityImports(
-    ensureTypeImport(
-      ensureDecoratorImport(content, decorators),
-      typeImports,
-    ),
+    ensureTypeImport(ensureDecoratorImport(content, decorators), typeImports),
     entityImports,
   )
 }
@@ -469,7 +482,7 @@ function renderMissingEntityFiles(
   missingEntities: AuthSchemaModelDiff[],
   orm: MikroORM,
   generatedEntityFiles: GeneratedEntityFiles,
-): { entity: RenderedEntity, filePath: string, content: string }[] {
+): { entity: RenderedEntity; filePath: string; content: string }[] {
   return missingEntities.map((diff) => {
     const filePath = generatedEntityFiles.get(diff.model)!
     const entity = renderMissingEntity(diff, orm, filePath, generatedEntityFiles)
@@ -498,7 +511,7 @@ export function applyEntityPatches(
   const absoluteFallbackPath = resolve(cwd, fallbackEntityFilePath)
   const files = new Map<string, string>()
   const generatedEntityFiles = getGeneratedEntityFiles(diffs, absoluteFallbackPath)
-  const missingEntities = diffs.filter(diff => !diff.metadata?.path)
+  const missingEntities = diffs.filter((diff) => !diff.metadata?.path)
   const patchesByFile = groupExistingEntityPatches(diffs, orm, generatedEntityFiles)
 
   for (const [filePath, patches] of patchesByFile) {
@@ -506,13 +519,20 @@ export function applyEntityPatches(
   }
 
   if (missingEntities.length > 0) {
-    const renderedMissingEntities = renderMissingEntityFiles(missingEntities, orm, generatedEntityFiles)
+    const renderedMissingEntities = renderMissingEntityFiles(
+      missingEntities,
+      orm,
+      generatedEntityFiles,
+    )
     for (const { filePath, content } of renderedMissingEntities) {
       files.set(filePath, content)
     }
 
     const barrelContent = readFileSync(absoluteFallbackPath, 'utf-8')
-    files.set(absoluteFallbackPath, ensureBarrelExports(barrelContent, absoluteFallbackPath, renderedMissingEntities))
+    files.set(
+      absoluteFallbackPath,
+      ensureBarrelExports(barrelContent, absoluteFallbackPath, renderedMissingEntities),
+    )
   }
 
   return new Map([...files.entries()].map(([k, v]) => [relative(cwd, k), v]))

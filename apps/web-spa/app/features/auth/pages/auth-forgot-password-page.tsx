@@ -10,7 +10,11 @@ import { AuthForgotPasswordForm } from '../forms/auth-forgot-password-form'
 export default function AuthForgotPasswordPage() {
   const { t } = useTranslation()
   const [isSuccess, setIsSuccess] = useState(false)
-  const { mutate: forgotPasswordMutate, isPending, error } = useMutation({
+  const {
+    mutate: forgotPasswordMutate,
+    isPending,
+    error,
+  } = useMutation({
     mutationFn: async (data: AuthForgotPasswordFormData) => {
       const response = await authClient.requestPasswordReset({
         email: data.email,
@@ -33,33 +37,35 @@ export default function AuthForgotPasswordPage() {
 
   return (
     <div className="space-y-6">
-      <AuthPageHeader title={t('auth.forgotPassword.title')} description={t('auth.forgotPassword.description')} />
-      {isSuccess
-        ? (
-            <>
-              <div className="text-sm text-center">
-                <Link to="/login" className="font-medium transition-colors">
-                  {t('auth.forgotPassword.backToLogin')}
-                </Link>
+      <AuthPageHeader
+        title={t('auth.forgotPassword.title')}
+        description={t('auth.forgotPassword.description')}
+      />
+      {isSuccess ? (
+        <>
+          <div className="text-sm text-center">
+            <Link to="/login" className="font-medium transition-colors">
+              {t('auth.forgotPassword.backToLogin')}
+            </Link>
+          </div>
+        </>
+      ) : (
+        <>
+          <AuthForgotPasswordForm onSubmit={handleForgotPassword} isPending={isPending} />
+          <div className="h-10">
+            {error ? (
+              <div className="text-sm font-medium text-red-500">
+                {t('auth.forgotPassword.failedToSend')}
               </div>
-            </>
-          )
-        : (
-            <>
-              <AuthForgotPasswordForm
-                onSubmit={handleForgotPassword}
-                isPending={isPending}
-              />
-              <div className="h-10">
-                {error ? <div className="text-sm font-medium text-red-500">{t('auth.forgotPassword.failedToSend')}</div> : null}
-              </div>
-              <div className="text-sm text-center">
-                <Link to="/login" className="font-medium transition-colors">
-                  {t('auth.forgotPassword.backToLogin')}
-                </Link>
-              </div>
-            </>
-          )}
+            ) : null}
+          </div>
+          <div className="text-sm text-center">
+            <Link to="/login" className="font-medium transition-colors">
+              {t('auth.forgotPassword.backToLogin')}
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   )
 }

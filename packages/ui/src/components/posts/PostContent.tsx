@@ -1,10 +1,6 @@
 import type { PostContentSchema } from '@boilerstone/openapi-generator'
 
-export default function PostContent({
-  content,
-}: {
-  content: Array<PostContentSchema>
-}) {
+export default function PostContent({ content }: { content: Array<PostContentSchema> }) {
   return (
     <div>
       {content.map((item) => {

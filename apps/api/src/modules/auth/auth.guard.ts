@@ -28,19 +28,15 @@ export class AuthGuard implements CanActivate {
 
       const isPublic = this.reflector.get('PUBLIC', context.getHandler())
 
-      if (isPublic)
-        return true
+      if (isPublic) return true
 
       const isOptional = this.reflector.get('OPTIONAL', context.getHandler())
 
-      if (isOptional && !session)
-        return true
+      if (isOptional && !session) return true
 
-      if (!session)
-        throw new UnauthorizedException()
+      if (!session) throw new UnauthorizedException()
       return true
-    }
-    catch (error) {
+    } catch (error) {
       console.error(error)
       throw new UnauthorizedException()
     }

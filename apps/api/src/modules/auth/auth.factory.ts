@@ -8,8 +8,13 @@ import { Account, User } from './auth.entity'
  * @param overrides Options to customize the user
  * @returns The created user
  */
-export async function createUserData(em: EntityManager, overrides?: Partial<User>, password?: string): Promise<User> {
-  const email = overrides?.email ?? `test-${Math.random().toString(36).substring(2, 8)}@lonestone.com`
+export async function createUserData(
+  em: EntityManager,
+  overrides?: Partial<User>,
+  password?: string,
+): Promise<User> {
+  const email =
+    overrides?.email ?? `test-${Math.random().toString(36).substring(2, 8)}@lonestone.com`
 
   const existingUser = await em.findOne(User, { email })
   if (existingUser) {

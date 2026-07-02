@@ -21,19 +21,21 @@ async function readPackageName() {
 
 async function getAllContentFiles(directoryPath) {
   const entries = await fs.readdir(directoryPath, { withFileTypes: true })
-  const files = await Promise.all(entries.map(async (entry) => {
-    const absolutePath = path.join(directoryPath, entry.name)
+  const files = await Promise.all(
+    entries.map(async (entry) => {
+      const absolutePath = path.join(directoryPath, entry.name)
 
-    if (entry.isDirectory()) {
-      return getAllContentFiles(absolutePath)
-    }
+      if (entry.isDirectory()) {
+        return getAllContentFiles(absolutePath)
+      }
 
-    if (entry.isFile() && MARKDOWN_EXTENSIONS.has(path.extname(entry.name))) {
-      return [absolutePath]
-    }
+      if (entry.isFile() && MARKDOWN_EXTENSIONS.has(path.extname(entry.name))) {
+        return [absolutePath]
+      }
 
-    return []
-  }))
+      return []
+    }),
+  )
 
   return files.flat()
 }
@@ -46,8 +48,8 @@ function normalizeFrontmatterValue(value) {
   }
 
   if (
-    (trimmedValue.startsWith('"') && trimmedValue.endsWith('"'))
-    || (trimmedValue.startsWith('\'') && trimmedValue.endsWith('\''))
+    (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) ||
+    (trimmedValue.startsWith("'") && trimmedValue.endsWith("'"))
   ) {
     return trimmedValue.slice(1, -1).trim()
   }
@@ -63,7 +65,7 @@ function extractDescriptionFromFrontmatter(content) {
 
   const frontmatterContent = frontmatterMatch[1]
   const lines = frontmatterContent.split(/\r?\n/)
-  const descriptionLine = lines.find(line => line.startsWith('description:'))
+  const descriptionLine = lines.find((line) => line.startsWith('description:'))
 
   if (!descriptionLine) {
     return ''
@@ -80,7 +82,7 @@ function createLocalFileLink(relativePath) {
 function createSectionTitle(sectionName) {
   return sectionName
     .split('-')
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ')
 }
 
@@ -109,7 +111,10 @@ async function generateIndexFile() {
   }
 
   const sortedSections = [...sections.entries()]
-    .map(([sectionName, entries]) => [sectionName, entries.sort((a, b) => a.fileName.localeCompare(b.fileName))])
+    .map(([sectionName, entries]) => [
+      sectionName,
+      entries.sort((a, b) => a.fileName.localeCompare(b.fileName)),
+    ])
     .sort((a, b) => a[0].localeCompare(b[0]))
 
   const indexLines = [
@@ -152,8 +157,7 @@ async function startWatchMode() {
       try {
         await generateIndexFile()
         console.log('Documentation index updated.')
-      }
-      catch (error) {
+      } catch (error) {
         console.error('Failed to regenerate documentation index:', error)
       }
     }, 150)
@@ -182,7 +186,6 @@ const isWatchMode = process.argv.includes(WATCH_FLAG)
 
 if (isWatchMode) {
   await startWatchMode()
-}
-else {
+} else {
   await generateIndexFile()
 }

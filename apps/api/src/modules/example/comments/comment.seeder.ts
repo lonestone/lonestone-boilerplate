@@ -6,23 +6,45 @@ import { User } from '../../auth/auth.entity'
 import { Post } from '../posts/posts.entity'
 import { Comment } from './comments.entity'
 
-function generateNumberOfComments(max: number) {
-  return faker.number.int({ min: 0, max })
+const TOP_LEVEL_COMMENTS = [
+  'Great write-up — exactly the kind of deep dive I was looking for.',
+  'We ran into the same issue last quarter. The approach you describe here worked for us too.',
+  'Do you have benchmarks comparing this to the naive approach? Would love to see the numbers.',
+  'Minor nit: paragraph three has a typo, but the content itself is solid.',
+  'Bookmarked. Coming back to this once we migrate our auth layer.',
+  'I disagree with the conclusion in the last section, but the reasoning up to that point is sound.',
+  'Thanks for the clear examples — the code snippets made this much easier to follow.',
+  'Has anyone tried this with a multi-region setup? Curious how latency changes.',
+]
+
+const REPLY_COMMENTS = [
+  'Good point — I will add a follow-up section covering that.',
+  'Yes, we saw roughly a 40% reduction in cold-start time with this approach.',
+  'Thanks for catching that! Fixed.',
+  'We tested it with two regions and the experience was acceptable under ~200ms round-trip.',
+  'Fair criticism. I simplified in the interest of keeping the post readable.',
+  'Agreed — there are trade-offs I glossed over. Happy to discuss in more detail.',
+]
+
+function pickComment(pool: string[]): string {
+  return faker.helpers.arrayElement(pool)
 }
 
-function generateBoolean() {
-  return faker.number.int({ min: 0, max: 1 }) === 0
-}
-
-async function createComment(post: Post, users: User[], em: EntityManager, parentComment?: Comment, depth: number = 0, maxDepth: number = 2): Promise<Comment> {
+async function createComment(
+  post: Post,
+  users: User[],
+  em: EntityManager,
+  parentComment?: Comment,
+  depth: number = 0,
+  maxDepth: number = 2,
+): Promise<Comment> {
   const comment = new Comment()
   comment.post = post
 
-  // Fix the type issue by ensuring the user object is compatible
   const randomUser: User = faker.helpers.arrayElement(users as User[])
-  comment.user = generateBoolean() ? randomUser : undefined
+  comment.user = faker.datatype.boolean(0.7) ? randomUser : undefined
 
-  comment.content = faker.lorem.paragraph()
+  comment.content = depth === 0 ? pickComment(TOP_LEVEL_COMMENTS) : pickComment(REPLY_COMMENTS)
 
   if (parentComment) {
     comment.parent = parentComment
@@ -30,10 +52,9 @@ async function createComment(post: Post, users: User[], em: EntityManager, paren
 
   await em.persist(comment).flush()
 
-  // Generate child comments with decreasing probability based on depth
   if (depth < maxDepth) {
-    const maxChildComments = Math.max(2 - depth, 0) // Decrease max comments as depth increases
-    const numberOfChildComments = generateNumberOfComments(maxChildComments)
+    const maxChildComments = Math.max(2 - depth, 0)
+    const numberOfChildComments = faker.number.int({ min: 0, max: maxChildComments })
 
     for (let i = 0; i < numberOfChildComments; i++) {
       await createComment(post, users, em, comment, depth + 1, maxDepth)
@@ -49,9 +70,10 @@ export class CommentSeeder extends Seeder {
     const users = context.users
 
     for (const post of posts) {
-      const numberOfComments = generateNumberOfComments(3)
+      if (!post.publishedAt) continue
+
+      const numberOfComments = faker.number.int({ min: 0, max: 4 })
       for (let i = 0; i < numberOfComments; i++) {
-        // Create top-level comments only, child comments will be created recursively
         await createComment(post, users, em)
       }
     }

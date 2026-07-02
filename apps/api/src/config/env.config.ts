@@ -7,8 +7,7 @@ import { z } from 'zod'
 const nodeEnv = process.env.NODE_ENV || 'development'
 if (nodeEnv === 'test') {
   dotenvx.config({ path: join(process.cwd(), '.env.example') })
-}
-else {
+} else {
   dotenvx.config()
 }
 
@@ -24,8 +23,7 @@ function getVersion() {
     const packageJsonData = JSON.parse(packageJson)
 
     return packageJsonData.version ?? 'Unknown version'
-  }
-  catch {
+  } catch {
     console.warn('Failed to parse package.json version')
     return 'Unknown version'
   }
@@ -48,7 +46,7 @@ export const configValidationSchema = z.object({
 
   // BetterAuth
   BETTER_AUTH_SECRET: z.string(),
-  TRUSTED_ORIGINS: z.string().transform(val => val.split(',')),
+  TRUSTED_ORIGINS: z.string().transform((val) => val.split(',')),
 
   // Clients
   CLIENTS_WEB_APP_URL: z.string(),
@@ -83,11 +81,7 @@ const configParsed = configValidationSchema.safeParse(process.env)
 
 if (!configParsed.success) {
   throw new Error(
-    `Invalid environment variables: ${JSON.stringify(
-      z.treeifyError(configParsed.error),
-      null,
-      4,
-    )}`,
+    `Invalid environment variables: ${JSON.stringify(z.treeifyError(configParsed.error), null, 4)}`,
   )
 }
 

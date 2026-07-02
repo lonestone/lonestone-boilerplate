@@ -2,10 +2,19 @@ import type { Route } from './+types/root'
 import process from 'node:process'
 import { client } from '@boilerstone/openapi-generator'
 import { HydrationBoundary, QueryClientProvider } from '@tanstack/react-query'
-import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData } from 'react-router'
+import { useEffect } from 'react'
+import {
+  isRouteErrorResponse,
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  useRouteLoaderData,
+} from 'react-router'
 import { useDehydratedState } from '@/hooks/use-dehydrated-state'
+import { useTheme } from '@/hooks/use-theme'
 import { queryClient } from '@/lib/query-client'
-import '@fontsource/source-sans-pro'
 import '@boilerstone/ui/globals.css'
 
 client.setConfig({
@@ -26,6 +35,19 @@ export const links: Route.LinksFunction = () => [
   },
 ]
 
+// View-transition cross-fade injected once into the document
+const VIEW_TRANSITION_STYLE = `
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: 180ms ease-out both fade-out; }
+::view-transition-new(root) { animation: 220ms ease-out both fade-in; }
+@keyframes fade-out { from { opacity: 1 } to { opacity: 0 } }
+@keyframes fade-in  { from { opacity: 0 } to { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+}
+`
+
 export async function loader() {
   return {
     API_URL: process.env.VITE_API_URL as string,
@@ -34,24 +56,33 @@ export async function loader() {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const data = useRouteLoaderData<typeof loader>('root')
+  const [theme] = useTheme()
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+    document.documentElement.classList.toggle('light', theme === 'light')
+  }, [theme])
 
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        {/* oxlint-disable-next-line react-dom/no-dangerously-set-innerhtml -- view transition styles */}
+        <style dangerouslySetInnerHTML={{ __html: VIEW_TRANSITION_STYLE }} />
       </head>
-      <body className="dark font-display min-h-screen bg-background">
+      <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
         <ScrollRestoration />
         <Scripts />
         {/* Inject the API URL into the window object */}
         {/* oxlint-disable-next-line react-dom/no-dangerously-set-innerhtml -- ignore */}
-        <script dangerouslySetInnerHTML={{
-          __html: `window.ENV = ${JSON.stringify(data)}`,
-        }}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(data)}`,
+          }}
         />
       </body>
     </html>
@@ -77,12 +108,9 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
   if (isRouteErrorResponse(error)) {
     message = error.status === 404 ? '404' : 'Error'
-    details
-      = error.status === 404
-        ? 'The requested page could not be found.'
-        : error.statusText || details
-  }
-  else if (import.meta.env.DEV && error && error instanceof Error) {
+    details =
+      error.status === 404 ? 'The requested page could not be found.' : error.statusText || details
+  } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message
     stack = error.stack
   }

@@ -27,7 +27,9 @@ At the core, the decision is about maintaining simplicity without sacrificing fl
 - **Comprehensive documentation**: REST is a mature, time-tested standard with extensive documentation and tooling, which helps both internal and external teams understand and use the API confidently.
 
 ### Why not GraphQL?
+
 We used [GraphQL](https://graphql.org/) — and are still using it. It's a great tool, but after severals years we found several issues with it:
+
 - It brings yet another language to learn, and another layer of complexity to the project
 - Cherry picking only the data you need ends up creating a lot of different queries, making it hard to maintain
 - Managing the depth of queries on the backend leads to performance issues
@@ -38,6 +40,7 @@ We used [GraphQL](https://graphql.org/) — and are still using it. It's a great
 ### Why not Trpc?
 
 [Trpc](https://trpc.io/) is awesome, and we toyed with the idea of using it in the boilerplate. However, it does not respect all the principles we mentioned above:
+
 - It brings yet another framework to learn
 - It's not technology-agnostic: it's tied to Typescript. Consuming a TRPC API from any other language is sub-par
 - It's not easy to use: testing manually (via Yaak or Postman) is not as easy as with REST
@@ -45,6 +48,7 @@ We used [GraphQL](https://graphql.org/) — and are still using it. It's a great
 ### Why not ts-rest?
 
 On paper, [ts-rest](https://ts-rest.com/) provides most of the benefits we are looking for:
+
 - REST compatible
 - OpenAPI generation
 - Strict typing with no compilation steps (the types are user-created and lives in the repository)

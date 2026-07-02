@@ -22,13 +22,7 @@ export default function AuthLayout() {
         </div>
       </div>
       <div className="relative hidden bg-primary/5 backdrop-blur-sm lg:flex rounded-xl items-center justify-center">
-        <img
-          src={ImageAuth}
-          alt="Image"
-          className="object-cover"
-          width={500}
-          height={400}
-        />
+        <img src={ImageAuth} alt="Image" className="object-cover" width={500} height={400} />
       </div>
     </div>
   )

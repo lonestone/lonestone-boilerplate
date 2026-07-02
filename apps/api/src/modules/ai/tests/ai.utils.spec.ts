@@ -79,7 +79,9 @@ describe('ai.utils', () => {
         provider: 'google',
         modelString: 'gemini-3-flash-preview',
       }
-      const mockProvider = vi.fn().mockReturnValue({ provider: 'google', modelId: 'gemini-3-flash-preview' })
+      const mockProvider = vi
+        .fn()
+        .mockReturnValue({ provider: 'google', modelId: 'gemini-3-flash-preview' })
 
       vi.mocked(modelRegistry.get).mockReturnValue(mockModelConfig as unknown as ModelConfig)
       mockProviders.google = Promise.resolve(mockProvider)

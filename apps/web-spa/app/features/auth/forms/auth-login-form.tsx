@@ -43,7 +43,13 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({ onSubmit, isPendin
             <FormItem>
               <FormLabel htmlFor="email">{t('auth.login.email')}</FormLabel>
               <FormControl>
-                <Input id="email" {...field} type="email" autoComplete="email" placeholder="your@email.com" />
+                <Input
+                  id="email"
+                  {...field}
+                  type="email"
+                  autoComplete="email"
+                  placeholder="your@email.com"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -61,7 +67,13 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({ onSubmit, isPendin
                 </Link>
               </div>
               <FormControl>
-                <Input id="password" {...field} autoComplete="current-password" placeholder="••••••••" type="password" />
+                <Input
+                  id="password"
+                  {...field}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  type="password"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

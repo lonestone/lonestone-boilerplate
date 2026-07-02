@@ -1,5 +1,12 @@
 import { spawn } from 'node:child_process'
-import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import {
+  copyFileSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -81,7 +88,9 @@ async function confirm(message: string): Promise<boolean> {
 
 function runCommand(command: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
-    console.log(`\n  ${colorize('→', 'cyan')} Running: ${colorize(`${command} ${args.join(' ')}`, 'dim')}\n`)
+    console.log(
+      `\n  ${colorize('→', 'cyan')} Running: ${colorize(`${command} ${args.join(' ')}`, 'dim')}\n`,
+    )
 
     const child = spawn(command, args, {
       cwd: projectRoot,
@@ -92,8 +101,7 @@ function runCommand(command: string, args: string[]): Promise<void> {
     child.on('close', (code) => {
       if (code === 0) {
         resolve()
-      }
-      else {
+      } else {
         reject(new Error(`Command failed with exit code ${code}`))
       }
     })
@@ -105,7 +113,7 @@ function runCommand(command: string, args: string[]): Promise<void> {
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function waitForDatabase(maxRetries: number = 30, delayMs: number = 1000): Promise<boolean> {
@@ -113,14 +121,18 @@ async function waitForDatabase(maxRetries: number = 30, delayMs: number = 1000):
 
   for (let i = 0; i < maxRetries; i++) {
     try {
-      const child = spawn('docker', ['compose', 'exec', '-T', 'db', 'pg_isready', '-U', 'postgres'], {
-        cwd: projectRoot,
-        stdio: 'pipe',
-        shell: true,
-      })
+      const child = spawn(
+        'docker',
+        ['compose', 'exec', '-T', 'db', 'pg_isready', '-U', 'postgres'],
+        {
+          cwd: projectRoot,
+          stdio: 'pipe',
+          shell: true,
+        },
+      )
 
       const exitCode = await new Promise<number>((resolve) => {
-        child.on('close', code => resolve(code ?? 1))
+        child.on('close', (code) => resolve(code ?? 1))
         child.on('error', () => resolve(1))
       })
 
@@ -128,8 +140,7 @@ async function waitForDatabase(maxRetries: number = 30, delayMs: number = 1000):
         console.log(`  ${colorize('✓', 'green')} Database is ready!`)
         return true
       }
-    }
-    catch {
+    } catch {
       // Ignore errors, retry
     }
 
@@ -186,14 +197,18 @@ function updateViteConfigPort(filePath: string, port: number): void {
   const content = readFileSync(filePath, 'utf-8')
   const regex = /(server\s*:\s*\{[\s\S]*?\bport\s*:\s*)(\d+)/
   if (!regex.test(content)) {
-    console.log(`  ${colorize('⚠', 'yellow')} Could not find Vite server port in: ${colorize(filePath, 'dim')}`)
+    console.log(
+      `  ${colorize('⚠', 'yellow')} Could not find Vite server port in: ${colorize(filePath, 'dim')}`,
+    )
     return
   }
 
   const updated = content.replace(regex, `$1${port}`)
   if (updated !== content) {
     writeFileSync(filePath, updated, 'utf-8')
-    console.log(`  ${colorize('✓', 'green')} Updated ${colorize(filePath.replace(`${projectRoot}/`, ''), 'dim')}`)
+    console.log(
+      `  ${colorize('✓', 'green')} Updated ${colorize(filePath.replace(`${projectRoot}/`, ''), 'dim')}`,
+    )
   }
 }
 
@@ -201,7 +216,7 @@ function getMissingVariables(examplePath: string, envPath: string): string[] {
   const exampleVars = parseEnvFile(examplePath)
   const envVars = parseEnvFile(envPath)
 
-  return Object.keys(exampleVars).filter(key => !(key in envVars) || !envVars[key])
+  return Object.keys(exampleVars).filter((key) => !(key in envVars) || !envVars[key])
 }
 
 function detectAvailableApps(): AvailableApps {
@@ -244,10 +259,18 @@ async function promptDatabaseConfig(): Promise<EnvConfig['database']> {
   const envExists = existsSync(rootEnvPath)
   const existingVars = envExists ? parseEnvFile(rootEnvPath) : {}
   const exampleVars = parseEnvFile(rootExamplePath)
-  const missingVars = envExists ? getMissingVariables(rootExamplePath, rootEnvPath) : Object.keys(exampleVars)
+  const missingVars = envExists
+    ? getMissingVariables(rootExamplePath, rootEnvPath)
+    : Object.keys(exampleVars)
 
-  const dbVars = ['DATABASE_USER', 'DATABASE_PASSWORD', 'DATABASE_NAME', 'DATABASE_HOST', 'DATABASE_PORT']
-  const needsDbConfig = dbVars.some(v => missingVars.includes(v))
+  const dbVars = [
+    'DATABASE_USER',
+    'DATABASE_PASSWORD',
+    'DATABASE_NAME',
+    'DATABASE_HOST',
+    'DATABASE_PORT',
+  ]
+  const needsDbConfig = dbVars.some((v) => missingVars.includes(v))
 
   if (!needsDbConfig) {
     console.log(`\n${colorize('📊 Database Configuration', 'cyan')}`)
@@ -264,23 +287,38 @@ async function promptDatabaseConfig(): Promise<EnvConfig['database']> {
   console.log(`\n${colorize('📊 Database Configuration', 'cyan')}\n`)
 
   const user = missingVars.includes('DATABASE_USER')
-    ? await prompt('Database user', existingVars.DATABASE_USER || exampleVars.DATABASE_USER || 'postgres')
+    ? await prompt(
+        'Database user',
+        existingVars.DATABASE_USER || exampleVars.DATABASE_USER || 'postgres',
+      )
     : existingVars.DATABASE_USER || 'postgres'
 
   const password = missingVars.includes('DATABASE_PASSWORD')
-    ? await prompt('Database password', existingVars.DATABASE_PASSWORD || exampleVars.DATABASE_PASSWORD || 'postgres')
+    ? await prompt(
+        'Database password',
+        existingVars.DATABASE_PASSWORD || exampleVars.DATABASE_PASSWORD || 'postgres',
+      )
     : existingVars.DATABASE_PASSWORD || 'postgres'
 
   const name = missingVars.includes('DATABASE_NAME')
-    ? await prompt('Database name', existingVars.DATABASE_NAME || exampleVars.DATABASE_NAME || 'lonestone_test')
+    ? await prompt(
+        'Database name',
+        existingVars.DATABASE_NAME || exampleVars.DATABASE_NAME || 'lonestone_test',
+      )
     : existingVars.DATABASE_NAME || 'lonestone_test'
 
   const host = missingVars.includes('DATABASE_HOST')
-    ? await prompt('Database host', existingVars.DATABASE_HOST || exampleVars.DATABASE_HOST || 'localhost')
+    ? await prompt(
+        'Database host',
+        existingVars.DATABASE_HOST || exampleVars.DATABASE_HOST || 'localhost',
+      )
     : existingVars.DATABASE_HOST || 'localhost'
 
   const portStr = missingVars.includes('DATABASE_PORT')
-    ? await prompt('Database port', existingVars.DATABASE_PORT || exampleVars.DATABASE_PORT || '5111')
+    ? await prompt(
+        'Database port',
+        existingVars.DATABASE_PORT || exampleVars.DATABASE_PORT || '5111',
+      )
     : existingVars.DATABASE_PORT || '5111'
   const port = Number.parseInt(portStr, 10) || 5111
 
@@ -326,10 +364,12 @@ async function promptSmtpConfig(): Promise<EnvConfig['smtp']> {
   const envExists = existsSync(rootEnvPath)
   const existingVars = envExists ? parseEnvFile(rootEnvPath) : {}
   const exampleVars = parseEnvFile(rootExamplePath)
-  const missingVars = envExists ? getMissingVariables(rootExamplePath, rootEnvPath) : Object.keys(exampleVars)
+  const missingVars = envExists
+    ? getMissingVariables(rootExamplePath, rootEnvPath)
+    : Object.keys(exampleVars)
 
   const smtpVars = ['SMTP_PORT', 'SMTP_PORT_WEB']
-  const needsSmtpConfig = smtpVars.some(v => missingVars.includes(v))
+  const needsSmtpConfig = smtpVars.some((v) => missingVars.includes(v))
 
   if (!needsSmtpConfig) {
     console.log(`\n${colorize('📧 SMTP Configuration (MailDev)', 'cyan')}`)
@@ -348,7 +388,10 @@ async function promptSmtpConfig(): Promise<EnvConfig['smtp']> {
   const port = Number.parseInt(portStr, 10) || 1025
 
   const portWebStr = missingVars.includes('SMTP_PORT_WEB')
-    ? await prompt('MailDev web port', existingVars.SMTP_PORT_WEB || exampleVars.SMTP_PORT_WEB || '1080')
+    ? await prompt(
+        'MailDev web port',
+        existingVars.SMTP_PORT_WEB || exampleVars.SMTP_PORT_WEB || '1080',
+      )
     : existingVars.SMTP_PORT_WEB || '1080'
   const portWeb = Number.parseInt(portWebStr, 10) || 1080
 
@@ -363,9 +406,7 @@ interface EnvFileInfo {
 }
 
 function checkEnvFiles(availableApps: AvailableApps): EnvFileInfo[] {
-  const envFiles: Array<{ from: string, to: string }> = [
-    { from: '.env.example', to: '.env' },
-  ]
+  const envFiles: Array<{ from: string; to: string }> = [{ from: '.env.example', to: '.env' }]
 
   if (availableApps.api) {
     envFiles.push({ from: 'apps/api/.env.example', to: 'apps/api/.env' })
@@ -380,7 +421,10 @@ function checkEnvFiles(availableApps: AvailableApps): EnvFileInfo[] {
   }
 
   if (availableApps.openapiGenerator) {
-    envFiles.push({ from: 'packages/openapi-generator/.env.example', to: 'packages/openapi-generator/.env' })
+    envFiles.push({
+      from: 'packages/openapi-generator/.env.example',
+      to: 'packages/openapi-generator/.env',
+    })
   }
 
   return envFiles.map(({ from, to }) => {
@@ -402,9 +446,10 @@ function copyEnvFiles(envFilesInfo: EnvFileInfo[]): void {
 
     if (exists) {
       if (missingVars.length > 0) {
-        console.log(`  ${colorize('⚠', 'yellow')} ${colorize(to, 'dim')} exists but missing variables: ${colorize(missingVars.join(', '), 'yellow')}`)
-      }
-      else {
+        console.log(
+          `  ${colorize('⚠', 'yellow')} ${colorize(to, 'dim')} exists but missing variables: ${colorize(missingVars.join(', '), 'yellow')}`,
+        )
+      } else {
         console.log(`  ${colorize('✓', 'green')} ${colorize(to, 'dim')} exists and is complete`)
       }
       continue
@@ -412,9 +457,10 @@ function copyEnvFiles(envFilesInfo: EnvFileInfo[]): void {
 
     if (existsSync(fromPath)) {
       copyFileSync(fromPath, toPath)
-      console.log(`  ${colorize('✓', 'green')} Copied ${colorize(from, 'dim')} → ${colorize(to, 'dim')}`)
-    }
-    else {
+      console.log(
+        `  ${colorize('✓', 'green')} Copied ${colorize(from, 'dim')} → ${colorize(to, 'dim')}`,
+      )
+    } else {
       console.log(`  ${colorize('⚠', 'yellow')} File not found: ${colorize(from, 'dim')}`)
     }
   }
@@ -446,8 +492,7 @@ function updateEnvFile(
       const old = regex.exec(content)?.[1] ?? null
       content = content.replace(regex, `${key}=${f(old)}`)
       updated = true
-    }
-    else {
+    } else {
       content += `\n${key}=${f(null)}`
       updated = true
     }
@@ -470,7 +515,11 @@ function updatePackageJsonName(packagePath: string, newName: string): void {
   writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
 }
 
-function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, newPrefix: string): void {
+function updatePackageJsonDependencies(
+  packagePath: string,
+  oldPrefix: string,
+  newPrefix: string,
+): void {
   if (!existsSync(packagePath)) {
     return
   }
@@ -479,7 +528,9 @@ function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, n
   const packageJson = JSON.parse(content)
   const preservePackages = new Set<string>(['@lonestone/nzoth'])
 
-  const updateDependenciesSection = (deps: Record<string, string> | undefined): Record<string, string> | undefined => {
+  const updateDependenciesSection = (
+    deps: Record<string, string> | undefined,
+  ): Record<string, string> | undefined => {
     if (!deps) {
       return deps
     }
@@ -488,12 +539,10 @@ function updatePackageJsonDependencies(packagePath: string, oldPrefix: string, n
     for (const [key, value] of Object.entries(deps)) {
       if (preservePackages.has(key)) {
         updatedDeps[key] = value
-      }
-      else if (key.startsWith(oldPrefix)) {
+      } else if (key.startsWith(oldPrefix)) {
         const newKey = key.replace(oldPrefix, newPrefix)
         updatedDeps[newKey] = value
-      }
-      else {
+      } else {
         updatedDeps[key] = value
       }
     }
@@ -536,7 +585,11 @@ interface PackageJson {
   [key: string]: unknown
 }
 
-function updateRootScripts(packageJson: PackageJson, oldPrefix: string, newPrefix: string): PackageJson {
+function updateRootScripts(
+  packageJson: PackageJson,
+  oldPrefix: string,
+  newPrefix: string,
+): PackageJson {
   if (!packageJson.scripts) {
     return packageJson
   }
@@ -547,8 +600,7 @@ function updateRootScripts(packageJson: PackageJson, oldPrefix: string, newPrefi
   for (const [key, value] of Object.entries<string>(packageJson.scripts)) {
     if (scriptsToRewrite.includes(key)) {
       nextScripts[key] = value.replaceAll(oldPrefix, newPrefix)
-    }
-    else {
+    } else {
       nextScripts[key] = value
     }
   }
@@ -577,7 +629,7 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
   }
 
   // Update apps
-  const appsToUpdate: Array<{ path: string, name: string, condition: boolean }> = [
+  const appsToUpdate: Array<{ path: string; name: string; condition: boolean }> = [
     { path: 'apps/api/package.json', name: 'api', condition: availableApps.api },
     { path: 'apps/web-spa/package.json', name: 'web-spa', condition: availableApps.webSpa },
     { path: 'apps/web-ssr/package.json', name: 'web-ssr', condition: availableApps.webSsr },
@@ -596,10 +648,14 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
   }
 
   // Update packages
-  const packagesToUpdate: Array<{ path: string, name: string, condition: boolean }> = [
+  const packagesToUpdate: Array<{ path: string; name: string; condition: boolean }> = [
     { path: 'packages/ui/package.json', name: 'ui', condition: true },
     { path: 'packages/i18n/package.json', name: 'i18n', condition: true },
-    { path: 'packages/openapi-generator/package.json', name: 'openapi-generator', condition: availableApps.openapiGenerator },
+    {
+      path: 'packages/openapi-generator/package.json',
+      name: 'openapi-generator',
+      condition: availableApps.openapiGenerator,
+    },
   ]
 
   for (const { path, name, condition } of packagesToUpdate) {
@@ -613,7 +669,9 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
     console.log(`  ${colorize('✓', 'green')} Updated ${colorize(path, 'dim')}`)
   }
 
-  console.log(`\n  ${colorize('✓', 'green')} All project packages renamed to ${colorize(`@${projectName}/*`, 'bright')}`)
+  console.log(
+    `\n  ${colorize('✓', 'green')} All project packages renamed to ${colorize(`@${projectName}/*`, 'bright')}`,
+  )
 
   // Update docker-compose.yml
   updateDockerCompose(projectName)
@@ -623,8 +681,7 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
   try {
     await runCommand('pnpm', ['lint:fix'])
     console.log(`  ${colorize('✓', 'green')} Linting completed`)
-  }
-  catch {
+  } catch {
     console.log(`  ${colorize('⚠', 'yellow')} Linting failed, but continuing setup`)
   }
 
@@ -633,16 +690,14 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
   try {
     await runCommand('pnpm', ['install'])
     console.log(`  ${colorize('✓', 'green')} New dependencies installed`)
-  }
-  catch {
-    console.log(`  ${colorize('⚠', 'yellow')} New dependencies installation failed, but continuing setup`)
+  } catch {
+    console.log(
+      `  ${colorize('⚠', 'yellow')} New dependencies installation failed, but continuing setup`,
+    )
   }
 }
 
-function buildTrustedOrigins(
-  config: EnvConfig,
-  apiEnvPath: string,
-): string {
+function buildTrustedOrigins(config: EnvConfig, apiEnvPath: string): string {
   const examplePath = apiEnvPath.replace(/\.env$/, '.env.example')
   const existingVars = parseEnvFile(existsSync(apiEnvPath) ? apiEnvPath : examplePath)
   const existingOrigins = (existingVars.TRUSTED_ORIGINS ?? '')
@@ -651,10 +706,12 @@ function buildTrustedOrigins(
     .filter(Boolean)
 
   const localhostFromFile = existingOrigins.filter(
-    (origin: string) => origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:'),
+    (origin: string) =>
+      origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:'),
   )
   const nonLocalhostOrigins = existingOrigins.filter(
-    (origin: string) => !origin.startsWith('http://localhost:') && !origin.startsWith('https://localhost:'),
+    (origin: string) =>
+      !origin.startsWith('http://localhost:') && !origin.startsWith('https://localhost:'),
   )
 
   const fromConfig: string[] = []
@@ -767,8 +824,7 @@ async function main(): Promise<void> {
     const availableApps = detectAvailableApps()
 
     console.log(`${colorize('📦 Detected Applications:', 'cyan')}`)
-    if (availableApps.api)
-      console.log(`  ${colorize('✓', 'green')} ${colorize('API', 'bright')}`)
+    if (availableApps.api) console.log(`  ${colorize('✓', 'green')} ${colorize('API', 'bright')}`)
     if (availableApps.webSpa)
       console.log(`  ${colorize('✓', 'green')} ${colorize('Web SPA', 'bright')}`)
     if (availableApps.webSsr)
@@ -807,17 +863,27 @@ async function main(): Promise<void> {
 
     console.log(`\n${colorize('✅ Setup completed successfully!', 'green')}`)
     console.log(`\n${colorize('📝 Configuration Summary:', 'cyan')}`)
-    console.log(`  ${colorize('Database:', 'bright')} ${colorize(`${config.database.user}@${config.database.host}:${config.database.port}/${config.database.name}`, 'dim')}`)
+    console.log(
+      `  ${colorize('Database:', 'bright')} ${colorize(`${config.database.user}@${config.database.host}:${config.database.port}/${config.database.name}`, 'dim')}`,
+    )
     if (config.ports.api) {
-      console.log(`  ${colorize('API:', 'bright')} ${colorize(`http://localhost:${config.ports.api}`, 'blue')}`)
+      console.log(
+        `  ${colorize('API:', 'bright')} ${colorize(`http://localhost:${config.ports.api}`, 'blue')}`,
+      )
     }
     if (config.ports.webSpa) {
-      console.log(`  ${colorize('Web SPA:', 'bright')} ${colorize(`http://localhost:${config.ports.webSpa}`, 'blue')}`)
+      console.log(
+        `  ${colorize('Web SPA:', 'bright')} ${colorize(`http://localhost:${config.ports.webSpa}`, 'blue')}`,
+      )
     }
     if (config.ports.webSsr) {
-      console.log(`  ${colorize('Web SSR:', 'bright')} ${colorize(`http://localhost:${config.ports.webSsr}`, 'blue')}`)
+      console.log(
+        `  ${colorize('Web SSR:', 'bright')} ${colorize(`http://localhost:${config.ports.webSsr}`, 'blue')}`,
+      )
     }
-    console.log(`  ${colorize('SMTP:', 'bright')} ${colorize(`localhost:${config.smtp.port}`, 'dim')} ${colorize(`(Web: ${config.smtp.portWeb})`, 'dim')}`)
+    console.log(
+      `  ${colorize('SMTP:', 'bright')} ${colorize(`localhost:${config.smtp.port}`, 'dim')} ${colorize(`(Web: ${config.smtp.portWeb})`, 'dim')}`,
+    )
 
     // Ask to start Docker
     let dockerStarted = false
@@ -841,29 +907,36 @@ async function main(): Promise<void> {
             try {
               await runCommand('pnpm', ['--filter=api', 'db:migrate:up'])
               console.log(`\n  ${colorize('✓', 'green')} Migrations completed successfully`)
-            }
-            catch (error) {
+            } catch (error) {
               console.error(`\n  ${colorize('⚠', 'yellow')} Migration failed:`, error)
-              console.log(`  ${colorize('You can run migrations manually later with:', 'dim')} ${colorize('pnpm --filter=api db:migrate:up', 'bright')}`)
+              console.log(
+                `  ${colorize('You can run migrations manually later with:', 'dim')} ${colorize('pnpm --filter=api db:migrate:up', 'bright')}`,
+              )
             }
+          } else {
+            console.log(
+              `  ${colorize('→', 'cyan')} Skipped migrations. Run manually with: ${colorize('pnpm --filter=api db:migrate:up', 'bright')}`,
+            )
           }
-          else {
-            console.log(`  ${colorize('→', 'cyan')} Skipped migrations. Run manually with: ${colorize('pnpm --filter=api db:migrate:up', 'bright')}`)
-          }
+        } else if (!dbReady && availableApps.api) {
+          console.log(
+            `  ${colorize('→', 'cyan')} Database not ready. Run migrations manually with: ${colorize('pnpm --filter=api db:migrate:up', 'bright')}`,
+          )
         }
-        else if (!dbReady && availableApps.api) {
-          console.log(`  ${colorize('→', 'cyan')} Database not ready. Run migrations manually with: ${colorize('pnpm --filter=api db:migrate:up', 'bright')}`)
-        }
-      }
-      catch (error) {
+      } catch (error) {
         console.error(`\n  ${colorize('⚠', 'yellow')} Failed to start Docker:`, error)
-        console.log(`  ${colorize('You can start Docker manually with:', 'dim')} ${colorize('pnpm docker:up', 'bright')}`)
+        console.log(
+          `  ${colorize('You can start Docker manually with:', 'dim')} ${colorize('pnpm docker:up', 'bright')}`,
+        )
       }
-    }
-    else {
-      console.log(`  ${colorize('→', 'cyan')} Skipped Docker. Start manually with: ${colorize('pnpm docker:up', 'bright')}`)
+    } else {
+      console.log(
+        `  ${colorize('→', 'cyan')} Skipped Docker. Start manually with: ${colorize('pnpm docker:up', 'bright')}`,
+      )
       if (availableApps.api) {
-        console.log(`  ${colorize('→', 'cyan')} Migrations skipped (requires Docker). Run with: ${colorize('pnpm --filter=api db:migrate:up', 'bright')}`)
+        console.log(
+          `  ${colorize('→', 'cyan')} Migrations skipped (requires Docker). Run with: ${colorize('pnpm --filter=api db:migrate:up', 'bright')}`,
+        )
       }
     }
 
@@ -873,16 +946,21 @@ async function main(): Promise<void> {
 
     let step = 1
     if (!dockerStarted) {
-      console.log(`  ${colorize(`${step}.`, 'bright')} Start Docker services: ${colorize('pnpm docker:up', 'blue')}`)
+      console.log(
+        `  ${colorize(`${step}.`, 'bright')} Start Docker services: ${colorize('pnpm docker:up', 'blue')}`,
+      )
       step++
       if (availableApps.api) {
-        console.log(`  ${colorize(`${step}.`, 'bright')} Run migrations: ${colorize('pnpm --filter=api db:migrate:up', 'blue')}`)
+        console.log(
+          `  ${colorize(`${step}.`, 'bright')} Run migrations: ${colorize('pnpm --filter=api db:migrate:up', 'blue')}`,
+        )
         step++
       }
     }
-    console.log(`  ${colorize(`${step}.`, 'bright')} Start development: ${colorize('pnpm dev', 'blue')}\n`)
-  }
-  catch (error) {
+    console.log(
+      `  ${colorize(`${step}.`, 'bright')} Start development: ${colorize('pnpm dev', 'blue')}\n`,
+    )
+  } catch (error) {
     console.error(`\n${colorize('❌ Error during setup:', 'red')}`, error)
     process.exit(1)
   }

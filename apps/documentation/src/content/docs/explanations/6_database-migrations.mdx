@@ -10,10 +10,12 @@ As your application grows, your data model evolves. You add new fields to your e
 **But at some point, this informal approach becomes problematic:**
 
 The key trigger is **data preservation**. Once you care about keeping existing data, you can't drop and recreate the database anymore. This happens:
+
 - When you start having test data you want to keep locally
 - When deploying to staging or production with real user data
 
 Other factors that push toward a more structured approach:
+
 - You want a versioned history of schema changes (who changed what, when, and why)
 - You need to review schema changes before they're applied (especially in production)
 
@@ -38,6 +40,7 @@ Let's explore each of these elements in detail.
 The snapshot is a JSON file located by default in `apps/api/src/modules/db/migrations/.snapshot.json`. It's a crucial concept to understand: **the snapshot is MikroORM's memory of what your entities looked like when you last generated a migration.**
 
 Unlike some ORMs that inspect your actual database to detect changes, MikroORM works entirely from your codebase:
+
 - It never connects to your database to see what's there
 - It only compares your current TypeScript entities against this snapshot file
 - The snapshot represents the "before" state, your current entities represent the "after" state
@@ -169,6 +172,7 @@ Unfortunately, even with careful planning, migrations can sometimes fail in prod
 2. Find in which fail case you are: did the migration run without errors, but the API is broken (case A)? Or did the migration fail before running (case B)?
 
 **Case A**. Your migration ran without errors, but the API is broken. In this case, the SQL is working fine but you have issues with the data, and how your migration handles production data.
+
 1. Check the migration table (`mikro_orm_migrations`) to confirm that the migration was marked as executed
 2. Check what state your database is actually in (which tables/columns exist)
 3. Roll back your server version
@@ -180,10 +184,10 @@ Sadly, your clients, users and yourself can take time to actually notice somethi
 :::
 
 **Case B**. The migration failed before running. In this case, the SQL is not working and you need to fix the migration file.
+
 1. If you did everything correctly, the `all or nothing` option will roll back the transaction, and depending on your infrastructure, the previous container should still be running.
 2. Grab the logs from the failed migration.
 3. Fix the migration file and try again.
-
 
 ### Rollback Considerations
 
@@ -196,6 +200,7 @@ In development, rollback can be useful - you can apply a migration, realize it's
 - **Complex changes**: Some operations (dropping constraints, certain column type changes) can't be perfectly reversed
 
 **In production, rollback is rarely the right solution.** If a migration causes problems, it's usually safer to:
+
 1. Restore from your backup if data was lost or corrupted
 2. Write a new forward migration that fixes the issue
 3. Only use rollback for immediate issues caught right after deployment, and only if no data was lost

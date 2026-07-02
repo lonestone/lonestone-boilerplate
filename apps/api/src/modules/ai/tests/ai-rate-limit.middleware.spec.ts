@@ -13,21 +13,21 @@ describe('ai-rate-limit.middleware', () => {
   const mockModel = { provider: 'openai', modelId: 'gpt-4' } as LanguageModel
   const mockParams = {} as WrapGenerateContext['params']
 
-  const createGenerateContext = (doGenerate: () => PromiseLike<GenerateResult>): WrapGenerateContext =>
-    ({
-      doGenerate,
-      doStream: vi.fn(),
-      params: mockParams,
-      model: mockModel as WrapGenerateContext['model'],
-    })
+  const createGenerateContext = (
+    doGenerate: () => PromiseLike<GenerateResult>,
+  ): WrapGenerateContext => ({
+    doGenerate,
+    doStream: vi.fn(),
+    params: mockParams,
+    model: mockModel as WrapGenerateContext['model'],
+  })
 
-  const createStreamContext = (doStream: () => PromiseLike<StreamResult>): WrapStreamContext =>
-    ({
-      doGenerate: vi.fn(),
-      doStream,
-      params: mockParams,
-      model: mockModel as WrapStreamContext['model'],
-    })
+  const createStreamContext = (doStream: () => PromiseLike<StreamResult>): WrapStreamContext => ({
+    doGenerate: vi.fn(),
+    doStream,
+    params: mockParams,
+    model: mockModel as WrapStreamContext['model'],
+  })
 
   beforeEach(() => {
     vi.useFakeTimers()
@@ -58,7 +58,8 @@ describe('ai-rate-limit.middleware', () => {
     it('should retry on 429 status error', async () => {
       const middleware = withRetryAfter({ maxRetries: 2, baseDelay: 100 }, mockLogger)
       const rateLimitError = { status: 429, message: 'Rate limit exceeded' }
-      const mockDoGenerate = vi.fn()
+      const mockDoGenerate = vi
+        .fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
@@ -83,7 +84,8 @@ describe('ai-rate-limit.middleware', () => {
     it('should retry on error with rate limit message', async () => {
       const middleware = withRetryAfter({ maxRetries: 1, baseDelay: 100 }, mockLogger)
       const rateLimitError = new Error('rate limit exceeded')
-      const mockDoGenerate = vi.fn()
+      const mockDoGenerate = vi
+        .fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
@@ -100,7 +102,8 @@ describe('ai-rate-limit.middleware', () => {
     it('should retry on error with 429 in message', async () => {
       const middleware = withRetryAfter({ maxRetries: 1, baseDelay: 100 }, mockLogger)
       const rateLimitError = new Error('Error 429: Too many requests')
-      const mockDoGenerate = vi.fn()
+      const mockDoGenerate = vi
+        .fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
@@ -117,7 +120,8 @@ describe('ai-rate-limit.middleware', () => {
     it('should retry on error with rate_limit_exceeded code', async () => {
       const middleware = withRetryAfter({ maxRetries: 1, baseDelay: 100 }, mockLogger)
       const rateLimitError = { code: 'rate_limit_exceeded', message: 'Rate limit' }
-      const mockDoGenerate = vi.fn()
+      const mockDoGenerate = vi
+        .fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
@@ -141,7 +145,8 @@ describe('ai-rate-limit.middleware', () => {
           },
         },
       }
-      const mockDoGenerate = vi.fn()
+      const mockDoGenerate = vi
+        .fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
@@ -170,7 +175,8 @@ describe('ai-rate-limit.middleware', () => {
           get: vi.fn().mockReturnValue('3'),
         },
       }
-      const mockDoGenerate = vi.fn()
+      const mockDoGenerate = vi
+        .fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
@@ -188,7 +194,8 @@ describe('ai-rate-limit.middleware', () => {
     it('should use exponential backoff when no retry-after header', async () => {
       const middleware = withRetryAfter({ maxRetries: 2, baseDelay: 100 }, mockLogger)
       const rateLimitError = { status: 429 }
-      const mockDoGenerate = vi.fn()
+      const mockDoGenerate = vi
+        .fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
@@ -232,7 +239,9 @@ describe('ai-rate-limit.middleware', () => {
       const otherError = new Error('Some other error')
       const mockDoGenerate = vi.fn().mockRejectedValue(otherError)
 
-      await expect(middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))).rejects.toThrow('Some other error')
+      await expect(middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))).rejects.toThrow(
+        'Some other error',
+      )
 
       expect(mockDoGenerate).toHaveBeenCalledTimes(1)
       expect(mockLogger.warn).not.toHaveBeenCalled()
@@ -244,7 +253,9 @@ describe('ai-rate-limit.middleware', () => {
       const rateLimitError = { status: 429 }
       const mockDoGenerate = vi.fn().mockRejectedValue(rateLimitError)
 
-      await expect(middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))).rejects.toEqual(rateLimitError)
+      await expect(middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))).rejects.toEqual(
+        rateLimitError,
+      )
 
       expect(customShouldRetry).toHaveBeenCalledWith(rateLimitError)
       expect(mockDoGenerate).toHaveBeenCalledTimes(1)
@@ -252,12 +263,16 @@ describe('ai-rate-limit.middleware', () => {
 
     it('should use custom calculateDelay function', async () => {
       const customCalculateDelay = vi.fn().mockReturnValue(500)
-      const middleware = withRetryAfter({
-        maxRetries: 1,
-        calculateDelay: customCalculateDelay,
-      }, mockLogger)
+      const middleware = withRetryAfter(
+        {
+          maxRetries: 1,
+          calculateDelay: customCalculateDelay,
+        },
+        mockLogger,
+      )
       const rateLimitError = { status: 429 }
-      const mockDoGenerate = vi.fn()
+      const mockDoGenerate = vi
+        .fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
@@ -277,7 +292,7 @@ describe('ai-rate-limit.middleware', () => {
     it('should succeed on first attempt', async () => {
       const middleware = withRetryAfter({}, mockLogger)
       const mockStream = {
-        async* [Symbol.asyncIterator]() {
+        async *[Symbol.asyncIterator]() {
           yield 'chunk'
         },
       }
@@ -293,11 +308,12 @@ describe('ai-rate-limit.middleware', () => {
       const middleware = withRetryAfter({ maxRetries: 1, baseDelay: 100 }, mockLogger)
       const rateLimitError = { status: 429 }
       const mockStream = {
-        async* [Symbol.asyncIterator]() {
+        async *[Symbol.asyncIterator]() {
           yield 'chunk'
         },
       }
-      const mockDoStream = vi.fn()
+      const mockDoStream = vi
+        .fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue(mockStream)
 
@@ -356,12 +372,15 @@ describe('ai-rate-limit.middleware', () => {
     it('should handle error without status or message', async () => {
       const middleware = withRetryAfter({ maxRetries: 1 }, mockLogger)
       const error = {}
-      const mockDoGenerate = vi.fn()
+      const mockDoGenerate = vi
+        .fn()
         .mockRejectedValueOnce(error)
         .mockResolvedValue({ text: 'success' })
 
       // Should not retry since error doesn't match rate limit criteria
-      await expect(middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))).rejects.toEqual(error)
+      await expect(middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))).rejects.toEqual(
+        error,
+      )
 
       expect(mockDoGenerate).toHaveBeenCalledTimes(1)
     })
@@ -374,7 +393,8 @@ describe('ai-rate-limit.middleware', () => {
           'retry-after': 'invalid',
         },
       }
-      const mockDoGenerate = vi.fn()
+      const mockDoGenerate = vi
+        .fn()
         .mockRejectedValueOnce(rateLimitError)
         .mockResolvedValue({ text: 'success' })
 
@@ -393,7 +413,9 @@ describe('ai-rate-limit.middleware', () => {
       const middleware = withRetryAfter({ maxRetries: 1 }, mockLogger)
       const mockDoGenerate = vi.fn().mockRejectedValue(null)
 
-      await expect(middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))).rejects.toBeNull()
+      await expect(
+        middleware.wrapGenerate!(createGenerateContext(mockDoGenerate)),
+      ).rejects.toBeNull()
 
       expect(mockDoGenerate).toHaveBeenCalledTimes(1)
     })

@@ -20,8 +20,7 @@ interface StructuredOutputDisplayProps {
 function parseContent<T>(content: string): T | null {
   try {
     return JSON.parse(content) as T
-  }
-  catch {
+  } catch {
     return null
   }
 }

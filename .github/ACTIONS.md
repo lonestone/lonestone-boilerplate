@@ -31,6 +31,7 @@ Il comprend les jobs suivants:
 ## Configuration
 
 Le workflow utilise:
+
 - Node.js 18
 - pnpm 8
 - Cache pour les dépendances pnpm

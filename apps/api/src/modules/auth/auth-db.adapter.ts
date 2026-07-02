@@ -8,10 +8,7 @@ import type {
   MikroORM,
 } from '@mikro-orm/core'
 import type { BetterAuthOptions } from 'better-auth'
-import type {
-  CleanedWhere,
-  DBAdapterDebugLogOption,
-} from 'better-auth/adapters'
+import type { CleanedWhere, DBAdapterDebugLogOption } from 'better-auth/adapters'
 import type { DBFieldAttribute } from 'better-auth/db'
 import { writeFileSync } from 'node:fs'
 import { ReferenceKind, serialize } from '@mikro-orm/core'
@@ -73,7 +70,9 @@ interface AdapterUpdateParams<T> extends AdapterQueryParams {
 }
 
 function isPathRecord(value: AdapterValue): value is PathRecord {
-  return typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date)
+  return (
+    typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date)
+  )
 }
 
 function toAuthRecord<T>(value: T): AuthRecord {
@@ -145,7 +144,9 @@ export function createAdapterUtils(
 
   const getEntityMetadata: AdapterUtils['getEntityMetadata'] = (entityName) => {
     const normalized = normalizeEntityName(entityName)
-    const metadata = [...metadataStore.getAll().values()].find(meta => meta.className === normalized)
+    const metadata = [...metadataStore.getAll().values()].find(
+      (meta) => meta.className === normalized,
+    )
 
     if (!metadata) {
       throwAdapterError(
@@ -171,10 +172,12 @@ export function createAdapterUtils(
         return false
       }
 
-      return property.name === fieldName
-        || property.fieldNames.includes(fieldName)
-        || property.fieldNames.includes(columnName)
-        || property.fieldNames.some(field => naming.columnNameToProperty(field) === fieldName)
+      return (
+        property.name === fieldName ||
+        property.fieldNames.includes(fieldName) ||
+        property.fieldNames.includes(columnName) ||
+        property.fieldNames.some((field) => naming.columnNameToProperty(field) === fieldName)
+      )
     })
 
     if (!prop) {
@@ -237,9 +240,10 @@ export function createAdapterUtils(
 
     for (const [key, value] of Object.entries(input)) {
       const prop = getPropertyMetadata(metadata, key)
-      const normalizedValue = prop.targetMeta && !OWN_REFERENCES.has(prop.kind)
-        ? orm.em.getReference(prop.targetMeta.class as EntityName<AuthModelEntity>, value)
-        : value
+      const normalizedValue =
+        prop.targetMeta && !OWN_REFERENCES.has(prop.kind)
+          ? orm.em.getReference(prop.targetMeta.class as EntityName<AuthModelEntity>, value)
+          : value
 
       setPath(fields, [prop.name], normalizedValue)
     }
@@ -284,13 +288,17 @@ export function createAdapterUtils(
         break
       case 'in':
         if (!Array.isArray(input.value)) {
-          throwAdapterError(`The value for "${input.field}" must be an array when using the "in" operator.`)
+          throwAdapterError(
+            `The value for "${input.field}" must be an array when using the "in" operator.`,
+          )
         }
         setPath(target, [...path, '$in'], input.value)
         break
       case 'not_in':
         if (!Array.isArray(input.value)) {
-          throwAdapterError(`The value for "${input.field}" must be an array when using the "not_in" operator.`)
+          throwAdapterError(
+            `The value for "${input.field}" must be an array when using the "not_in" operator.`,
+          )
         }
         setPath(target, [...path, '$nin'], input.value)
         break
@@ -317,17 +325,17 @@ export function createAdapterUtils(
     }
 
     const result: AuthRecord = {}
-    const andClauses = where.filter(clause => !clause.connector || clause.connector === 'AND')
-    const orClauses = where.filter(clause => clause.connector === 'OR')
+    const andClauses = where.filter((clause) => !clause.connector || clause.connector === 'AND')
+    const orClauses = where.filter((clause) => clause.connector === 'OR')
 
     if (andClauses.length > 0) {
-      result.$and = andClauses.map(clause =>
+      result.$and = andClauses.map((clause) =>
         normalizeWhereClause(getFieldPath(metadata, clause.field, true), clause),
       )
     }
 
     if (orClauses.length > 0) {
-      result.$or = orClauses.map(clause =>
+      result.$or = orClauses.map((clause) =>
         normalizeWhereClause(getFieldPath(metadata, clause.field, true), clause),
       )
     }
@@ -336,7 +344,7 @@ export function createAdapterUtils(
   }
 
   const normalizeSelect: AdapterUtils['normalizeSelect'] = (model, select) =>
-    select?.map(field => config.getFieldName({ field, model }))
+    select?.map((field) => config.getFieldName({ field, model }))
 
   return {
     getEntityMetadata,
@@ -377,8 +385,7 @@ export function diffAuthTables(
 
     try {
       metadata = utils.getEntityMetadata(table.modelName)
-    }
-    catch {
+    } catch {
       diffs.push({
         fields,
         missingFields: fields,
@@ -394,8 +401,7 @@ export function diffAuthTables(
     for (const field of fields) {
       try {
         utils.getFieldPath(metadata, field.field)
-      }
-      catch {
+      } catch {
         missingFields.push(field)
         problems.push(`Cannot find property "${field.field}" on entity "${metadata.className}".`)
       }
@@ -414,7 +420,7 @@ export function diffAuthSchema(orm: MikroORM, options: BetterAuthOptions): AuthS
 }
 
 export function validateAuthSchema(orm: MikroORM, options: BetterAuthOptions): string[] {
-  return diffAuthSchema(orm, options).flatMap(diff => diff.problems)
+  return diffAuthSchema(orm, options).flatMap((diff) => diff.problems)
 }
 
 export function mikroOrmAdapter(
@@ -467,7 +473,9 @@ export function mikroOrmAdapter(
           const patchedFiles = applyEntityPatches(diffs, orm, defaultPath)
 
           if (patchedFiles.size > 0) {
-            const entries = [...patchedFiles.entries()].toSorted(([left], [right]) => left.localeCompare(right))
+            const entries = [...patchedFiles.entries()].toSorted(([left], [right]) =>
+              left.localeCompare(right),
+            )
             const [schemaPath, schemaContent] = entries.at(-1)!
 
             for (const [path, content] of entries.slice(0, -1)) {
@@ -514,10 +522,8 @@ export function mikroOrmAdapter(
           const metadata = getEntityMetadata(model)
           const options: PathRecord = {}
 
-          if (limit !== undefined)
-            options.limit = limit
-          if (offset !== undefined)
-            options.offset = offset
+          if (limit !== undefined) options.limit = limit
+          if (offset !== undefined) options.offset = offset
 
           if (sortBy) {
             const path = getFieldPath(metadata, sortBy.field)
@@ -531,7 +537,7 @@ export function mikroOrmAdapter(
           )
           const normalizedSelect = normalizeSelect(model, select)
 
-          return rows.map(row => normalizeOutput(metadata, row, normalizedSelect)) as T[]
+          return rows.map((row) => normalizeOutput(metadata, row, normalizedSelect)) as T[]
         },
 
         async findOne<T>({ model, select, where }: AdapterFindOneParams): Promise<T | null> {

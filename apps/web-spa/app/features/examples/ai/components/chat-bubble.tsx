@@ -53,22 +53,14 @@ export function ChatBubble({ message }: ChatBubbleProps) {
           <ToolUsageDisplay toolUsages={message.toolUsages} />
         )}
 
-        {schemaType
-          ? (
-              <StructuredOutputDisplay
-                content={message.content}
-                schemaType={schemaType}
-              />
-            )
-          : (
-              <MessageContent message={message} />
-            )}
+        {schemaType ? (
+          <StructuredOutputDisplay content={message.content} schemaType={schemaType} />
+        ) : (
+          <MessageContent message={message} />
+        )}
 
         {message.metadata?.usage && (
-          <UsageStats
-            usage={message.metadata.usage}
-            finishReason={message.metadata.finishReason}
-          />
+          <UsageStats usage={message.metadata.usage} finishReason={message.metadata.finishReason} />
         )}
 
         <div className="mt-2 pt-2 border-t border-muted/50">
@@ -99,9 +91,7 @@ function StreamingIndicator({ isUsingTool }: StreamingIndicatorProps) {
       </Badge>
       {isUsingTool && (
         <Badge variant="outline" className="animate-pulse">
-          Using
-          {' '}
-          {isUsingTool}
+          Using {isUsingTool}
           ...
         </Badge>
       )}
@@ -117,11 +107,9 @@ function ToolUsageDisplay({ toolUsages }: ToolUsageDisplayProps) {
   return (
     <div className="mb-2 text-xs text-muted-foreground border rounded p-2 bg-muted/30">
       <div className="font-medium mb-1">Tools used:</div>
-      {toolUsages.map(tu => (
+      {toolUsages.map((tu) => (
         <div key={tu.toolCallId} className="ml-2">
-          •
-          {' '}
-          {tu.toolName}
+          • {tu.toolName}
         </div>
       ))}
     </div>

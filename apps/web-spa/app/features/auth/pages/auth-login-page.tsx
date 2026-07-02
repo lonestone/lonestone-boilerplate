@@ -11,7 +11,11 @@ export default function Login() {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
-  const { mutate: loginMutate, isPending: isLoginPending, error } = useMutation({
+  const {
+    mutate: loginMutate,
+    isPending: isLoginPending,
+    error,
+  } = useMutation({
     mutationFn: async (data: AuthLoginFormData) => {
       const response = await authClient.signIn.email({
         email: data.email,
@@ -39,18 +43,19 @@ export default function Login() {
   return (
     <div className="space-y-6">
       <AuthPageHeader title={t('auth.login.title')} description={t('auth.login.description')} />
-      <AuthLoginForm
-        onSubmit={handleLogin}
-        isPending={isLoginPending}
-      />
+      <AuthLoginForm onSubmit={handleLogin} isPending={isLoginPending} />
       <div className="h-10">
-        {error ? <div className="text-sm font-medium text-red-500">{error.message === 'BANNED_USER' ? t('auth.login.bannedUser') : t('auth.login.badCredentials')}</div> : null}
+        {error ? (
+          <div className="text-sm font-medium text-red-500">
+            {error.message === 'BANNED_USER'
+              ? t('auth.login.bannedUser')
+              : t('auth.login.badCredentials')}
+          </div>
+        ) : null}
       </div>
       <div className="text-sm text-center">
         <Link to="/register" className="font-medium transition-colors">
-          {t('auth.login.noAccount')}
-          {' '}
-          {t('auth.login.signUp')}
+          {t('auth.login.noAccount')} {t('auth.login.signUp')}
         </Link>
       </div>
     </div>

@@ -1,14 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "typescript",
-    "react",
-    "import",
-    "unicorn",
-    "node",
-    "jsx-a11y",
-    "promise"
-  ],
+  "plugins": ["typescript", "react", "import", "unicorn", "node", "jsx-a11y", "promise"],
   "env": {
     "node": true,
     "browser": true

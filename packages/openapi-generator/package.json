@@ -8,14 +8,14 @@
     "preprocess": "node ./preprocess/index.js",
     "generate": "cross-env dotenvx run -- pnpm preprocess && dotenvx run -- openapi-ts -f ./openapi-ts.config.ts"
   },
-  "peerDependencies": {
-    "zod": "catalog:validation"
-  },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
     "@hey-api/openapi-ts": "^0.91.0",
     "cross-env": "^10.1.0",
     "node-fetch": "^3.3.2",
     "wait-on": "^9.0.3"
+  },
+  "peerDependencies": {
+    "zod": "catalog:validation"
   }
 }

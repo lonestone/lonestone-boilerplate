@@ -1,5 +1,11 @@
 import { config } from '../../config/env.config'
-import { createAnthropic, createGoogleGenerativeAI, createMistral, createOpenAI, ProviderInstance } from './ai.providers'
+import {
+  createAnthropic,
+  createGoogleGenerativeAI,
+  createMistral,
+  createOpenAI,
+  ProviderInstance,
+} from './ai.providers'
 
 // Providers are initialized synchronously for OpenAI, but async for Google/Anthropic
 // We'll initialize them lazily when needed
@@ -9,10 +15,18 @@ export const providers: {
   anthropic: Promise<ProviderInstance> | null
   mistral: Promise<ProviderInstance> | null
 } = {
-  openai: config.ai.providers.openai.apiKey ? createOpenAI({ apiKey: config.ai.providers.openai.apiKey }) : null,
-  google: config.ai.providers.google.apiKey ? createGoogleGenerativeAI({ apiKey: config.ai.providers.google.apiKey }) : null,
-  anthropic: config.ai.providers.anthropic.apiKey ? createAnthropic({ apiKey: config.ai.providers.anthropic.apiKey }) : null,
-  mistral: config.ai.providers.mistral.apiKey ? createMistral({ apiKey: config.ai.providers.mistral.apiKey }) : null,
+  openai: config.ai.providers.openai.apiKey
+    ? createOpenAI({ apiKey: config.ai.providers.openai.apiKey })
+    : null,
+  google: config.ai.providers.google.apiKey
+    ? createGoogleGenerativeAI({ apiKey: config.ai.providers.google.apiKey })
+    : null,
+  anthropic: config.ai.providers.anthropic.apiKey
+    ? createAnthropic({ apiKey: config.ai.providers.anthropic.apiKey })
+    : null,
+  mistral: config.ai.providers.mistral.apiKey
+    ? createMistral({ apiKey: config.ai.providers.mistral.apiKey })
+    : null,
 }
 
 export type ProviderName = keyof typeof providers

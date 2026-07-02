@@ -48,7 +48,9 @@ export function parseCookies(cookieHeader: string): Record<string, string> {
  */
 export function getLocaleFromCookies(
   cookieHeader: string | undefined,
-  supportedLocales: readonly string[] = Object.values(SUPPORTED_LOCALES).map(l => l.defaultLocale),
+  supportedLocales: readonly string[] = Object.values(SUPPORTED_LOCALES).map(
+    (l) => l.defaultLocale,
+  ),
 ): CookieInfo {
   if (!cookieHeader) {
     return {
@@ -83,7 +85,9 @@ export function getLocaleFromCookies(
  */
 export function getDefaultLocaleFromAcceptLanguage(
   acceptLanguageHeader: string | undefined,
-  supportedLocales: readonly string[] = Object.values(SUPPORTED_LOCALES).map(l => l.defaultLocale),
+  supportedLocales: readonly string[] = Object.values(SUPPORTED_LOCALES).map(
+    (l) => l.defaultLocale,
+  ),
 ): string | null {
   if (!acceptLanguageHeader) {
     return null
@@ -114,7 +118,7 @@ export function getDefaultLocaleFromAcceptLanguage(
 
     // Check language code match (e.g., "fr" matches "fr-FR")
     const languageCode = locale.split('-')[0]
-    const supportedLocale = supportedLocales.find(supported =>
+    const supportedLocale = supportedLocales.find((supported) =>
       supported.startsWith(languageCode ?? ''),
     )
 
@@ -188,7 +192,10 @@ export function getCookie(name: string): string | null {
   return null
 }
 
-export function removeCookie(name: string, options: Pick<CookieOptions, 'path' | 'domain'> = {}): void {
+export function removeCookie(
+  name: string,
+  options: Pick<CookieOptions, 'path' | 'domain'> = {},
+): void {
   const { path = '/', domain } = options
 
   setCookie(name, '', {
@@ -210,7 +217,10 @@ export function setLocaleCookie(locale: SupportedLocale, domain?: string): void 
 
 export function getLocaleCookie(): SupportedLocale | null {
   const locale = getCookie('locale')
-  return locale && Object.values(SUPPORTED_LOCALES).map(l => l.defaultLocale).includes(locale as DefaultLocale)
+  return locale &&
+    Object.values(SUPPORTED_LOCALES)
+      .map((l) => l.defaultLocale)
+      .includes(locale as DefaultLocale)
     ? (locale as SupportedLocale)
     : null
 }
@@ -231,7 +241,7 @@ export function getInitialLocale(): SupportedLocale {
   if (browserLang) {
     // Check if browser language matches any supported locale
     const supportedLocale = Object.values(SUPPORTED_LOCALES).find(
-      locale => browserLang?.startsWith(locale.defaultLocale.split('-')[0] ?? '') ?? false,
+      (locale) => browserLang?.startsWith(locale.defaultLocale.split('-')[0] ?? '') ?? false,
     )
     if (supportedLocale) {
       return supportedLocale.defaultLocale as SupportedLocale
@@ -242,7 +252,9 @@ export function getInitialLocale(): SupportedLocale {
 }
 
 // Server-side utilities
-export function getLocaleFromRequestWithFallback(request: { headers: { 'cookie'?: string, 'accept-language'?: string } }): SupportedLocale {
+export function getLocaleFromRequestWithFallback(request: {
+  headers: { cookie?: string; 'accept-language'?: string }
+}): SupportedLocale {
   // First, try to get from cookies
   const cookieInfo = getLocaleFromCookies(request.headers.cookie)
   if (cookieInfo.isValid && cookieInfo.locale) {
@@ -253,7 +265,12 @@ export function getLocaleFromRequestWithFallback(request: { headers: { 'cookie'?
   const acceptLanguage = request.headers['accept-language']
   const browserLocale = getDefaultLocaleFromAcceptLanguage(acceptLanguage)
 
-  if (browserLocale && Object.values(SUPPORTED_LOCALES).map(l => l.defaultLocale).includes(browserLocale as DefaultLocale)) {
+  if (
+    browserLocale &&
+    Object.values(SUPPORTED_LOCALES)
+      .map((l) => l.defaultLocale)
+      .includes(browserLocale as DefaultLocale)
+  ) {
     return browserLocale as SupportedLocale
   }
 

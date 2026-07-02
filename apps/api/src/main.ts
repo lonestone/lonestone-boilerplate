@@ -1,4 +1,8 @@
-import { createOpenApiDocument, ZodSerializationExceptionFilter, ZodValidationExceptionFilter } from '@lonestone/nzoth/server'
+import {
+  createOpenApiDocument,
+  ZodSerializationExceptionFilter,
+  ZodValidationExceptionFilter,
+} from '@lonestone/nzoth/server'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder } from '@nestjs/swagger'
 import { apiReference } from '@scalar/nestjs-api-reference'
@@ -26,29 +30,20 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggerErrorInterceptor())
 
   // Registering custom exception filter for the Nzoth package
-  app.useGlobalFilters(
-    new ZodValidationExceptionFilter(),
-    new ZodSerializationExceptionFilter(),
-  )
+  app.useGlobalFilters(new ZodValidationExceptionFilter(), new ZodSerializationExceptionFilter())
 
-  app.use(
-    (
-      req: express.Request,
-      res: express.Response,
-      next: express.NextFunction,
-    ) => {
-      // If is routes of better auth, next
-      if (req.originalUrl.startsWith(`${PREFIX}/auth`)) {
-        return next()
-      }
-      // If is stripe webhook, we need the raw body
-      if (req.originalUrl.startsWith(`${PREFIX}/stripe/webhook`)) {
-        return express.raw({ type: 'application/json' })(req, res, next)
-      }
-      // Else, apply the express json middleware
-      express.json()(req, res, next)
-    },
-  )
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // If is routes of better auth, next
+    if (req.originalUrl.startsWith(`${PREFIX}/auth`)) {
+      return next()
+    }
+    // If is stripe webhook, we need the raw body
+    if (req.originalUrl.startsWith(`${PREFIX}/stripe/webhook`)) {
+      return express.raw({ type: 'application/json' })(req, res, next)
+    }
+    // Else, apply the express json middleware
+    express.json()(req, res, next)
+  })
 
   app.enableCors({
     origin: config.betterAuth.trustedOrigins,
@@ -68,12 +63,9 @@ async function bootstrap() {
 
     const document = createOpenApiDocument(app, swaggerConfig)
 
-    app.use(
-      `${PREFIX}/docs.json`,
-      (_: express.Request, res: express.Response) => {
-        res.json(document)
-      },
-    )
+    app.use(`${PREFIX}/docs.json`, (_: express.Request, res: express.Response) => {
+      res.json(document)
+    })
 
     app.use(
       `${PREFIX}/docs`,

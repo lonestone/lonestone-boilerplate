@@ -6,12 +6,7 @@ import devtoolsJson from 'vite-plugin-devtools-json'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
-  plugins: [
-    tailwindcss(),
-    reactRouter(),
-    tsconfigPaths(),
-    devtoolsJson(),
-  ],
+  plugins: [tailwindcss(), reactRouter(), tsconfigPaths(), devtoolsJson()],
   build: {
     outDir: 'dist',
     sourcemap: process.env.NODE_ENV === 'development',

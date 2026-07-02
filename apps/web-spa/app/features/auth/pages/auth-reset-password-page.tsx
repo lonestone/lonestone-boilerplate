@@ -34,7 +34,10 @@ export default function AuthResetPasswordPage() {
 
   return (
     <div className="space-y-6">
-      <AuthPageHeader title={t('auth.resetPassword.title')} description={t('auth.resetPassword.description')} />
+      <AuthPageHeader
+        title={t('auth.resetPassword.title')}
+        description={t('auth.resetPassword.description')}
+      />
       <AuthResetPasswordForm
         onSubmit={handleResetPassword}
         isPending={resetPasswordMutation.isPending}

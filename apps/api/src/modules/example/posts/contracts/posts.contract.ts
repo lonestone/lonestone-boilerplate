@@ -10,8 +10,8 @@ import { z } from 'zod'
 // https://github.com/lonestone/lonestone-boilerplate/blob/main/docs/api-guidelines.md#schema-definition-best-practices
 
 // Schema for content items (text, image, video)
-export const postContentSchema
-  = z.discriminatedUnion('type', [
+export const postContentSchema = z
+  .discriminatedUnion('type', [
     z.object({
       type: z.literal('text'),
       data: z.string(),
@@ -24,31 +24,21 @@ export const postContentSchema
       type: z.literal('video'),
       data: z.string(),
     }),
-  ]).meta(
-    {
-      title: 'PostContentSchema',
-      description: 'Schema for content items (text, image, video)',
-    },
-  )
+  ])
+  .meta({
+    title: 'PostContentSchema',
+    description: 'Schema for content items (text, image, video)',
+  })
 
-export const enabledPostSortingKey = [
-  'title',
-  'createdAt',
-] as const
+export const enabledPostSortingKey = ['title', 'createdAt'] as const
 
-export const postSortingSchema = createSortingQueryStringSchema(
-  enabledPostSortingKey,
-)
+export const postSortingSchema = createSortingQueryStringSchema(enabledPostSortingKey)
 
 export type PostSorting = z.infer<typeof postSortingSchema>
 
-export const enabledPostFilteringKeys = [
-  'title',
-] as const
+export const enabledPostFilteringKeys = ['title', 'tag'] as const
 
-export const postFilteringSchema = createFilterQueryStringSchema(
-  enabledPostFilteringKeys,
-)
+export const postFilteringSchema = createFilterQueryStringSchema(enabledPostFilteringKeys)
 
 export type PostFiltering = z.infer<typeof postFilteringSchema>
 
@@ -56,61 +46,92 @@ export const postPaginationSchema = createPaginationQuerySchema()
 
 export type PostPagination = z.infer<typeof postPaginationSchema>
 
-export const postVersionSchema = z.object({
-  id: z.string().uuid(),
-  title: z.string(),
-  createdAt: z.date(),
-}).meta({
-  title: 'PostVersionSchema',
-  description: 'Schema for a post version',
-})
+export const postVersionSchema = z
+  .object({
+    id: z.string().uuid(),
+    title: z.string(),
+    createdAt: z.date(),
+  })
+  .meta({
+    title: 'PostVersionSchema',
+    description: 'Schema for a post version',
+  })
+
+export const tagSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string(),
+    slug: z.string(),
+  })
+  .meta({
+    title: 'TagSchema',
+    description: 'A tag attached to a post',
+  })
+
+export type Tag = z.infer<typeof tagSchema>
 
 // ----------------------------
 // Create/update post schemas //
 // ----------------------------
 
 // Schema for creating/updating a post
-export const createPostSchema = z.object({
-  title: z.string().min(1),
-  content: z.array(postContentSchema),
-}).meta({
-  title: 'CreatePostSchema',
-  description: 'Schema for creating/updating a post',
-})
+export const createPostSchema = z
+  .object({
+    title: z.string().min(1),
+    content: z.array(postContentSchema),
+    coverImage: z.string().url().optional(),
+    tags: z.array(z.string()).optional(),
+  })
+  .meta({
+    title: 'CreatePostSchema',
+    description: 'Schema for creating/updating a post',
+  })
 
 export type CreatePostInput = z.infer<typeof createPostSchema>
 
-export const updatePostSchema = z.object({
-  title: z.string().min(1).optional(),
-  content: z.array(postContentSchema).optional(),
-}).meta({
-  title: 'UpdatePostSchema',
-  description: 'Schema for updating a post',
-})
+export const updatePostSchema = z
+  .object({
+    title: z.string().min(1).optional(),
+    content: z.array(postContentSchema).optional(),
+    coverImage: z.string().url().optional(),
+    tags: z.array(z.string()).optional(),
+  })
+  .meta({
+    title: 'UpdatePostSchema',
+    description: 'Schema for updating a post',
+  })
 
 export type UpdatePostInput = z.infer<typeof updatePostSchema>
 
-export const userPostSchema = z.object({
-  id: z.string().uuid(),
-  slug: z.string().nullish(),
-  title: z.string(),
-  content: z.array(postContentSchema),
-  versions: z.array(postVersionSchema),
-  publishedAt: z.date().nullish(),
-  type: z.enum(['published', 'draft']),
-  commentCount: z.number().optional(),
-}).meta({
-  title: 'UserPostSchema',
-  description: 'Schema for a user\'s post',
-})
+export const userPostSchema = z
+  .object({
+    id: z.string().uuid(),
+    slug: z.string().nullish(),
+    title: z.string(),
+    content: z.array(postContentSchema),
+    versions: z.array(postVersionSchema),
+    publishedAt: z.date().nullish(),
+    type: z.enum(['published', 'draft']),
+    commentCount: z.number().optional(),
+    coverImage: z.string().url().optional(),
+    tags: z.array(tagSchema),
+  })
+  .meta({
+    title: 'UserPostSchema',
+    description: "Schema for a user's post",
+  })
 
-export const userPostsSchema = paginatedSchema(userPostSchema.omit({
-  content: true,
-}).extend({
-  contentPreview: postContentSchema,
-})).meta({
+export const userPostsSchema = paginatedSchema(
+  userPostSchema
+    .omit({
+      content: true,
+    })
+    .extend({
+      contentPreview: postContentSchema,
+    }),
+).meta({
   title: 'UserPostsSchema',
-  description: 'Schema for a list of user\'s posts',
+  description: "Schema for a list of user's posts",
 })
 
 export type UserPost = z.infer<typeof userPostSchema>
@@ -121,30 +142,55 @@ export type UserPosts = z.infer<typeof userPostsSchema>
 // -------------//
 
 // Schema for the public view of a post
-export const publicPostSchema = z.object({
-  title: z.string(),
-  author: z.object({
-    name: z.string(),
-  }),
-  content: z.array(postContentSchema),
-  publishedAt: z.date(),
-  slug: z.string().optional(),
-  commentCount: z.number().optional(),
-}).meta({
-  title: 'PublicPostSchema',
-  description: 'A public post',
-})
+export const publicPostSchema = z
+  .object({
+    title: z.string(),
+    author: z.object({
+      name: z.string(),
+    }),
+    content: z.array(postContentSchema),
+    publishedAt: z.date(),
+    slug: z.string().optional(),
+    commentCount: z.number().optional(),
+    coverImage: z.string().url().optional(),
+    likesCount: z.number(),
+    tags: z.array(tagSchema),
+  })
+  .meta({
+    title: 'PublicPostSchema',
+    description: 'A public post',
+  })
 
 // Schema for a list of public posts
-export const publicPostsSchema = paginatedSchema(publicPostSchema.omit({
-  content: true,
-}).extend({
-  contentPreview: postContentSchema,
-  commentCount: z.number().optional(),
-})).meta({
+export const publicPostsSchema = paginatedSchema(
+  publicPostSchema
+    .omit({
+      content: true,
+    })
+    .extend({
+      contentPreview: postContentSchema,
+      commentCount: z.number().optional(),
+    }),
+).meta({
   title: 'PublicPostsSchema',
   description: 'A list of public posts',
 })
 
 export type PublicPost = z.infer<typeof publicPostSchema>
 export type PublicPosts = z.infer<typeof publicPostsSchema>
+
+// Schema for the author posts list (public)
+export const publicAuthorPostsSchema = paginatedSchema(
+  publicPostSchema
+    .omit({
+      content: true,
+    })
+    .extend({
+      contentPreview: postContentSchema,
+    }),
+).meta({
+  title: 'PublicAuthorPostsSchema',
+  description: 'A list of posts from a specific author',
+})
+
+export type PublicAuthorPosts = z.infer<typeof publicAuthorPostsSchema>

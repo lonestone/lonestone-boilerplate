@@ -3,7 +3,7 @@ title: Monitoring, Tracing & Logging
 description: How to report errors, log traces and monitor your project with Sentry
 ---
 
-import { Steps, Aside } from '@astrojs/starlight/components';
+import { Steps, Aside } from '@astrojs/starlight/components'
 
 The project uses [Sentry](https://sentry.io/) (or a Sentry-compatible alternative like [Bugsink](https://www.bugsink.com/)) for error reporting, tracing, and structured logging. Everything is already configured and ready to use.
 
@@ -27,7 +27,7 @@ Good monitoring tools can save you hours, days, or even weeks of debugging. Than
 
 The monitoring stack provides three main capabilities:
 
-1. **Error Reporting**: Automatic capture of unhandled exceptions with full stack traces and context****
+1. **Error Reporting**: Automatic capture of unhandled exceptions with full stack traces and context\*\*\*\*
 2. **Distributed Tracing**: Performance monitoring with OpenTelemetry, tracking request flows across your application
 3. **Structured Logging**: Pino logs are automatically sent to Sentry for centralized log management
 
@@ -38,7 +38,11 @@ The monitoring system is initialized in `apps/api/src/instrument.ts` before the 
 We also use [amplication/opentelemetry-nestjs](https://github.com/amplication/opentelemetry-nestjs) to automatically trace controllers, services, database queries, etc. so we have complete traces.
 
 <Aside type="note" title="Why skipOpenTelemetrySetup?">
-Sentry is initialized with `skipOpenTelemetrySetup: true` to prevent it from claiming the global OpenTelemetry provider. This allows us to create a **shared TracerProvider** that routes spans to multiple destinations (Sentry and Langfuse). Without this flag, Sentry would take over the global provider, preventing other processors from receiving spans. If you want to use Sentry without Langfuse, you can remove this flag.
+  Sentry is initialized with `skipOpenTelemetrySetup: true` to prevent it from claiming the global
+  OpenTelemetry provider. This allows us to create a **shared TracerProvider** that routes spans to
+  multiple destinations (Sentry and Langfuse). Without this flag, Sentry would take over the global
+  provider, preventing other processors from receiving spans. If you want to use Sentry without
+  Langfuse, you can remove this flag.
 </Aside>
 
 ## Configuration Options
@@ -68,13 +72,15 @@ Sentry.init({
 ```
 
 <Aside type="caution" title="Performance in Production">
-The `tracesSampleRate: 1.0` setting captures 100% of traces, which is useful during development but can be expensive in production with high traffic. 
+The `tracesSampleRate: 1.0` setting captures 100% of traces, which is useful during development but can be expensive in production with high traffic.
 
 **Recommended production settings:**
+
 - `tracesSampleRate: 0.1` (10% of traces) for high-traffic applications
 - `tracesSampleRate: 0.25` (25% of traces) for medium-traffic applications
 
 For error tracking, you can also use [dynamic sampling](https://docs.sentry.io/platforms/javascript/configuration/sampling/) for more granular control.
+
 </Aside>
 
 # 📝 How to use
@@ -86,6 +92,7 @@ Since Sentry is already configured in the boilerplate, you only need to:
    Create a project in [Sentry](https://sentry.io/) (or your self-hosted instance) and get your DSN.
 
 2. ### Configure environment variables
+
    Add the following to your `apps/api/.env` file:
 
    ```env
@@ -94,11 +101,13 @@ Since Sentry is already configured in the boilerplate, you only need to:
 
 3. ### Start monitoring
    That's it! Errors, traces, and logs are automatically captured.
+
 </Steps>
 
 ## Viewing Errors
 
 Unhandled exceptions are automatically captured and sent to Sentry with:
+
 - Full stack traces
 - Request context (URL, headers, body)
 - User information (if authenticated)
@@ -135,7 +144,9 @@ Structured logs from Pino are automatically sent to Sentry:
 ![Sentry logs](../../../assets/sentry_logs.png)
 
 <Aside type="note">
-Ensure your `pino`, `pino-http`, and `pino-pretty` packages are up to date. Older versions may not work correctly with Sentry. The minimum required versions are already configured in the API `package.json`.
+  Ensure your `pino`, `pino-http`, and `pino-pretty` packages are up to date. Older versions may not
+  work correctly with Sentry. The minimum required versions are already configured in the API
+  `package.json`.
 </Aside>
 
 # 🧹 How to remove
@@ -145,6 +156,7 @@ Ensure your `pino`, `pino-http`, and `pino-pretty` packages are up to date. Olde
    Delete `apps/api/src/instrument.ts`
 
 2. ### Update app.module.ts
+
    Remove the Sentry and OpenTelemetry imports and configuration:
 
    ```typescript title="src/app.module.ts"
@@ -171,6 +183,7 @@ Ensure your `pino`, `pino-http`, and `pino-pretty` packages are up to date. Olde
    ```
 
 3. ### Remove @Traceable decorators
+
    If you added `@Traceable()` decorators to any services for granular tracing, remove them:
 
    ```typescript
@@ -183,6 +196,7 @@ Ensure your `pino`, `pino-http`, and `pino-pretty` packages are up to date. Olde
    ```
 
 4. ### Remove dependencies
+
    Remove the following from `apps/api/package.json`:
 
    ```json
@@ -195,6 +209,7 @@ Ensure your `pino`, `pino-http`, and `pino-pretty` packages are up to date. Olde
    Then run `pnpm install` to update the lockfile.
 
 5. ### Remove environment variables
+
    Remove from `apps/api/.env` and `apps/api/.env.example`:
 
    ```env
@@ -202,6 +217,7 @@ Ensure your `pino`, `pino-http`, and `pino-pretty` packages are up to date. Olde
    ```
 
 6. ### Update env.config.ts
+
    Remove the Sentry configuration from `apps/api/src/config/env.config.ts`:
 
    ```typescript
@@ -213,8 +229,11 @@ Ensure your `pino`, `pino-http`, and `pino-pretty` packages are up to date. Olde
      dsn: configParsed.data.SENTRY_DSN,
    },
    ```
+
 </Steps>
 
 <Aside type="caution">
-If you're using the AI module with Langfuse, you'll need to update the tracing setup. Langfuse can work without Sentry, but you'll need to configure its own TracerProvider. See the [Langfuse documentation](https://langfuse.com/docs) for standalone setup.
+  If you're using the AI module with Langfuse, you'll need to update the tracing setup. Langfuse can
+  work without Sentry, but you'll need to configure its own TracerProvider. See the [Langfuse
+  documentation](https://langfuse.com/docs) for standalone setup.
 </Aside>

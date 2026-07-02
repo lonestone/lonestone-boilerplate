@@ -26,9 +26,9 @@ apps/api/src/
 
 ### Installation
 
-<br/>
+<br />
 
-import { Steps } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components'
 
 <Steps>
 
@@ -37,7 +37,7 @@ import { Steps } from '@astrojs/starlight/components';
    In your Better Auth configuration file `apps/api/src/modules/auth/auth.config.ts` on the API side, add the `admin` plugin:
 
    ```typescript
-   import { admin } from "better-auth/plugins"
+   import { admin } from 'better-auth/plugins'
 
    export const auth = betterAuth({
      // ... your existing config
@@ -45,17 +45,17 @@ import { Steps } from '@astrojs/starlight/components';
        admin({
          defaultRole: 'user',
          adminRoles: ['admin'],
-       })
-     ]
+       }),
+     ],
    })
    ```
 
    :::tip[Configuration options]
    - `defaultRole`: The default role assigned to new users (e.g., 'user')
    - `adminRoles`: Array of role names that should have admin privileges (e.g., ['admin', 'superadmin'])
-   :::
+     :::
 
-   <br/>
+   <br />
 
 2. ### Update the User entity
 
@@ -87,7 +87,7 @@ import { Steps } from '@astrojs/starlight/components';
    - `banned`: Boolean flag indicating if the user is banned from the application.
    - `banReason`: Optional text explaining why the user was banned.
    - `banExpires`: Optional date when the ban will be automatically lifted.
-   :::
+     :::
 
    #### Update the Session entity for impersonation
 
@@ -109,7 +109,7 @@ import { Steps } from '@astrojs/starlight/components';
    The `impersonatedBy` field stores the admin user ID when an admin is impersonating another user. This enables audit trails and helps distinguish between genuine user actions and admin actions performed on behalf of users.
    :::
 
-   <br/>
+   <br />
 
 3. ### Update the database
 
@@ -121,7 +121,7 @@ import { Steps } from '@astrojs/starlight/components';
    For detailed instructions on database migrations and schema updates, check out the [Database Migrations explanation](/lonestone-boilerplate/explanations/6_database-migrations).
    :::
 
-   <br/>
+   <br />
 
 4. ### Use admin features
 
@@ -130,53 +130,53 @@ import { Steps } from '@astrojs/starlight/components';
    **Usage examples:**
 
    ```typescript
-    import { Injectable } from '@nestjs/common'
-    import { EntityManager } from '@mikro-orm/postgresql'
-    import { User } from './auth.entity'
+   import { Injectable } from '@nestjs/common'
+   import { EntityManager } from '@mikro-orm/postgresql'
+   import { User } from './auth.entity'
 
-    @Injectable()
-    export class UsersService {
-    constructor(private readonly em: EntityManager) {}
+   @Injectable()
+   export class UsersService {
+     constructor(private readonly em: EntityManager) {}
 
-    async ban(id: string, data: BanUserDto): Promise<void> {
-        const user = await this.em.findOne(User, { id })
+     async ban(id: string, data: BanUserDto): Promise<void> {
+       const user = await this.em.findOne(User, { id })
 
-        if (!user) {
-        throw new NotFoundException('User not found')
-        }
+       if (!user) {
+         throw new NotFoundException('User not found')
+       }
 
-        this.em.assign(user, {
-        banned: true,
-        banReason: data.banReason,
-        banExpires: data.banExpires,
-        })
+       this.em.assign(user, {
+         banned: true,
+         banReason: data.banReason,
+         banExpires: data.banExpires,
+       })
 
-        await this.em.flush()
-    }
+       await this.em.flush()
+     }
 
-    async unban(id: string): Promise<void> {
-        const user = await this.em.findOne(User, { id })
+     async unban(id: string): Promise<void> {
+       const user = await this.em.findOne(User, { id })
 
-        if (!user) {
-        throw new NotFoundException('User not found')
-        }
+       if (!user) {
+         throw new NotFoundException('User not found')
+       }
 
-        this.em.assign(user, {
-        banned: false,
-        banReason: null,
-        banExpires: null,
-        })
+       this.em.assign(user, {
+         banned: false,
+         banReason: null,
+         banExpires: null,
+       })
 
-        await this.em.flush()
-    }
-    }
+       await this.em.flush()
+     }
+   }
    ```
 
    :::tip
    All available routes and methods are documented in the [official Better Auth - Admin documentation](https://www.better-auth.com/docs/plugins/admin#api-reference).
    :::
 
-   <br/>
+   <br />
 
 </Steps>
 
@@ -263,8 +263,7 @@ export class AuthGuard implements CanActivate {
       }
 
       return true
-    }
-    catch (error) {
+    } catch (error) {
       console.error(error)
       throw new UnauthorizedException()
     }
@@ -289,10 +288,7 @@ export class AdminController {
 
   @Post('users/:id/ban')
   @SuperAdmin()
-  async banUser(
-    @Param('id') userId: string,
-    @Body() dto: BanUserDto
-  ) {
+  async banUser(@Param('id') userId: string, @Body() dto: BanUserDto) {
     // Only admins can ban users
     return this.userService.ban(userId, dto)
   }
@@ -310,7 +306,7 @@ import { useAuth } from '@/lib/auth'
 
 export function AdminPanel() {
   const { user } = useAuth()
-  
+
   if (user?.role !== 'admin') {
     return <div>Access denied</div>
   }

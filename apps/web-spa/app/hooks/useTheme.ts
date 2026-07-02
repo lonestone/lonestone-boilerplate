@@ -6,14 +6,14 @@ const THEME_STORAGE_KEY = 'app-theme'
 
 function getThemeFromLocalStorage(): Theme {
   return (localStorage.getItem(THEME_STORAGE_KEY) as Theme) || 'dark'
-};
+}
 
-function subscribe(callback: () => void): (() => void) {
+function subscribe(callback: () => void): () => void {
   window.addEventListener('storage', callback)
   return () => {
     window.removeEventListener('storage', callback)
   }
-};
+}
 
 function useTheme(): [Theme, (newTheme: Theme) => void] {
   const theme = useSyncExternalStore(subscribe, getThemeFromLocalStorage, () => 'dark' as Theme)
@@ -24,6 +24,6 @@ function useTheme(): [Theme, (newTheme: Theme) => void] {
   }
 
   return [theme, setTheme]
-};
+}
 
 export default useTheme

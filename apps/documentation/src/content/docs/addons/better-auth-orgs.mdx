@@ -24,9 +24,9 @@ apps/api/src/
 
 ### Installation
 
-<br/>
+<br />
 
-import { Steps } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components'
 
 <Steps>
 
@@ -35,17 +35,17 @@ import { Steps } from '@astrojs/starlight/components';
    In your Better Auth configuration file `apps/api/src/modules/auth/auth.config.ts` on the API side, add the `organization` plugin:
 
    ```typescript
-   import { organization } from "better-auth/plugins"
+   import { organization } from 'better-auth/plugins'
 
    export const auth = betterAuth({
      // ... your existing config
      plugins: [
-       organization() // Minimal configuration
-     ]
+       organization(), // Minimal configuration
+     ],
    })
    ```
 
-   <br/>
+   <br />
 
 2. ### Update auth entities
 
@@ -58,28 +58,28 @@ import { Steps } from '@astrojs/starlight/components';
    ```typescript title="apps/api/src/modules/auth/auth.entity.ts"
    export class Organization {
      @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
-     id!: string;
+     id!: string
 
      @Property()
-     name!: string;
+     name!: string
 
      @Property({ nullable: true })
-     slug?: string;
+     slug?: string
 
      @Property({ nullable: true })
-     logo?: string;
+     logo?: string
 
      @Property({ nullable: true })
-     metadata?: string;
+     metadata?: string
 
      @Property({ fieldName: 'createdAt' })
-     createdAt: Date = new Date();
+     createdAt: Date = new Date()
 
      @OneToMany(() => Member, (member) => member.organization)
-     members = new Collection<Member>(this);
+     members = new Collection<Member>(this)
 
      @OneToMany(() => Invitation, (invitation) => invitation.organization)
-     invitations = new Collection<Invitation>(this);
+     invitations = new Collection<Invitation>(this)
    }
 
    /**
@@ -88,19 +88,19 @@ import { Steps } from '@astrojs/starlight/components';
    @Entity({ tableName: 'member' })
    export class Member {
      @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
-     id!: string;
+     id!: string
 
      @ManyToOne(() => User, { fieldName: 'userId', deleteRule: 'cascade' })
-     user!: User;
+     user!: User
 
      @ManyToOne(() => Organization, { fieldName: 'organizationId' })
-     organization!: Organization;
+     organization!: Organization
 
      @Property({ default: 'member' })
-     role = 'member';
+     role = 'member'
 
      @Property({ fieldName: 'createdAt' })
-     createdAt: Date = new Date();
+     createdAt: Date = new Date()
    }
 
    /**
@@ -109,25 +109,25 @@ import { Steps } from '@astrojs/starlight/components';
    @Entity({ tableName: 'invitation' })
    export class Invitation {
      @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
-     id!: string;
+     id!: string
 
      @Property()
-     email!: string;
+     email!: string
 
      @ManyToOne(() => User, { fieldName: 'inviterId' })
-     inviter!: User;
+     inviter!: User
 
      @ManyToOne(() => Organization, { fieldName: 'organizationId' })
-     organization!: Organization;
+     organization!: Organization
 
      @Property()
-     role!: string;
+     role!: string
 
      @Property()
-     status!: string;
+     status!: string
 
      @Property({ fieldName: 'expiresAt' })
-     expiresAt!: Date;
+     expiresAt!: Date
    }
    ```
 
@@ -143,8 +143,8 @@ import { Steps } from '@astrojs/starlight/components';
    export class User {
      // ... your existing properties
 
-      @OneToMany(() => Member, member => member.user)
-      members = new Collection<Member>(this)
+     @OneToMany(() => Member, (member) => member.user)
+     members = new Collection<Member>(this)
    }
    ```
 
@@ -158,7 +158,7 @@ import { Steps } from '@astrojs/starlight/components';
    export class Session {
      // ... your existing properties
      @Property({ fieldName: 'activeOrganizationId', nullable: true })
-     activeOrganizationId?: string;
+     activeOrganizationId?: string
    }
    ```
 
@@ -168,7 +168,7 @@ import { Steps } from '@astrojs/starlight/components';
    For detailed information on managing active organizations, see the [Better Auth Active Organization documentation](https://www.better-auth.com/docs/plugins/organization#active-organization).
    :::
 
-   <br/>
+   <br />
 
 3. ### Update the database
 
@@ -180,7 +180,7 @@ import { Steps } from '@astrojs/starlight/components';
    For detailed instructions on database migrations and schema updates, check out the [Migrations explanation](/lonestone-boilerplate/explanations/6_database-migrations).
    :::
 
-   <br/>
+   <br />
 
 4. ### Use the client on the frontend
 
@@ -191,9 +191,9 @@ import { Steps } from '@astrojs/starlight/components';
    ```typescript
    // Create an organization
    const { data, error } = await authClient.organization.create({
-     name: "My Organization",
-     slug: "my-org",
-     logo: "https://example.com/logo.png",
+     name: 'My Organization',
+     slug: 'my-org',
+     logo: 'https://example.com/logo.png',
    })
    ```
 
@@ -201,7 +201,7 @@ import { Steps } from '@astrojs/starlight/components';
    All available routes and methods are documented in the [official Better Auth - Organizations documentation](https://www.better-auth.com/docs/plugins/organization#create-an-organization).
    :::
 
-    <br/>
+   <br />
 
 </Steps>
 
@@ -240,14 +240,17 @@ export class OrganizationService {
 
   @EnsureRequestContext()
   async getUserActiveOrganization(userId: string): Promise<Organization | null> {
-    const member = await this.em.findOne(Member, {
-      user: {
-        id: userId,
+    const member = await this.em.findOne(
+      Member,
+      {
+        user: {
+          id: userId,
+        },
       },
-    }, { populate: ['organization'] })
+      { populate: ['organization'] },
+    )
 
-    if (!member || !member.organization)
-      return null
+    if (!member || !member.organization) return null
 
     return member.organization
   }
@@ -294,7 +297,10 @@ export class MyResourceGuard implements CanActivate {
     const resourceId = request.params.resourceId
 
     if (resourceId) {
-      const resource = await this.em.findOne(Resource, { id: resourceId, organization: { id: organizationId } })
+      const resource = await this.em.findOne(Resource, {
+        id: resourceId,
+        organization: { id: organizationId },
+      })
       if (!resource) {
         throw new NotFoundException(ErrorCode.NOT_FOUND)
       }

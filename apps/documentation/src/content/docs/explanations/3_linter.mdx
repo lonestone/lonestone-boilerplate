@@ -4,12 +4,13 @@ description: How the linter works, how to use it, how to customize it
 ---
 
 ## ❓ How it works
+
 The project uses ESLint for linting the code. It uses ESlint "flat config", and is based on the [Antfu ESLint config](https://github.com/antfu/eslint-config).
 
 ## 💡 Why we use Antfu ESLint config
 
 Antfu rules are solid, supported by a strong community (and an excellent developer), and provides really good default for the technology we use.
- 
+
 This simplifies our configuration, removes a lot of headache, and prevents losing time over small linting details.
 
 :::caution
@@ -36,7 +37,7 @@ export default antfu(
       'ts/consistent-type-imports': 'off',
       'node/prefer-global/process': ['error', 'always'],
     },
-  }
+  },
 )
 ```
 

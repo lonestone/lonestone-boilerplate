@@ -37,6 +37,6 @@ export class Comment {
   @Index()
   parent?: Comment
 
-  @OneToMany(() => Comment, comment => comment.parent)
+  @OneToMany(() => Comment, (comment) => comment.parent)
   replies = new Collection<Comment>(this)
 }

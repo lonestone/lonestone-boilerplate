@@ -10,6 +10,7 @@ Once your project is created, follow these steps:
 ## 1. Prerequisites
 
 Ensure you have the required tools installed:
+
 - [Node.js](https://nodejs.org/) (version 24.13.0)
 - [PNPM](https://pnpm.io/) (version 10.28.2)
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
@@ -30,6 +31,7 @@ pnpm install
 ## 3. Run the Setup Script
 
 The project includes an automated setup script that will:
+
 - Detect available applications (API, Web SPA, Web SSR, OpenAPI Generator)
 - Prompt you for database configuration (user, password, name, host, port)
 - Prompt you for application ports
@@ -45,6 +47,7 @@ pnpm rock
 ```
 
 The script will guide you through the configuration process interactively. It will:
+
 - Ask for your project name
 - Update package.json files for detected applications with the project name
 - Check for existing `.env` files and only prompt for missing variables
@@ -62,6 +65,7 @@ pnpm dev
 ## Optional: Manual Setup
 
 If you prefer to configure everything manually, you can:
+
 1. Select which provided modules you do not need. Follow the according Explanations page to remove them cleanly
 2. Manually copy and configure `.env` files from `.env.example` files
 3. Start Docker services: `pnpm docker:up`

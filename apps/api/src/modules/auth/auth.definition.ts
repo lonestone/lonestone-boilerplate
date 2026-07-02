@@ -24,8 +24,8 @@ export interface AuthModuleOptions<A = Auth> {
 
 export const MODULE_OPTIONS_TOKEN = Symbol('AUTH_MODULE_OPTIONS')
 
-export const { ConfigurableModuleClass, OPTIONS_TYPE, ASYNC_OPTIONS_TYPE }
-  = new ConfigurableModuleBuilder<AuthModuleOptions>({
+export const { ConfigurableModuleClass, OPTIONS_TYPE, ASYNC_OPTIONS_TYPE } =
+  new ConfigurableModuleBuilder<AuthModuleOptions>({
     optionsInjectionToken: MODULE_OPTIONS_TOKEN,
   })
     .setClassMethodName('forRoot')

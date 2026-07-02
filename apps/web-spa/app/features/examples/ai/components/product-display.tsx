@@ -1,6 +1,11 @@
 import type { Product } from '@boilerstone/openapi-generator'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@boilerstone/ui/components/primitives/card'
 
 interface ProductDisplayProps {
   product: Product
@@ -12,24 +17,14 @@ export function ProductDisplay({ product }: ProductDisplayProps) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1">
-            <CardTitle className="text-lg">
-              🛒
-              {' '}
-              {product.name}
-            </CardTitle>
+            <CardTitle className="text-lg">🛒 {product.name}</CardTitle>
             <Badge variant="outline" className="text-xs">
               {product.category}
             </Badge>
           </div>
           <div className="text-right">
-            <div className="text-xl font-bold">
-              $
-              {product.price.toFixed(2)}
-            </div>
-            <Badge
-              variant={product.inStock ? 'default' : 'destructive'}
-              className="text-xs"
-            >
+            <div className="text-xl font-bold">${product.price.toFixed(2)}</div>
+            <Badge variant={product.inStock ? 'default' : 'destructive'} className="text-xs">
               {product.inStock ? 'In Stock' : 'Out of Stock'}
             </Badge>
           </div>

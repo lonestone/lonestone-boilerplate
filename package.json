@@ -1,17 +1,12 @@
 {
   "name": "boilerstone",
-  "type": "module",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@10.28.2",
   "description": "Monorepo for Lonestone project",
-  "author": "",
-  "license": "ISC",
   "keywords": [],
-  "engines": {
-    "node": "24.13.0",
-    "pnpm": "10.28.2"
-  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
   "scripts": {
     "rock": "tsx ./cli/setup.ts",
     "dev": "pnpm --parallel dev",
@@ -35,12 +30,16 @@
   },
   "devDependencies": {
     "enquirer": "^2.4.1",
-
     "husky": "^9.1.7",
     "oxfmt": "^0.55.0",
     "oxlint": "^1.70.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
-  }
+  },
+  "engines": {
+    "node": "24.13.0",
+    "pnpm": "10.28.2"
+  },
+  "packageManager": "pnpm@10.28.2"
 }

@@ -1,8 +1,4 @@
-import {
-  Entity,
-  PrimaryKey,
-  Property,
-} from '@mikro-orm/decorators/legacy'
+import { Entity, PrimaryKey, Property } from '@mikro-orm/decorators/legacy'
 
 @Entity({ tableName: 'verification' })
 export class Verification {

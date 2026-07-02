@@ -17,7 +17,9 @@ export async function getModel(modelId: ModelId): Promise<LanguageModel> {
 
   const provider = providers[modelConfig.provider]
   if (!provider) {
-    throw new Error(`Provider "${modelConfig.provider}" is not available. Please configure the API key for ${modelConfig.provider}.`)
+    throw new Error(
+      `Provider "${modelConfig.provider}" is not available. Please configure the API key for ${modelConfig.provider}.`,
+    )
   }
 
   const providerInstance = provider instanceof Promise ? await provider : provider
@@ -40,7 +42,9 @@ export async function getModelInstance(modelId?: ModelId): Promise<LanguageModel
   }
   const defaultModel = await getDefaultModel()
   if (!defaultModel) {
-    throw new Error('No default model configured. Please specify a model or configure a default model.')
+    throw new Error(
+      'No default model configured. Please specify a model or configure a default model.',
+    )
   }
   return defaultModel
 }
@@ -50,17 +54,15 @@ export function sanitizeAiJson(aiOutput: string) {
   let jsonStr = aiOutput.trim()
   const firstBracket = jsonStr.indexOf('[')
   const firstBrace = jsonStr.indexOf('{')
-  const isArray
-    = (firstBracket !== -1 && firstBrace === -1)
-      || (firstBracket !== -1 && firstBracket < firstBrace)
+  const isArray =
+    (firstBracket !== -1 && firstBrace === -1) || (firstBracket !== -1 && firstBracket < firstBrace)
   if (isArray) {
     const lastBracket = jsonStr.lastIndexOf(']')
     if (lastBracket === -1) {
       throw new Error('No JSON object found in AI output')
     }
     jsonStr = jsonStr.slice(firstBracket, lastBracket + 1)
-  }
-  else {
+  } else {
     if (firstBrace === -1) {
       throw new Error('No JSON object found in AI output')
     }
@@ -72,34 +74,25 @@ export function sanitizeAiJson(aiOutput: string) {
   }
 
   // 2️⃣ Normalize newlines and tabs globally
-  jsonStr = jsonStr
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .replace(/\t/g, '  ')
+  jsonStr = jsonStr.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\t/g, '  ')
 
   // 3️⃣ Clean up weird control characters
   // oxlint-disable-next-line no-control-regex
   jsonStr = jsonStr.replace(/[\x00-\x09\v\f\x0E-\x1F]/g, '')
 
   // 3️⃣½ Fix missing commas between string values and next keys
-  jsonStr = jsonStr.replace(
-    /(")\s*(?="[\w$]+"\s*:)/g,
-    '$1, ',
-  )
+  jsonStr = jsonStr.replace(/(")\s*(?="[\w$]+"\s*:)/g, '$1, ')
 
   // 4️⃣ Fix unescaped quotes inside strings
   //    e.g. "text": "Le client a dit "OK"" → "text": "Le client a dit \"OK\""
-  jsonStr = jsonStr.replace(
-    /:\s*"([\s\S]*?)"(?=,|\s*\}|$)/g,
-    (match, value) => {
-      const fixed = value
-        .replace(/\\n/g, '\n')
-        .replace(/(?<!\\)"/g, '\\"')
-        .replace(/\n/g, '\\n')
+  jsonStr = jsonStr.replace(/:\s*"([\s\S]*?)"(?=,|\s*\}|$)/g, (match, value) => {
+    const fixed = value
+      .replace(/\\n/g, '\n')
+      .replace(/(?<!\\)"/g, '\\"')
+      .replace(/\n/g, '\\n')
 
-      return `: "${fixed}"`
-    },
-  )
+    return `: "${fixed}"`
+  })
 
   // 5️⃣ Remove trailing commas in objects or arrays
   jsonStr = jsonStr.replace(/,\s*(\}|\])/g, '$1')
@@ -116,9 +109,11 @@ export function validateAndParse<T>(text: string, schema: z.ZodType<T>): T {
   return schema.parse(parsed)
 }
 
-export function extractToolCalls(steps: Awaited<ReturnType<typeof generateText>>['steps'] | undefined): ToolCall[] | undefined {
-  const toolCalls = steps?.flatMap(step =>
-    (step.toolCalls || []).map(tc => ({
+export function extractToolCalls(
+  steps: Awaited<ReturnType<typeof generateText>>['steps'] | undefined,
+): ToolCall[] | undefined {
+  const toolCalls = steps?.flatMap((step) =>
+    (step.toolCalls || []).map((tc) => ({
       toolCallId: tc.toolCallId,
       toolName: tc.toolName,
       args: tc.input as Record<string, unknown>,
@@ -127,9 +122,11 @@ export function extractToolCalls(steps: Awaited<ReturnType<typeof generateText>>
   return toolCalls && toolCalls.length > 0 ? toolCalls : undefined
 }
 
-export function extractToolResults(steps: Awaited<ReturnType<typeof generateText>>['steps'] | undefined): ToolResult[] | undefined {
-  const toolResults = steps?.flatMap(step =>
-    (step.toolResults || []).map(tr => ({
+export function extractToolResults(
+  steps: Awaited<ReturnType<typeof generateText>>['steps'] | undefined,
+): ToolResult[] | undefined {
+  const toolResults = steps?.flatMap((step) =>
+    (step.toolResults || []).map((tr) => ({
       toolCallId: tr.toolCallId,
       toolName: tr.toolName,
       result: tr.output,

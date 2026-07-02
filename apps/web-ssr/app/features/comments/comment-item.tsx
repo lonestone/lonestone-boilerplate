@@ -5,7 +5,12 @@ import type {
 } from '@boilerstone/openapi-generator'
 import { commentsControllerGetCommentReplies } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Button } from '@boilerstone/ui/components/primitives/button'
-import { Card, CardContent, CardFooter, CardHeader } from '@boilerstone/ui/components/primitives/card'
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from '@boilerstone/ui/components/primitives/card'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import { cn } from '@boilerstone/ui/lib/utils'
 import { useQuery } from '@tanstack/react-query'
@@ -70,7 +75,7 @@ function Replies({
 
   return (
     <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-      {replies?.data.map(reply => (
+      {replies?.data.map((reply) => (
         <CommentItem
           key={reply.id}
           comment={reply}
@@ -87,10 +92,7 @@ function Replies({
         <Button
           variant="outline"
           size="sm"
-          className={cn(
-            'mt-2 text-xs',
-            depth > 0 ? 'h-6 text-xs ml-8' : 'h-8 w-full',
-          )}
+          className={cn('mt-2 text-xs', depth > 0 ? 'h-6 text-xs ml-8' : 'h-8 w-full')}
           onClick={() => onLoadMoreReplies(commentId)}
         >
           Load more replies
@@ -126,14 +128,11 @@ export function CommentItem({
   const isAuthor = currentUserId && comment.user?.id === currentUserId
   const isPostAuthor = currentUserId === postAuthorId
   const canDelete = isAuthor || isPostAuthor
-  const formattedDate = new Date(comment.createdAt).toLocaleDateString(
-    undefined,
-    {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    },
-  )
+  const formattedDate = new Date(comment.createdAt).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
   const [isHovered, setIsHovered] = useState(false)
 
   const hasReplies = useMemo(() => replyCount !== undefined && replyCount > 0, [replyCount])
@@ -142,7 +141,7 @@ export function CommentItem({
   const isNested = depth > 0
 
   const toggleReplies = () => {
-    setShowReplies(prev => !prev)
+    setShowReplies((prev) => !prev)
   }
 
   const loadMoreReplies = async (commentId: string) => {
@@ -150,12 +149,10 @@ export function CommentItem({
     const currentReplies = queryClient.getQueryData<{
       data: CommentsControllerGetCommentRepliesResponse
     }>(['replies', commentId])
-    if (!currentReplies || !currentReplies.data?.meta)
-      return
+    if (!currentReplies || !currentReplies.data?.meta) return
 
     try {
-      const offset
-        = currentReplies.data.meta.offset + currentReplies.data.meta.pageSize
+      const offset = currentReplies.data.meta.offset + currentReplies.data.meta.pageSize
       const newReplies = await commentsControllerGetCommentReplies({
         path: {
           commentId,
@@ -177,8 +174,7 @@ export function CommentItem({
           },
         })
       }
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error loading more replies:', error)
     }
   }
@@ -218,36 +214,22 @@ export function CommentItem({
                   isNested ? 'h-6 w-6' : 'h-8 w-8',
                 )}
               >
-                <User
-                  className={cn(
-                    'text-primary',
-                    isNested ? 'h-3 w-3' : 'h-4 w-4',
-                  )}
-                />
+                <User className={cn('text-primary', isNested ? 'h-3 w-3' : 'h-4 w-4')} />
               </div>
               <div>
-                <span className="font-semibold text-sm">
-                  {comment.user?.name || 'Anonymous'}
-                </span>
+                <span className="font-semibold text-sm">{comment.user?.name || 'Anonymous'}</span>
                 {isPostAuthor && comment.user?.id === postAuthorId && (
                   <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
                     Author
                   </span>
                 )}
-                <div className="text-xs text-muted-foreground">
-                  {formattedDate}
-                </div>
+                <div className="text-xs text-muted-foreground">{formattedDate}</div>
               </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className={cn('py-2', isNested && 'py-1')}>
-          <p
-            className={cn(
-              'whitespace-pre-line',
-              isNested ? 'text-xs' : 'text-sm',
-            )}
-          >
+          <p className={cn('whitespace-pre-line', isNested ? 'text-xs' : 'text-sm')}>
             {comment.content}
           </p>
         </CardContent>
@@ -263,9 +245,7 @@ export function CommentItem({
                 isNested && 'h-6 px-1.5',
               )}
             >
-              <Reply
-                className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')}
-              />
+              <Reply className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')} />
               Reply
             </Button>
 
@@ -281,21 +261,12 @@ export function CommentItem({
                   isNested && 'h-6 px-1.5',
                 )}
               >
-                {showReplies
-                  ? (
-                      <ChevronUp
-                        className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')}
-                      />
-                    )
-                  : (
-                      <ChevronDown
-                        className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')}
-                      />
-                    )}
-                {showReplies ? 'Hide' : 'Show'}
-                {' '}
-                {replyCount}
-                {' '}
+                {showReplies ? (
+                  <ChevronUp className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')} />
+                ) : (
+                  <ChevronDown className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')} />
+                )}
+                {showReplies ? 'Hide' : 'Show'} {replyCount}{' '}
                 {replyCount === 1 ? 'reply' : 'replies'}
               </Button>
             )}
@@ -312,9 +283,7 @@ export function CommentItem({
                 isNested && 'h-6 px-1.5',
               )}
             >
-              <Trash2
-                className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')}
-              />
+              <Trash2 className={cn('mr-1', isNested ? 'h-2.5 w-2.5' : 'h-3 w-3')} />
               Delete
             </Button>
           )}

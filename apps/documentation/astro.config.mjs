@@ -9,11 +9,15 @@ export default defineConfig({
   base: '/lonestone-boilerplate',
   integrations: [
     starlight({
-      plugins: [starlightLinksValidator(
-        { errorOnLocalLinks: false },
-      )],
+      plugins: [starlightLinksValidator({ errorOnLocalLinks: false })],
       title: 'Boilerstone Documentation',
-      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/lonestone/lonestone-boilerplate' }],
+      social: [
+        {
+          icon: 'github',
+          label: 'GitHub',
+          href: 'https://github.com/lonestone/lonestone-boilerplate',
+        },
+      ],
       sidebar: [
         { slug: 'quickstart' },
         {
