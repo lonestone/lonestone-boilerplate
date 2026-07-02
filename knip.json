@@ -58,7 +58,6 @@
     "apps/documentation": {
       "ignoreDependencies": ["zod"]
     },
-    "packages/openapi-generator": {
-    }
+    "packages/openapi-generator": {}
   }
 }

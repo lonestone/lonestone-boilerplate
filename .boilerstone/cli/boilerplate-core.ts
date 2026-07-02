@@ -82,15 +82,12 @@ function parseIntentionMetadataContent(content: string): ParsedIntentionMetadata
 
     if (key === 'id') {
       metadata.id = value
-    }
-    else if (key === 'domain') {
+    } else if (key === 'domain') {
       metadata.domain = value
-    }
-    else if (key === 'classification') {
+    } else if (key === 'classification') {
       if (isIntentionClassification(value)) {
         metadata.classification = value
-      }
-      else {
+      } else {
         issues.push(`invalid classification: ${value}`)
       }
     }
@@ -155,8 +152,8 @@ function readOptionValue(args: string[], name: string): string | undefined {
 function createClassificationCounts(): Record<IntentionClassification, number> {
   return {
     'no-migration': 0,
-    'informational': 0,
-    'migration': 0,
+    informational: 0,
+    migration: 0,
     'breaking-manual': 0,
   }
 }
@@ -166,30 +163,43 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
   const skippedByDomain: Record<string, number> = {}
   let alreadyResolvedCount = 0
 
-  const sourceTag = options.releases.find(r => r.version === options.sourceVersion)?.tag || `v${options.sourceVersion}`
-  const targetTag = options.releases.find(r => r.version === options.targetVersion)?.tag || `v${options.targetVersion}`
+  const sourceTag =
+    options.releases.find((r) => r.version === options.sourceVersion)?.tag ||
+    `v${options.sourceVersion}`
+  const targetTag =
+    options.releases.find((r) => r.version === options.targetVersion)?.tag ||
+    `v${options.targetVersion}`
 
   const releasesInRange = options.releases
-    .filter(release => versionGt(release.version, options.sourceVersion) && versionLte(release.version, options.targetVersion))
+    .filter(
+      (release) =>
+        versionGt(release.version, options.sourceVersion) &&
+        versionLte(release.version, options.targetVersion),
+    )
     .sort((a, b) => compareVersions(a.version, b.version))
 
   const intentions: MigrationIntention[] = []
 
   for (const release of releasesInRange) {
     const releaseIntentionFiles = options.intentionFiles
-      .filter(file => file.releaseVersion === release.version)
+      .filter((file) => file.releaseVersion === release.version)
       .sort((a, b) => a.relativePath.localeCompare(b.relativePath))
 
     for (const file of releaseIntentionFiles) {
       const parsedMetadata = parseIntentionMetadataContent(file.content)
       const metadata = parsedMetadata.metadata
       const intentionId = metadata.id || getFallbackIntentionId(release.version, file.relativePath)
-      const pathDomain = file.relativePath.includes('/') ? file.relativePath.split('/')[0] : undefined
+      const pathDomain = file.relativePath.includes('/')
+        ? file.relativePath.split('/')[0]
+        : undefined
       const domain = metadata.domain || pathDomain
       const classification = metadata.classification || 'migration'
       classificationCounts[classification] += 1
 
-      if (options.appliedIntentions.includes(intentionId) || options.skippedIntentions.includes(intentionId)) {
+      if (
+        options.appliedIntentions.includes(intentionId) ||
+        options.skippedIntentions.includes(intentionId)
+      ) {
         alreadyResolvedCount += 1
         continue
       }
@@ -217,7 +227,7 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
   return {
     sourceVersion: options.sourceVersion,
     targetVersion: options.targetVersion,
-    releases: releasesInRange.map(r => r.tag),
+    releases: releasesInRange.map((r) => r.tag),
     intentions,
     sourceTag,
     targetTag,
@@ -261,7 +271,7 @@ function ensurePackageJsonWiring(pkg: PackageJsonShape, tsxVersion: string): Pac
   const next: PackageJsonShape = { ...pkg }
   const changes: string[] = []
 
-  const scripts = { ...(next.scripts ?? {}) }
+  const scripts = { ...next.scripts }
   if (!scripts[BOILERPLATE_SCRIPT_NAME]) {
     scripts[BOILERPLATE_SCRIPT_NAME] = BOILERPLATE_SCRIPT_COMMAND
     changes.push(`added "${BOILERPLATE_SCRIPT_NAME}" script`)
@@ -270,7 +280,7 @@ function ensurePackageJsonWiring(pkg: PackageJsonShape, tsxVersion: string): Pac
 
   const hasTsx = Boolean(next.dependencies?.tsx) || Boolean(next.devDependencies?.tsx)
   if (!hasTsx) {
-    next.devDependencies = { ...(next.devDependencies ?? {}), tsx: tsxVersion }
+    next.devDependencies = { ...next.devDependencies, tsx: tsxVersion }
     changes.push(`added "tsx" devDependency (${tsxVersion})`)
   }
 
@@ -290,13 +300,15 @@ function resolveTargetVersion(requested: string, releases: ReleaseInfo[]): strin
     return requested
   }
   if (releases.length === 0) {
-    throw new Error('Cannot resolve "latest": no boilerplate releases are available (fetch release tags first)')
+    throw new Error(
+      'Cannot resolve "latest": no boilerplate releases are available (fetch release tags first)',
+    )
   }
   return [...releases].sort((a, b) => compareVersions(b.version, a.version))[0].version
 }
 
-function ensureGitignoreLine(content: string, line: string): { content: string, changed: boolean } {
-  const exists = content.split(/\r?\n/).some(existing => existing.trim() === line)
+function ensureGitignoreLine(content: string, line: string): { content: string; changed: boolean } {
+  const exists = content.split(/\r?\n/).some((existing) => existing.trim() === line)
   if (exists) {
     return { content, changed: false }
   }

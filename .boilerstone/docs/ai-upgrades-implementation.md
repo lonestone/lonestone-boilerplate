@@ -1,18 +1,18 @@
 # Architecture & design decisions
 
-> Maintainer note (producer-only; removed from consumer projects). The *why* behind the system's structure. For the *what* — the philosophy and each command — read [how-it-works.md](./how-it-works.md); for the execution procedure, [upgrade-runbook.md](./upgrade-runbook.md).
+> Maintainer note (producer-only; removed from consumer projects). The _why_ behind the system's structure. For the _what_ — the philosophy and each command — read [how-it-works.md](./how-it-works.md); for the execution procedure, [upgrade-runbook.md](./upgrade-runbook.md).
 
 ## Design decisions
 
-| Decision | Why |
-| --- | --- |
-| Ship intentions (meaning), not diffs | The consumer's code has diverged; replaying a diff would overwrite business logic. |
-| Git tags are the source of truth for releases | A project forked at an old version doesn't have newer files on disk, but the tag does. Disk is a fallback for releases drafted but not yet tagged. |
-| Tool-agnostic markdown + JSON | The same artifacts work for a human and for any agent (Claude, Cursor, …); no tool lock-in. |
-| Skills are thin shims | [`SKILL.md`](../../.claude/skills/upgrade-boilerplate/SKILL.md) holds no process — it points at the runbook, so there is one source of truth. |
-| Pure logic isolated from I/O | `boilerplate-core.ts` (path computation, metadata parsing, wiring helpers) is side-effect-free and unit-tested; git and filesystem effects live in `boilerplate.ts`. |
-| Safety-first git policy | Refuses a dirty worktree, works on a dedicated branch, never auto-pushes/merges/stashes, one commit per intention, and `breaking-manual` intentions stop for a human. |
-| Removable in one move | `rm -rf .boilerstone` plus dropping the `boilerplate` script detaches the system; nothing else depends on it. |
+| Decision                                      | Why                                                                                                                                                                   |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ship intentions (meaning), not diffs          | The consumer's code has diverged; replaying a diff would overwrite business logic.                                                                                    |
+| Git tags are the source of truth for releases | A project forked at an old version doesn't have newer files on disk, but the tag does. Disk is a fallback for releases drafted but not yet tagged.                    |
+| Tool-agnostic markdown + JSON                 | The same artifacts work for a human and for any agent (Claude, Cursor, …); no tool lock-in.                                                                           |
+| Skills are thin shims                         | [`SKILL.md`](../../.claude/skills/upgrade-boilerplate/SKILL.md) holds no process — it points at the runbook, so there is one source of truth.                         |
+| Pure logic isolated from I/O                  | `boilerplate-core.ts` (path computation, metadata parsing, wiring helpers) is side-effect-free and unit-tested; git and filesystem effects live in `boilerplate.ts`.  |
+| Safety-first git policy                       | Refuses a dirty worktree, works on a dedicated branch, never auto-pushes/merges/stashes, one commit per intention, and `breaking-manual` intentions stop for a human. |
+| Removable in one move                         | `rm -rf .boilerstone` plus dropping the `boilerplate` script detaches the system; nothing else depends on it.                                                         |
 
 ## Two classifications drive the plan
 

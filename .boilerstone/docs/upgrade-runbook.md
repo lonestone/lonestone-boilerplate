@@ -30,7 +30,7 @@ Work through `upgrade-session.md` one intention at a time. For each:
 
 1. **Read it.** Note its `classification` and `domain` in the frontmatter, and understand the goal and the why.
 2. **Decide if it applies.** Check the "Applies when" and "Do not apply when" conditions against your project. If it doesn't apply, record it as skipped with a reason and move on. If its classification is `breaking-manual`, stop and get a human decision before touching anything.
-3. **Understand the change** by comparing `reference/source/` with `reference/target/` (and, for app-code intentions, the boilerplate at the target tag). You're after the *meaning* of the change, not a literal copy.
+3. **Understand the change** by comparing `reference/source/` with `reference/target/` (and, for app-code intentions, the boilerplate at the target tag). You're after the _meaning_ of the change, not a literal copy.
 4. **Make the smallest safe change.** Adapt your existing code; don't replace it wholesale. Preserve project-specific behavior. Avoid cosmetic edits.
 5. **Validate.** Run the intention's own validation first, then the global checks that exist in your project: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. Report a missing script as unavailable, not as passing.
 6. **Record and commit.** Only once validation passes, add the intention id to `intentions.applied` (with today's date) in `boilerplate.json`, and commit — **one commit per intention** (`feat: apply migration intention <id>`).

@@ -1,6 +1,6 @@
 # How the upgrade system works
 
-Start here. This page explains *why* the system exists and *what each command does*, in plain terms. For the step-by-step you follow during an actual upgrade, see [upgrade-runbook.md](./upgrade-runbook.md).
+Start here. This page explains _why_ the system exists and _what each command does_, in plain terms. For the step-by-step you follow during an actual upgrade, see [upgrade-runbook.md](./upgrade-runbook.md).
 
 ## The problem
 
@@ -8,7 +8,7 @@ A project generated from this boilerplate **diverges from day one**. After the f
 
 ## The idea: ship meaning, not diffs
 
-So the boilerplate doesn't ship diffs. Each release ships **migration intentions** — short markdown files that describe the *meaning* of a change:
+So the boilerplate doesn't ship diffs. Each release ships **migration intentions** — short markdown files that describe the _meaning_ of a change:
 
 - **Goal** — the end state to reach.
 - **Why** — the reason it exists.
@@ -17,7 +17,7 @@ So the boilerplate doesn't ship diffs. Each release ships **migration intentions
 
 An **executor** — you, or an AI agent — reads an intention and **replays the smallest safe equivalent change** in your project, keeping your behavior intact.
 
-> In one line: the boilerplate *declares* knowledge; your project *executes* it locally.
+> In one line: the boilerplate _declares_ knowledge; your project _executes_ it locally.
 
 This is why the system is just markdown and JSON. It doesn't care whether the executor is a human, Claude, or another tool.
 
@@ -29,7 +29,7 @@ This is why the system is just markdown and JSON. It doesn't care whether the ex
 
 ## The commands, in the order you meet them
 
-**`bootstrap`** — wires an *existing* project into the system: adds the `boilerplate` script, ignores the scratch workspace, and records your starting version. Run once, when adopting the system on a project that predates it. (New projects get this through `pnpm rock` instead.)
+**`bootstrap`** — wires an _existing_ project into the system: adds the `boilerplate` script, ignores the scratch workspace, and records your starting version. Run once, when adopting the system on a project that predates it. (New projects get this through `pnpm rock` instead.)
 
 **`upgrade status`** — answers "where am I?": your current version and the intentions already applied or skipped. Read-only.
 

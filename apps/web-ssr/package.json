@@ -1,10 +1,10 @@
 {
   "name": "@boilerstone/web-ssr",
   "private": true,
-  "type": "module",
   "files": [
     "build"
   ],
+  "type": "module",
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",

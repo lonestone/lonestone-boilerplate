@@ -4,7 +4,7 @@
 // This provides maximum isolation with one container per test.
 
 import { MikroORM } from '@mikro-orm/core'
-import { ReflectMetadataProvider } from '@mikro-orm/postgresql'
+import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy'
 import { createTestMikroOrmOptions } from '../../modules/db/db.config'
 
 export interface TestOrmContext {

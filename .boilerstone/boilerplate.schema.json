@@ -38,7 +38,17 @@
       "description": "Domains this project follows from the boilerplate",
       "items": {
         "type": "string",
-        "enum": ["tooling", "api", "frontend", "ci", "docker-env", "monitoring", "email", "auth", "storage"]
+        "enum": [
+          "tooling",
+          "api",
+          "frontend",
+          "ci",
+          "docker-env",
+          "monitoring",
+          "email",
+          "auth",
+          "storage"
+        ]
       },
       "uniqueItems": true
     },

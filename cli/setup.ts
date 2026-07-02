@@ -134,8 +134,7 @@ function isBoilerplateMaintainerCheckout(rootPath: string): boolean {
     })
 
     return normalizeGitRemote(originUrl) === normalizeGitRemote(defaultBoilerplateRemote)
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -852,11 +851,15 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
   const targetPath = join(rootPath, '.boilerstone', 'boilerplate.json')
   if (existsSync(examplePath) && !existsSync(targetPath)) {
     copyFileSync(examplePath, targetPath)
-    console.log(`  ${colorize('✓', 'green')} Created ${colorize('.boilerstone/boilerplate.json', 'dim')}`)
+    console.log(
+      `  ${colorize('✓', 'green')} Created ${colorize('.boilerstone/boilerplate.json', 'dim')}`,
+    )
   }
 
   if (isBoilerplateMaintainerCheckout(rootPath)) {
-    console.log(`  ${colorize('→', 'cyan')} Skipped producer-side cleanup in boilerplate maintainer checkout`)
+    console.log(
+      `  ${colorize('→', 'cyan')} Skipped producer-side cleanup in boilerplate maintainer checkout`,
+    )
     return
   }
 
@@ -883,8 +886,7 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
       try {
         rmSync(filePath, { recursive: true, force: true })
         console.log(`  ${colorize('✓', 'green')} Removed ${colorize(file, 'dim')}`)
-      }
-      catch {
+      } catch {
         console.log(`  ${colorize('⚠', 'yellow')} Failed to remove ${colorize(file, 'dim')}`)
       }
     }

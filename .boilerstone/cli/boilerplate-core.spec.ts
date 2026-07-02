@@ -1,6 +1,14 @@
 import { Buffer } from 'node:buffer'
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -27,7 +35,11 @@ const __dirname = dirname(__filename)
 const projectRoot = resolve(__dirname, '../..')
 const cliPath = join(projectRoot, '.boilerstone/cli/boilerplate.ts')
 
-function createIntentionContent(options: { id?: string, domain?: string, classification?: string }): string {
+function createIntentionContent(options: {
+  id?: string
+  domain?: string
+  classification?: string
+}): string {
   const lines = [
     '---',
     options.id ? `id: ${options.id}` : undefined,
@@ -43,7 +55,10 @@ function createIntentionContent(options: { id?: string, domain?: string, classif
   return lines.join('\n')
 }
 
-function runCli(args: string[], projectPath?: string): { status: number | null, stdout: string, stderr: string } {
+function runCli(
+  args: string[],
+  projectPath?: string,
+): { status: number | null; stdout: string; stderr: string } {
   const result = spawnSync('pnpm', ['exec', 'tsx', cliPath, ...args], {
     cwd: projectRoot,
     encoding: 'utf-8',
@@ -95,11 +110,15 @@ describe('boilerplate core', () => {
   })
 
   it('parses valid, missing, and invalid intention metadata', () => {
-    expect(parseIntentionMetadataContent(createIntentionContent({
-      id: 'v1.2.0/api-logger',
-      domain: 'api',
-      classification: 'migration',
-    }))).toEqual({
+    expect(
+      parseIntentionMetadataContent(
+        createIntentionContent({
+          id: 'v1.2.0/api-logger',
+          domain: 'api',
+          classification: 'migration',
+        }),
+      ),
+    ).toEqual({
       metadata: {
         id: 'v1.2.0/api-logger',
         domain: 'api',
@@ -115,20 +134,32 @@ describe('boilerplate core', () => {
       'missing classification',
     ])
 
-    expect(parseIntentionMetadataContent('---\r\nid: v1.0.0/crlf\r\ndomain: api\r\nclassification: migration\r\n---\r\n\r\n## Goal\r\n').issues).toEqual([])
+    expect(
+      parseIntentionMetadataContent(
+        '---\r\nid: v1.0.0/crlf\r\ndomain: api\r\nclassification: migration\r\n---\r\n\r\n## Goal\r\n',
+      ).issues,
+    ).toEqual([])
 
-    expect(parseIntentionMetadataContent(createIntentionContent({
-      id: 'v1.2.0/bad',
-      domain: 'api',
-      classification: 'manual-ish',
-    })).issues).toEqual(['invalid classification: manual-ish', 'missing classification'])
+    expect(
+      parseIntentionMetadataContent(
+        createIntentionContent({
+          id: 'v1.2.0/bad',
+          domain: 'api',
+          classification: 'manual-ish',
+        }),
+      ).issues,
+    ).toEqual(['invalid classification: manual-ish', 'missing classification'])
   })
 
   it('rejects malformed option values', () => {
     expect(readOptionValue(['upgrade', 'path', '--to', '1.2.0'], '--to')).toBe('1.2.0')
     expect(readOptionValue(['upgrade', 'path'], '--to')).toBeUndefined()
-    expect(() => readOptionValue(['upgrade', 'path', '--to'], '--to')).toThrow('--to requires a value')
-    expect(() => readOptionValue(['upgrade', 'path', '--to', '--project'], '--to')).toThrow('--to requires a value')
+    expect(() => readOptionValue(['upgrade', 'path', '--to'], '--to')).toThrow(
+      '--to requires a value',
+    )
+    expect(() => readOptionValue(['upgrade', 'path', '--to', '--project'], '--to')).toThrow(
+      '--to requires a value',
+    )
   })
 
   it('computes filtered upgrade paths without filesystem or git access', () => {
@@ -148,13 +179,21 @@ describe('boilerplate core', () => {
           releaseVersion: '1.1.0',
           file: 'api/logger.md',
           relativePath: 'api/logger.md',
-          content: createIntentionContent({ id: 'v1.1.0/api-logger', domain: 'api', classification: 'migration' }),
+          content: createIntentionContent({
+            id: 'v1.1.0/api-logger',
+            domain: 'api',
+            classification: 'migration',
+          }),
         },
         {
           releaseVersion: '1.1.0',
           file: 'tooling/manual.md',
           relativePath: 'tooling/manual.md',
-          content: createIntentionContent({ id: 'v1.1.0/manual', domain: 'tooling', classification: 'breaking-manual' }),
+          content: createIntentionContent({
+            id: 'v1.1.0/manual',
+            domain: 'tooling',
+            classification: 'breaking-manual',
+          }),
         },
         {
           releaseVersion: '1.1.0',
@@ -166,25 +205,41 @@ describe('boilerplate core', () => {
           releaseVersion: '1.1.0',
           file: 'frontend/domain-override.md',
           relativePath: 'frontend/domain-override.md',
-          content: createIntentionContent({ id: 'v1.1.0/domain-override', domain: 'api', classification: 'migration' }),
+          content: createIntentionContent({
+            id: 'v1.1.0/domain-override',
+            domain: 'api',
+            classification: 'migration',
+          }),
         },
         {
           releaseVersion: '1.1.0',
           file: 'frontend/ui.md',
           relativePath: 'frontend/ui.md',
-          content: createIntentionContent({ id: 'v1.1.0/frontend-ui', domain: 'frontend', classification: 'migration' }),
+          content: createIntentionContent({
+            id: 'v1.1.0/frontend-ui',
+            domain: 'frontend',
+            classification: 'migration',
+          }),
         },
         {
           releaseVersion: '1.2.0',
           file: 'api/already-applied.md',
           relativePath: 'api/already-applied.md',
-          content: createIntentionContent({ id: 'v1.2.0/already-applied', domain: 'api', classification: 'migration' }),
+          content: createIntentionContent({
+            id: 'v1.2.0/already-applied',
+            domain: 'api',
+            classification: 'migration',
+          }),
         },
         {
           releaseVersion: '1.2.0',
           file: 'api/already-skipped.md',
           relativePath: 'api/already-skipped.md',
-          content: createIntentionContent({ id: 'v1.2.0/already-skipped', domain: 'api', classification: 'migration' }),
+          content: createIntentionContent({
+            id: 'v1.2.0/already-skipped',
+            domain: 'api',
+            classification: 'migration',
+          }),
         },
         {
           releaseVersion: '1.2.0',
@@ -196,15 +251,20 @@ describe('boilerplate core', () => {
     })
 
     expect(path.releases).toEqual(['v1.1.0', 'v1.2.0'])
-    expect(path.intentions.map(intention => intention.id)).toEqual([
+    expect(path.intentions.map((intention) => intention.id)).toEqual([
       'v1.1.0/api-logger',
       'v1.1.0/api/nested/no-id',
       'v1.1.0/domain-override',
       'v1.1.0/manual',
       'v1.2.0/api/missing-metadata',
     ])
-    expect(path.intentions.find(intention => intention.id === 'v1.1.0/domain-override')?.domain).toBe('api')
-    expect(path.intentions.find(intention => intention.id === 'v1.2.0/api/missing-metadata')?.metadataIssues).toContain('missing frontmatter')
+    expect(
+      path.intentions.find((intention) => intention.id === 'v1.1.0/domain-override')?.domain,
+    ).toBe('api')
+    expect(
+      path.intentions.find((intention) => intention.id === 'v1.2.0/api/missing-metadata')
+        ?.metadataIssues,
+    ).toContain('missing frontmatter')
     expect(path.skippedByDomain).toEqual({ frontend: 1 })
     expect(path.alreadyResolvedCount).toBe(2)
     expect(path.classificationCounts.migration).toBe(7)
@@ -238,10 +298,13 @@ describe('boilerplate core', () => {
   })
 
   it('never overwrites an existing boilerplate script or tsx dependency', () => {
-    const result = ensurePackageJsonWiring({
-      scripts: { boilerplate: 'custom' },
-      dependencies: { tsx: '^3.0.0' },
-    }, '^4.21.0')
+    const result = ensurePackageJsonWiring(
+      {
+        scripts: { boilerplate: 'custom' },
+        dependencies: { tsx: '^3.0.0' },
+      },
+      '^4.21.0',
+    )
 
     expect(result.pkg.scripts?.boilerplate).toBe('custom')
     expect(result.pkg.devDependencies?.tsx).toBeUndefined()
@@ -253,7 +316,9 @@ describe('boilerplate core', () => {
       content: 'node_modules\n.boilerstone/upgrade/\n',
       changed: true,
     })
-    expect(ensureGitignoreLine('node_modules\n.boilerstone/upgrade/\n', '.boilerstone/upgrade/')).toEqual({
+    expect(
+      ensureGitignoreLine('node_modules\n.boilerstone/upgrade/\n', '.boilerstone/upgrade/'),
+    ).toEqual({
       content: 'node_modules\n.boilerstone/upgrade/\n',
       changed: false,
     })
@@ -269,8 +334,12 @@ describe('boilerplate core', () => {
   })
 
   it('matches generated intention ids against the state schema pattern', () => {
-    const schema = JSON.parse(readFileSync(join(projectRoot, '.boilerstone/boilerplate.schema.json'), 'utf-8'))
-    const pattern = new RegExp(schema.properties.intentions.properties.applied.items.properties.id.pattern)
+    const schema = JSON.parse(
+      readFileSync(join(projectRoot, '.boilerstone/boilerplate.schema.json'), 'utf-8'),
+    )
+    const pattern = new RegExp(
+      schema.properties.intentions.properties.applied.items.properties.id.pattern,
+    )
 
     expect(pattern.test('v1.0.0/setup-boilerplate-tracking')).toBe(true)
     // Nested fallback ids must satisfy the schema too (regression: generator vs validator)
@@ -298,8 +367,7 @@ describe('archiveGitReference', () => {
       expect(statSync(join(destDir, '.boilerstone', 'big.bin')).size).toBe(2 * 1024 * 1024)
       expect(existsSync(join(destDir, 'outside.txt'))).toBe(false)
       expect(existsSync(join(destDir, '.reference.tar'))).toBe(false)
-    }
-    finally {
+    } finally {
       rmSync(repoDir, { recursive: true, force: true })
       rmSync(destDir, { recursive: true, force: true })
     }
@@ -353,7 +421,9 @@ describe('boilerplate CLI smoke', () => {
     const payload = JSON.parse(result.stdout)
     expect(payload.initialized).toBe(false)
     expect(payload.summary.failed).toBeGreaterThan(0)
-    expect(payload.checks.some((check: { name: string }) => check.name === 'boilerplate.json')).toBe(true)
+    expect(
+      payload.checks.some((check: { name: string }) => check.name === 'boilerplate.json'),
+    ).toBe(true)
   })
 
   it('emits machine-readable upgrade paths with --json', () => {
@@ -372,24 +442,36 @@ describe('boilerplate CLI smoke', () => {
 
     try {
       mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
-      writeFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), `${JSON.stringify({
-        schemaVersion: 1,
-        source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.9.0' },
-        trackedDomains: [],
-        intentions: { applied: [], skipped: [] },
-      }, null, 2)}\n`)
+      writeFileSync(
+        join(projectPath, '.boilerstone', 'boilerplate.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.9.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'init'])
 
       const result = runCli(['upgrade', 'prepare', '--project', projectPath, '--to', '1.0.0'])
 
       expect(result.status).toBe(0)
-      expect(existsSync(join(projectPath, '.boilerstone', 'upgrade', 'upgrade-session.md'))).toBe(true)
+      expect(existsSync(join(projectPath, '.boilerstone', 'upgrade', 'upgrade-session.md'))).toBe(
+        true,
+      )
 
-      const branch = spawnSync('git', ['branch', '--show-current'], { cwd: projectPath, encoding: 'utf-8', env: isolatedGitEnv() }).stdout.trim()
+      const branch = spawnSync('git', ['branch', '--show-current'], {
+        cwd: projectPath,
+        encoding: 'utf-8',
+        env: isolatedGitEnv(),
+      }).stdout.trim()
       expect(branch).toBe('upgrade/v0.9.0-to-v1.0.0')
-    }
-    finally {
+    } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
   })
@@ -399,12 +481,19 @@ describe('boilerplate CLI smoke', () => {
 
     try {
       mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
-      writeFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), `${JSON.stringify({
-        schemaVersion: 1,
-        source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.9.0' },
-        trackedDomains: [],
-        intentions: { applied: [], skipped: [] },
-      }, null, 2)}\n`)
+      writeFileSync(
+        join(projectPath, '.boilerstone', 'boilerplate.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.9.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'init'])
       // Pre-create the target branch without checking it out
@@ -414,8 +503,7 @@ describe('boilerplate CLI smoke', () => {
 
       expect(result.status).toBe(1)
       expect(result.stderr).toContain('already exists')
-    }
-    finally {
+    } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
   })
@@ -424,7 +512,10 @@ describe('boilerplate CLI smoke', () => {
     const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-malformed-'))
 
     mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
-    writeFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), JSON.stringify({ schemaVersion: 1 }))
+    writeFileSync(
+      join(projectPath, '.boilerstone', 'boilerplate.json'),
+      JSON.stringify({ schemaVersion: 1 }),
+    )
 
     const result = runCli(['upgrade', 'status', '--project', projectPath], projectPath)
 
@@ -438,14 +529,26 @@ describe('bootstrap command', () => {
     const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-bootstrap-'))
 
     try {
-      writeProjectFile(projectPath, 'package.json', `${JSON.stringify({ name: 'legacy-app', scripts: { dev: 'vite' } }, null, 2)}\n`)
+      writeProjectFile(
+        projectPath,
+        'package.json',
+        `${JSON.stringify({ name: 'legacy-app', scripts: { dev: 'vite' } }, null, 2)}\n`,
+      )
       writeProjectFile(projectPath, '.gitignore', 'node_modules\n')
-      writeProjectFile(projectPath, '.boilerstone/boilerplate.json', `${JSON.stringify({
-        schemaVersion: 1,
-        source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
-        trackedDomains: [],
-        intentions: { applied: [], skipped: [] },
-      }, null, 2)}\n`)
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
       writeProjectFile(projectPath, '.boilerstone/boilerplate.example.json', '{}')
       writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
       writeProjectFile(projectPath, '.boilerstone/docs/upgrade-runbook.md', '# Runbook')
@@ -458,15 +561,16 @@ describe('bootstrap command', () => {
       const pkg = JSON.parse(readFileSync(join(projectPath, 'package.json'), 'utf-8'))
       expect(pkg.scripts.boilerplate).toBe('tsx ./.boilerstone/cli/boilerplate.ts')
       expect(pkg.devDependencies.tsx).toBeTruthy()
-      expect(readFileSync(join(projectPath, '.gitignore'), 'utf-8')).toContain('.boilerstone/upgrade/')
+      expect(readFileSync(join(projectPath, '.gitignore'), 'utf-8')).toContain(
+        '.boilerstone/upgrade/',
+      )
 
       // Producer-only artifacts dropped, consumer files preserved
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/docs/upgrade-runbook.md'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.json'))).toBe(true)
-    }
-    finally {
+    } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
   })
@@ -478,16 +582,24 @@ describe('setup cleanup', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
     try {
-      writeProjectFile(projectPath, '.boilerstone/boilerplate.example.json', `${JSON.stringify({
-        schemaVersion: 1,
-        source: {
-          repository: 'lonestone/lonestone-boilerplate',
-          remote: 'https://github.com/lonestone/lonestone-boilerplate.git',
-          currentVersion: '1.0.0',
-        },
-        trackedDomains: ['tooling'],
-        intentions: { applied: [], skipped: [] },
-      }, null, 2)}\n`)
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.example.json',
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: {
+              repository: 'lonestone/lonestone-boilerplate',
+              remote: 'https://github.com/lonestone/lonestone-boilerplate.git',
+              currentVersion: '1.0.0',
+            },
+            trackedDomains: ['tooling'],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
       writeProjectFile(projectPath, '.boilerstone/boilerplate.schema.json', '{}')
       writeProjectFile(projectPath, '.boilerstone/README.md', '# Upgrade system')
       writeProjectFile(projectPath, '.boilerstone/cli/boilerplate.ts', 'export {}')
@@ -500,18 +612,22 @@ describe('setup cleanup', () => {
       cleanupBoilerplateFiles(projectPath)
 
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.json'))).toBe(true)
-      expect(JSON.parse(readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8')).source.remote).toBe('https://github.com/lonestone/lonestone-boilerplate.git')
+      expect(
+        JSON.parse(readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8')).source
+          .remote,
+      ).toBe('https://github.com/lonestone/lonestone-boilerplate.git')
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.schema.json'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/cli/boilerplate.ts'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/docs/upgrade-runbook.md'))).toBe(true)
 
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
-      expect(existsSync(join(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md'))).toBe(false)
+      expect(existsSync(join(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md'))).toBe(
+        false,
+      )
       expect(existsSync(join(projectPath, '.boilerstone/docs/pilot-rollout.md'))).toBe(false)
       expect(existsSync(join(projectPath, 'install.sh'))).toBe(false)
-    }
-    finally {
+    } finally {
       logSpy.mockRestore()
       rmSync(projectPath, { recursive: true, force: true })
     }
@@ -522,13 +638,26 @@ describe('setup cleanup', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
     try {
-      runGit(projectPath, ['remote', 'add', 'origin', 'https://github.com/lonestone/lonestone-boilerplate.git'])
-      writeProjectFile(projectPath, '.boilerstone/boilerplate.example.json', `${JSON.stringify({
-        schemaVersion: 1,
-        source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
-        trackedDomains: [],
-        intentions: { applied: [], skipped: [] },
-      }, null, 2)}\n`)
+      runGit(projectPath, [
+        'remote',
+        'add',
+        'origin',
+        'https://github.com/lonestone/lonestone-boilerplate.git',
+      ])
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.example.json',
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
       writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
       writeProjectFile(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md', '# Internal')
 
@@ -538,9 +667,10 @@ describe('setup cleanup', () => {
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.json'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(true)
-      expect(existsSync(join(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md'))).toBe(true)
-    }
-    finally {
+      expect(existsSync(join(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md'))).toBe(
+        true,
+      )
+    } finally {
       logSpy.mockRestore()
       rmSync(projectPath, { recursive: true, force: true })
     }
