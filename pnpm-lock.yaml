@@ -332,8 +332,8 @@ importers:
         specifier: ^0.19.2
         version: 0.19.2(@astrojs/starlight@0.34.8(astro@5.18.2(@types/node@25.6.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.2)(terser@5.46.2)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)))(astro@5.18.2(@types/node@25.6.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.2)(terser@5.46.2)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))
       zod:
-        specifier: catalog:validation
-        version: 4.3.6
+        specifier: ^3.23.8
+        version: 3.25.76
 
   apps/web-spa:
     dependencies:
