@@ -1,4 +1,4 @@
-import type { Auth, AuthContext, MiddlewareContext, MiddlewareOptions } from 'better-auth'
+import type { AuthContext, MiddlewareContext, MiddlewareOptions } from 'better-auth'
 import type { MiddlewareConsumer, NestModule } from '@nestjs/common'
 import { MikroORM } from '@mikro-orm/core'
 import { MikroOrmModule } from '@mikro-orm/nestjs'
@@ -53,7 +53,7 @@ import { AuthService } from './auth.service'
           },
         })
         return {
-          auth: betterAuth as unknown as Auth,
+          auth: betterAuth,
         }
       },
       inject: [EmailService, MikroORM],
