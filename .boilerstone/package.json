@@ -5,6 +5,7 @@
   "description": "Boilerplate upgrade system: state, migration intentions and CLI",
   "type": "module",
   "scripts": {
+    "lint:intentions": "tsx ./cli/boilerplate.ts intentions lint",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

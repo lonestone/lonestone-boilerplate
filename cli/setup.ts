@@ -612,6 +612,21 @@ interface PackageJson {
   [key: string]: unknown
 }
 
+interface BoilerplateState {
+  schemaVersion: number
+  source: {
+    repository: string
+    remote: string
+    currentVersion: string
+    commit?: string
+  }
+  trackedDomains: string[]
+  intentions: {
+    applied: Array<{ id: string; appliedAt: string }>
+    skipped: Array<{ id: string; reason: string }>
+  }
+}
+
 function updateRootScripts(
   packageJson: PackageJson,
   oldPrefix: string,
@@ -636,6 +651,65 @@ function updateRootScripts(
     ...packageJson,
     scripts: nextScripts,
   }
+}
+
+function getBoilerplateSourceVersion(rootPath: string): string {
+  const envVersion = process.env.BOILERPLATE_SOURCE_VERSION?.trim().replace(/^v/, '')
+  if (envVersion) {
+    return envVersion
+  }
+
+  const packageJsonPath = join(rootPath, 'package.json')
+  if (!existsSync(packageJsonPath)) {
+    return '1.0.0'
+  }
+
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: unknown }
+  return typeof packageJson.version === 'string' ? packageJson.version : '1.0.0'
+}
+
+function getBoilerplateSourceCommit(): string | undefined {
+  const commit = process.env.BOILERPLATE_SOURCE_COMMIT?.trim()
+  return commit || undefined
+}
+
+function createBoilerplateState(rootPath: string): BoilerplateState {
+  const state: BoilerplateState = {
+    schemaVersion: 1,
+    source: {
+      repository: 'lonestone/lonestone-boilerplate',
+      remote: defaultBoilerplateRemote,
+      currentVersion: getBoilerplateSourceVersion(rootPath),
+    },
+    trackedDomains: ['tooling', 'api', 'frontend', 'ci', 'docker-env'],
+    intentions: {
+      applied: [],
+      skipped: [],
+    },
+  }
+
+  const commit = getBoilerplateSourceCommit()
+  if (commit) {
+    state.source.commit = commit
+  }
+
+  return state
+}
+
+function initializeBoilerplateTracking(rootPath: string): void {
+  const targetPath = join(rootPath, '.boilerstone', 'boilerplate.json')
+  if (existsSync(targetPath)) {
+    return
+  }
+
+  writeFileSync(
+    targetPath,
+    `${JSON.stringify(createBoilerplateState(rootPath), null, 2)}\n`,
+    'utf-8',
+  )
+  console.log(
+    `  ${colorize('✓', 'green')} Created ${colorize('.boilerstone/boilerplate.json', 'dim')}`,
+  )
 }
 
 async function renameProjects(projectName: string, availableApps: AvailableApps): Promise<void> {
@@ -846,15 +920,7 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
 function cleanupBoilerplateFiles(rootPath = projectRoot): void {
   console.log(`\n${colorize('🧹 Cleaning up boilerplate-only files', 'cyan')}\n`)
 
-  // Copy boilerplate.example.json to boilerplate.json for tracking before removing the example.
-  const examplePath = join(rootPath, '.boilerstone', 'boilerplate.example.json')
-  const targetPath = join(rootPath, '.boilerstone', 'boilerplate.json')
-  if (existsSync(examplePath) && !existsSync(targetPath)) {
-    copyFileSync(examplePath, targetPath)
-    console.log(
-      `  ${colorize('✓', 'green')} Created ${colorize('.boilerstone/boilerplate.json', 'dim')}`,
-    )
-  }
+  initializeBoilerplateTracking(rootPath)
 
   if (isBoilerplateMaintainerCheckout(rootPath)) {
     console.log(
@@ -866,13 +932,8 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
   // Files and directories that are only useful for maintaining or publishing the boilerplate itself.
   // Consumer projects keep the local upgrade state and CLI, but fetch published intentions from the boilerplate repository.
   const filesToRemove = [
-    // Boilerplate-only release tasks and maintainer rules
-    'tasks/boilerplate-ai-upgrades',
-    '.cursor/rules/boilerplate-rules.mdc',
     // The curl installer is the boilerplate's own entry point, not the app's
     'install.sh',
-    // Maintainer-only documentation
-    'docs/boilerplate-maintenance.md',
     '.boilerstone/docs/ai-upgrades-implementation.md',
     '.boilerstone/docs/pilot-rollout.md',
     // Producer-side upgrade artifacts published by the boilerplate, not maintained inside consumers

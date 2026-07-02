@@ -58,6 +58,7 @@ function createIntentionContent(options: {
 function runCli(
   args: string[],
   projectPath?: string,
+  env: NodeJS.ProcessEnv = {},
 ): { status: number | null; stdout: string; stderr: string } {
   const result = spawnSync('pnpm', ['exec', 'tsx', cliPath, ...args], {
     cwd: projectRoot,
@@ -66,6 +67,7 @@ function runCli(
       ...isolatedGitEnv(),
       FORCE_COLOR: '0',
       NO_COLOR: '1',
+      ...env,
     },
   })
 
@@ -333,6 +335,16 @@ describe('boilerplate core', () => {
     expect(PRODUCER_ARTIFACTS).toContain('boilerplate.example.json')
   })
 
+  it('keeps the vendored CLI utils in sync with the root setup utils', () => {
+    const rootUtils = readFileSync(join(projectRoot, 'cli/utils.ts'), 'utf-8')
+    const vendoredUtils = readFileSync(
+      join(projectRoot, '.boilerstone/cli/utils.ts'),
+      'utf-8',
+    ).replace(/\/\/ Vendored copy[\s\S]*?\/\/ the root cli\/utils\.ts\.\n\n/, '')
+
+    expect(vendoredUtils).toBe(rootUtils)
+  })
+
   it('matches generated intention ids against the state schema pattern', () => {
     const schema = JSON.parse(
       readFileSync(join(projectRoot, '.boilerstone/boilerplate.schema.json'), 'utf-8'),
@@ -435,6 +447,57 @@ describe('boilerplate CLI smoke', () => {
     expect(payload.targetVersion).toBe('1.0.0')
     expect(payload.branchName).toBe('upgrade/v0.9.0-to-v1.0.0')
     expect(Array.isArray(payload.intentions)).toBe(true)
+  })
+
+  it('validates checked-in migration intentions', () => {
+    const result = runCli(['intentions', 'lint', '--json'])
+
+    expect(result.status).toBe(0)
+    expect(JSON.parse(result.stdout)).toEqual({ ok: true, issues: [] })
+  })
+
+  it('records intention outcomes and finishes the tracked version without manual JSON edits', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-record-'))
+
+    try {
+      mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
+      writeFileSync(
+        join(projectPath, '.boilerstone', 'boilerplate.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+
+      const record = runCli([
+        'upgrade',
+        'record',
+        '--project',
+        projectPath,
+        '--id',
+        'v1.1.0/example-intention',
+        '--applied',
+      ])
+      const finish = runCli(['upgrade', 'finish', '--project', projectPath, '--to', '1.1.0'])
+
+      expect(record.status).toBe(0)
+      expect(finish.status).toBe(0)
+      const state = JSON.parse(
+        readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8'),
+      )
+      expect(state.intentions.applied).toEqual([
+        { id: 'v1.1.0/example-intention', appliedAt: expect.any(String) },
+      ])
+      expect(state.source.currentVersion).toBe('1.1.0')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
   })
 
   it('prepares an upgrade workspace in a consumer project', () => {
@@ -574,14 +637,50 @@ describe('bootstrap command', () => {
       rmSync(projectPath, { recursive: true, force: true })
     }
   })
+
+  it('initializes tracking when onboarding a project without boilerplate.json', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-bootstrap-init-'))
+
+    try {
+      writeProjectFile(
+        projectPath,
+        'package.json',
+        `${JSON.stringify({ name: 'legacy-app', scripts: { dev: 'vite' } }, null, 2)}\n`,
+      )
+      writeProjectFile(projectPath, '.gitignore', 'node_modules\n')
+      writeProjectFile(projectPath, '.boilerstone/boilerplate.example.json', '{}')
+      writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
+      writeProjectFile(projectPath, '.boilerstone/docs/upgrade-runbook.md', '# Runbook')
+
+      const result = runCli(['bootstrap', '--project', projectPath], undefined, {
+        BOILERPLATE_SOURCE_VERSION: '0.9.0',
+        BOILERPLATE_SOURCE_COMMIT: '1234567890abcdef',
+      })
+
+      expect(result.status).toBe(0)
+      const state = JSON.parse(
+        readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8'),
+      )
+      expect(state.source.currentVersion).toBe('0.9.0')
+      expect(state.source.commit).toBe('1234567890abcdef')
+      expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
 })
 
 describe('setup cleanup', () => {
   it('switches .boilerstone to consumer mode without losing local upgrade state', () => {
     const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-consumer-cleanup-'))
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+    const previousVersion = process.env.BOILERPLATE_SOURCE_VERSION
+    const previousCommit = process.env.BOILERPLATE_SOURCE_COMMIT
 
     try {
+      process.env.BOILERPLATE_SOURCE_VERSION = '1.2.3'
+      process.env.BOILERPLATE_SOURCE_COMMIT = 'abcdef1234567890'
+
       writeProjectFile(
         projectPath,
         '.boilerstone/boilerplate.example.json',
@@ -616,6 +715,14 @@ describe('setup cleanup', () => {
         JSON.parse(readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8')).source
           .remote,
       ).toBe('https://github.com/lonestone/lonestone-boilerplate.git')
+      expect(
+        JSON.parse(readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8')).source
+          .currentVersion,
+      ).toBe('1.2.3')
+      expect(
+        JSON.parse(readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8')).source
+          .commit,
+      ).toBe('abcdef1234567890')
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.schema.json'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/cli/boilerplate.ts'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/docs/upgrade-runbook.md'))).toBe(true)
@@ -628,6 +735,16 @@ describe('setup cleanup', () => {
       expect(existsSync(join(projectPath, '.boilerstone/docs/pilot-rollout.md'))).toBe(false)
       expect(existsSync(join(projectPath, 'install.sh'))).toBe(false)
     } finally {
+      if (previousVersion === undefined) {
+        delete process.env.BOILERPLATE_SOURCE_VERSION
+      } else {
+        process.env.BOILERPLATE_SOURCE_VERSION = previousVersion
+      }
+      if (previousCommit === undefined) {
+        delete process.env.BOILERPLATE_SOURCE_COMMIT
+      } else {
+        process.env.BOILERPLATE_SOURCE_COMMIT = previousCommit
+      }
       logSpy.mockRestore()
       rmSync(projectPath, { recursive: true, force: true })
     }

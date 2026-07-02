@@ -288,10 +288,6 @@ function ensurePackageJsonWiring(pkg: PackageJsonShape, tsxVersion: string): Pac
 }
 
 /**
- * Appends a line to .gitignore content if it is not already present.
- * Idempotent and newline-safe.
- */
-/**
  * Resolves a requested target version, expanding the `latest` keyword to the
  * newest available release. Any other value is returned unchanged.
  */
@@ -307,6 +303,10 @@ function resolveTargetVersion(requested: string, releases: ReleaseInfo[]): strin
   return [...releases].sort((a, b) => compareVersions(b.version, a.version))[0].version
 }
 
+/**
+ * Appends a line to .gitignore content if it is not already present.
+ * Idempotent and newline-safe.
+ */
 function ensureGitignoreLine(content: string, line: string): { content: string; changed: boolean } {
   const exists = content.split(/\r?\n/).some((existing) => existing.trim() === line)
   if (exists) {

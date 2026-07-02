@@ -7,6 +7,8 @@ description: Apply boilerplate migration intentions to a project created from th
 
 This skill is a thin adapter. The canonical, executor-neutral workflow lives in `.boilerstone/docs/upgrade-runbook.md` — read it first and follow it exactly. Do not improvise a different process.
 
+The expected workflow is human-in-the-loop: the developer pilots you, and you use the CLI, git, tests, and migration intention files as tools. Do not run upgrades as an autonomous background process.
+
 ## Preflight
 
 1. If `.boilerstone/` does not exist, the project is detached from the upgrade system — tell the user and stop.
@@ -16,19 +18,19 @@ This skill is a thin adapter. The canonical, executor-neutral workflow lives in 
 ## Quick map
 
 ```bash
-pnpm boilerplate upgrade status --json            # Current state (version, applied/skipped)
-pnpm boilerplate upgrade path --to <ver> --json   # Pending intentions and target branch
-pnpm boilerplate upgrade prepare --to <ver>       # Builds .boilerstone/upgrade/ workspace
+pnpm boilerplate upgrade status --json
+pnpm boilerplate upgrade path --to <ver> --json
+pnpm boilerplate upgrade prepare --to <ver>
 pnpm boilerplate upgrade record --id <id> --applied
 pnpm boilerplate upgrade finish --to <ver>
 ```
 
 Then execute `.boilerstone/upgrade/upgrade-session.md`: one intention at a time, applicability checks first, smallest safe change, validation, then record the result with `upgrade record` and commit (one commit per intention). Use `upgrade finish` only after every intention is applied or skipped.
 
-## Guardrails (from the runbook — non-negotiable)
+## Guardrails
 
-- Never push, merge, or stash automatically
-- Stop before editing on `breaking-manual` intentions; ask the human
-- Stop on unsafe ambiguity and write `.boilerstone/upgrade/blocked.md`
-- Preserve project-specific behavior; never rewrite divergent files wholesale
-- Do not mark an intention applied before its validation passes
+- Never push, merge, or stash automatically.
+- Stop before editing on `breaking-manual` intentions; ask the human.
+- Stop on unsafe ambiguity and write `.boilerstone/upgrade/blocked.md`.
+- Preserve project-specific behavior; never rewrite divergent files wholesale.
+- Do not mark an intention applied before validation passes.

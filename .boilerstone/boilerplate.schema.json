@@ -29,6 +29,12 @@
           "description": "Current tracked boilerplate version (SemVer)",
           "pattern": "^v?\\d+\\.\\d+\\.\\d+$",
           "examples": ["1.5.0", "v1.5.0"]
+        },
+        "commit": {
+          "type": "string",
+          "description": "Boilerplate git commit used to generate the project, when known",
+          "pattern": "^[a-f0-9]{7,40}$",
+          "examples": ["9fceb02f0a2b6f0d2cfb7f9c1a2d3e4f5a6b7c8d"]
         }
       },
       "additionalProperties": false

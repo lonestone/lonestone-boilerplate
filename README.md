@@ -215,6 +215,7 @@ To enable the CD workflow go to `.github/workflows/push-to-ghcr.yml` and uncomme
 When working with an AI Agent (such as Copilot, Cursor or Claude), please follow these guidelines:
 
 - Do not add rules to the repo. You are encouraged to create your own so that it benefits several projects.
+- Exception: `.claude/skills/upgrade-boilerplate/` and `.cursor/skills/upgrade-boilerplate/` are committed product shims for the boilerplate upgrade system; they must stay thin and point to `.boilerstone/docs/upgrade-runbook.md`.
 - If the agent needs markdown documents (like specifications or TODO task), write them in a dedicated folder in docs/features
 
 ## 📚 Documentation

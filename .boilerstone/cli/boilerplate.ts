@@ -17,6 +17,7 @@ import {
   ensureGitignoreLine,
   ensurePackageJsonWiring,
   getUpgradeBranchName,
+  parseIntentionMetadataContent,
   PRODUCER_ARTIFACTS,
   readOptionValue,
   resolveTargetVersion,
@@ -37,6 +38,7 @@ interface BoilerplateState {
     repository: string
     remote?: string
     currentVersion: string
+    commit?: string
   }
   trackedDomains: string[]
   intentions: {
@@ -125,11 +127,11 @@ function getFetchTagsCommand(remoteUrl: string, cwd = projectRoot): string {
   return `git remote add boilerplate ${remoteUrl}\ngit fetch boilerplate --tags`
 }
 
-function printMissingReleaseTags(state: BoilerplateState | null): void {
+function printMissingReleaseTags(state: BoilerplateState | null, cwd = projectRoot): void {
   const remoteUrl = getBoilerplateRemote(state)
   console.error(`  ${colorize('❌', 'red')} No local boilerplate release tags found.`)
   console.error(`  ${colorize('→', 'cyan')} Fetch the boilerplate release tags first:`)
-  for (const command of getFetchTagsCommand(remoteUrl).split('\n')) {
+  for (const command of getFetchTagsCommand(remoteUrl, cwd).split('\n')) {
     console.error(`    ${colorize(command, 'bright')}`)
   }
 }
@@ -163,18 +165,18 @@ function archiveGitReference(reference: string, destination: string, cwd = proje
   rmSync(tarFile, { force: true })
 }
 
-function gitFileExists(reference: string, filePath: string): boolean {
+function gitFileExists(reference: string, filePath: string, cwd = projectRoot): boolean {
   try {
-    runGitCommand(['cat-file', '-e', `${reference}:${filePath}`])
+    runGitCommand(['cat-file', '-e', `${reference}:${filePath}`], cwd)
     return true
   } catch {
     return false
   }
 }
 
-function listGitMarkdownFiles(reference: string, directory: string): string[] {
+function listGitMarkdownFiles(reference: string, directory: string, cwd = projectRoot): string[] {
   try {
-    const output = runGitCommand(['ls-tree', '-r', '--name-only', reference, '--', directory])
+    const output = runGitCommand(['ls-tree', '-r', '--name-only', reference, '--', directory], cwd)
     return output
       .split('\n')
       .filter((file) => file.endsWith('.md'))
@@ -184,9 +186,9 @@ function listGitMarkdownFiles(reference: string, directory: string): string[] {
   }
 }
 
-function readGitFile(reference: string, filePath: string): string {
+function readGitFile(reference: string, filePath: string, cwd = projectRoot): string {
   return execFileSync('git', ['show', `${reference}:${filePath}`], {
-    cwd: projectRoot,
+    cwd,
     encoding: 'utf-8',
     env: isolatedGitEnv(),
   })
@@ -228,10 +230,10 @@ function ensureUpgradeBranch(workDir: string, branchName: string): void {
   runGitCommand(['checkout', '-b', branchName], workDir)
 }
 
-function getGitTagNames(): string[] {
+function getGitTagNames(cwd = projectRoot): string[] {
   let tags = ''
   try {
-    tags = runGitCommand(['tag', '--list', 'v*', '--sort=-v:refname'])
+    tags = runGitCommand(['tag', '--list', 'v*', '--sort=-v:refname'], cwd)
   } catch {
     return []
   }
@@ -263,15 +265,72 @@ function getDiskReleaseInfos(): ReleaseInfo[] {
     })
 }
 
-function getBoilerplateGitTagNames(): string[] {
-  return getGitTagNames().filter((tag) => gitFileExists(tag, '.boilerstone/README.md'))
+interface IntentionLintIssue {
+  file: string
+  issue: string
 }
 
-function getReleases(): ReleaseInfo[] {
+function getLocalIntentionMarkdownFiles(): string[] {
+  const intentionsDir = join(boilerplateDir, 'migration-intentions')
+  return listMarkdownFiles(intentionsDir, true).filter(
+    (file) =>
+      !file.endsWith('README.md') &&
+      !file.endsWith('classification.md') &&
+      !file.endsWith('TEMPLATE.md'),
+  )
+}
+
+function getIntentionLintIssues(): IntentionLintIssue[] {
+  const issues: IntentionLintIssue[] = []
+
+  for (const file of getLocalIntentionMarkdownFiles()) {
+    const content = readFileSync(file, 'utf-8')
+    const parsed = parseIntentionMetadataContent(content)
+    for (const issue of parsed.issues) {
+      issues.push({ file: relative(projectRoot, file), issue })
+    }
+
+    const id = parsed.metadata.id
+    if (id && !isValidIntentionId(id)) {
+      issues.push({ file: relative(projectRoot, file), issue: `invalid id: ${id}` })
+    }
+
+    const release = file.match(/migration-intentions\/(v\d+\.\d+\.\d+)\//)?.[1]
+    if (id && release && !id.startsWith(`${release}/`)) {
+      issues.push({ file: relative(projectRoot, file), issue: `id must start with ${release}/` })
+    }
+  }
+
+  return issues
+}
+
+function cmdIntentionsLint(json = false): void {
+  const issues = getIntentionLintIssues()
+  if (json) {
+    console.log(JSON.stringify({ ok: issues.length === 0, issues }, null, 2))
+  } else if (issues.length === 0) {
+    console.log(`  ${colorize('✓', 'green')} Migration intentions are valid`)
+  } else {
+    console.error(`  ${colorize('❌', 'red')} Migration intentions have metadata issues:`)
+    for (const issue of issues) {
+      console.error(`    ${colorize(issue.file, 'bright')}: ${issue.issue}`)
+    }
+  }
+
+  if (issues.length > 0) {
+    process.exit(1)
+  }
+}
+
+function getBoilerplateGitTagNames(cwd = projectRoot): string[] {
+  return getGitTagNames(cwd).filter((tag) => gitFileExists(tag, '.boilerstone/README.md', cwd))
+}
+
+function getReleases(cwd = projectRoot): ReleaseInfo[] {
   const releasesByVersion = new Map<string, ReleaseInfo>()
 
-  for (const tag of getGitTagNames()) {
-    const hasBoilerplateFiles = gitFileExists(tag, '.boilerstone/README.md')
+  for (const tag of getGitTagNames(cwd)) {
+    const hasBoilerplateFiles = gitFileExists(tag, '.boilerstone/README.md', cwd)
     const hasDiskRelease = existsSync(
       join(boilerplateDir, 'migration-intentions', tag, 'README.md'),
     )
@@ -280,12 +339,12 @@ function getReleases(): ReleaseInfo[] {
     }
 
     const version = tag.replace(/^v/, '')
-    const date = runGitCommand(['log', '-1', '--format=%ci', tag]).split(' ')[0]
+    const date = runGitCommand(['log', '-1', '--format=%ci', tag], cwd).split(' ')[0]
     // Intentions for a release live in its git tag: a consumer forked at an older
     // version does not have the newer files on disk. Disk is the fallback for
     // releases drafted in the boilerplate repo but not tagged yet.
     const hasMigrations =
-      gitFileExists(tag, `.boilerstone/migration-intentions/${tag}/README.md`) ||
+      gitFileExists(tag, `.boilerstone/migration-intentions/${tag}/README.md`, cwd) ||
       existsSync(join(boilerplateDir, 'migration-intentions', tag, 'README.md'))
     releasesByVersion.set(version, {
       version,
@@ -326,6 +385,42 @@ function cmdVersionsList(): void {
   console.log()
 }
 
+interface ResolveUpgradePathOptions {
+  sourceVersion: string
+  targetVersion: string
+  trackedDomains: string[]
+  appliedIntentions: string[]
+  skippedIntentions: string[]
+  releases?: ReleaseInfo[]
+  cwd?: string
+}
+
+interface UpgradePathCommandOptions {
+  fromVersion: string
+  toVersion: string
+  projectPath: string
+  json?: boolean
+  fetch?: boolean
+}
+
+interface UpgradePrepareCommandOptions {
+  projectPath: string
+  toVersion: string
+  fetch?: boolean
+}
+
+interface UpgradeRecordCommandOptions {
+  projectPath: string
+  id: string
+  status: 'applied' | 'skipped'
+  reason?: string
+}
+
+interface UpgradeFinishCommandOptions {
+  projectPath: string
+  targetVersion: string
+}
+
 function assertBoilerplateState(
   value: unknown,
   filePath: string,
@@ -341,9 +436,15 @@ function assertBoilerplateState(
   }
 
   const state = value as Record<string, unknown>
-  const source = state.source as Record<string, unknown> | undefined
-  if (!source || typeof source.currentVersion !== 'string') {
+  if (typeof state.source !== 'object' || state.source === null) {
+    invalid('source must be an object')
+  }
+  const source = state.source as Record<string, unknown>
+  if (typeof source.currentVersion !== 'string') {
     invalid('source.currentVersion must be a string')
+  }
+  if (source.commit !== undefined && typeof source.commit !== 'string') {
+    invalid('source.commit must be a string when present')
   }
   if (!Array.isArray(state.trackedDomains)) {
     invalid('trackedDomains must be an array')
@@ -379,6 +480,60 @@ function writeBoilerplateJson(projectPath: string, state: BoilerplateState): voi
   mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
   const boilerplateJsonPath = join(projectPath, '.boilerstone', 'boilerplate.json')
   writeFileSync(boilerplateJsonPath, `${JSON.stringify(state, null, 2)}\n`, 'utf-8')
+}
+
+function isValidIntentionId(id: string): boolean {
+  return /^v?\d+\.\d+\.\d+(\/[a-z0-9-]+)+$/.test(id)
+}
+
+function getToday(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function ensureInitializedState(projectPath: string): BoilerplateState {
+  const state = readBoilerplateJson(projectPath)
+  if (!state) {
+    throw new Error(`No boilerplate.json found in ${projectPath}`)
+  }
+  return state
+}
+
+function cmdUpgradeRecord(options: UpgradeRecordCommandOptions): void {
+  const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
+  if (!isValidIntentionId(options.id)) {
+    throw new Error(`Invalid intention id: ${options.id}`)
+  }
+
+  const state = ensureInitializedState(absolutePath)
+  const alreadyResolved =
+    state.intentions.applied.some((intention) => intention.id === options.id) ||
+    state.intentions.skipped.some((intention) => intention.id === options.id)
+  if (alreadyResolved) {
+    throw new Error(`Intention already recorded: ${options.id}`)
+  }
+
+  if (options.status === 'applied') {
+    state.intentions.applied.push({ id: options.id, appliedAt: getToday() })
+  } else {
+    const reason = options.reason?.trim()
+    if (!reason || reason.length < 10) {
+      throw new Error('--reason must be at least 10 characters when recording a skipped intention')
+    }
+    state.intentions.skipped.push({ id: options.id, reason })
+  }
+
+  writeBoilerplateJson(absolutePath, state)
+  console.log(`  ${colorize('✓', 'green')} Recorded ${options.status}: ${options.id}`)
+}
+
+function cmdUpgradeFinish(options: UpgradeFinishCommandOptions): void {
+  const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
+  const state = ensureInitializedState(absolutePath)
+  state.source.currentVersion = options.targetVersion.replace(/^v/, '')
+  writeBoilerplateJson(absolutePath, state)
+  console.log(
+    `  ${colorize('✓', 'green')} Updated source.currentVersion to ${state.source.currentVersion}`,
+  )
 }
 
 function detectSourceVersion(
@@ -496,9 +651,14 @@ async function cmdUpgradeInit(projectPath: string): Promise<void> {
   }
 
   const detected = detectSourceVersion(absolutePath)
+  const envVersion = process.env.BOILERPLATE_SOURCE_VERSION?.trim().replace(/^v/, '')
 
-  let version = '1.0.0'
-  if (detected) {
+  let version = envVersion || '1.0.0'
+  if (envVersion) {
+    console.log(
+      `  ${colorize('🔍', 'cyan')} Using source version from environment: ${colorize(envVersion, 'bright')}`,
+    )
+  } else if (detected) {
     console.log(
       `  ${colorize('🔍', 'cyan')} Detected source version: ${colorize(detected.version, 'bright')} (confidence: ${detected.confidence})`,
     )
@@ -507,13 +667,14 @@ async function cmdUpgradeInit(projectPath: string): Promise<void> {
     console.log(`  ${colorize('⚠', 'yellow')} Could not detect source version`)
   }
 
-  const sourceVersion = await prompt('Enter source boilerplate version', version)
+  const sourceVersion = envVersion || (await prompt('Enter source boilerplate version', version))
   const state: BoilerplateState = {
     schemaVersion: 1,
     source: {
       repository: 'lonestone/lonestone-boilerplate',
       remote: defaultBoilerplateRemote,
       currentVersion: sourceVersion,
+      commit: process.env.BOILERPLATE_SOURCE_COMMIT?.trim() || undefined,
     },
     trackedDomains: ['tooling', 'api', 'frontend', 'ci', 'docker-env'],
     intentions: {
@@ -570,18 +731,18 @@ function formatMetadataWarnings(intentions: MigrationIntention[]): string {
     .join('\n')
 }
 
-function getIntentionFiles(releases: ReleaseInfo[]): IntentionFileInput[] {
+function getIntentionFiles(releases: ReleaseInfo[], cwd = projectRoot): IntentionFileInput[] {
   return releases.flatMap((release) => {
     // Git tag first: consumers forked before this release only have it in git
     const releaseDirInGit = `.boilerstone/migration-intentions/v${release.version}`
-    if (gitFileExists(release.tag, `${releaseDirInGit}/README.md`)) {
-      return listGitMarkdownFiles(release.tag, releaseDirInGit)
+    if (gitFileExists(release.tag, `${releaseDirInGit}/README.md`, cwd)) {
+      return listGitMarkdownFiles(release.tag, releaseDirInGit, cwd)
         .filter((file) => !file.endsWith('README.md') && !file.endsWith('classification.md'))
         .map((file) => ({
           releaseVersion: release.version,
           file: `${release.tag}:${file}`,
           relativePath: file.slice(releaseDirInGit.length + 1),
-          content: readGitFile(release.tag, file),
+          content: readGitFile(release.tag, file, cwd),
         }))
     }
 
@@ -603,42 +764,30 @@ function getIntentionFiles(releases: ReleaseInfo[]): IntentionFileInput[] {
   })
 }
 
-function resolveUpgradePath(
-  sourceVersion: string,
-  targetVersion: string,
-  trackedDomains: string[],
-  appliedIntentions: string[],
-  skippedIntentions: string[],
-  releases = getReleases(),
-): UpgradePath {
+function resolveUpgradePath(options: ResolveUpgradePathOptions): UpgradePath {
+  const releases = options.releases ?? getReleases(options.cwd)
   return computeUpgradePath({
-    sourceVersion,
-    targetVersion,
-    trackedDomains,
-    appliedIntentions,
-    skippedIntentions,
+    sourceVersion: options.sourceVersion,
+    targetVersion: options.targetVersion,
+    trackedDomains: options.trackedDomains,
+    appliedIntentions: options.appliedIntentions,
+    skippedIntentions: options.skippedIntentions,
     releases,
-    intentionFiles: getIntentionFiles(releases),
+    intentionFiles: getIntentionFiles(releases, options.cwd),
   })
 }
 
-function cmdUpgradePath(
-  fromVersion: string,
-  toVersion: string,
-  projectPath: string,
-  json = false,
-  fetch = false,
-): void {
-  const absolutePath = projectPath ? getProjectPath(projectPath) : projectRoot
+function cmdUpgradePath(options: UpgradePathCommandOptions): void {
+  const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
   const state = readBoilerplateJson(absolutePath)
 
-  let sourceVersion = fromVersion
+  let sourceVersion = options.fromVersion
   let trackedDomains: string[] = []
   let appliedIntentions: string[] = []
   let skippedIntentions: string[] = []
 
   if (state) {
-    sourceVersion = fromVersion || state.source.currentVersion
+    sourceVersion = options.fromVersion || state.source.currentVersion
     trackedDomains = state.trackedDomains
     appliedIntentions = state.intentions.applied.map((i) => i.id)
     skippedIntentions = state.intentions.skipped.map((i) => i.id)
@@ -647,33 +796,34 @@ function cmdUpgradePath(
   if (!sourceVersion) {
     console.error(`  ${colorize('❌', 'red')} No source version specified or detected`)
     console.error(
-      `  ${colorize('→', 'cyan')} Run ${colorize(`boilerplate upgrade init --project ${projectPath}`, 'bright')} or pass ${colorize('--from <version>', 'bright')}`,
+      `  ${colorize('→', 'cyan')} Run ${colorize(`boilerplate upgrade init --project ${options.projectPath}`, 'bright')} or pass ${colorize('--from <version>', 'bright')}`,
     )
     process.exit(1)
   }
 
-  if (fetch) {
+  if (options.fetch) {
     fetchBoilerplateTags(absolutePath, state)
   }
 
-  const releases = getReleases()
+  const releases = getReleases(absolutePath)
   if (releases.length === 0) {
-    printMissingReleaseTags(state)
+    printMissingReleaseTags(state, absolutePath)
     process.exit(1)
   }
 
-  const targetVersion = resolveTargetVersion(toVersion, releases)
-  const path = resolveUpgradePath(
+  const targetVersion = resolveTargetVersion(options.toVersion, releases)
+  const path = resolveUpgradePath({
     sourceVersion,
     targetVersion,
     trackedDomains,
     appliedIntentions,
     skippedIntentions,
     releases,
-  )
+    cwd: absolutePath,
+  })
   const branchName = getUpgradeBranchName(path.sourceVersion, path.targetVersion)
 
-  if (json) {
+  if (options.json) {
     console.log(JSON.stringify({ ...path, branchName }, null, 2))
     return
   }
@@ -760,6 +910,9 @@ function cmdUpgradeStatus(projectPath: string, json = false): void {
   console.log(
     `  ${colorize('Current version:', 'dim')} ${colorize(state.source.currentVersion, 'bright')}`,
   )
+  if (state.source.commit) {
+    console.log(`  ${colorize('Source commit:', 'dim')} ${state.source.commit}`)
+  }
   console.log(`  ${colorize('Tracked domains:', 'dim')} ${state.trackedDomains.join(', ')}`)
   console.log(`  ${colorize('Applied intentions:', 'dim')} ${state.intentions.applied.length}`)
   console.log(`  ${colorize('Skipped intentions:', 'dim')} ${state.intentions.skipped.length}`)
@@ -844,7 +997,7 @@ function createDoctorReport(projectPath: string): DoctorReport {
 
   const remoteUrl = getBoilerplateRemote(state)
   checks.push(
-    hasRemoteUrl(remoteUrl)
+    hasRemoteUrl(remoteUrl, projectPath)
       ? {
           name: 'boilerplate remote',
           status: 'passed',
@@ -854,11 +1007,11 @@ function createDoctorReport(projectPath: string): DoctorReport {
           name: 'boilerplate remote',
           status: 'warning',
           message: `No git remote found for ${remoteUrl}`,
-          suggestion: getFetchTagsCommand(remoteUrl),
+          suggestion: getFetchTagsCommand(remoteUrl, projectPath),
         },
   )
 
-  const boilerplateGitTags = getBoilerplateGitTagNames()
+  const boilerplateGitTags = getBoilerplateGitTagNames(projectPath)
   checks.push(
     boilerplateGitTags.length > 0
       ? {
@@ -870,7 +1023,7 @@ function createDoctorReport(projectPath: string): DoctorReport {
           name: 'release tags',
           status: 'failed',
           message: 'No local boilerplate release tags found',
-          suggestion: getFetchTagsCommand(remoteUrl),
+          suggestion: getFetchTagsCommand(remoteUrl, projectPath),
         },
   )
 
@@ -887,7 +1040,7 @@ function createDoctorReport(projectPath: string): DoctorReport {
             name: 'current version tag',
             status: 'warning',
             message: `${sourceTag} is not available locally`,
-            suggestion: getFetchTagsCommand(remoteUrl),
+            suggestion: getFetchTagsCommand(remoteUrl, projectPath),
           },
     )
   }
@@ -910,7 +1063,7 @@ function createDoctorReport(projectPath: string): DoctorReport {
           status: 'warning',
           message: `Producer-only artifacts are present: ${producerArtifacts.join(', ')}`,
           suggestion:
-            'This is expected in the boilerplate repository; generated projects should run pnpm rock cleanup',
+            'This is expected in the boilerplate repository; generated projects should re-run pnpm rock or remove producer artifacts manually',
         },
   )
 
@@ -973,20 +1126,16 @@ function cmdUpgradeDoctor(projectPath: string, json = false): void {
   }
 }
 
-async function cmdUpgradePrepare(
-  projectPath: string,
-  toVersion: string,
-  fetch = false,
-): Promise<void> {
+async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise<void> {
   console.log(`\n${colorize('📦 Preparing Upgrade Context', 'cyan')}\n`)
 
-  const absolutePath = projectPath ? getProjectPath(projectPath) : projectRoot
+  const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
   const state = readBoilerplateJson(absolutePath)
 
   if (!state) {
     console.error(`  ${colorize('❌', 'red')} No boilerplate.json found.`)
     console.error(
-      `  ${colorize('→', 'cyan')} Run ${colorize(`boilerplate upgrade init --project ${projectPath}`, 'bright')} first.`,
+      `  ${colorize('→', 'cyan')} Run ${colorize(`boilerplate upgrade init --project ${options.projectPath}`, 'bright')} first.`,
     )
     process.exit(1)
   }
@@ -1000,26 +1149,27 @@ async function cmdUpgradePrepare(
     process.exit(1)
   }
 
-  if (fetch) {
+  if (options.fetch) {
     fetchBoilerplateTags(absolutePath, state)
   }
 
-  const releases = getReleases()
+  const releases = getReleases(absolutePath)
   if (releases.length === 0) {
-    printMissingReleaseTags(state)
+    printMissingReleaseTags(state, absolutePath)
     process.exit(1)
   }
 
-  const targetVersion = resolveTargetVersion(toVersion, releases)
+  const targetVersion = resolveTargetVersion(options.toVersion, releases)
 
-  const upgradePath = resolveUpgradePath(
-    state.source.currentVersion,
+  const upgradePath = resolveUpgradePath({
+    sourceVersion: state.source.currentVersion,
     targetVersion,
-    state.trackedDomains,
-    state.intentions.applied.map((i) => i.id),
-    state.intentions.skipped.map((i) => i.id),
+    trackedDomains: state.trackedDomains,
+    appliedIntentions: state.intentions.applied.map((i) => i.id),
+    skippedIntentions: state.intentions.skipped.map((i) => i.id),
     releases,
-  )
+    cwd: absolutePath,
+  })
 
   const branchName = getUpgradeBranchName(upgradePath.sourceVersion, upgradePath.targetVersion)
   ensureUpgradeBranch(absolutePath, branchName)
@@ -1043,8 +1193,16 @@ async function cmdUpgradePrepare(
 
   // Extract reference files from git tags
   try {
-    archiveGitReference(upgradePath.sourceTag, join(upgradeDir, 'reference', 'source'))
-    archiveGitReference(upgradePath.targetTag, join(upgradeDir, 'reference', 'target'))
+    archiveGitReference(
+      upgradePath.sourceTag,
+      join(upgradeDir, 'reference', 'source'),
+      absolutePath,
+    )
+    archiveGitReference(
+      upgradePath.targetTag,
+      join(upgradeDir, 'reference', 'target'),
+      absolutePath,
+    )
   } catch (error) {
     console.log(
       `  ${colorize('⚠', 'yellow')} Could not extract reference files from ${upgradePath.sourceTag} or ${upgradePath.targetTag}: ${error instanceof Error ? error.message : String(error)}`,
@@ -1083,9 +1241,9 @@ You are an AI agent tasked with applying boilerplate upgrade intentions to this 
 7. Apply the **smallest safe change** needed
 8. **Preserve** all project-specific behavior
 9. Run validation after each intention
-10. Update \`boilerplate.json\` after successful validation
+10. After successful validation, record the outcome with \`pnpm boilerplate upgrade record --id <id> --applied\` or \`--skipped --reason "..."\`
 11. **Stop** on unsafe ambiguity and write a blocked report
-12. After the last intention is resolved, set \`source.currentVersion\` to ${path.targetVersion} in \`boilerplate.json\`
+12. After the last intention is resolved, run \`pnpm boilerplate upgrade finish --to ${path.targetVersion}\`
 
 ### Git Policy
 
@@ -1094,6 +1252,7 @@ You are an AI agent tasked with applying boilerplate upgrade intentions to this 
 - Never apply cosmetic alignment unless required
 - Do not mark an intention as applied before validation passes
 - If not applicable, record as skipped with a reason
+- Do not update \`source.currentVersion\` before every intention is applied or skipped
 
 ## Pending Intentions
 
@@ -1131,27 +1290,37 @@ ${colorize('Usage:', 'cyan')}
 ${colorize('Commands:', 'cyan')}
 
   ${colorize('bootstrap', 'bright')}                  Onboard an existing project (wire CLI + init tracking)
+  ${colorize('intentions lint', 'bright')}            Validate published migration intention metadata
   ${colorize('versions list', 'bright')}              List available boilerplate versions
   ${colorize('upgrade init', 'bright')}               Initialize boilerplate tracking for a project
   ${colorize('upgrade doctor', 'bright')}             Diagnose upgrade readiness
   ${colorize('upgrade path', 'bright')}               Show upgrade path to target version
   ${colorize('upgrade prepare', 'bright')}            Prepare local upgrade context
+  ${colorize('upgrade record', 'bright')}             Record an applied/skipped intention in boilerplate.json
+  ${colorize('upgrade finish', 'bright')}             Set source.currentVersion after all intentions are resolved
   ${colorize('upgrade status', 'bright')}             Show current upgrade status
 ${colorize('Options:', 'cyan')}
 
   ${colorize('--project <path>', 'bright')}           Consumer project to operate on (default: this repository)
   ${colorize('--to <version|latest>', 'bright')}      Target version; ${colorize('latest', 'dim')} resolves to the newest release
   ${colorize('--fetch', 'bright')}                    Fetch boilerplate release tags first (needed for ${colorize('latest', 'dim')})
+  ${colorize('--id <id>', 'bright')}                  Intention id for ${colorize('upgrade record', 'dim')}
+  ${colorize('--applied', 'bright')}                  Record an intention as applied
+  ${colorize('--skipped', 'bright')}                  Record an intention as skipped (requires ${colorize('--reason', 'dim')})
+  ${colorize('--reason <text>', 'bright')}            Skip reason for ${colorize('upgrade record --skipped', 'dim')}
   ${colorize('--json', 'bright')}                     Machine-readable output for ${colorize('upgrade status', 'dim')} and ${colorize('upgrade path', 'dim')}
 
 ${colorize('Examples:', 'cyan')}
 
   ${colorize('boilerplate bootstrap', 'dim')}
+  ${colorize('boilerplate intentions lint', 'dim')}
   ${colorize('boilerplate versions list', 'dim')}
   ${colorize('boilerplate upgrade init --project ./my-project', 'dim')}
   ${colorize('boilerplate upgrade doctor --project ./my-project', 'dim')}
   ${colorize('boilerplate upgrade path --from 1.0.0 --to 1.5.0', 'dim')}
   ${colorize('boilerplate upgrade prepare --project ./my-project --to 1.5.0', 'dim')}
+  ${colorize('boilerplate upgrade record --id v1.5.0/example --applied', 'dim')}
+  ${colorize('boilerplate upgrade finish --to 1.5.0', 'dim')}
   ${colorize('boilerplate upgrade prepare --to latest --fetch', 'dim')}
   ${colorize('boilerplate upgrade status --project ./my-project --json', 'dim')}`)
 }
@@ -1174,6 +1343,13 @@ async function main(): Promise<void> {
       } else {
         printUsage()
       }
+    } else if (command === 'intentions') {
+      const json = args.includes('--json')
+      if (subcommand === 'lint') {
+        cmdIntentionsLint(json)
+      } else {
+        printUsage()
+      }
     } else if (command === 'bootstrap') {
       const project = readOptionValue(args, '--project') || '.'
       await cmdBootstrap(project)
@@ -1193,13 +1369,42 @@ async function main(): Promise<void> {
           console.error(`  ${colorize('❌', 'red')} --to is required`)
           process.exit(1)
         }
-        cmdUpgradePath(from || '', to, project, json, fetch)
+        cmdUpgradePath({
+          fromVersion: from || '',
+          toVersion: to,
+          projectPath: project,
+          json,
+          fetch,
+        })
       } else if (subcommand === 'prepare') {
         if (!to) {
           console.error(`  ${colorize('❌', 'red')} --to is required`)
           process.exit(1)
         }
-        await cmdUpgradePrepare(project, to, fetch)
+        await cmdUpgradePrepare({ projectPath: project, toVersion: to, fetch })
+      } else if (subcommand === 'record') {
+        const id = readOptionValue(args, '--id')
+        const reason = readOptionValue(args, '--reason')
+        if (!id) {
+          console.error(`  ${colorize('❌', 'red')} --id is required`)
+          process.exit(1)
+        }
+        if (args.includes('--applied') === args.includes('--skipped')) {
+          console.error(`  ${colorize('❌', 'red')} Pass exactly one of --applied or --skipped`)
+          process.exit(1)
+        }
+        cmdUpgradeRecord({
+          projectPath: project,
+          id,
+          status: args.includes('--applied') ? 'applied' : 'skipped',
+          reason,
+        })
+      } else if (subcommand === 'finish') {
+        if (!to) {
+          console.error(`  ${colorize('❌', 'red')} --to is required`)
+          process.exit(1)
+        }
+        cmdUpgradeFinish({ projectPath: project, targetVersion: to })
       } else if (subcommand === 'status') {
         cmdUpgradeStatus(project, json)
       } else {

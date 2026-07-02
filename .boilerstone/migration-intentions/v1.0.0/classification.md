@@ -7,12 +7,11 @@
 
 ## Informational
 
-<!-- Useful context for consumer projects, no action required -->
-<!-- Example: "- Added new monitoring capabilities in API" -->
+- [setup-boilerplate-tracking](./setup-boilerplate-tracking.md): bootstrap initializes `.boilerstone/boilerplate.json` before normal upgrade paths are computed.
 
 ## Migration Intentions
 
-- [setup-boilerplate-tracking](./setup-boilerplate-tracking.md): initialize `.boilerstone/boilerplate.json` in older projects so later migration intentions can be prepared safely.
+<!-- Actionable migrations replayed by upgrade prepare -->
 
 ## Breaking / Manual
 

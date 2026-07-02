@@ -33,7 +33,7 @@ Work through `upgrade-session.md` one intention at a time. For each:
 3. **Understand the change** by comparing `reference/source/` with `reference/target/` (and, for app-code intentions, the boilerplate at the target tag). You're after the _meaning_ of the change, not a literal copy.
 4. **Make the smallest safe change.** Adapt your existing code; don't replace it wholesale. Preserve project-specific behavior. Avoid cosmetic edits.
 5. **Validate.** Run the intention's own validation first, then the global checks that exist in your project: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. Report a missing script as unavailable, not as passing.
-6. **Record and commit.** Only once validation passes, add the intention id to `intentions.applied` (with today's date) in `boilerplate.json`, and commit — **one commit per intention** (`feat: apply migration intention <id>`).
+6. **Record and commit.** Only once validation passes, run `pnpm boilerplate upgrade record --id <id> --applied` (or `--skipped --reason "..."`), then commit — **one commit per intention** (`feat: apply migration intention <id>`).
 
 Recorded outcomes look like this:
 
@@ -48,12 +48,12 @@ Recorded outcomes look like this:
 
 ## When to stop
 
-Stop — don't guess through — if a "Do not apply when" condition matches, if validation keeps failing, if there's unsafe ambiguity, or if applying the change would lose project-specific behavior. When the executor is an agent, stopping means writing a short blocked report to `.boilerstone/upgrade/blocked.md` (intention id, reason, failed checks, suggested next step) and handing back to a human — **without** updating `boilerplate.json`.
+Stop — don't guess through — if a "Do not apply when" condition matches, if validation keeps failing, if there's unsafe ambiguity, or if applying the change would lose project-specific behavior. When the executor is an agent, stopping means writing a short blocked report to `.boilerstone/upgrade/blocked.md` (intention id, reason, failed checks, suggested next step) and handing back to a human — **without** recording the intention or changing `source.currentVersion`.
 
 ## Git discipline
 
-Stay on the dedicated `upgrade/…` branch with one commit per resolved intention. Keep successful commits even if a later intention fails. Never stash, push, or merge automatically — those are the human's call. If the branch already exists, check it out manually before re-running `prepare`.
+Stay on the dedicated `upgrade/…` branch with one commit per resolved intention. Keep successful commits even if a later intention fails. If an intention is half-applied and cannot be validated, revert only the uncommitted work for that intention, write `blocked.md`, and stop. Never stash, push, or merge automatically — those are the human's call. If the branch already exists, check it out manually before re-running `prepare`.
 
 ## Finishing
 
-When every intention is applied or skipped, set `source.currentVersion` to the target version in `boilerplate.json` as the final commit, then open a PR. Summarize what happened: intentions applied, intentions skipped (with reasons), anything blocked, and the validation results.
+When every intention is applied or skipped, run `pnpm boilerplate upgrade finish --to <target-version>` as the final commit, then open a PR. Summarize what happened: intentions applied, intentions skipped (with reasons), anything blocked, and the validation results. Do not update `source.currentVersion` before this final step.

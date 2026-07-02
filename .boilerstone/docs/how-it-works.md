@@ -23,7 +23,7 @@ This is why the system is just markdown and JSON. It doesn't care whether the ex
 
 ## The three moving pieces
 
-- **`boilerplate.json`** — the only state committed to your repo. It records the boilerplate version you're on and which intentions you've applied or skipped.
+- **`boilerplate.json`** — the only state committed to your repo. It records the boilerplate version/commit you started from and which intentions you've applied or skipped.
 - **Migration intentions** — published per release, fetched from the boilerplate's git tags.
 - **The CLI** (`pnpm boilerplate …`) — reads your state, computes what's left to do, and stages the work. It never edits your application code itself.
 
@@ -48,6 +48,10 @@ This is why the system is just markdown and JSON. It doesn't care whether the ex
 It does **not** edit your application code, commit, or push. Use `--to latest` to target the newest release, and `--fetch` to pull the release tags first.
 
 After `prepare`, the actual work begins — applying the staged intentions one at a time, with one commit each. That procedure is the [runbook](./upgrade-runbook.md).
+
+**`upgrade record`** — records a validated intention outcome in `boilerplate.json`. Use it instead of editing the JSON by hand.
+
+**`upgrade finish`** — updates `source.currentVersion` after every intention in the prepared range is applied or skipped. This is the final upgrade commit, never an intermediate step.
 
 ## What ends up on your repo
 

@@ -1,23 +1,24 @@
 ---
 id: v1.0.0/setup-boilerplate-tracking
 domain: tooling
-classification: migration
+classification: informational
 ---
 
 # Setup Boilerplate Tracking
 
 ## Goal
 
-Initialize boilerplate upgrade tracking in an existing project that does not yet have `.boilerstone/boilerplate.json`.
+Document the bootstrap step that initializes boilerplate upgrade tracking in an existing project.
 
 ## Why
 
-Older projects created before the upgrade system cannot resolve or prepare migration intentions until they declare their source boilerplate version and tracked domains.
+Older projects created before the upgrade system cannot resolve or prepare migration intentions until they declare their source boilerplate version and tracked domains. This is handled by `bootstrap`/`onboard`, before an upgrade path is computed, so this file is informational and is not replayed as a normal migration intention.
 
 ## Applies When
 
 - The project was created from, or strongly resembles, `lonestone/lonestone-boilerplate`.
-- The project does not have `.boilerstone/boilerplate.json`.
+- The project is being onboarded with `bootstrap` or `install.sh onboard`.
+- The project does not have `.boilerstone/boilerplate.json` yet.
 - A human can provide or validate the source boilerplate version used by the project.
 
 ## Do Not Apply When
@@ -34,11 +35,11 @@ Older projects created before the upgrade system cannot resolve or prepare migra
 
 ## Suggested Agent Workflow
 
-1. Run `pnpm boilerplate upgrade init --project <project-path>` from a checkout of `lonestone/lonestone-boilerplate`.
+1. Run `install.sh onboard` from the project root, or fetch `.boilerstone/` and run `pnpm dlx tsx .boilerstone/cli/boilerplate.ts bootstrap`.
 2. Confirm or enter the oldest known boilerplate version for the project.
 3. Review `.boilerstone/boilerplate.json` in the consumer project.
 4. Adjust `trackedDomains` only if the project intentionally excludes domains such as `api`, `frontend`, `ci`, or `docker-env`.
-5. Commit the new `.boilerstone/boilerplate.json` file before preparing later migrations.
+5. Commit the new `.boilerstone/` integration before preparing later migrations.
 
 ## Validation
 
@@ -47,4 +48,4 @@ Older projects created before the upgrade system cannot resolve or prepare migra
 
 ## Record Result
 
-Add intention ID `v1.0.0/setup-boilerplate-tracking` to `intentions.applied` after validation passes.
+Do not add this ID to `intentions.applied`. The existence of `.boilerstone/boilerplate.json` is the record that bootstrap completed.

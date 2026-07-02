@@ -2,8 +2,8 @@
 
 ## Intentions
 
-- [setup-boilerplate-tracking](./setup-boilerplate-tracking.md) - Initialize `.boilerstone/boilerplate.json` for older consumer projects.
+- [setup-boilerplate-tracking](./setup-boilerplate-tracking.md) - Documents the bootstrap tracking state created before normal upgrades.
 
 ## Classification
 
-- `migration intention`: `setup-boilerplate-tracking` for projects that predate the upgrade system.
+- `informational`: `setup-boilerplate-tracking` is handled by `bootstrap`/`onboard`, not by `upgrade prepare`.

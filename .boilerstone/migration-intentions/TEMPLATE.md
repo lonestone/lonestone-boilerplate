@@ -58,5 +58,5 @@ classification: migration
 
 ## Record Result
 
-<!-- How to update boilerplate.json after validation -->
-<!-- Example: "Add intention ID `vX.Y.Z/slug` to `intentions.applied`" -->
+<!-- How to record after validation -->
+<!-- Example: "Run `pnpm boilerplate upgrade record --id vX.Y.Z/slug --applied`" -->
