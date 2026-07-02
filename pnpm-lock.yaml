@@ -379,6 +379,9 @@ importers:
       lucide-react:
         specifier: ^0.563.0
         version: 0.563.0(react@19.2.5)
+      motion:
+        specifier: ^12.42.0
+        version: 12.42.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       react:
         specifier: catalog:frontend
         version: 19.2.5
