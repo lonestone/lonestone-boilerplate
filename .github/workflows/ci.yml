@@ -69,6 +69,26 @@ jobs:
       - name: 🔍 Run linter
         run: pnpm lint
 
+  knip:
+    name: ✂️ Knip
+    needs: [setup]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📂 Restore workspace
+        uses: actions/cache@v3
+        with:
+          path: .
+          key: workspace-${{ github.sha }}
+
+      - name: 🔧 Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ needs.setup.outputs.node-version }}
+          pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
+
+      - name: ✂️ Run knip
+        run: pnpm knip
+
   build:
     name: 🏗️ Build
     needs: [lint, setup]

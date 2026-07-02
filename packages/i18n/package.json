@@ -66,10 +66,8 @@
     "react-i18next": "catalog:frontend"
   },
   "devDependencies": {
-    "@types/glob": "^9.0.0",
     "@types/node": "catalog:build",
     "@types/react": "catalog:frontend",
-    "@types/react-dom": "catalog:frontend",
     "tsx": "^4.21.0",
     "typescript": "catalog:build"
   }

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "rules": {
+    "files": "warn",
+    "dependencies": "warn",
+    "devDependencies": "warn",
+    "exports": "warn",
+    "types": "warn",
+    "nsExports": "warn",
+    "nsTypes": "warn",
+    "duplicates": "off",
+    "unresolved": "warn",
+    "catalog": "warn"
+  },
+  "workspaces": {
+    ".": {
+      "ignoreBinaries": ["docker-compose"]
+    },
+    "apps/api": {
+      "entry": [
+        "src/main.ts!",
+        "src/modules/auth/auth.cli.ts!",
+        "src/modules/db/db.config.ts!",
+        "src/modules/db/migrations/**/*.ts!",
+        "src/seeders/**/*.ts!",
+        "src/**/*.contract.ts!",
+        "src/modules/auth/auth.decorator.ts!",
+        "src/modules/auth/auth.definition.ts!",
+        "src/modules/auth/auth-db.adapter.ts!",
+        "src/modules/auth/auth-schema-codegen.ts!",
+        "src/config/env.config.ts!",
+        "src/modules/db/query-order.util.ts!",
+        "src/modules/example/ai-example/tools/coingecko.tools.ts!",
+        "src/modules/auth/auth.config.ts!",
+        "src/modules/auth/auth.guard.ts!",
+        "src/test/helpers/test-app.helper.ts!",
+        "src/test/helpers/test-auth.helper.ts!",
+        "src/test/helpers/test-db.helper.ts!"
+      ],
+      "ignoreFiles": ["src/test/**"],
+      "ignoreDependencies": [
+        "pino-pretty",
+        "ts-node",
+        "source-map-support",
+        "test",
+        "kysely",
+        "@better-fetch/fetch",
+        "better-call"
+      ]
+    },
+    "apps/web-spa": {
+      "ignoreDependencies": ["tailwindcss"],
+      "entry": ["app/lib/i18n/i18n-client.ts!"]
+    },
+    "apps/web-ssr": {
+      "ignoreDependencies": ["tailwindcss"]
+    },
+    "apps/documentation": {
+      "ignoreDependencies": ["zod"]
+    },
+    "packages/openapi-generator": {
+    }
+  }
+}

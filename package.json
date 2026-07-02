@@ -23,6 +23,7 @@
     "test": "pnpm -r test",
     "schematics:module": "pnpm --filter=@boilerstone/schematics run schematics:module",
     "docs-only": "pnpm --filter=@boilerstone/documentation run dev",
+    "knip": "knip --no-exit-code",
     "prepare": "husky"
   },
   "dependencies": {
@@ -31,11 +32,10 @@
   "devDependencies": {
     "enquirer": "^2.4.1",
     "husky": "^9.1.7",
+    "knip": "^6.24.0",
     "oxfmt": "^0.55.0",
     "oxlint": "^1.70.0",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "tsx": "^4.21.0"
   },
   "engines": {
     "node": "24.13.0",
