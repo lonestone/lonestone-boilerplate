@@ -60,7 +60,7 @@ main() {
       fetch_subdir ".boilerstone"
       # The repo ships its own tracking state; drop it so init detects THIS project's version.
       rm -f .boilerstone/boilerplate.json
-      run_tty pnpm dlx tsx "$CLI_PATH" bootstrap
+      run_tty env BOILERPLATE_INSTALLER_ONBOARD=1 pnpm dlx tsx "$CLI_PATH" bootstrap
       pnpm install
       ok "Project onboarded — review and commit .boilerstone/, package.json and .gitignore"
       ;;

@@ -655,6 +655,7 @@ describe('bootstrap command', () => {
       const result = runCli(['bootstrap', '--project', projectPath], undefined, {
         BOILERPLATE_SOURCE_VERSION: '0.9.0',
         BOILERPLATE_SOURCE_COMMIT: '1234567890abcdef',
+        BOILERPLATE_REPO: '/tmp/local-boilerplate',
       })
 
       expect(result.status).toBe(0)
@@ -663,6 +664,7 @@ describe('bootstrap command', () => {
       )
       expect(state.source.currentVersion).toBe('0.9.0')
       expect(state.source.commit).toBe('1234567890abcdef')
+      expect(state.source.remote).toBe('/tmp/local-boilerplate')
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
     } finally {
       rmSync(projectPath, { recursive: true, force: true })

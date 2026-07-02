@@ -70,8 +70,12 @@ function runGitCommand(args: string[], cwd = projectRoot): string {
   }).trim()
 }
 
+function getConfiguredBoilerplateRemote(): string {
+  return process.env.BOILERPLATE_REPO?.trim() || defaultBoilerplateRemote
+}
+
 function getBoilerplateRemote(state: BoilerplateState | null): string {
-  return state?.source.remote || defaultBoilerplateRemote
+  return state?.source.remote || getConfiguredBoilerplateRemote()
 }
 
 function normalizeGitRemote(value: string): string {
@@ -620,15 +624,24 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
 
   console.log(`\n${colorize('✅ Bootstrap complete', 'green')}`)
   console.log(`\n${colorize('Next steps:', 'cyan')}`)
-  console.log(
-    `  ${colorize('1.', 'bright')} Install the CLI runtime: ${colorize('pnpm install', 'blue')}`,
-  )
-  console.log(
-    `  ${colorize('2.', 'bright')} Diagnose readiness:      ${colorize('pnpm boilerplate upgrade doctor', 'blue')}`,
-  )
-  console.log(
-    `  ${colorize('3.', 'bright')} Commit the integration   ${colorize('(.boilerstone/, package.json, .gitignore)', 'dim')}\n`,
-  )
+  if (process.env.BOILERPLATE_INSTALLER_ONBOARD === '1') {
+    console.log(
+      `  ${colorize('1.', 'bright')} Diagnose readiness:      ${colorize('pnpm boilerplate upgrade doctor', 'blue')}`,
+    )
+    console.log(
+      `  ${colorize('2.', 'bright')} Commit the integration   ${colorize('(.boilerstone/, package.json, .gitignore)', 'dim')}\n`,
+    )
+  } else {
+    console.log(
+      `  ${colorize('1.', 'bright')} Install the CLI runtime: ${colorize('pnpm install', 'blue')}`,
+    )
+    console.log(
+      `  ${colorize('2.', 'bright')} Diagnose readiness:      ${colorize('pnpm boilerplate upgrade doctor', 'blue')}`,
+    )
+    console.log(
+      `  ${colorize('3.', 'bright')} Commit the integration   ${colorize('(.boilerstone/, package.json, .gitignore)', 'dim')}\n`,
+    )
+  }
 }
 
 async function cmdUpgradeInit(projectPath: string): Promise<void> {
@@ -672,7 +685,7 @@ async function cmdUpgradeInit(projectPath: string): Promise<void> {
     schemaVersion: 1,
     source: {
       repository: 'lonestone/lonestone-boilerplate',
-      remote: defaultBoilerplateRemote,
+      remote: getConfiguredBoilerplateRemote(),
       currentVersion: sourceVersion,
       commit: process.env.BOILERPLATE_SOURCE_COMMIT?.trim() || undefined,
     },
@@ -696,7 +709,7 @@ async function cmdUpgradeInit(projectPath: string): Promise<void> {
 
   writeBoilerplateJson(absolutePath, state)
   console.log(`\n  ${colorize('✓', 'green')} Created boilerplate.json`)
-  console.log(`  ${colorize('Remote:', 'dim')} ${defaultBoilerplateRemote}`)
+  console.log(`  ${colorize('Remote:', 'dim')} ${state.source.remote}`)
   console.log(`  ${colorize('Source version:', 'dim')} ${sourceVersion}`)
 }
 

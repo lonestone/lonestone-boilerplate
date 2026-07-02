@@ -45,6 +45,10 @@ const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..')
 const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
 
+function getConfiguredBoilerplateRemote(): string {
+  return process.env.BOILERPLATE_REPO?.trim() || defaultBoilerplateRemote
+}
+
 interface AvailableApps {
   api: boolean
   webSpa: boolean
@@ -678,7 +682,7 @@ function createBoilerplateState(rootPath: string): BoilerplateState {
     schemaVersion: 1,
     source: {
       repository: 'lonestone/lonestone-boilerplate',
-      remote: defaultBoilerplateRemote,
+      remote: getConfiguredBoilerplateRemote(),
       currentVersion: getBoilerplateSourceVersion(rootPath),
     },
     trackedDomains: [
