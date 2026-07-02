@@ -1,0 +1,46 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "rules": {
+    "files": "warn",
+    "dependencies": "warn",
+    "devDependencies": "warn",
+    "exports": "warn",
+    "types": "warn",
+    "nsExports": "warn",
+    "nsTypes": "warn",
+    "duplicates": "warn",
+    "unresolved": "warn",
+    "catalog": "warn"
+  },
+  "workspaces": {
+    ".": {
+      "ignoreBinaries": ["docker-compose"]
+    },
+    "apps/api": {
+      "entry": [
+        "src/main.ts!",
+        "src/modules/db/db.config.ts!",
+        "src/modules/db/migrations/**/*.ts!",
+        "src/seeders/**/*.ts!"
+      ],
+      "ignoreFiles": ["src/test/**"],
+      "ignoreDependencies": [
+        "pino-pretty",
+        "ts-node",
+        "source-map-support",
+        "test",
+        "kysely",
+        "@better-fetch/fetch",
+        "better-call"
+      ]
+    },
+    "apps/web-spa": {
+      "ignoreDependencies": ["tailwindcss"]
+    },
+    "apps/web-ssr": {
+      "ignoreDependencies": ["tailwindcss"]
+    },
+    "packages/openapi-generator": {
+    }
+  }
+}
