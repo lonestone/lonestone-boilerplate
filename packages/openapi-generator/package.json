@@ -14,12 +14,12 @@
     "preprocess": "node ./preprocess/index.js",
     "generate": "cross-env dotenvx run -- pnpm preprocess && dotenvx run -- openapi-ts -f ./openapi-ts.config.ts"
   },
-"devDependencies": {
-    "@dotenvx/dotenvx": "^1.52.0",
-    "@hey-api/openapi-ts": "^0.91.0",
+  "devDependencies": {
+    "@dotenvx/dotenvx": "^1.75.1",
+    "@hey-api/openapi-ts": "^0.91.1",
     "cross-env": "^10.1.0",
     "node-fetch": "^3.3.2",
-    "wait-on": "^9.0.3"
+    "wait-on": "^9.0.10"
   },
   "peerDependencies": {
     "zod": "catalog:validation"
