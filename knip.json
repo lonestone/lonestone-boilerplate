@@ -19,6 +19,7 @@
     "apps/api": {
       "entry": [
         "src/main.ts!",
+        "src/modules/auth/auth.cli.ts!",
         "src/modules/db/db.config.ts!",
         "src/modules/db/migrations/**/*.ts!",
         "src/seeders/**/*.ts!"
@@ -39,6 +40,9 @@
     },
     "apps/web-ssr": {
       "ignoreDependencies": ["tailwindcss"]
+    },
+    "apps/documentation": {
+      "ignoreDependencies": ["zod"]
     },
     "packages/openapi-generator": {
     }
