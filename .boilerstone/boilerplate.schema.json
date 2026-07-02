@@ -53,7 +53,8 @@
           "monitoring",
           "email",
           "auth",
-          "storage"
+          "storage",
+          "ai"
         ]
       },
       "uniqueItems": true

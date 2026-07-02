@@ -14,6 +14,8 @@ Document the bootstrap step that initializes boilerplate upgrade tracking in an 
 
 Older projects created before the upgrade system cannot resolve or prepare migration intentions until they declare their source boilerplate version and tracked domains. This is handled by `bootstrap`/`onboard`, before an upgrade path is computed, so this file is informational and is not replayed as a normal migration intention.
 
+This avoids the circular flow where an intention would be required to create the very state file needed to resolve intentions.
+
 ## Applies When
 
 - The project was created from, or strongly resembles, `lonestone/lonestone-boilerplate`.
@@ -38,7 +40,7 @@ Older projects created before the upgrade system cannot resolve or prepare migra
 1. Run `install.sh onboard` from the project root, or fetch `.boilerstone/` and run `pnpm dlx tsx .boilerstone/cli/boilerplate.ts bootstrap`.
 2. Confirm or enter the oldest known boilerplate version for the project.
 3. Review `.boilerstone/boilerplate.json` in the consumer project.
-4. Adjust `trackedDomains` only if the project intentionally excludes domains such as `api`, `frontend`, `ci`, or `docker-env`.
+4. Adjust `trackedDomains` only if the project intentionally excludes domains such as `api`, `frontend`, `ci`, `docker-env`, `auth`, `email`, `storage`, `monitoring`, or `ai`.
 5. Commit the new `.boilerstone/` integration before preparing later migrations.
 
 ## Validation

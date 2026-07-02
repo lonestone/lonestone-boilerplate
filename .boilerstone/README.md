@@ -8,6 +8,8 @@ The nominal workflow is human-in-the-loop: a developer pilots an agentic AI, and
 
 **New here?** Read [docs/how-it-works.md](./docs/how-it-works.md) — the philosophy and every command, in plain terms.
 
+**Publishing a new boilerplate version?** Follow [docs/release-maintainer-runbook.md](./docs/release-maintainer-runbook.md). Do not rely on memory or a vague release summary.
+
 ## Contents
 
 In the boilerplate repository, this directory contains both producer-side artifacts (published intentions, release helpers, tests) and consumer-side artifacts (local project state and upgrade runner):
@@ -18,6 +20,7 @@ boilerplate.schema.json   # Schema for the state file
 cli/                      # CLI: status, path, prepare (pure logic in boilerplate-core.ts, tested)
 docs/how-it-works.md      # Philosophy + each command, in plain terms (start here)
 docs/upgrade-runbook.md   # The execution procedure — same steps for humans and AI agents
+docs/release-maintainer-runbook.md # Maintainer procedure for creating a new release
 migration-intentions/     # Published intentions, one directory per release
 ```
 
@@ -77,15 +80,17 @@ Tests for the CLI live in `cli/*.spec.ts` and run with the regular workspace tes
 
 ## Maintainer release checklist
 
-Before tagging a boilerplate release:
+Before tagging a boilerplate release, follow [docs/release-maintainer-runbook.md](./docs/release-maintainer-runbook.md). Short version:
 
-1. Classify each meaningful change as `no-migration`, `informational`, `migration`, or `breaking-manual`
-2. Write or update migration intentions for actionable changes
-3. Update `.boilerstone/boilerplate.example.json` to the new source version
-4. Run `pnpm boilerplate intentions lint`
-5. Run `pnpm boilerplate upgrade path --from <previous-version> --to <next-version> --json`
-6. Run `pnpm --filter @boilerstone/boilerplate test`
-7. Create and push the `vX.Y.Z` git tag so consumer projects can fetch the release intentions
+1. Pick the version and create `.boilerstone/migration-intentions/vX.Y.Z/`
+2. Inventory `git diff --name-status vPREVIOUS..HEAD`
+3. Classify every meaningful change in `classification.md`
+4. Write one intention per actionable adaptation
+5. Update `CHANGELOG.md` and `.boilerstone/boilerplate.example.json`
+6. Run `pnpm fmt:check`, `pnpm typecheck`, `pnpm test`, and `pnpm --filter @boilerstone/boilerplate lint:intentions`
+7. Run `pnpm boilerplate upgrade path --from <previous-version> --to <next-version> --json`
+8. Smoke test install/onboard in a temporary consumer
+9. Create and push the `vX.Y.Z` git tag after merge to `main`
 
 ## Detaching from the boilerplate
 
