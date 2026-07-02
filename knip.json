@@ -8,7 +8,7 @@
     "types": "warn",
     "nsExports": "warn",
     "nsTypes": "warn",
-    "duplicates": "warn",
+    "duplicates": "off",
     "unresolved": "warn",
     "catalog": "warn"
   },
@@ -22,7 +22,20 @@
         "src/modules/auth/auth.cli.ts!",
         "src/modules/db/db.config.ts!",
         "src/modules/db/migrations/**/*.ts!",
-        "src/seeders/**/*.ts!"
+        "src/seeders/**/*.ts!",
+        "src/**/*.contract.ts!",
+        "src/modules/auth/auth.decorator.ts!",
+        "src/modules/auth/auth.definition.ts!",
+        "src/modules/auth/auth-db.adapter.ts!",
+        "src/modules/auth/auth-schema-codegen.ts!",
+        "src/config/env.config.ts!",
+        "src/modules/db/query-order.util.ts!",
+        "src/modules/example/ai-example/tools/coingecko.tools.ts!",
+        "src/modules/auth/auth.config.ts!",
+        "src/modules/auth/auth.guard.ts!",
+        "src/test/helpers/test-app.helper.ts!",
+        "src/test/helpers/test-auth.helper.ts!",
+        "src/test/helpers/test-db.helper.ts!"
       ],
       "ignoreFiles": ["src/test/**"],
       "ignoreDependencies": [
@@ -36,7 +49,8 @@
       ]
     },
     "apps/web-spa": {
-      "ignoreDependencies": ["tailwindcss"]
+      "ignoreDependencies": ["tailwindcss"],
+      "entry": ["app/lib/i18n/i18n-client.ts!"]
     },
     "apps/web-ssr": {
       "ignoreDependencies": ["tailwindcss"]

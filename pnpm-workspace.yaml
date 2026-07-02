@@ -15,7 +15,6 @@ catalogs:
     "@react-router/node": ^7.13.0
     "@react-router/serve": ^7.13.0
     "@react-router/dev": ^7.13.0
-    react-router-devtools: ^6.2.0
     # Tanstack
     "@tanstack/react-query": ^5.90.20
     # React Hook Form
@@ -26,13 +25,11 @@ catalogs:
     tailwindcss-animate: ^1.0.7
     tailwind-merge: ^3.4.0
     "@tailwindcss/vite": ^4.1.18
-    "@tailwindcss/typography": ^0.5.19
     react-i18next: ^16.5.4
     i18next: ^25.8.0
   auth:
     # Better Auth
     better-auth: ^1.6.9
-    "@better-auth/expo": ^1.4.6
   build:
     # Node, vite, ts
     "@types/node": ^25.1.0
