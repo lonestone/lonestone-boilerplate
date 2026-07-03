@@ -20,7 +20,7 @@
     "db:fresh": "npx mikro-orm schema:fresh --run",
     "db:fresh:seed": "npx mikro-orm schema:fresh --run --seed",
     "db:sync": "npx mikro-orm schema:update --run",
-    "auth:generate": "auth generate --config src/modules/auth/auth.cli.ts --yes",
+    "auth:generate": "auth generate --config src/modules/auth/auth.cli.mts --yes",
     "test": "cross-env NODE_ENV=test vitest run --config=vitest.config.ts",
     "test:watch": "cross-env NODE_ENV=test vitest --config=vitest.config.ts --watch",
     "typecheck": "tsc --noEmit"

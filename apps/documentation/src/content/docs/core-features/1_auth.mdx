@@ -16,7 +16,7 @@ We use MikroORM in this boilerplate, and you can find the entities in the [auth 
 The boilerplate ships a custom MikroORM adapter for Better Auth (see [`auth-db.adapter.ts`](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/src/modules/auth/auth-db.adapter.ts)), replacing the community `better-auth-mikro-orm` package. It includes a CLI integration to auto-generate entity code via `pnpm auth:generate`:
 
 ```bash
-pnpm auth:generate   # auth generate --config src/modules/auth/auth.cli.ts --yes
+pnpm auth:generate   # auth generate --config src/modules/auth/auth.cli.mts --yes
 ```
 
 When adding a Better Auth plugin:
