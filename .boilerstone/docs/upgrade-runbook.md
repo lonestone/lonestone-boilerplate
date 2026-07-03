@@ -8,12 +8,16 @@ Commands that accept `--json` emit machine-readable output; prefer it when the e
 
 You need a valid `.boilerstone/boilerplate.json` (run `upgrade init`, or `bootstrap` on an older project), a clean git worktree, and the boilerplate releases available locally. `upgrade status` checks all three and prints the exact fetch command when releases are missing. Releases are fetched into the `refs/boilerstone/` namespace — never into your own tags, so they cannot collide with your app's versioning.
 
-Then stage the upgrade. You can skip `upgrade path` and go straight to `prepare`; `prepare` computes the path internally. Use `--select` when you want to choose the intentions interactively before the workspace is written.
+Then stage the upgrade:
 
 ```bash
-pnpm boilerplate upgrade prepare --to <version> --fetch --select
+pnpm boilerplate upgrade
+```
 
-# Non-interactive alternatives
+That one command targets the latest release, fetches it when needed, and lets you choose the intentions interactively. You can skip `upgrade path`; the path is computed internally. For explicit control:
+
+```bash
+pnpm boilerplate upgrade --to <version>
 pnpm boilerplate upgrade prepare --to <version> --include v1.2.0/foo,v1.2.0/bar
 pnpm boilerplate upgrade prepare --to <version> --exclude v1.2.0/optional-ai
 ```

@@ -656,6 +656,15 @@ describe('boilerplate CLI smoke', () => {
     }
   })
 
+  it('routes bare `upgrade` to prepare with defaults', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-bare-upgrade-'))
+    const result = runCli(['upgrade', '--project', projectPath], projectPath)
+
+    // Uninitialized project: prepare's own guidance proves the routing worked
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('No boilerplate.json found')
+  })
+
   it('never treats the consumer own version tags as boilerplate releases', () => {
     const projectPath = createGitRepo('boilerplate-owntags-')
 

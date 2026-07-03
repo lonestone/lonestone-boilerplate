@@ -111,8 +111,13 @@ function printMissingReleaseTags(state: BoilerplateState | null, _cwd = projectR
 // Fetch the boilerplate release tags straight from the remote URL, without adding
 // a persistent git remote, into the refs/boilerstone/ namespace so they can never
 // collide with the consumer's own version tags. The `+` in the refspec follows a
-// moved release tag (pre-release retags).
-function fetchBoilerplateTags(absolutePath: string, state: BoilerplateState | null): void {
+// moved release tag (pre-release retags). With `required: false` a failure
+// (offline, bad URL) degrades to the locally available releases.
+function fetchBoilerplateReleases(
+  absolutePath: string,
+  state: BoilerplateState | null,
+  { required }: { required: boolean },
+): void {
   const remoteUrl = getBoilerplateRemote(state)
   console.log(`  ${colorize('→', 'cyan')} Fetching boilerplate releases from ${remoteUrl}`)
   try {
@@ -120,10 +125,15 @@ function fetchBoilerplateTags(absolutePath: string, state: BoilerplateState | nu
     runGitCommand(['fetch', '--no-tags', remoteUrl, RELEASE_FETCH_REFSPEC], absolutePath)
     console.log(`  ${colorize('✓', 'green')} Releases fetched into ${RELEASE_REF_PREFIX}`)
   } catch (error) {
-    console.error(
-      `  ${colorize('❌', 'red')} Failed to fetch releases from ${remoteUrl}: ${error instanceof Error ? error.message : String(error)}`,
+    if (required) {
+      console.error(
+        `  ${colorize('❌', 'red')} Failed to fetch releases from ${remoteUrl}: ${error instanceof Error ? error.message : String(error)}`,
+      )
+      process.exit(1)
+    }
+    console.log(
+      `  ${colorize('⚠', 'yellow')} Could not fetch from ${remoteUrl} — using locally available releases`,
     )
-    process.exit(1)
   }
 }
 
@@ -429,7 +439,7 @@ interface UpgradePathCommandOptions {
 
 interface UpgradePrepareCommandOptions {
   projectPath: string
-  toVersion: string
+  toVersion?: string
   fetch?: boolean
   includeIds: string[]
   excludeIds: string[]
@@ -945,7 +955,7 @@ function cmdUpgradePath(options: UpgradePathCommandOptions): void {
   }
 
   if (options.fetch) {
-    fetchBoilerplateTags(absolutePath, state)
+    fetchBoilerplateReleases(absolutePath, state, { required: true })
   }
 
   const releases = getReleases(absolutePath)
@@ -1279,17 +1289,25 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
     process.exit(1)
   }
 
+  const requestedVersion = options.toVersion || 'latest'
+
   if (options.fetch) {
-    fetchBoilerplateTags(absolutePath, state)
+    fetchBoilerplateReleases(absolutePath, state, { required: true })
   }
 
-  const releases = getReleases(absolutePath)
+  let releases = getReleases(absolutePath)
+  // Fetch automatically when it is needed: no releases yet, or `latest` should
+  // reflect the remote. Best-effort — offline, local releases still work.
+  if (!options.fetch && (releases.length === 0 || requestedVersion === 'latest')) {
+    fetchBoilerplateReleases(absolutePath, state, { required: false })
+    releases = getReleases(absolutePath)
+  }
   if (releases.length === 0) {
     printMissingReleaseTags(state, absolutePath)
     process.exit(1)
   }
 
-  const targetVersion = resolveTargetVersion(options.toVersion, releases)
+  const targetVersion = resolveTargetVersion(requestedVersion, releases)
 
   const resolvedPath = resolveUpgradePath({
     sourceVersion: state.source.currentVersion,
@@ -1324,7 +1342,14 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
     options.includeIds,
     options.excludeIds,
   )
-  const upgradePath = options.select
+  // Interactive selection is the default on a terminal; explicit --include/
+  // --exclude (agents, scripts) or no TTY skip the prompt.
+  const interactiveSelect =
+    options.select ??
+    (process.stdin.isTTY === true &&
+      options.includeIds.length === 0 &&
+      options.excludeIds.length === 0)
+  const upgradePath = interactiveSelect
     ? await selectUpgradePathIntentions(filteredPath)
     : filteredPath
 
@@ -1490,18 +1515,19 @@ ${colorize('Commands:', 'cyan')}
   ${colorize('bootstrap', 'bright')}                  Onboard an existing project (wire CLI + init tracking)
   ${colorize('intentions lint', 'bright')}            Validate published migration intention metadata
   ${colorize('versions list', 'bright')}              List available boilerplate versions
+  ${colorize('upgrade', 'bright')}                    Stage the next upgrade (latest, auto-fetch, interactive selection)
   ${colorize('upgrade init', 'bright')}               Initialize boilerplate tracking for a project
   ${colorize('upgrade path', 'bright')}               Show upgrade path to target version
-  ${colorize('upgrade prepare', 'bright')}            Prepare local upgrade context
+  ${colorize('upgrade prepare', 'bright')}            Same as ${colorize('upgrade', 'dim')}, with explicit flags
   ${colorize('upgrade record', 'bright')}             Record an applied/skipped intention in boilerplate.json
   ${colorize('upgrade finish', 'bright')}             Set source.currentVersion after all intentions are resolved
   ${colorize('upgrade status', 'bright')}             Show tracking state and upgrade readiness
 ${colorize('Options:', 'cyan')}
 
   ${colorize('--project <path>', 'bright')}           Consumer project to operate on (default: this repository)
-  ${colorize('--to <version|latest>', 'bright')}      Target version; ${colorize('latest', 'dim')} resolves to the newest release
-  ${colorize('--fetch', 'bright')}                    Fetch boilerplate release tags first (needed for ${colorize('latest', 'dim')})
-  ${colorize('--select', 'bright')}                   Interactively choose intentions during ${colorize('upgrade prepare', 'dim')}
+  ${colorize('--to <version|latest>', 'bright')}      Target version (default: ${colorize('latest', 'dim')})
+  ${colorize('--fetch', 'bright')}                    Force-refresh the boilerplate releases (automatic when needed)
+  ${colorize('--select', 'bright')}                   Force interactive intention selection (default on a terminal)
   ${colorize('--include <ids>', 'bright')}            Comma-separated intention ids to stage during ${colorize('upgrade prepare', 'dim')}
   ${colorize('--exclude <ids>', 'bright')}            Comma-separated intention ids to skip from the prepared workspace
   ${colorize('--id <id>', 'bright')}                  Intention id for ${colorize('upgrade record', 'dim')}
@@ -1516,12 +1542,12 @@ ${colorize('Examples:', 'cyan')}
   ${colorize('boilerplate intentions lint', 'dim')}
   ${colorize('boilerplate versions list', 'dim')}
   ${colorize('boilerplate upgrade init --project ./my-project', 'dim')}
+  ${colorize('boilerplate upgrade', 'dim')}
+  ${colorize('boilerplate upgrade --to 1.5.0', 'dim')}
   ${colorize('boilerplate upgrade path --from 1.0.0 --to 1.5.0', 'dim')}
-  ${colorize('boilerplate upgrade prepare --project ./my-project --to 1.5.0 --select', 'dim')}
   ${colorize('boilerplate upgrade prepare --to 1.5.0 --exclude v1.5.0/optional-ai', 'dim')}
   ${colorize('boilerplate upgrade record --id v1.5.0/example --applied', 'dim')}
   ${colorize('boilerplate upgrade finish --to 1.5.0', 'dim')}
-  ${colorize('boilerplate upgrade prepare --to latest --fetch', 'dim')}
   ${colorize('boilerplate upgrade status --project ./my-project --json', 'dim')}`)
 }
 
@@ -1578,11 +1604,9 @@ async function main(): Promise<void> {
           json,
           fetch,
         })
-      } else if (subcommand === 'prepare') {
-        if (!to) {
-          console.error(`  ${colorize('❌', 'red')} --to is required`)
-          process.exit(1)
-        }
+      } else if (subcommand === 'prepare' || !subcommand || subcommand.startsWith('--')) {
+        // `pnpm boilerplate upgrade` is the everyday command: prepare with all
+        // defaults (latest, fetch when needed, interactive selection on a TTY).
         await cmdUpgradePrepare({
           projectPath: project,
           toVersion: to,

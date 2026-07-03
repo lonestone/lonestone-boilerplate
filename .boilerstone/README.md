@@ -46,7 +46,7 @@ Pin a release with `--ref <tag>`; point at a fork/private repo with `BOILERPLATE
 
 - **`init`** clones the template and runs `pnpm rock` (the normal first-run setup).
 - **`onboard`** fetches `.boilerstone/` plus the `boilerstone-upgrade` skills, runs `bootstrap` (below), then offers to commit the onboarding (`[Y/n]`, default yes).
-- **`upgrade [version]`** runs `pnpm boilerplate upgrade prepare --to <version|latest> --fetch --select` (with no terminal, the selection falls back to staging every intention). It fetches the boilerplate releases into `refs/boilerstone/` (never into your own tags), **creates a branch** `upgrade/v<current>-to-v<target>`, and stages a gitignored `.boilerstone/upgrade/` workspace (intentions + reference trees + session prompt). It does **not** touch your app code, commit, or push — applying the staged intentions is a separate, reviewable step (see the runbook).
+- **`upgrade [version]`** runs `pnpm boilerplate upgrade --to <version|latest>` — auto-fetch and interactive selection are the defaults (with no terminal, the selection falls back to staging every intention). It fetches the boilerplate releases into `refs/boilerstone/` (never into your own tags), **creates a branch** `upgrade/v<current>-to-v<target>`, and stages a gitignored `.boilerstone/upgrade/` workspace (intentions + reference trees + session prompt). It does **not** touch your app code, commit, or push — applying the staged intentions is a separate, reviewable step (see the runbook).
 
 `bootstrap` wires the root `package.json` (adds the `boilerplate` script and a `tsx` devDependency), ignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It is idempotent and never overwrites existing entries. It does **not** run `pnpm rock` (which renames packages and rewrites env/docker — safe only on a fresh template, destructive on an existing project).
 
@@ -68,8 +68,8 @@ pnpm boilerplate                                  # Help
 pnpm boilerplate bootstrap                         # Onboard an existing project (see above)
 pnpm boilerplate upgrade status --json            # Where am I, and am I ready? (--json for agents/scripts)
 pnpm boilerplate intentions lint                  # Validate intention metadata before release
+pnpm boilerplate upgrade                          # Stage the next upgrade (latest, auto-fetch, choose intentions)
 pnpm boilerplate upgrade path --to 1.6.0 --json   # What's between me and the target?
-pnpm boilerplate upgrade prepare --to 1.6.0 --select # Choose intentions and build the workspace
 pnpm boilerplate upgrade record --id <id> --applied
 pnpm boilerplate upgrade finish --to 1.6.0
 ```

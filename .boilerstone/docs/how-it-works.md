@@ -47,7 +47,7 @@ Everything travels over plain git from a single URL: `source.remote` in your `bo
 2. it creates and switches to a dedicated branch `upgrade/v<current>-to-v<target>`;
 3. it writes a disposable, gitignored `.boilerstone/upgrade/` folder containing the intentions to process, the `.boilerstone` reference trees at both versions, the app-code reference paths the intentions declare (extracted at the target version), and a session prompt.
 
-It does **not** edit your application code, commit, or push. Use `--to latest` to target the newest release, and `--fetch` to pull the release tags first.
+It does **not** edit your application code, commit, or push. The everyday form is simply `pnpm boilerplate upgrade`: it targets the latest release, fetches it when needed, and offers interactive intention selection on a terminal.
 
 After `prepare`, the actual work begins — applying the staged intentions one at a time, with one commit each. That procedure is the [runbook](./upgrade-runbook.md).
 

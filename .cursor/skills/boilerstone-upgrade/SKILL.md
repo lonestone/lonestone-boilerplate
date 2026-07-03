@@ -20,7 +20,7 @@ The expected workflow is human-in-the-loop: the developer pilots you, and you us
 ```bash
 pnpm boilerplate upgrade status --json
 pnpm boilerplate upgrade path --to <ver> --json
-pnpm boilerplate upgrade prepare --to <ver> --select
+pnpm boilerplate upgrade prepare --to <ver> --include <ids>  # omit --include for all; no TTY = no prompt
 pnpm boilerplate upgrade record --id <id> --applied
 pnpm boilerplate upgrade finish --to <ver>
 ```

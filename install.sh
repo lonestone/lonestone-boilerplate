@@ -72,10 +72,8 @@ main() {
       need git; need pnpm
       [ -f "$CLI_PATH" ] || die "No $CLI_PATH found — run 'onboard' first"
       version="${POSITIONAL:-latest}"
-      # --fetch pulls the release tags first, so 'latest' can be resolved and
-      # reference trees extracted. --select lets the user pick intentions; with
-      # no terminal the selection prompt falls back to staging all of them.
-      run_tty pnpm boilerplate upgrade prepare --to "$version" --fetch --select
+      # prepare defaults handle the rest: auto-fetch and interactive selection.
+      run_tty pnpm boilerplate upgrade --to "$version"
       ok "Upgrade workspace prepared — follow .boilerstone/docs/upgrade-runbook.md"
       ;;
 

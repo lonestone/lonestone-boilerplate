@@ -18,7 +18,7 @@ This skill is a thin adapter. The canonical, executor-neutral workflow lives in 
 ```bash
 pnpm boilerplate upgrade status --json            # State + readiness checks (version, applied/skipped, tags)
 pnpm boilerplate upgrade path --to <ver> --json   # Pending intentions and target branch
-pnpm boilerplate upgrade prepare --to <ver> --select # Choose intentions and build .boilerstone/upgrade/
+pnpm boilerplate upgrade prepare --to <ver> --include <ids>  # Stage intentions (omit --include for all; no TTY = no prompt)
 pnpm boilerplate upgrade record --id <id> --applied
 pnpm boilerplate upgrade finish --to <ver>
 ```
