@@ -148,7 +148,9 @@ function fetchBoilerplateTags(absolutePath: string, state: BoilerplateState | nu
   const remoteUrl = getBoilerplateRemote(state)
   console.log(`  ${colorize('→', 'cyan')} Fetching boilerplate release tags from ${remoteUrl}`)
   try {
-    runGitCommand(['fetch', remoteUrl, '--tags'], absolutePath)
+    // --force: follow the boilerplate remote if a tag moved (pre-release retags);
+    // plain --tags silently refuses to update an existing local tag.
+    runGitCommand(['fetch', remoteUrl, '--tags', '--force'], absolutePath)
     console.log(`  ${colorize('✓', 'green')} Release tags fetched`)
   } catch (error) {
     console.error(
@@ -1378,7 +1380,9 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
     writeFileSync(destFile, intention.content, 'utf-8')
   }
 
-  // Extract reference files from git tags
+  // Extract reference files from git tags. Source and target are independent:
+  // a project onboarded at 0.0.0 has no source tag, but the target reference
+  // (and its staged intention paths) must still be extracted.
   let stagedReferencePaths: string[] = []
   try {
     archiveGitReference(
@@ -1386,6 +1390,17 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
       join(upgradeDir, 'reference', 'source'),
       absolutePath,
     )
+  } catch {
+    writeFileSync(
+      join(upgradeDir, 'reference', 'source', 'NO-SOURCE-REFERENCE.md'),
+      `Tag ${upgradePath.sourceTag} does not exist locally — the project predates the first tracked release. Compare against reference/target/ only.\n`,
+      'utf-8',
+    )
+    console.log(
+      `  ${colorize('⚠', 'yellow')} No source reference for ${upgradePath.sourceTag} (tag not found) — comparing against the target only`,
+    )
+  }
+  try {
     archiveGitReference(
       upgradePath.targetTag,
       join(upgradeDir, 'reference', 'target'),
@@ -1404,10 +1419,10 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
     }
   } catch (error) {
     console.log(
-      `  ${colorize('⚠', 'yellow')} Could not extract reference files from ${upgradePath.sourceTag} or ${upgradePath.targetTag}: ${error instanceof Error ? error.message : String(error)}`,
+      `  ${colorize('⚠', 'yellow')} Could not extract the target reference from ${upgradePath.targetTag}: ${error instanceof Error ? error.message : String(error)}`,
     )
     console.log(
-      `  ${colorize('→', 'cyan')} Those git references must exist locally. Fetch them with ${colorize('git fetch <boilerplate-remote> --tags', 'bright')}`,
+      `  ${colorize('→', 'cyan')} That git reference must exist locally. Fetch it with ${colorize('git fetch <boilerplate-remote> --tags', 'bright')}`,
     )
   }
 
@@ -1576,8 +1591,9 @@ async function main(): Promise<void> {
       const project = readOptionValue(args, '--project') || '.'
       await cmdBootstrap(project)
     } else if (command === 'upgrade') {
-      const from = readOptionValue(args, '--from')
-      const to = readOptionValue(args, '--to')
+      // Accept both `1.0.0` and `v1.0.0` — tags carry the v, versions don't.
+      const from = readOptionValue(args, '--from')?.replace(/^v(?=\d)/, '')
+      const to = readOptionValue(args, '--to')?.replace(/^v(?=\d)/, '')
       const project = readOptionValue(args, '--project') || '.'
       const json = args.includes('--json')
       const fetch = args.includes('--fetch')

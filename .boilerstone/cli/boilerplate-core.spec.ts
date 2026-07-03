@@ -656,6 +656,72 @@ describe('boilerplate CLI smoke', () => {
     }
   })
 
+  it('stages the target reference even when the 0.0.0 source tag does not exist', () => {
+    const projectPath = createGitRepo('boilerplate-prepare-nosource-')
+
+    try {
+      mkdirSync(join(projectPath, '.boilerstone', 'migration-intentions', 'v9.9.9'), {
+        recursive: true,
+      })
+      mkdirSync(join(projectPath, 'apps'), { recursive: true })
+      writeFileSync(join(projectPath, 'apps', 'demo.txt'), 'reference me\n')
+      // A tag counts as a release only with .boilerstone/README.md and a release README
+      writeFileSync(join(projectPath, '.boilerstone', 'README.md'), '# boilerstone\n')
+      writeFileSync(
+        join(projectPath, '.boilerstone', 'migration-intentions', 'v9.9.9', 'README.md'),
+        '# v9.9.9\n',
+      )
+      writeFileSync(
+        join(projectPath, '.boilerstone', 'migration-intentions', 'v9.9.9', 'demo.md'),
+        [
+          '---',
+          'id: v9.9.9/demo',
+          'domain: tooling',
+          'classification: migration',
+          '---',
+          '',
+          '# Demo',
+          '',
+          '## Reference Paths',
+          '',
+          '- `apps/demo.txt`',
+        ].join('\n'),
+      )
+      writeFileSync(
+        join(projectPath, '.boilerstone', 'boilerplate.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'init'])
+      runGit(projectPath, ['tag', 'v9.9.9'])
+
+      // v-prefixed --to must be accepted and normalized
+      const result = runCli(['upgrade', 'prepare', '--project', projectPath, '--to', 'v9.9.9'])
+
+      expect(result.status).toBe(0)
+      const upgradeDir = join(projectPath, '.boilerstone', 'upgrade')
+      expect(existsSync(join(upgradeDir, 'reference', 'source', 'NO-SOURCE-REFERENCE.md'))).toBe(
+        true,
+      )
+      expect(existsSync(join(upgradeDir, 'reference', 'target', 'apps', 'demo.txt'))).toBe(true)
+      expect(
+        existsSync(join(upgradeDir, 'reference', 'target', '.boilerstone', 'boilerplate.json')),
+      ).toBe(true)
+      expect(result.stdout).toContain('upgrade/v0.0.0-to-v9.9.9')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
   it('refuses to prepare an empty path and suggests checking the source version', () => {
     const projectPath = createGitRepo('boilerplate-prepare-empty-')
 
