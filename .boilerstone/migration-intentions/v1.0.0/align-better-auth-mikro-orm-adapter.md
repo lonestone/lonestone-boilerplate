@@ -31,8 +31,8 @@ The v1.0.0 boilerplate backs Better Auth with a local MikroORM adapter (`auth-db
 Auth state is production user data: prefer stopping over guessing, and never touch stored data. Work through each gap independently; skip any that is already closed.
 
 1. **Adapter implementation** — signal: the project's adapter predates the staged reference `auth-db.adapter.ts` (missing fixes, diverging query behavior), or auth is wired through something other than the local `mikroOrmAdapter`.
-   Port the reference adapter's fixes into the project's adapter without changing table or column names. Keep project-specific query behavior that tests depend on.
-   Done when: the adapter unit tests (the `auth-db.adapter*.spec.ts` pattern) pass and `pnpm --filter=api typecheck` passes.
+   Diff the project's adapter against the staged reference first. No project delta → copy the reference verbatim. Otherwise port only the reference-side hunks, without changing table or column names, and keep project-specific query behavior that tests depend on.
+   Done when: the adapter unit tests (the `auth-db.adapter*.spec.ts` pattern) pass, `pnpm --filter=api typecheck` passes, and the diff against the staged reference is empty or every remaining delta is project-specific and named.
 
 2. **Entities vs schema codegen** — signal: the project's auth entities diverge from what `auth-schema-codegen.ts` generates for its Better Auth config.
    Regenerate and compare; apply only additive or neutral differences. Any rename/drop is a stop condition (see above).

@@ -1450,9 +1450,9 @@ You are the executor — a developer or an AI agent — applying boilerplate upg
 3. Run applicability checks from the intention
 4. **Stop** if a "Do not apply when" condition matches
 5. For \`breaking-manual\` intentions, **stop before editing files** and write a blocked report describing the required human decision
-6. Compare project files with boilerplate references when useful
-7. Apply the **smallest safe change** needed
-8. **Preserve** all project-specific behavior
+6. For every file under an intention's Reference Paths, run \`diff <file> .boilerstone/upgrade/reference/target/<file>\` **before** editing — never write these files from memory
+7. No project-specific delta in the diff → **copy the staged reference file verbatim**; project deltas → keep them and apply only the reference-side hunks
+8. Everywhere else apply the **smallest safe change** and **preserve** all project-specific behavior
 9. Run validation after each intention
 10. After successful validation, record the outcome with \`pnpm boilerplate upgrade record --id <id> --applied\` or \`--skipped --reason "..."\`
 11. **Stop** on unsafe ambiguity and write a blocked report

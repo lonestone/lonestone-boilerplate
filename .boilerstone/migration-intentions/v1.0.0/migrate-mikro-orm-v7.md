@@ -35,12 +35,12 @@ Work through each gap independently; skip any that is already closed.
    Done when: install succeeds and `pnpm --filter=api typecheck` reports no `@mikro-orm` import errors.
 
 2. **Config wiring** — signal: the MikroORM config does not use `defineConfig` from `@mikro-orm/postgresql`, or imports `ReflectMetadataProvider` from anywhere other than `@mikro-orm/decorators/legacy`.
-   Compare with the staged reference `apps/api/src/modules/db/db.config.ts` and adapt imports and options. Keep the project's own connection settings, naming strategy, and extensions.
-   Done when: the API boots and entity discovery finds the project's entities.
+   Diff against the staged reference `apps/api/src/modules/db/db.config.ts` and apply only the reference-side hunks. Keep the project's own connection settings, naming strategy, and extensions.
+   Done when: the API boots, entity discovery finds the project's entities, and every remaining delta against the reference is project-specific and named.
 
 3. **Test database helper** — signal: `apps/api/src/test/helpers/test-db.helper.ts` (or the project's equivalent) fails typecheck after gap 1, or predates the v7 pattern.
-   Align only the ORM setup with the staged reference helper. Keep project-specific fixtures, seeds, and container tooling.
-   Done when: API database tests pass, or are reported unavailable.
+   Diff the helper against the staged reference first. No project delta → copy the reference verbatim. Otherwise align only the ORM setup, keeping project-specific fixtures, seeds, and container tooling.
+   Done when: API database tests pass (or are reported unavailable) and the diff against the staged reference is empty or every remaining delta is project-specific and named.
 
 ## Out of Scope
 

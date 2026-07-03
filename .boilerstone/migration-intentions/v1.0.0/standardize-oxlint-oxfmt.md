@@ -37,8 +37,8 @@ Work through each gap independently; skip any that is already closed.
    Done when: `pnpm install` completes.
 
 3. **Config files** — signal: no `.oxlintrc.json` or `.oxfmtrc.json` at the project root.
-   Copy the staged references, then port the project's own rule intent from the old config. If a rule cannot be mapped, stop and ask rather than silently dropping it.
-   Done when: `pnpm lint` and `pnpm fmt:check` run (their findings are handled in gap 4).
+   Copy the staged reference files verbatim, then port the project's own rule intent from the old config. If a rule cannot be mapped, stop and ask rather than silently dropping it.
+   Done when: `pnpm lint` and `pnpm fmt:check` run (their findings are handled in gap 4), and every delta against the staged reference configs is a named project rule.
 
 4. **Formatting pass** — signal: `pnpm fmt:check` fails broadly on the existing codebase.
    Run `pnpm fmt` in a **dedicated commit** so the mechanical reformat stays separate from every other change in the upgrade branch.
