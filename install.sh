@@ -110,10 +110,29 @@ offer_onboard_commit() {
     package.json .gitignore pnpm-lock.yaml 2>/dev/null || true
   if git diff --cached --quiet 2>/dev/null; then
     info "Nothing to commit"
-  else
-    git commit --quiet -m "chore: onboard boilerstone upgrade tracking" || die "git commit failed"
-    ok "Committed the onboarding"
+    return 0
   fi
+  if git commit --quiet -m "chore: onboard boilerstone upgrade tracking"; then
+    ok "Committed the onboarding"
+    return 0
+  fi
+  # Typically the project's own pre-commit hooks (lint on pre-existing code or on
+  # the vendored CLI). Onboarding itself succeeded — offer the bypass, don't fail.
+  info "Commit was rejected (pre-commit hooks?). The onboarding files are staged."
+  answer=""
+  if : </dev/tty 2>/dev/null; then
+    printf '%b' "${C_CYAN}→${C_RESET} Retry with --no-verify? [y/N] "
+    read -r answer </dev/tty || answer=""
+  fi
+  case "$answer" in
+    [yY]*)
+      git commit --quiet --no-verify -m "chore: onboard boilerstone upgrade tracking" || die "git commit failed"
+      ok "Committed the onboarding (hooks bypassed)"
+      ;;
+    *)
+      info "Left staged — fix the hook failures or run: git commit --no-verify -m \"chore: onboard boilerstone upgrade tracking\""
+      ;;
+  esac
 }
 
 # Run an interactive command with stdin attached to the terminal when available,

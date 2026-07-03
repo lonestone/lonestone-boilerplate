@@ -527,7 +527,7 @@ function writeBoilerplateJson(projectPath: string, state: BoilerplateState): voi
 }
 
 function isValidIntentionId(id: string): boolean {
-  return /^v?\d+\.\d+\.\d+(\/[a-z0-9-]+)+$/.test(id)
+  return /^v?\d+\.\d+\.\d+(?:\/[a-z0-9-]+)+$/.test(id)
 }
 
 function getToday(): string {
