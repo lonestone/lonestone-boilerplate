@@ -12,7 +12,7 @@ The project's dependency _plumbing_ matches the v1.0.0 boilerplate: `engines`/`p
 
 ## Why
 
-Future releases ship dependency changes as catalog diffs — adopting the mechanism now makes every later upgrade a small, reviewable hunk in one file. Version bumps themselves are deliberately **not** covered here: a bump is never just a JSON line (breaking changes, peer cascades, testing), so each bump ships inside the intention that requires it and owns its breakage (`v1.0.0/migrate-mikro-orm-v7` bumps `@mikro-orm/*`, `v1.0.0/standardize-oxlint-oxfmt` adds oxlint/oxfmt, and so on).
+Future releases ship dependency changes as catalog diffs — adopting the mechanism now makes every later upgrade a small, reviewable hunk in one file. Version bumps themselves are deliberately **not** covered here: raising shared families to the boilerplate's tested version set is its own protocol, `v1.0.0/align-shared-dependency-versions` (one catalog family at a time), and framework migrations ship inside their owning intention (`v1.0.0/migrate-mikro-orm-v7` bumps `@mikro-orm/*`).
 
 ## Applies When
 
@@ -38,7 +38,7 @@ Future releases ship dependency changes as catalog diffs — adopting the mechan
 
 ## Out of Scope
 
-- **Any dependency version bump.** Bumps ship inside the intention that requires them and documents the breakage; there is deliberately no generic "update dependencies" intention.
+- **Any dependency version bump.** Raising shared families to the boilerplate versions is `v1.0.0/align-shared-dependency-versions`; framework migrations ship inside their owning intention.
 - Dependencies the project added that the boilerplate does not ship.
 - Converting a non-pnpm project to pnpm workspaces.
 

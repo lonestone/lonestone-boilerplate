@@ -25,7 +25,11 @@ For every meaningful change, decide one of these outcomes:
 
 If a project does not use a capability, do not force it. Put optional capabilities in their own domain when needed. For example, AI-related changes use the `ai` domain, so a project without AI skips them.
 
-Dependency rule: **never write a generic "update dependencies" intention.** A version bump is never just a JSON line — it implies breaking changes, peer cascades and testing. Each bump ships inside the intention that requires it and owns its breakage (the MikroORM intention bumps `@mikro-orm/*`, a React intention would bump `react`). Shared-dependency plumbing (engines, catalogs) is covered once by `align-dependency-baseline`; everything else version-related needs an owning intention or stays the project's own maintenance.
+Dependency rule: **never write an unbounded "update dependencies" step.** A version bump is never just a JSON line — it implies breaking changes, peer cascades and testing. Three sanctioned channels, nothing else:
+
+- **Plumbing** (engines, packageManager, catalogs mechanism) — `align-dependency-baseline`, zero bumps.
+- **Coherent-set alignment** — `align-shared-dependency-versions`: one catalog family at a time, validated and committed per family, with pin-and-name as the escape hatch. Releases that change catalog versions rely on this protocol.
+- **Framework migrations** — the owning intention ships its own bumps and documents the breakage (the MikroORM intention bumps `@mikro-orm/*`; a React major would get its own intention).
 
 ## 1. Pick the version
 
