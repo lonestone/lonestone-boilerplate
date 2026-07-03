@@ -656,6 +656,50 @@ describe('boilerplate CLI smoke', () => {
     }
   })
 
+  it('never treats the consumer own version tags as boilerplate releases', () => {
+    const projectPath = createGitRepo('boilerplate-owntags-')
+
+    try {
+      mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
+      // A real onboarded consumer ships .boilerstone/README.md — that alone must
+      // not turn the app's own release tags into boilerplate releases.
+      writeFileSync(join(projectPath, '.boilerstone', 'README.md'), '# boilerstone\n')
+      writeFileSync(
+        join(projectPath, '.boilerstone', 'boilerplate.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'app release'])
+      runGit(projectPath, ['tag', 'v5.0.0'])
+
+      const result = runCli([
+        'upgrade',
+        'path',
+        '--project',
+        projectPath,
+        '--to',
+        'latest',
+        '--json',
+      ])
+
+      expect(result.status).toBe(0)
+      const payload = JSON.parse(result.stdout)
+      // latest must resolve to the boilerplate's release, not the app's v5.0.0
+      expect(payload.targetVersion).toBe('1.0.0')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
   it('stages the target reference even when the 0.0.0 source tag does not exist', () => {
     const projectPath = createGitRepo('boilerplate-prepare-nosource-')
 

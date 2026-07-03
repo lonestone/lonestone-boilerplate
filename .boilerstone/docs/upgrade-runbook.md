@@ -6,7 +6,7 @@ Commands that accept `--json` emit machine-readable output; prefer it when the e
 
 ## Before you start
 
-You need a valid `.boilerstone/boilerplate.json` (run `upgrade init`, or `bootstrap` on an older project), a clean git worktree, and the boilerplate release tags available locally. `upgrade status` checks all three and prints the exact `git remote add` / `git fetch --tags` commands when tags are missing — references can only be extracted from tags that exist locally.
+You need a valid `.boilerstone/boilerplate.json` (run `upgrade init`, or `bootstrap` on an older project), a clean git worktree, and the boilerplate releases available locally. `upgrade status` checks all three and prints the exact fetch command when releases are missing. Releases are fetched into the `refs/boilerstone/` namespace — never into your own tags, so they cannot collide with your app's versioning.
 
 Then stage the upgrade. You can skip `upgrade path` and go straight to `prepare`; `prepare` computes the path internally. Use `--select` when you want to choose the intentions interactively before the workspace is written.
 

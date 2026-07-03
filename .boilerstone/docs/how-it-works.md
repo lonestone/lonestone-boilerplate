@@ -29,7 +29,7 @@ This is why the system is just markdown and JSON. It doesn't care whether the ex
 
 ## Where the upgrade material comes from
 
-Everything travels over plain git from a single URL: `source.remote` in your `boilerplate.json`, recorded at init (`BOILERPLATE_REPO` env for a fork or private mirror, the public GitHub repository by default). `upgrade prepare --fetch` runs `git fetch <that-url> --tags` — no named remote required — and from there everything is local: intentions are read from the release tags, reference trees and each intention's declared reference paths are extracted with `git archive`. No API, no registry, no network beyond git; `upgrade status` prints the exact fetch commands whenever tags are missing.
+Everything travels over plain git from a single URL: `source.remote` in your `boilerplate.json`, recorded at init (`BOILERPLATE_REPO` env for a fork or private mirror, the public GitHub repository by default). `upgrade prepare --fetch` pulls the boilerplate's release tags into a dedicated ref namespace — `refs/boilerstone/v*` — never into your own `refs/tags`: your project stays free to version its own app with its own `v*` tags and changelog, with zero risk of collision. No named remote is required, and from there everything is local: intentions are read from the fetched releases, reference trees and each intention's declared reference paths are extracted with `git archive`. No API, no registry, no network beyond git; `upgrade status` prints the exact fetch command whenever releases are missing.
 
 ## The commands, in the order you meet them
 

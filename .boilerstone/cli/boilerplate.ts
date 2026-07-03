@@ -79,82 +79,49 @@ function getBoilerplateRemote(state: BoilerplateState | null): string {
   return state?.source.remote || getConfiguredBoilerplateRemote()
 }
 
-function normalizeGitRemote(value: string): string {
-  return value
-    .trim()
-    .replace(/^git@github\.com:/, 'https://github.com/')
-    .replace(/^ssh:\/\/git@github\.com\//, 'https://github.com/')
-    .replace(/\/$/, '')
-    .replace(/\.git$/, '')
-    .toLowerCase()
+// Boilerplate releases are fetched into a dedicated ref namespace instead of
+// refs/tags: consumer projects version their own app with their own v* tags,
+// and the two must never collide (or worse, overwrite each other).
+const RELEASE_REF_PREFIX = 'refs/boilerstone/'
+const RELEASE_FETCH_REFSPEC = '+refs/tags/v*:refs/boilerstone/v*'
+
+function getFetchReleasesCommand(remoteUrl: string): string {
+  return `git fetch --no-tags ${remoteUrl} "${RELEASE_FETCH_REFSPEC}"`
 }
 
-interface GitRemote {
-  name: string
-  url: string
-}
-
-function getGitRemotes(cwd = projectRoot): GitRemote[] {
+// Resolves a release tag name (v1.0.0) to the ref that actually holds it:
+// the namespaced ref in a consumer project, the plain tag in the boilerplate
+// checkout itself.
+function releaseRef(tag: string, cwd = projectRoot): string {
   try {
-    const remotes = runGitCommand(['remote', '-v'], cwd)
-    if (!remotes) {
-      return []
-    }
-
-    return remotes
-      .split('\n')
-      .map((line) => {
-        const [name, url] = line.trim().split(/\s+/)
-        return name && url ? { name, url } : null
-      })
-      .filter((remote): remote is GitRemote => Boolean(remote))
+    runGitCommand(['rev-parse', '--verify', '--quiet', `${RELEASE_REF_PREFIX}${tag}`], cwd)
+    return `${RELEASE_REF_PREFIX}${tag}`
   } catch {
-    return []
+    return tag
   }
 }
 
-function getRemoteNameForUrl(remoteUrl: string, cwd = projectRoot): string | undefined {
-  const expectedRemote = normalizeGitRemote(remoteUrl)
-  return getGitRemotes(cwd).find((remote) => normalizeGitRemote(remote.url) === expectedRemote)
-    ?.name
-}
-
-function hasRemoteUrl(remoteUrl: string, cwd = projectRoot): boolean {
-  return Boolean(getRemoteNameForUrl(remoteUrl, cwd))
-}
-
-function getFetchTagsCommand(remoteUrl: string, cwd = projectRoot): string {
-  const remoteName = getRemoteNameForUrl(remoteUrl, cwd)
-  if (remoteName) {
-    return `git fetch ${remoteName} --tags`
-  }
-
-  return `git remote add boilerplate ${remoteUrl}\ngit fetch boilerplate --tags`
-}
-
-function printMissingReleaseTags(state: BoilerplateState | null, cwd = projectRoot): void {
+function printMissingReleaseTags(state: BoilerplateState | null, _cwd = projectRoot): void {
   const remoteUrl = getBoilerplateRemote(state)
-  console.error(`  ${colorize('❌', 'red')} No local boilerplate release tags found.`)
-  console.error(`  ${colorize('→', 'cyan')} Fetch the boilerplate release tags first:`)
-  for (const command of getFetchTagsCommand(remoteUrl, cwd).split('\n')) {
-    console.error(`    ${colorize(command, 'bright')}`)
-  }
+  console.error(`  ${colorize('❌', 'red')} No local boilerplate releases found.`)
+  console.error(`  ${colorize('→', 'cyan')} Fetch the boilerplate releases first:`)
+  console.error(`    ${colorize(getFetchReleasesCommand(remoteUrl), 'bright')}`)
 }
 
 // Fetch the boilerplate release tags straight from the remote URL, without adding
-// a persistent git remote. Required to resolve `latest` and to extract reference
-// trees, since intentions and references live in the release tags.
+// a persistent git remote, into the refs/boilerstone/ namespace so they can never
+// collide with the consumer's own version tags. The `+` in the refspec follows a
+// moved release tag (pre-release retags).
 function fetchBoilerplateTags(absolutePath: string, state: BoilerplateState | null): void {
   const remoteUrl = getBoilerplateRemote(state)
-  console.log(`  ${colorize('→', 'cyan')} Fetching boilerplate release tags from ${remoteUrl}`)
+  console.log(`  ${colorize('→', 'cyan')} Fetching boilerplate releases from ${remoteUrl}`)
   try {
-    // --force: follow the boilerplate remote if a tag moved (pre-release retags);
-    // plain --tags silently refuses to update an existing local tag.
-    runGitCommand(['fetch', remoteUrl, '--tags', '--force'], absolutePath)
-    console.log(`  ${colorize('✓', 'green')} Release tags fetched`)
+    // --no-tags: git would otherwise auto-follow tags into refs/tags anyway
+    runGitCommand(['fetch', '--no-tags', remoteUrl, RELEASE_FETCH_REFSPEC], absolutePath)
+    console.log(`  ${colorize('✓', 'green')} Releases fetched into ${RELEASE_REF_PREFIX}`)
   } catch (error) {
     console.error(
-      `  ${colorize('❌', 'red')} Failed to fetch tags from ${remoteUrl}: ${error instanceof Error ? error.message : String(error)}`,
+      `  ${colorize('❌', 'red')} Failed to fetch releases from ${remoteUrl}: ${error instanceof Error ? error.message : String(error)}`,
     )
     process.exit(1)
   }
@@ -368,29 +335,42 @@ function cmdIntentionsLint(json = false): void {
   }
 }
 
-function getBoilerplateGitTagNames(cwd = projectRoot): string[] {
-  return getGitTagNames(cwd).filter((tag) => gitFileExists(tag, '.boilerstone/README.md', cwd))
+// Release candidates: namespaced refs fetched from the boilerplate remote, plus
+// local v* tags that carry producer artifacts (the boilerplate checkout itself).
+// A consumer's own app tags never qualify — they have no migration-intentions.
+function getReleaseTagNames(cwd = projectRoot): string[] {
+  const names = new Set<string>()
+  try {
+    const refs = runGitCommand(
+      ['for-each-ref', '--format=%(refname)', `${RELEASE_REF_PREFIX}v*`],
+      cwd,
+    )
+    for (const refname of refs.split('\n').filter(Boolean)) {
+      names.add(refname.slice(RELEASE_REF_PREFIX.length))
+    }
+  } catch {
+    // no namespaced refs fetched yet
+  }
+  for (const tag of getGitTagNames(cwd)) {
+    if (!names.has(tag) && gitFileExists(tag, `.boilerstone/migration-intentions/${tag}`, cwd)) {
+      names.add(tag)
+    }
+  }
+  return [...names]
 }
 
 function getReleases(cwd = projectRoot): ReleaseInfo[] {
   const releasesByVersion = new Map<string, ReleaseInfo>()
 
-  for (const tag of getGitTagNames(cwd)) {
-    const hasBoilerplateFiles = gitFileExists(tag, '.boilerstone/README.md', cwd)
-    const hasDiskRelease = existsSync(
-      join(boilerplateDir, 'migration-intentions', tag, 'README.md'),
-    )
-    if (!hasBoilerplateFiles && !hasDiskRelease) {
-      continue
-    }
-
+  for (const tag of getReleaseTagNames(cwd)) {
+    const ref = releaseRef(tag, cwd)
     const version = tag.replace(/^v/, '')
-    const date = runGitCommand(['log', '-1', '--format=%ci', tag], cwd).split(' ')[0]
+    const date = runGitCommand(['log', '-1', '--format=%ci', ref], cwd).split(' ')[0]
     // Intentions for a release live in its git tag: a consumer forked at an older
     // version does not have the newer files on disk. Disk is the fallback for
     // releases drafted in the boilerplate repo but not tagged yet.
     const hasMigrations =
-      gitFileExists(tag, `.boilerstone/migration-intentions/${tag}/README.md`, cwd) ||
+      gitFileExists(ref, `.boilerstone/migration-intentions/${tag}/README.md`, cwd) ||
       existsSync(join(boilerplateDir, 'migration-intentions', tag, 'README.md'))
     releasesByVersion.set(version, {
       version,
@@ -415,10 +395,8 @@ function cmdVersionsList(): void {
   const releases = getReleases()
   if (releases.length === 0) {
     console.log(`  ${colorize('⚠', 'yellow')} No releases found`)
-    console.log(`  ${colorize('→', 'cyan')} Fetch boilerplate release tags first:`)
-    for (const command of getFetchTagsCommand(defaultBoilerplateRemote).split('\n')) {
-      console.log(`    ${colorize(command, 'bright')}`)
-    }
+    console.log(`  ${colorize('→', 'cyan')} Fetch the boilerplate releases first:`)
+    console.log(`    ${colorize(getFetchReleasesCommand(defaultBoilerplateRemote), 'bright')}`)
     return
   }
 
@@ -899,14 +877,15 @@ function getIntentionFiles(releases: ReleaseInfo[], cwd = projectRoot): Intentio
   return releases.flatMap((release) => {
     // Git tag first: consumers forked before this release only have it in git
     const releaseDirInGit = `.boilerstone/migration-intentions/v${release.version}`
-    if (gitFileExists(release.tag, `${releaseDirInGit}/README.md`, cwd)) {
-      return listGitMarkdownFiles(release.tag, releaseDirInGit, cwd)
+    const ref = releaseRef(release.tag, cwd)
+    if (gitFileExists(ref, `${releaseDirInGit}/README.md`, cwd)) {
+      return listGitMarkdownFiles(ref, releaseDirInGit, cwd)
         .filter((file) => !file.endsWith('README.md') && !file.endsWith('classification.md'))
         .map((file) => ({
           releaseVersion: release.version,
           file: `${release.tag}:${file}`,
           relativePath: file.slice(releaseDirInGit.length + 1),
-          content: readGitFile(release.tag, file, cwd),
+          content: readGitFile(ref, file, cwd),
         }))
     }
 
@@ -1196,51 +1175,37 @@ function createHealthReport(projectPath: string): HealthReport {
   }
 
   const remoteUrl = getBoilerplateRemote(state)
+  const releaseTagNames = getReleaseTagNames(projectPath)
   checks.push(
-    hasRemoteUrl(remoteUrl, projectPath)
+    releaseTagNames.length > 0
       ? {
-          name: 'boilerplate remote',
+          name: 'releases',
           status: 'passed',
-          message: `Remote configured for ${remoteUrl}`,
+          message: `${releaseTagNames.length} boilerplate release(s) available locally`,
         }
       : {
-          name: 'boilerplate remote',
-          status: 'warning',
-          message: `No git remote found for ${remoteUrl}`,
-          suggestion: getFetchTagsCommand(remoteUrl, projectPath),
-        },
-  )
-
-  const boilerplateGitTags = getBoilerplateGitTagNames(projectPath)
-  checks.push(
-    boilerplateGitTags.length > 0
-      ? {
-          name: 'release tags',
-          status: 'passed',
-          message: `${boilerplateGitTags.length} boilerplate release tag(s) available`,
-        }
-      : {
-          name: 'release tags',
+          name: 'releases',
           status: 'failed',
-          message: 'No local boilerplate release tags found',
-          suggestion: getFetchTagsCommand(remoteUrl, projectPath),
+          message: 'No local boilerplate releases found',
+          suggestion: getFetchReleasesCommand(remoteUrl),
         },
   )
 
-  if (state && boilerplateGitTags.length > 0) {
+  // 0.0.0 means "predates the first release" — there is legitimately no such tag.
+  if (state && releaseTagNames.length > 0 && state.source.currentVersion !== '0.0.0') {
     const sourceTag = `v${state.source.currentVersion.replace(/^v/, '')}`
     checks.push(
-      boilerplateGitTags.includes(sourceTag)
+      releaseTagNames.includes(sourceTag)
         ? {
-            name: 'current version tag',
+            name: 'current version release',
             status: 'passed',
             message: `${sourceTag} is available locally`,
           }
         : {
-            name: 'current version tag',
+            name: 'current version release',
             status: 'warning',
             message: `${sourceTag} is not available locally`,
-            suggestion: getFetchTagsCommand(remoteUrl, projectPath),
+            suggestion: getFetchReleasesCommand(remoteUrl),
           },
     )
   }
@@ -1387,31 +1352,25 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
   // a project onboarded at 0.0.0 has no source tag, but the target reference
   // (and its staged intention paths) must still be extracted.
   let stagedReferencePaths: string[] = []
+  const sourceRef = releaseRef(upgradePath.sourceTag, absolutePath)
+  const targetRef = releaseRef(upgradePath.targetTag, absolutePath)
   try {
-    archiveGitReference(
-      upgradePath.sourceTag,
-      join(upgradeDir, 'reference', 'source'),
-      absolutePath,
-    )
+    archiveGitReference(sourceRef, join(upgradeDir, 'reference', 'source'), absolutePath)
   } catch {
     writeFileSync(
       join(upgradeDir, 'reference', 'source', 'NO-SOURCE-REFERENCE.md'),
-      `Tag ${upgradePath.sourceTag} does not exist locally — the project predates the first tracked release. Compare against reference/target/ only.\n`,
+      `Release ${upgradePath.sourceTag} does not exist locally — the project predates the first tracked release. Compare against reference/target/ only.\n`,
       'utf-8',
     )
     console.log(
-      `  ${colorize('⚠', 'yellow')} No source reference for ${upgradePath.sourceTag} (tag not found) — comparing against the target only`,
+      `  ${colorize('⚠', 'yellow')} No source reference for ${upgradePath.sourceTag} (release not found) — comparing against the target only`,
     )
   }
   try {
-    archiveGitReference(
-      upgradePath.targetTag,
-      join(upgradeDir, 'reference', 'target'),
-      absolutePath,
-    )
+    archiveGitReference(targetRef, join(upgradeDir, 'reference', 'target'), absolutePath)
     stagedReferencePaths = extractIntentionReferencePaths(
       upgradePath.intentions,
-      upgradePath.targetTag,
+      targetRef,
       join(upgradeDir, 'reference', 'target'),
       absolutePath,
     )
@@ -1429,7 +1388,7 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
     )
   }
 
-  const sessionPrompt = generateSessionPrompt(upgradePath, state, stagedReferencePaths)
+  const sessionPrompt = generateSessionPrompt(upgradePath, state, stagedReferencePaths, targetRef)
   writeFileSync(join(upgradeDir, 'upgrade-session.md'), sessionPrompt, 'utf-8')
 
   console.log(`  ${colorize('✓', 'green')} Created .boilerstone/upgrade/ workspace`)
@@ -1444,6 +1403,7 @@ function generateSessionPrompt(
   path: UpgradePath,
   state: BoilerplateState,
   stagedReferencePaths: string[] = [],
+  targetArchiveRef = `v${path.targetVersion}`,
 ): string {
   const targetTag = `v${path.targetVersion}`
   const remoteUrl = getBoilerplateRemote(state)
@@ -1509,7 +1469,7 @@ ${stagedReferenceLines}
 Need a reference file that is not staged? Extract it from the target tag:
 
 \`\`\`bash
-git archive ${targetTag} -- <path> | tar -x -C .boilerstone/upgrade/reference/target/
+git archive ${targetArchiveRef} -- <path> | tar -x -C .boilerstone/upgrade/reference/target/
 # or clone the full boilerplate at the target version (disposable, gitignored):
 git clone --depth 1 --branch ${targetTag} ${remoteUrl} .boilerstone/upgrade/reference/full
 \`\`\`
