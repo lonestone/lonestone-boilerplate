@@ -8,11 +8,11 @@ classification: migration
 
 ## Goal
 
-The project's toolchain pins and shared dependency versions match the v1.0.0 boilerplate: `engines`/`packageManager`, pnpm dependency catalogs, and the versions of dependencies the project shares with the boilerplate.
+The project's dependency _plumbing_ matches the v1.0.0 boilerplate: `engines`/`packageManager` pins and the pnpm catalogs mechanism. This intention changes **no dependency version** except the toolchain itself.
 
 ## Why
 
-Later intentions and their validations assume the v1.0.0 toolchain (Node, pnpm, TypeScript-era packages). A project running far behind fails those validations for reasons unrelated to the intention being applied. Catalogs (`pnpm-workspace.yaml`) also become the boilerplate's mechanism for versioning shared dependencies — future releases update catalogs, so adopting them now makes every later upgrade smaller.
+Future releases ship dependency changes as catalog diffs — adopting the mechanism now makes every later upgrade a small, reviewable hunk in one file. Version bumps themselves are deliberately **not** covered here: a bump is never just a JSON line (breaking changes, peer cascades, testing), so each bump ships inside the intention that requires it and owns its breakage (`v1.0.0/migrate-mikro-orm-v7` bumps `@mikro-orm/*`, `v1.0.0/standardize-oxlint-oxfmt` adds oxlint/oxfmt, and so on).
 
 ## Applies When
 
@@ -26,38 +26,32 @@ Later intentions and their validations assume the v1.0.0 toolchain (Node, pnpm, 
 
 ## Observable Gaps
 
-Work through each gap independently; skip any that is already closed.
+`package.json` and `pnpm-workspace.yaml` are always **merges, never copies**: the project's own dependencies are interleaved with the boilerplate's. Treat each dependency line as its own hunk.
 
 1. **Toolchain pins** — signal: root `package.json` `engines` or `packageManager` differ from the staged reference `package.json`.
-   Copy the reference values verbatim (`engines.node`, `engines.pnpm`, `packageManager`).
+   Copy the reference values for `engines.node`, `engines.pnpm` and `packageManager` only. If the project's runtime or CI cannot move to the pinned Node yet, record this intention as skipped with that reason instead of half-applying it.
    Done when: `pnpm install` runs under the pinned pnpm without engine warnings.
 
-2. **Dependency catalogs** — signal: `pnpm-workspace.yaml` has no `catalogs:` section, or apps pin versions directly for dependencies the boilerplate resolves via `catalog:`.
-   Copy the `catalogs:` section from the staged reference `pnpm-workspace.yaml`, then switch to `catalog:<name>` **only the dependencies the project already uses**. Do not add catalog entries for packages the project does not depend on.
-   Done when: `pnpm install` succeeds and shared dependencies resolve through catalogs.
-
-3. **Shared dependency versions** — signal: a dependency present in **both** the project and the staged reference (root devDependencies like `tsx`, `husky`, `knip`, or app dependencies covered by a catalog) is behind the reference version.
-   Align only those shared versions to the reference. One `pnpm install`, then fix only the breakages that alignment itself causes.
-   Done when: `pnpm install`, `pnpm typecheck` and existing tests pass.
+2. **Catalogs mechanism** — signal: `pnpm-workspace.yaml` has no `catalogs:` section while apps pin shared dependencies directly.
+   Copy the `catalogs:` structure from the staged reference, keep only the entries for dependencies the project actually uses, and set each entry to the version the project **currently uses** — not the boilerplate's. Then switch the matching app `package.json` entries to `catalog:<name>`. Zero version changes; `pnpm-lock.yaml` should be unchanged apart from formatting.
+   Done when: `pnpm install` succeeds, the app builds, and no dependency resolved to a different version than before (compare the lockfile).
 
 ## Out of Scope
 
-- Dependencies the project added that the boilerplate does not ship — never touched, never upgraded.
-- Version bumps beyond what the reference pins.
-- Framework migrations that have their own intention (MikroORM v7 is `v1.0.0/migrate-mikro-orm-v7`, lint/format is `v1.0.0/standardize-oxlint-oxfmt`).
+- **Any dependency version bump.** Bumps ship inside the intention that requires them and documents the breakage; there is deliberately no generic "update dependencies" intention.
+- Dependencies the project added that the boilerplate does not ship.
 - Converting a non-pnpm project to pnpm workspaces.
 
 ## Reference Paths
 
 - `package.json`
 - `pnpm-workspace.yaml`
-- `apps/api/package.json`
 
 ## Validation
 
-- `pnpm install` completes.
+- `pnpm install` completes without engine warnings.
+- No dependency resolves to a different version than before this intention (lockfile diff is formatting-only).
 - `pnpm typecheck` passes.
-- Existing tests pass, or are reported unavailable.
 
 ## Record Result
 

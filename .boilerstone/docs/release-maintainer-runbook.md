@@ -25,6 +25,8 @@ For every meaningful change, decide one of these outcomes:
 
 If a project does not use a capability, do not force it. Put optional capabilities in their own domain when needed. For example, AI-related changes use the `ai` domain, so a project without AI skips them.
 
+Dependency rule: **never write a generic "update dependencies" intention.** A version bump is never just a JSON line — it implies breaking changes, peer cascades and testing. Each bump ships inside the intention that requires it and owns its breakage (the MikroORM intention bumps `@mikro-orm/*`, a React intention would bump `react`). Shared-dependency plumbing (engines, catalogs) is covered once by `align-dependency-baseline`; everything else version-related needs an owning intention or stays the project's own maintenance.
+
 ## 1. Pick the version
 
 1. Inspect the last release tag:
