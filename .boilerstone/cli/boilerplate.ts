@@ -163,13 +163,16 @@ function fetchBoilerplateTags(absolutePath: string, state: BoilerplateState | nu
 function archiveGitReference(reference: string, destination: string, cwd = projectRoot): void {
   // --output avoids buffering the archive on stdout (execFileSync caps stdout at 1MB by default)
   const tarFile = join(destination, '.reference.tar')
-  execFileSync(
-    'git',
-    ['archive', '--format=tar', `--output=${tarFile}`, reference, '.boilerstone/'],
-    { cwd, env: isolatedGitEnv() },
-  )
-  execFileSync('tar', ['-xf', tarFile, '-C', destination])
-  rmSync(tarFile, { force: true })
+  try {
+    execFileSync(
+      'git',
+      ['archive', '--format=tar', `--output=${tarFile}`, reference, '.boilerstone/'],
+      { cwd, env: isolatedGitEnv() },
+    )
+    execFileSync('tar', ['-xf', tarFile, '-C', destination])
+  } finally {
+    rmSync(tarFile, { force: true })
+  }
 }
 
 // Stages the app-code paths declared by the staged intentions ("## Reference
