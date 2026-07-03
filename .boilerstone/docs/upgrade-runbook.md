@@ -1,17 +1,21 @@
 # Upgrade runbook
 
-This is the procedure for applying a boilerplate upgrade to your project, once `upgrade prepare` has staged the work. It is the same for a human and for an AI agent — the `upgrade-boilerplate` skill follows this exact document. If you haven't read [how-it-works.md](./how-it-works.md) yet, read it first: it explains why intentions exist and what `prepare` produced.
+This is the procedure for applying a boilerplate upgrade to your project, once `upgrade prepare` has staged the work. It is the same for a human and for an AI agent — the `boilerstone-upgrade` skill follows this exact document. If you haven't read [how-it-works.md](./how-it-works.md) yet, read it first: it explains why intentions exist and what `prepare` produced.
 
 Commands that accept `--json` emit machine-readable output; prefer it when the executor is a program.
 
 ## Before you start
 
-You need a valid `.boilerstone/boilerplate.json` (run `upgrade init`, or `bootstrap` on an older project), a clean git worktree, and the boilerplate release tags available locally. `upgrade doctor` checks all three and prints the exact `git remote add` / `git fetch --tags` commands when tags are missing — references can only be extracted from tags that exist locally.
+You need a valid `.boilerstone/boilerplate.json` (run `upgrade init`, or `bootstrap` on an older project), a clean git worktree, and the boilerplate release tags available locally. `upgrade status` checks all three and prints the exact `git remote add` / `git fetch --tags` commands when tags are missing — references can only be extracted from tags that exist locally.
 
-Then stage the upgrade:
+Then stage the upgrade. You can skip `upgrade path` and go straight to `prepare`; `prepare` computes the path internally. Use `--select` when you want to choose the intentions interactively before the workspace is written.
 
 ```bash
-pnpm boilerplate upgrade prepare --to <version>   # or --to latest --fetch
+pnpm boilerplate upgrade prepare --to <version> --fetch --select
+
+# Non-interactive alternatives
+pnpm boilerplate upgrade prepare --to <version> --include v1.2.0/foo,v1.2.0/bar
+pnpm boilerplate upgrade prepare --to <version> --exclude v1.2.0/optional-ai
 ```
 
 This creates the `upgrade/v<source>-to-v<target>` branch and the `.boilerstone/upgrade/` workspace:
@@ -29,11 +33,11 @@ This creates the `upgrade/v<source>-to-v<target>` branch and the `.boilerstone/u
 Work through `upgrade-session.md` one intention at a time. For each:
 
 1. **Read it.** Note its `classification` and `domain` in the frontmatter, and understand the goal and the why.
-2. **Decide if it applies.** Check the "Applies when" and "Do not apply when" conditions against your project. If it doesn't apply, record it as skipped with a reason and move on. If its classification is `breaking-manual`, stop and get a human decision before touching anything.
-3. **Understand the change** by comparing `reference/source/` with `reference/target/` (and, for app-code intentions, the boilerplate at the target tag). You're after the _meaning_ of the change, not a literal copy.
+2. **Decide if it applies.** Check the "Applies when" and "Do not apply when" conditions against your project. If it doesn't apply, record it as skipped with a reason and move on. If its classification is `breaking-manual`, stop and get a human decision before touching anything. Intentions reference boilerplate paths (`apps/api/…`, root configs); if your project's layout differs, translate them to your structure — never reorganize the project to match the boilerplate.
+3. **Understand the change** by comparing `reference/source/` with `reference/target/`. The app-code paths each intention declares under "Reference Paths" are staged at the target version inside `reference/target/`; if you need a file that isn't staged, `upgrade-session.md` contains ready-made `git archive` / `git clone` commands to pull it from the target tag. You're after the _meaning_ of the change, not a literal copy.
 4. **Make the smallest safe change.** Adapt your existing code; don't replace it wholesale. Preserve project-specific behavior. Avoid cosmetic edits.
 5. **Validate.** Run the intention's own validation first, then the global checks that exist in your project: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. Report a missing script as unavailable, not as passing.
-6. **Record and commit.** Only once validation passes, run `pnpm boilerplate upgrade record --id <id> --applied` (or `--skipped --reason "..."`), then commit — **one commit per intention** (`feat: apply migration intention <id>`).
+6. **Record.** Only once validation passes, run `pnpm boilerplate upgrade record --id <id> --applied` (or `--skipped --reason "..."`).
 
 Recorded outcomes look like this:
 
@@ -52,8 +56,8 @@ Stop — don't guess through — if a "Do not apply when" condition matches, if 
 
 ## Git discipline
 
-Stay on the dedicated `upgrade/…` branch with one commit per resolved intention. Keep successful commits even if a later intention fails. If an intention is half-applied and cannot be validated, revert only the uncommitted work for that intention, write `blocked.md`, and stop. Never stash, push, or merge automatically — those are the human's call. If the branch already exists, check it out manually before re-running `prepare`.
+Stay on the dedicated `upgrade/…` branch. For risky or large upgrades, commit after each resolved intention. For small supervised batches, it is acceptable to record multiple intentions and commit them together after validation, as long as the PR summary still lists each applied/skipped intention. If an intention is half-applied and cannot be validated, revert only the uncommitted work for that intention, write `blocked.md`, and stop. Never stash, push, or merge automatically — those are the human's call. If the branch already exists, check it out manually before re-running `prepare`.
 
 ## Finishing
 
-When every intention is applied or skipped, run `pnpm boilerplate upgrade finish --to <target-version>` as the final commit, then open a PR. Summarize what happened: intentions applied, intentions skipped (with reasons), anything blocked, and the validation results. Do not update `source.currentVersion` before this final step.
+When every staged intention is applied or skipped, run `pnpm boilerplate upgrade finish --to <target-version>`, commit the final state, then open a PR. Summarize what happened: intentions applied, intentions skipped (with reasons), anything blocked, and the validation results. Do not update `source.currentVersion` before this final step.

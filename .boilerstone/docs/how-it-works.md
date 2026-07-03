@@ -27,15 +27,17 @@ This is why the system is just markdown and JSON. It doesn't care whether the ex
 - **Migration intentions** — published per release, fetched from the boilerplate's git tags.
 - **The CLI** (`pnpm boilerplate …`) — reads your state, computes what's left to do, and stages the work. It never edits your application code itself.
 
+## Where the upgrade material comes from
+
+Everything travels over plain git from a single URL: `source.remote` in your `boilerplate.json`, recorded at init (`BOILERPLATE_REPO` env for a fork or private mirror, the public GitHub repository by default). `upgrade prepare --fetch` runs `git fetch <that-url> --tags` — no named remote required — and from there everything is local: intentions are read from the release tags, reference trees and each intention's declared reference paths are extracted with `git archive`. No API, no registry, no network beyond git; `upgrade status` prints the exact fetch commands whenever tags are missing.
+
 ## The commands, in the order you meet them
 
 **`bootstrap`** — wires an _existing_ project into the system: adds the `boilerplate` script, ignores the scratch workspace, and records your starting version. Run once, when adopting the system on a project that predates it. (New projects get this through `pnpm rock` instead.)
 
-**`upgrade status`** — answers "where am I?": your current version and the intentions already applied or skipped. Read-only.
+**`upgrade status`** — answers "where am I, and am I ready?": your current version, the intentions already applied or skipped, plus readiness checks — state file valid, worktree clean, release tags available. It only reports and prints the commands to fix anything missing — it changes nothing.
 
 **`versions list`** — lists the boilerplate versions available to you (from fetched tags). Read-only.
-
-**`upgrade doctor`** — answers "am I ready to upgrade?": checks that your state file is valid, your worktree is clean, and the release tags are available. It only diagnoses and prints the commands to fix anything missing — it changes nothing.
 
 **`upgrade path --to <version>`** — answers "what would change?": computes the intentions between your version and the target, filtered to the domains you track and minus what you've already resolved. Read-only — it prints the plan and stops.
 
@@ -43,7 +45,7 @@ This is why the system is just markdown and JSON. It doesn't care whether the ex
 
 1. it refuses if your worktree is dirty;
 2. it creates and switches to a dedicated branch `upgrade/v<current>-to-v<target>`;
-3. it writes a disposable, gitignored `.boilerstone/upgrade/` folder containing the intentions to process, the `.boilerstone` reference trees at both versions, and a session prompt.
+3. it writes a disposable, gitignored `.boilerstone/upgrade/` folder containing the intentions to process, the `.boilerstone` reference trees at both versions, the app-code reference paths the intentions declare (extracted at the target version), and a session prompt.
 
 It does **not** edit your application code, commit, or push. Use `--to latest` to target the newest release, and `--fetch` to pull the release tags first.
 

@@ -128,8 +128,9 @@ Each intention must answer:
 - **Why**: why did the boilerplate change?
 - **Applies When**: exact checks that make this relevant.
 - **Do Not Apply When**: exact skip/stop conditions.
-- **Reference Paths**: files to compare in source and target tags.
-- **Suggested Agent Workflow**: ordered, bounded steps.
+- **Observable Gaps**: 3-6 independent, detectable deltas — each with a greppable signal, the reference file to compare, and a binary "Done when".
+- **Out of Scope**: what the intention must not touch, even if it looks related.
+- **Reference Paths**: files to compare in source and target tags. `upgrade prepare` stages them, so keep them small — no lockfiles or generated artifacts.
 - **Validation**: commands or checks that prove the adaptation worked.
 - **Record Result**: the exact `upgrade record` command.
 
@@ -184,14 +185,13 @@ cd "$tmp/app"
 pnpm install
 pnpm rock
 pnpm boilerplate upgrade status --json
-pnpm boilerplate upgrade doctor --json
 ```
 
 If testing an existing-project onboarding path, use a separate temporary project and run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- onboard
-pnpm boilerplate upgrade doctor
+pnpm boilerplate upgrade status
 ```
 
 ## 8. Tag and publish

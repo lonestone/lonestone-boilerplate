@@ -34,20 +34,27 @@ classification: migration
 <!-- Example: "- Project uses a custom storage solution" -->
 <!-- Example: "- Project does not have the `api` app" -->
 
+## Observable Gaps
+
+<!-- 3-6 independent, detectable deltas. Each gap needs: a greppable signal, -->
+<!-- the reference file to compare against, and a binary "Done when". -->
+<!-- Example: -->
+<!-- 1. **Package versions** — signal: `@some/pkg` < 2 in `apps/api/package.json`. -->
+<!--    Align with the staged reference `apps/api/package.json`; touch no other dependency. -->
+<!--    Done when: `pnpm --filter=api typecheck` passes. -->
+
+## Out of Scope
+
+<!-- What this intention must NOT touch, even if it looks related. -->
+<!-- This is what keeps an executor from boiling the ocean. -->
+<!-- Example: "- The project's entities and business queries — never rewritten." -->
+
 ## Reference Paths
 
-<!-- Files or directories from the boilerplate to compare -->
+<!-- Files or directories from the boilerplate to compare. -->
+<!-- `upgrade prepare` stages these from the target tag into reference/target/, -->
+<!-- so keep them small and specific — no lockfiles or generated artifacts. -->
 <!-- Example: "- `apps/api/src/modules/storage/`" -->
-<!-- Example: "- `packages/ui/src/components/`" -->
-
-## Suggested Agent Workflow
-
-<!-- Ordered steps for the AI agent to follow -->
-<!-- Example: -->
-<!-- 1. Read reference files in `apps/api/src/modules/storage/` -->
-<!-- 2. Compare with project's existing storage module -->
-<!-- 3. Add missing exports and types -->
-<!-- 4. Update imports in affected files -->
 
 ## Validation
 

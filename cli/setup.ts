@@ -954,6 +954,11 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
     // Producer-side upgrade artifacts published by the boilerplate, not maintained inside consumers
     '.boilerstone/migration-intentions',
     '.boilerstone/boilerplate.example.json',
+    // Maintainer/onboarding-only skills; consumers keep only the boilerstone-upgrade skill
+    '.claude/skills/boilerstone-release',
+    '.cursor/skills/boilerstone-release',
+    '.claude/skills/boilerstone-init',
+    '.cursor/skills/boilerstone-init',
   ]
 
   for (const file of filesToRemove) {

@@ -4,15 +4,15 @@
 
 ## Design decisions
 
-| Decision                                      | Why                                                                                                                                                                   |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Ship intentions (meaning), not diffs          | The consumer's code has diverged; replaying a diff would overwrite business logic.                                                                                    |
-| Git tags are the source of truth for releases | A project forked at an old version doesn't have newer files on disk, but the tag does. Disk is a fallback for releases drafted but not yet tagged.                    |
-| Tool-agnostic markdown + JSON                 | The same artifacts work for a human and for any agent (Claude, Cursor, …); no tool lock-in.                                                                           |
-| Skills are thin shims                         | [`SKILL.md`](../../.claude/skills/upgrade-boilerplate/SKILL.md) holds no process — it points at the runbook, so there is one source of truth.                         |
-| Pure logic isolated from I/O                  | `boilerplate-core.ts` (path computation, metadata parsing, wiring helpers) is side-effect-free and unit-tested; git and filesystem effects live in `boilerplate.ts`.  |
-| Safety-first git policy                       | Refuses a dirty worktree, works on a dedicated branch, never auto-pushes/merges/stashes, one commit per intention, and `breaking-manual` intentions stop for a human. |
-| Removable in one move                         | `rm -rf .boilerstone` plus dropping the `boilerplate` script detaches the system; nothing else depends on it.                                                         |
+| Decision                                      | Why                                                                                                                                                                                                                            |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Ship intentions (meaning), not diffs          | The consumer's code has diverged; replaying a diff would overwrite business logic.                                                                                                                                             |
+| Git tags are the source of truth for releases | A project forked at an old version doesn't have newer files on disk, but the tag does. Disk is a fallback for releases drafted but not yet tagged.                                                                             |
+| Tool-agnostic markdown + JSON                 | The same artifacts work for a human and for any agent (Claude, Cursor, …); no tool lock-in.                                                                                                                                    |
+| Skills are thin shims                         | [`SKILL.md`](../../.claude/skills/boilerstone-upgrade/SKILL.md) holds no process — it points at the runbook, so there is one source of truth.                                                                                  |
+| Pure logic isolated from I/O                  | `boilerplate-core.ts` (path computation, metadata parsing, wiring helpers) is side-effect-free and unit-tested; git and filesystem effects live in `boilerplate.ts`.                                                           |
+| Safety-first git policy                       | Refuses a dirty worktree, works on a dedicated branch, never auto-pushes/merges/stashes, recommends one commit per risky intention while allowing small supervised batches, and `breaking-manual` intentions stop for a human. |
+| Removable in one move                         | `rm -rf .boilerstone` plus dropping the `boilerplate` script detaches the system; nothing else depends on it.                                                                                                                  |
 
 ## Two classifications drive the plan
 
@@ -22,11 +22,11 @@ Intentions carry a `classification` in their frontmatter. `no-migration` and `in
 
 In the boilerplate repo everything is present: published intentions, the CLI, tests, these maintainer docs. In a generated or onboarded project, the producer side is dropped — `cleanupBoilerplateFiles()` in [`cli/setup.ts`](../../cli/setup.ts) (for `pnpm rock`) and the `bootstrap` command (for existing projects) both remove `migration-intentions/`, the example state, and these internal docs, while keeping the local state, the CLI, the schema, and the consumer-facing docs. Future-release intentions are then read from git tags rather than from disk.
 
-The list of producer-only paths is currently mirrored in three places — `PRODUCER_ARTIFACTS` in `boilerplate-core.ts`, `filesToRemove` in `cli/setup.ts`, and the doctor "consumer cleanup" check in `boilerplate.ts`. Keep them in sync, or consolidate them.
+The list of producer-only paths is currently mirrored in three places — `PRODUCER_ARTIFACTS` in `boilerplate-core.ts`, `filesToRemove` in `cli/setup.ts`, and the status "consumer cleanup" readiness check in `boilerplate.ts`. Keep them in sync, or consolidate them.
 
 ## What is real vs. what is vision
 
-- **Real and working**: the CLI (`bootstrap`, `upgrade init/status/doctor/path/prepare`, `versions list`), the committed state + schema, the tested pure logic, the consumer switch, the curl installer, and the skill shim.
+- **Real and working**: the CLI (`bootstrap`, `upgrade init/status/path/prepare`, `versions list`), the committed state + schema, the tested pure logic, the consumer switch, the curl installer, and the skill shim.
 - **Pilot stage**: only one intention exists (`v1.0.0/setup-boilerplate-tracking`). No release-to-release migration has been proven yet.
 - **No release tags are published yet**, so the disk fallback is what makes the CLI usable today — don't remove it assuming it's dead.
 - **The "module registry"** (importing optional modules on demand, shadcn-style) is a design intent, not implemented.

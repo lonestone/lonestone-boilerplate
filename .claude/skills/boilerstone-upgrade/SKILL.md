@@ -1,5 +1,5 @@
 ---
-name: upgrade-boilerplate
+name: boilerstone-upgrade
 description: Apply boilerplate migration intentions to a project created from the Lonestone boilerplate. Use when the user asks to "upgrade boilerplate", "sync boilerplate", "apply migration intentions", "mettre à jour le boilerplate", or mentions moving to a newer boilerplate version. State lives in .boilerstone/boilerplate.json.
 ---
 
@@ -16,14 +16,14 @@ This skill is a thin adapter. The canonical, executor-neutral workflow lives in 
 ## Quick map
 
 ```bash
-pnpm boilerplate upgrade status --json            # Current state (version, applied/skipped)
+pnpm boilerplate upgrade status --json            # State + readiness checks (version, applied/skipped, tags)
 pnpm boilerplate upgrade path --to <ver> --json   # Pending intentions and target branch
-pnpm boilerplate upgrade prepare --to <ver>       # Builds .boilerstone/upgrade/ workspace
+pnpm boilerplate upgrade prepare --to <ver> --select # Choose intentions and build .boilerstone/upgrade/
 pnpm boilerplate upgrade record --id <id> --applied
 pnpm boilerplate upgrade finish --to <ver>
 ```
 
-Then execute `.boilerstone/upgrade/upgrade-session.md`: one intention at a time, applicability checks first, smallest safe change, validation, then record the result with `upgrade record` and commit (one commit per intention). Use `upgrade finish` only after every intention is applied or skipped.
+Then execute `.boilerstone/upgrade/upgrade-session.md`: one intention at a time, applicability checks first, smallest safe change, validation, then record the result with `upgrade record`. Commit after each intention for risky upgrades; for small supervised batches, multiple recorded intentions may be committed together after validation. Use `upgrade finish` only after every staged intention is applied or skipped.
 
 ## Guardrails (from the runbook — non-negotiable)
 

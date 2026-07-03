@@ -2,13 +2,13 @@
 
 This directory is the tool-agnostic home of the boilerplate upgrade system. A project created from this template diverges forever, so upstream changes cannot be merged as code. Instead, each release publishes **migration intentions** — the *meaning* of a change (goal, why, applicability, stop conditions) — and an executor (a human developer or an AI agent) replays that meaning in the consumer project as the smallest safe equivalent change.
 
-Everything an executor needs lives here, in markdown and JSON, independent of which AI tool (if any) the team uses. Tool-specific entry points (e.g. `.claude/skills/upgrade-boilerplate/`, `.cursor/skills/upgrade-boilerplate/`) are thin shims pointing at this directory.
+Everything an executor needs lives here, in markdown and JSON, independent of which AI tool (if any) the team uses. Tool-specific entry points (e.g. `.claude/skills/boilerstone-upgrade/`, `.cursor/skills/boilerstone-upgrade/`) are thin shims pointing at this directory.
 
 The nominal workflow is human-in-the-loop: a developer pilots an agentic AI, and the agent uses the CLI, git, tests, and the migration intention files as tools. The system is optimized for that supervised agent flow, while staying readable enough for a human to execute manually when needed.
 
 **New here?** Read [docs/how-it-works.md](./docs/how-it-works.md) — the philosophy and every command, in plain terms.
 
-**Publishing a new boilerplate version?** Follow [docs/release-maintainer-runbook.md](./docs/release-maintainer-runbook.md). Do not rely on memory or a vague release summary.
+**Publishing a new boilerplate version?** Follow [docs/release-maintainer-runbook.md](./docs/release-maintainer-runbook.md) — the `boilerstone-release` skill (Claude Code / Cursor) pilots exactly that runbook. Do not rely on memory or a vague release summary.
 
 ## Contents
 
@@ -45,10 +45,12 @@ curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/mai
 Pin a release with `--ref <tag>`; point at a fork/private repo with `BOILERPLATE_REPO=<url>`.
 
 - **`init`** clones the template and runs `pnpm rock` (the normal first-run setup).
-- **`onboard`** fetches `.boilerstone/` and runs `bootstrap` (below).
-- **`upgrade [version]`** runs `pnpm boilerplate upgrade prepare --to <version|latest> --fetch`. It fetches the release tags, **creates a branch** `upgrade/v<current>-to-v<target>`, and stages a gitignored `.boilerstone/upgrade/` workspace (intentions + reference trees + session prompt). It does **not** touch your app code, commit, or push — applying the staged intentions is a separate, reviewable step (see the runbook).
+- **`onboard`** fetches `.boilerstone/` plus the `boilerstone-upgrade` skills, runs `bootstrap` (below), then offers to commit the onboarding (`[Y/n]`, default yes).
+- **`upgrade [version]`** runs `pnpm boilerplate upgrade prepare --to <version|latest> --fetch --select` (with no terminal, the selection falls back to staging every intention). It fetches the release tags, **creates a branch** `upgrade/v<current>-to-v<target>`, and stages a gitignored `.boilerstone/upgrade/` workspace (intentions + reference trees + session prompt). It does **not** touch your app code, commit, or push — applying the staged intentions is a separate, reviewable step (see the runbook).
 
 `bootstrap` wires the root `package.json` (adds the `boilerplate` script and a `tsx` devDependency), ignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It is idempotent and never overwrites existing entries. It does **not** run `pnpm rock` (which renames packages and rewrites env/docker — safe only on a fresh template, destructive on an existing project).
+
+> **Scope heads-up:** the v1.0.0 intentions are baseline catch-ups ("align with the v1.0.0 …") — broader than the narrow deltas later releases ship. When onboarding an older project, plan roughly one working session per intention.
 
 Without the installer, the same two steps run by `onboard` are:
 
@@ -64,17 +66,16 @@ pnpm dlx tsx .boilerstone/cli/boilerplate.ts bootstrap && pnpm install
 ```bash
 pnpm boilerplate                                  # Help
 pnpm boilerplate bootstrap                         # Onboard an existing project (see above)
-pnpm boilerplate upgrade status --json            # Where am I? (--json for agents/scripts)
+pnpm boilerplate upgrade status --json            # Where am I, and am I ready? (--json for agents/scripts)
 pnpm boilerplate intentions lint                  # Validate intention metadata before release
-pnpm boilerplate upgrade doctor --json            # Is the project ready to upgrade?
 pnpm boilerplate upgrade path --to 1.6.0 --json   # What's between me and the target?
-pnpm boilerplate upgrade prepare --to 1.6.0       # Build the upgrade workspace
+pnpm boilerplate upgrade prepare --to 1.6.0 --select # Choose intentions and build the workspace
 pnpm boilerplate upgrade record --id <id> --applied
 pnpm boilerplate upgrade finish --to 1.6.0
 ```
 
 - **Human executor**: follow [docs/upgrade-runbook.md](./docs/upgrade-runbook.md).
-- **AI executor**: the Claude Code skill and Cursor skill `upgrade-boilerplate` follow the same runbook.
+- **AI executor**: the Claude Code skill and Cursor skill `boilerstone-upgrade` follow the same runbook.
 
 Tests for the CLI live in `cli/*.spec.ts` and run with the regular workspace test suite (`pnpm test`).
 
@@ -99,8 +100,8 @@ This system is designed to be removable in one move. If your project no longer w
 1. `rm -rf .boilerstone`
 2. Remove the `boilerplate` script from the root `package.json`
 3. Optionally remove the `.boilerstone` entry in `pnpm-workspace.yaml` and the `.boilerstone/upgrade/` line in `.gitignore` (both are harmless if left)
-4. Optionally remove `.claude/skills/upgrade-boilerplate/`
-5. Optionally remove `.cursor/skills/upgrade-boilerplate/`
+4. Optionally remove `.claude/skills/boilerstone-upgrade/`
+5. Optionally remove `.cursor/skills/boilerstone-upgrade/`
 
 Nothing else in the repository depends on this directory.
 

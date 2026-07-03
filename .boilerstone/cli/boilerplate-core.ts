@@ -304,6 +304,43 @@ function resolveTargetVersion(requested: string, releases: ReleaseInfo[]): strin
 }
 
 /**
+ * Extracts the repo-relative paths declared in an intention's
+ * "## Reference Paths" section. Only backticked tokens that look like paths
+ * are kept; `.boilerstone/` entries are dropped since the reference trees
+ * already contain them.
+ */
+function parseReferencePaths(content: string): string[] {
+  const lines = content.split('\n')
+  const sectionStart = lines.findIndex((line) => line.trim() === '## Reference Paths')
+  if (sectionStart === -1) {
+    return []
+  }
+
+  const paths = new Set<string>()
+  for (const line of lines.slice(sectionStart + 1)) {
+    if (line.startsWith('## ')) {
+      break
+    }
+    if (!line.trim().startsWith('-')) {
+      continue
+    }
+    for (const match of line.matchAll(/`([^`]+)`/g)) {
+      const candidate = match[1].trim().replace(/\/+$/, '')
+      if (
+        candidate &&
+        !candidate.includes(' ') &&
+        !candidate.includes('://') &&
+        !candidate.startsWith('.boilerstone')
+      ) {
+        paths.add(candidate)
+      }
+    }
+  }
+
+  return [...paths].sort()
+}
+
+/**
  * Appends a line to .gitignore content if it is not already present.
  * Idempotent and newline-safe.
  */
@@ -334,6 +371,7 @@ export {
   type PackageJsonShape,
   type ParsedIntentionMetadata,
   parseIntentionMetadataContent,
+  parseReferencePaths,
   PRODUCER_ARTIFACTS,
   readOptionValue,
   type ReleaseInfo,

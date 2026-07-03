@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { cleanupBoilerplateFiles } from '../../cli/setup'
 import { isolatedGitEnv } from '../../cli/utils'
-import { archiveGitReference } from './boilerplate'
+import { archiveGitReference, extractIntentionReferencePaths } from './boilerplate'
 import {
   BOILERPLATE_SCRIPT_COMMAND,
   BOILERPLATE_SCRIPT_NAME,
@@ -25,6 +25,7 @@ import {
   ensurePackageJsonWiring,
   getFallbackIntentionId,
   parseIntentionMetadataContent,
+  parseReferencePaths,
   PRODUCER_ARTIFACTS,
   readOptionValue,
   resolveTargetVersion,
@@ -361,6 +362,74 @@ describe('boilerplate core', () => {
   })
 })
 
+describe('parseReferencePaths', () => {
+  it('extracts backticked paths from the Reference Paths section only', () => {
+    const content = [
+      '# Intention',
+      '',
+      '## Reference Paths',
+      '',
+      '- `apps/api/package.json`',
+      '- `apps/api/src/modules/db/`',
+      "- `apps/api/mikro-orm.config.ts` or the project's equivalent MikroORM config",
+      '- `.boilerstone/boilerplate.schema.json`',
+      '- see `https://example.com/doc`',
+      '',
+      '## Validation',
+      '',
+      '- `pnpm test` passes.',
+    ].join('\n')
+
+    expect(parseReferencePaths(content)).toEqual([
+      'apps/api/mikro-orm.config.ts',
+      'apps/api/package.json',
+      'apps/api/src/modules/db',
+    ])
+  })
+
+  it('returns an empty list when the section is missing', () => {
+    expect(parseReferencePaths('# Intention\n\n## Goal\n\nNo references here.')).toEqual([])
+  })
+})
+
+describe('extractIntentionReferencePaths', () => {
+  it('stages declared paths that exist at the target tag and skips the rest', () => {
+    const repoDir = createGitRepo('boilerplate-refpaths-repo-')
+    const destDir = mkdtempSync(join(tmpdir(), 'boilerplate-refpaths-dest-'))
+
+    try {
+      mkdirSync(join(repoDir, 'apps', 'api', 'src'), { recursive: true })
+      writeFileSync(join(repoDir, 'apps', 'api', 'package.json'), '{"name":"api"}\n')
+      writeFileSync(join(repoDir, 'apps', 'api', 'src', 'main.ts'), 'export {}\n')
+      writeFileSync(join(repoDir, 'unrelated.txt'), 'not referenced\n')
+      runGit(repoDir, ['add', '-A'])
+      runGit(repoDir, ['commit', '-m', 'init'])
+      runGit(repoDir, ['tag', 'v9.9.9'])
+
+      const intention = {
+        content: [
+          '## Reference Paths',
+          '',
+          '- `apps/api/package.json`',
+          '- `apps/api/src/`',
+          '- `apps/api/missing-file.ts`',
+        ].join('\n'),
+      }
+
+      const staged = extractIntentionReferencePaths([intention], 'v9.9.9', destDir, repoDir)
+
+      expect(staged).toEqual(['apps/api/package.json', 'apps/api/src'])
+      expect(existsSync(join(destDir, 'apps', 'api', 'package.json'))).toBe(true)
+      expect(existsSync(join(destDir, 'apps', 'api', 'src', 'main.ts'))).toBe(true)
+      expect(existsSync(join(destDir, 'unrelated.txt'))).toBe(false)
+      expect(existsSync(join(destDir, '.reference.tar'))).toBe(false)
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true })
+      rmSync(destDir, { recursive: true, force: true })
+    }
+  })
+})
+
 describe('archiveGitReference', () => {
   it('extracts only .boilerstone/ and survives archives larger than the default exec buffer', () => {
     const repoDir = createGitRepo('boilerplate-archive-repo-')
@@ -401,13 +470,14 @@ describe('boilerplate CLI smoke', () => {
     expect(result.stdout).toContain('Available Boilerplate Versions')
   })
 
-  it('reports missing state with init guidance', () => {
+  it('reports missing state with init guidance and a failing readiness summary', () => {
     const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-status-'))
     const result = runCli(['upgrade', 'status', '--project', projectPath], projectPath)
 
-    expect(result.status).toBe(0)
+    expect(result.status).toBe(1)
     expect(result.stdout).toContain('No boilerplate.json found')
     expect(result.stdout).toContain('boilerplate upgrade init')
+    expect(result.stdout).toContain('Readiness:')
   })
 
   it('fails clearly when an option value is missing', () => {
@@ -417,17 +487,9 @@ describe('boilerplate CLI smoke', () => {
     expect(result.stderr).toContain('--to requires a value')
   })
 
-  it('emits machine-readable status with --json', () => {
+  it('emits machine-readable status with readiness checks with --json', () => {
     const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-json-status-'))
     const result = runCli(['upgrade', 'status', '--project', projectPath, '--json'], projectPath)
-
-    expect(result.status).toBe(0)
-    expect(JSON.parse(result.stdout)).toEqual({ initialized: false })
-  })
-
-  it('emits machine-readable doctor failures with --json', () => {
-    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-json-doctor-'))
-    const result = runCli(['upgrade', 'doctor', '--project', projectPath, '--json'], projectPath)
 
     expect(result.status).toBe(1)
     const payload = JSON.parse(result.stdout)
@@ -528,12 +590,100 @@ describe('boilerplate CLI smoke', () => {
         true,
       )
 
+      const sessionPrompt = readFileSync(
+        join(projectPath, '.boilerstone', 'upgrade', 'upgrade-session.md'),
+        'utf-8',
+      )
+      expect(sessionPrompt).toContain('You are the executor')
+      expect(sessionPrompt).toContain('git archive v1.0.0 -- <path>')
+
       const branch = spawnSync('git', ['branch', '--show-current'], {
         cwd: projectPath,
         encoding: 'utf-8',
         env: isolatedGitEnv(),
       }).stdout.trim()
       expect(branch).toBe('upgrade/v0.9.0-to-v1.0.0')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('prepares only selected intentions when exclusions are provided', () => {
+    const projectPath = createGitRepo('boilerplate-prepare-filtered-')
+
+    try {
+      mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
+      writeFileSync(
+        join(projectPath, '.boilerstone', 'boilerplate.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'init'])
+
+      const result = runCli([
+        'upgrade',
+        'prepare',
+        '--project',
+        projectPath,
+        '--to',
+        '1.0.0',
+        '--exclude',
+        'v1.0.0/adopt-ai-module-baseline',
+      ])
+
+      expect(result.status).toBe(0)
+      expect(
+        existsSync(
+          join(projectPath, '.boilerstone/upgrade/intentions/v1.0.0-adopt-ai-module-baseline.md'),
+        ),
+      ).toBe(false)
+      expect(
+        existsSync(
+          join(projectPath, '.boilerstone/upgrade/intentions/v1.0.0-standardize-oxlint-oxfmt.md'),
+        ),
+      ).toBe(true)
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses to prepare an empty path and suggests checking the source version', () => {
+    const projectPath = createGitRepo('boilerplate-prepare-empty-')
+
+    try {
+      mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
+      writeFileSync(
+        join(projectPath, '.boilerstone', 'boilerplate.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'init'])
+
+      const result = runCli(['upgrade', 'prepare', '--project', projectPath, '--to', '1.0.0'])
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('No intentions apply between v1.0.0 and v1.0.0')
+      expect(result.stderr).toContain('never replayed')
+      expect(result.stderr).toContain('in .boilerstone/boilerplate.json (e.g. 0.0.0)')
+      expect(existsSync(join(projectPath, '.boilerstone/upgrade'))).toBe(false)
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }

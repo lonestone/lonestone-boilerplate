@@ -8,11 +8,11 @@ classification: migration
 
 ## Goal
 
-Align a consumer project's Better Auth MikroORM adapter with the v1.0.0 boilerplate baseline.
+The project's Better Auth integration uses the v1.0.0 MikroORM adapter baseline: the local `mikroOrmAdapter`, schema-codegen-aligned entities, and the reference adapter behavior.
 
 ## Why
 
-The v1.0.0 boilerplate includes Better Auth integration backed by MikroORM. Projects that already use Better Auth may need adapter and test-helper updates to match the baseline safely.
+The v1.0.0 boilerplate backs Better Auth with a local MikroORM adapter (`auth-db.adapter.ts`) plus a schema codegen (`auth-schema-codegen.ts`) that keeps auth entities in sync. Projects on an earlier adapter revision miss fixes and drift from the entity schema, which breaks when other `auth` or `api` intentions land.
 
 ## Applies When
 
@@ -22,23 +22,36 @@ The v1.0.0 boilerplate includes Better Auth integration backed by MikroORM. Proj
 
 ## Do Not Apply When
 
-- The project does not use Better Auth.
-- The project uses another auth provider or a custom persistence layer.
-- The project has customized auth semantics that conflict with the boilerplate adapter.
+- The project does not use Better Auth, or uses another auth provider or persistence layer — record as skipped.
+- The project has customized auth semantics (login flows, organizations, permissions) that conflict with the baseline adapter (stop and ask).
+- Closing a gap would rename or drop auth tables/columns — stop; that needs a human-approved data migration plan.
+
+## Observable Gaps
+
+Auth state is production user data: prefer stopping over guessing, and never touch stored data. Work through each gap independently; skip any that is already closed.
+
+1. **Adapter implementation** — signal: the project's adapter predates the staged reference `auth-db.adapter.ts` (missing fixes, diverging query behavior), or auth is wired through something other than the local `mikroOrmAdapter`.
+   Port the reference adapter's fixes into the project's adapter without changing table or column names. Keep project-specific query behavior that tests depend on.
+   Done when: the adapter unit tests (the `auth-db.adapter*.spec.ts` pattern) pass and `pnpm --filter=api typecheck` passes.
+
+2. **Entities vs schema codegen** — signal: the project's auth entities diverge from what `auth-schema-codegen.ts` generates for its Better Auth config.
+   Regenerate and compare; apply only additive or neutral differences. Any rename/drop is a stop condition (see above).
+   Done when: entities match the codegen output for the project's plugins, with no destructive schema change.
+
+3. **Better Auth config** — signal: the adapter-related options in `auth.config.ts` (adapter wiring, plugin list affecting persistence) drift from the staged reference.
+   Align only persistence-related options. Keep the project's providers, hooks, session settings, and plugins.
+   Done when: existing auth flows pass in the project's test suite.
+
+## Out of Scope
+
+- Stored users, sessions, and accounts — never migrated or rewritten by this intention.
+- Auth table/column renames or drops.
+- The project's login/organization/permission business logic and provider configuration.
 
 ## Reference Paths
 
 - `apps/api/src/modules/auth/`
-- `apps/api/src/modules/db/`
-- `apps/api/src/test/`
-
-## Suggested Agent Workflow
-
-1. Identify the project's auth provider and persistence adapter.
-2. Compare the adapter behavior, entity mappings, and tests with the v1.0.0 reference.
-3. Apply only the compatibility changes that preserve existing users, sessions, and account semantics.
-4. Do not rename or drop auth tables without a human-approved migration plan.
-5. Stop if the project has custom login, organization, or permission behavior that the baseline does not cover.
+- `pnpm-workspace.yaml`
 
 ## Validation
 

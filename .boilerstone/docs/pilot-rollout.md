@@ -8,7 +8,7 @@ Pick a project that was generated from an older boilerplate version, has diverge
 
 ## Running it
 
-Follow the normal flow on the pilot: `bootstrap` (or `upgrade init`), then `upgrade status`, `upgrade doctor`, `upgrade path --to <target>`, and `upgrade prepare`. Then execute the staged intentions per the [runbook](./upgrade-runbook.md) — yourself, or by handing `.boilerstone/upgrade/upgrade-session.md` to the `upgrade-boilerplate` agent with permission to edit and commit.
+Follow the normal flow on the pilot: `bootstrap` (or `upgrade init`), then `upgrade status`, `upgrade path --to <target>`, and `upgrade prepare`. Then execute the staged intentions per the [runbook](./upgrade-runbook.md) — yourself, or by handing `.boilerstone/upgrade/upgrade-session.md` to the `boilerstone-upgrade` agent with permission to edit and commit.
 
 ## What to watch
 

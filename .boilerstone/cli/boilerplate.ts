@@ -18,6 +18,7 @@ import {
   ensurePackageJsonWiring,
   getUpgradeBranchName,
   parseIntentionMetadataContent,
+  parseReferencePaths,
   PRODUCER_ARTIFACTS,
   readOptionValue,
   resolveTargetVersion,
@@ -167,6 +168,42 @@ function archiveGitReference(reference: string, destination: string, cwd = proje
   )
   execFileSync('tar', ['-xf', tarFile, '-C', destination])
   rmSync(tarFile, { force: true })
+}
+
+// Stages the app-code paths declared by the staged intentions ("## Reference
+// Paths") from the target tag, so the executor can compare meaning without
+// cloning the whole boilerplate. Paths missing at the tag are silently skipped
+// (some entries are prose like "or the project's equivalent config").
+function extractIntentionReferencePaths(
+  intentions: Array<Pick<MigrationIntention, 'content'>>,
+  targetTag: string,
+  destination: string,
+  cwd: string,
+): string[] {
+  const declaredPaths = [
+    ...new Set(intentions.flatMap((intention) => parseReferencePaths(intention.content))),
+  ]
+  const existingPaths = declaredPaths.filter((path) => {
+    try {
+      return runGitCommand(['ls-tree', '-r', '--name-only', targetTag, '--', path], cwd) !== ''
+    } catch {
+      return false
+    }
+  })
+
+  if (existingPaths.length === 0) {
+    return []
+  }
+
+  const tarFile = join(destination, '.reference.tar')
+  execFileSync(
+    'git',
+    ['archive', '--format=tar', `--output=${tarFile}`, targetTag, ...existingPaths],
+    { cwd, env: isolatedGitEnv() },
+  )
+  execFileSync('tar', ['-xf', tarFile, '-C', destination])
+  rmSync(tarFile, { force: true })
+  return existingPaths
 }
 
 function gitFileExists(reference: string, filePath: string, cwd = projectRoot): boolean {
@@ -411,6 +448,9 @@ interface UpgradePrepareCommandOptions {
   projectPath: string
   toVersion: string
   fetch?: boolean
+  includeIds: string[]
+  excludeIds: string[]
+  select?: boolean
 }
 
 interface UpgradeRecordCommandOptions {
@@ -626,17 +666,17 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
   console.log(`\n${colorize('Next steps:', 'cyan')}`)
   if (process.env.BOILERPLATE_INSTALLER_ONBOARD === '1') {
     console.log(
-      `  ${colorize('1.', 'bright')} Diagnose readiness:      ${colorize('pnpm boilerplate upgrade doctor', 'blue')}`,
+      `  ${colorize('1.', 'bright')} Check readiness:         ${colorize('pnpm boilerplate upgrade status', 'blue')}`,
     )
     console.log(
-      `  ${colorize('2.', 'bright')} Commit the integration   ${colorize('(.boilerstone/, package.json, .gitignore)', 'dim')}\n`,
+      `  ${colorize('2.', 'bright')} Review the onboarding commit ${colorize('(the installer offers to create it)', 'dim')}\n`,
     )
   } else {
     console.log(
       `  ${colorize('1.', 'bright')} Install the CLI runtime: ${colorize('pnpm install', 'blue')}`,
     )
     console.log(
-      `  ${colorize('2.', 'bright')} Diagnose readiness:      ${colorize('pnpm boilerplate upgrade doctor', 'blue')}`,
+      `  ${colorize('2.', 'bright')} Check readiness:         ${colorize('pnpm boilerplate upgrade status', 'blue')}`,
     )
     console.log(
       `  ${colorize('3.', 'bright')} Commit the integration   ${colorize('(.boilerstone/, package.json, .gitignore)', 'dim')}\n`,
@@ -680,6 +720,14 @@ async function cmdUpgradeInit(projectPath: string): Promise<void> {
     console.log(`  ${colorize('⚠', 'yellow')} Could not detect source version`)
   }
 
+  if (!envVersion) {
+    console.log(
+      `  ${colorize('ℹ', 'cyan')} Intentions tagged with the source version itself are never replayed.`,
+    )
+    console.log(
+      `  ${colorize('ℹ', 'cyan')} If this project predates the upgrade system or you are unsure, answer ${colorize('0.0.0', 'bright')} so every intention stays applicable.`,
+    )
+  }
   const sourceVersion = envVersion || (await prompt('Enter source boilerplate version', version))
   const state: BoilerplateState = {
     schemaVersion: 1,
@@ -753,6 +801,93 @@ function formatMetadataWarnings(intentions: MigrationIntention[]): string {
   return intentionsWithIssues
     .map((intention) => `- ${intention.id}: ${intention.metadataIssues.join(', ')}`)
     .join('\n')
+}
+
+function parseCommaSeparatedOption(value: string | undefined): string[] {
+  if (!value) {
+    return []
+  }
+
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function assertKnownIntentionIds(intentions: MigrationIntention[], ids: string[]): void {
+  const knownIds = new Set(intentions.map((intention) => intention.id))
+  const unknownIds = ids.filter((id) => !knownIds.has(id))
+  if (unknownIds.length > 0) {
+    throw new Error(`Unknown intention id(s): ${unknownIds.join(', ')}`)
+  }
+}
+
+function filterUpgradePathIntentions(
+  path: UpgradePath,
+  includeIds: string[],
+  excludeIds: string[],
+): UpgradePath {
+  if (includeIds.length > 0 && excludeIds.length > 0) {
+    throw new Error('Use either --include or --exclude, not both')
+  }
+
+  assertKnownIntentionIds(path.intentions, includeIds)
+  assertKnownIntentionIds(path.intentions, excludeIds)
+
+  if (includeIds.length > 0) {
+    const selectedIds = new Set(includeIds)
+    return {
+      ...path,
+      intentions: path.intentions.filter((intention) => selectedIds.has(intention.id)),
+    }
+  }
+
+  if (excludeIds.length > 0) {
+    const excludedIds = new Set(excludeIds)
+    return {
+      ...path,
+      intentions: path.intentions.filter((intention) => !excludedIds.has(intention.id)),
+    }
+  }
+
+  return path
+}
+
+function parseSelectionIndexes(value: string, max: number): number[] {
+  return value
+    .split(',')
+    .map((item) => Number.parseInt(item.trim(), 10))
+    .filter((index) => Number.isInteger(index) && index >= 1 && index <= max)
+}
+
+async function selectUpgradePathIntentions(path: UpgradePath): Promise<UpgradePath> {
+  if (path.intentions.length === 0) {
+    return path
+  }
+
+  console.log(`\n  ${colorize('Selectable intentions:', 'cyan')}`)
+  path.intentions.forEach((intention, index) => {
+    const domain = intention.domain ? ` [${intention.domain}]` : ''
+    console.log(`    ${colorize(`${index + 1}.`, 'bright')} ${intention.id}${domain}`)
+  })
+
+  const answer = await prompt(
+    'Select intentions by number, comma-separated; leave blank for all',
+    '',
+  )
+  if (!answer) {
+    return path
+  }
+
+  const selectedIndexes = new Set(parseSelectionIndexes(answer, path.intentions.length))
+  if (selectedIndexes.size === 0) {
+    throw new Error('No valid intention selection')
+  }
+
+  return {
+    ...path,
+    intentions: path.intentions.filter((_, index) => selectedIndexes.has(index + 1)),
+  }
 }
 
 function getIntentionFiles(releases: ReleaseInfo[], cwd = projectRoot): IntentionFileInput[] {
@@ -905,17 +1040,36 @@ function cmdUpgradePath(options: UpgradePathCommandOptions): void {
     }
   }
 
+  if (path.intentions.length === 0 && path.alreadyResolvedCount === 0) {
+    console.log(
+      `\n  ${colorize('⚠', 'yellow')} No applicable intentions. Intentions tagged v${path.sourceVersion} are never replayed — if this project predates them, lower ${colorize('source.currentVersion', 'bright')} in .boilerstone/boilerplate.json (e.g. 0.0.0).`,
+    )
+  }
+
   console.log()
 }
 
 function cmdUpgradeStatus(projectPath: string, json = false): void {
   const absolutePath = projectPath ? getProjectPath(projectPath) : projectRoot
   const state = readBoilerplateJson(absolutePath)
+  const report = createHealthReport(absolutePath)
 
   if (json) {
     console.log(
-      JSON.stringify(state ? { initialized: true, ...state } : { initialized: false }, null, 2),
+      JSON.stringify(
+        {
+          initialized: Boolean(state),
+          ...state,
+          checks: report.checks,
+          summary: report.summary,
+        },
+        null,
+        2,
+      ),
     )
+    if (report.summary.failed > 0) {
+      process.exit(1)
+    }
     return
   }
 
@@ -926,49 +1080,66 @@ function cmdUpgradeStatus(projectPath: string, json = false): void {
     console.log(
       `  ${colorize('→', 'cyan')} Run ${colorize('boilerplate upgrade init', 'bright')} first`,
     )
-    return
+  } else {
+    console.log(`  ${colorize('Repository:', 'dim')} ${state.source.repository}`)
+    console.log(`  ${colorize('Remote:', 'dim')} ${getBoilerplateRemote(state)}`)
+    console.log(
+      `  ${colorize('Current version:', 'dim')} ${colorize(state.source.currentVersion, 'bright')}`,
+    )
+    if (state.source.commit) {
+      console.log(`  ${colorize('Source commit:', 'dim')} ${state.source.commit}`)
+    }
+    console.log(`  ${colorize('Tracked domains:', 'dim')} ${state.trackedDomains.join(', ')}`)
+    console.log(`  ${colorize('Applied intentions:', 'dim')} ${state.intentions.applied.length}`)
+    console.log(`  ${colorize('Skipped intentions:', 'dim')} ${state.intentions.skipped.length}`)
+
+    if (state.intentions.applied.length > 0) {
+      console.log(`\n  ${colorize('✓ Applied:', 'green')}`)
+      for (const intention of state.intentions.applied) {
+        console.log(`    ${colorize('•', 'green')} ${intention.id} (${intention.appliedAt})`)
+      }
+    }
+
+    if (state.intentions.skipped.length > 0) {
+      console.log(`\n  ${colorize('⊘ Skipped:', 'yellow')}`)
+      for (const intention of state.intentions.skipped) {
+        console.log(`    ${colorize('•', 'yellow')} ${intention.id} - ${intention.reason}`)
+      }
+    }
   }
 
-  console.log(`  ${colorize('Repository:', 'dim')} ${state.source.repository}`)
-  console.log(`  ${colorize('Remote:', 'dim')} ${getBoilerplateRemote(state)}`)
+  console.log(`\n  ${colorize('Readiness:', 'bright')}`)
+  for (const check of report.checks) {
+    console.log(
+      `  ${formatHealthIcon(check.status)} ${colorize(check.name, 'bright')}: ${check.message}`,
+    )
+    if (check.suggestion) {
+      for (const command of check.suggestion.split('\n')) {
+        console.log(`    ${colorize('→', 'cyan')} ${colorize(command, 'dim')}`)
+      }
+    }
+  }
+
   console.log(
-    `  ${colorize('Current version:', 'dim')} ${colorize(state.source.currentVersion, 'bright')}`,
+    `\n  ${colorize('Summary:', 'bright')} ${report.summary.passed} passed, ${report.summary.warnings} warning(s), ${report.summary.failed} failed\n`,
   )
-  if (state.source.commit) {
-    console.log(`  ${colorize('Source commit:', 'dim')} ${state.source.commit}`)
-  }
-  console.log(`  ${colorize('Tracked domains:', 'dim')} ${state.trackedDomains.join(', ')}`)
-  console.log(`  ${colorize('Applied intentions:', 'dim')} ${state.intentions.applied.length}`)
-  console.log(`  ${colorize('Skipped intentions:', 'dim')} ${state.intentions.skipped.length}`)
 
-  if (state.intentions.applied.length > 0) {
-    console.log(`\n  ${colorize('✓ Applied:', 'green')}`)
-    for (const intention of state.intentions.applied) {
-      console.log(`    ${colorize('•', 'green')} ${intention.id} (${intention.appliedAt})`)
-    }
+  if (report.summary.failed > 0) {
+    process.exit(1)
   }
-
-  if (state.intentions.skipped.length > 0) {
-    console.log(`\n  ${colorize('⊘ Skipped:', 'yellow')}`)
-    for (const intention of state.intentions.skipped) {
-      console.log(`    ${colorize('•', 'yellow')} ${intention.id} - ${intention.reason}`)
-    }
-  }
-
-  console.log()
 }
 
-interface DoctorCheck {
+interface HealthCheck {
   name: string
   status: 'passed' | 'warning' | 'failed'
   message: string
   suggestion?: string
 }
 
-interface DoctorReport {
+interface HealthReport {
   projectPath: string
   initialized: boolean
-  checks: DoctorCheck[]
+  checks: HealthCheck[]
   summary: {
     passed: number
     warnings: number
@@ -976,8 +1147,8 @@ interface DoctorReport {
   }
 }
 
-function createDoctorReport(projectPath: string): DoctorReport {
-  const checks: DoctorCheck[] = []
+function createHealthReport(projectPath: string): HealthReport {
+  const checks: HealthCheck[] = []
   const state = readBoilerplateJson(projectPath)
 
   checks.push(
@@ -1103,7 +1274,7 @@ function createDoctorReport(projectPath: string): DoctorReport {
   }
 }
 
-function formatDoctorIcon(status: DoctorCheck['status']): string {
+function formatHealthIcon(status: HealthCheck['status']): string {
   if (status === 'passed') {
     return colorize('✓', 'green')
   }
@@ -1113,41 +1284,6 @@ function formatDoctorIcon(status: DoctorCheck['status']): string {
   }
 
   return colorize('✗', 'red')
-}
-
-function cmdUpgradeDoctor(projectPath: string, json = false): void {
-  const absolutePath = projectPath ? getProjectPath(projectPath) : projectRoot
-  const report = createDoctorReport(absolutePath)
-
-  if (json) {
-    console.log(JSON.stringify(report, null, 2))
-    if (report.summary.failed > 0) {
-      process.exit(1)
-    }
-    return
-  }
-
-  console.log(`\n${colorize('🩺 Boilerplate Upgrade Doctor', 'cyan')}\n`)
-  console.log(`  ${colorize('Project:', 'dim')} ${absolutePath}`)
-
-  for (const check of report.checks) {
-    console.log(
-      `  ${formatDoctorIcon(check.status)} ${colorize(check.name, 'bright')}: ${check.message}`,
-    )
-    if (check.suggestion) {
-      for (const command of check.suggestion.split('\n')) {
-        console.log(`    ${colorize('→', 'cyan')} ${colorize(command, 'dim')}`)
-      }
-    }
-  }
-
-  console.log(
-    `\n  ${colorize('Summary:', 'bright')} ${report.summary.passed} passed, ${report.summary.warnings} warning(s), ${report.summary.failed} failed\n`,
-  )
-
-  if (report.summary.failed > 0) {
-    process.exit(1)
-  }
 }
 
 async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise<void> {
@@ -1185,7 +1321,7 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
 
   const targetVersion = resolveTargetVersion(options.toVersion, releases)
 
-  const upgradePath = resolveUpgradePath({
+  const resolvedPath = resolveUpgradePath({
     sourceVersion: state.source.currentVersion,
     targetVersion,
     trackedDomains: state.trackedDomains,
@@ -1194,6 +1330,33 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
     releases,
     cwd: absolutePath,
   })
+  if (resolvedPath.intentions.length === 0) {
+    console.error(
+      `  ${colorize('⚠', 'yellow')} No intentions apply between v${resolvedPath.sourceVersion} and v${resolvedPath.targetVersion} — nothing to prepare.`,
+    )
+    if (resolvedPath.alreadyResolvedCount > 0) {
+      console.error(
+        `  ${colorize('→', 'cyan')} All ${resolvedPath.alreadyResolvedCount} intention(s) in range are already applied or skipped; run ${colorize(`boilerplate upgrade finish --to ${resolvedPath.targetVersion}`, 'bright')} to record the version bump.`,
+      )
+    } else {
+      console.error(
+        `  ${colorize('→', 'cyan')} Intentions tagged v${resolvedPath.sourceVersion} are never replayed. If this project actually predates them, lower ${colorize('source.currentVersion', 'bright')} in .boilerstone/boilerplate.json (e.g. 0.0.0) and re-run.`,
+      )
+      console.error(
+        `  ${colorize('→', 'cyan')} If the source version is correct and this upgrade is genuinely empty, run ${colorize(`boilerplate upgrade finish --to ${resolvedPath.targetVersion}`, 'bright')}.`,
+      )
+    }
+    process.exit(1)
+  }
+
+  const filteredPath = filterUpgradePathIntentions(
+    resolvedPath,
+    options.includeIds,
+    options.excludeIds,
+  )
+  const upgradePath = options.select
+    ? await selectUpgradePathIntentions(filteredPath)
+    : filteredPath
 
   const branchName = getUpgradeBranchName(upgradePath.sourceVersion, upgradePath.targetVersion)
   ensureUpgradeBranch(absolutePath, branchName)
@@ -1216,6 +1379,7 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
   }
 
   // Extract reference files from git tags
+  let stagedReferencePaths: string[] = []
   try {
     archiveGitReference(
       upgradePath.sourceTag,
@@ -1227,6 +1391,17 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
       join(upgradeDir, 'reference', 'target'),
       absolutePath,
     )
+    stagedReferencePaths = extractIntentionReferencePaths(
+      upgradePath.intentions,
+      upgradePath.targetTag,
+      join(upgradeDir, 'reference', 'target'),
+      absolutePath,
+    )
+    if (stagedReferencePaths.length > 0) {
+      console.log(
+        `  ${colorize('✓', 'green')} Staged ${stagedReferencePaths.length} app reference path(s) from ${upgradePath.targetTag}`,
+      )
+    }
   } catch (error) {
     console.log(
       `  ${colorize('⚠', 'yellow')} Could not extract reference files from ${upgradePath.sourceTag} or ${upgradePath.targetTag}: ${error instanceof Error ? error.message : String(error)}`,
@@ -1236,23 +1411,34 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
     )
   }
 
-  const sessionPrompt = generateSessionPrompt(upgradePath, state)
+  const sessionPrompt = generateSessionPrompt(upgradePath, state, stagedReferencePaths)
   writeFileSync(join(upgradeDir, 'upgrade-session.md'), sessionPrompt, 'utf-8')
 
   console.log(`  ${colorize('✓', 'green')} Created .boilerstone/upgrade/ workspace`)
   console.log(`  ${colorize('✓', 'green')} Generated upgrade-session.md`)
   console.log(
-    `  ${colorize('→', 'cyan')} ${upgradePath.intentions.length} intentions ready for execution`,
+    `  ${colorize('→', 'cyan')} ${upgradePath.intentions.length}/${resolvedPath.intentions.length} intentions ready for execution`,
   )
   console.log()
 }
 
-function generateSessionPrompt(path: UpgradePath, state: BoilerplateState): string {
+function generateSessionPrompt(
+  path: UpgradePath,
+  state: BoilerplateState,
+  stagedReferencePaths: string[] = [],
+): string {
+  const targetTag = `v${path.targetVersion}`
+  const remoteUrl = getBoilerplateRemote(state)
+  const stagedReferenceLines =
+    stagedReferencePaths.length > 0
+      ? stagedReferencePaths.map((referencePath) => `  - \`${referencePath}\``).join('\n')
+      : '  - _none staged (release tags were not available locally)_'
+
   return `# Upgrade Session: v${path.sourceVersion} → v${path.targetVersion}
 
 ## Instructions
 
-You are an AI agent tasked with applying boilerplate upgrade intentions to this project.
+You are the executor — a developer or an AI agent — applying boilerplate upgrade intentions to this project.
 
 ### Rules
 
@@ -1271,7 +1457,7 @@ You are an AI agent tasked with applying boilerplate upgrade intentions to this 
 
 ### Git Policy
 
-- Create one commit per resolved intention
+- Commit after each resolved intention for risky upgrades; small supervised batches may commit multiple recorded intentions together after validation
 - Never rewrite divergent files wholesale
 - Never apply cosmetic alignment unless required
 - Do not mark an intention as applied before validation passes
@@ -1299,6 +1485,16 @@ ${formatMetadataWarnings(path.intentions)}
 - Source reference: \`.boilerstone/upgrade/reference/source/\`
 - Target reference: \`.boilerstone/upgrade/reference/target/\`
 - Intention files: \`.boilerstone/upgrade/intentions/\`
+- App-code reference paths staged at ${targetTag} under \`reference/target/\`:
+${stagedReferenceLines}
+
+Need a reference file that is not staged? Extract it from the target tag:
+
+\`\`\`bash
+git archive ${targetTag} -- <path> | tar -x -C .boilerstone/upgrade/reference/target/
+# or clone the full boilerplate at the target version (disposable, gitignored):
+git clone --depth 1 --branch ${targetTag} ${remoteUrl} .boilerstone/upgrade/reference/full
+\`\`\`
 
 Begin with the first intention.
 `
@@ -1317,17 +1513,19 @@ ${colorize('Commands:', 'cyan')}
   ${colorize('intentions lint', 'bright')}            Validate published migration intention metadata
   ${colorize('versions list', 'bright')}              List available boilerplate versions
   ${colorize('upgrade init', 'bright')}               Initialize boilerplate tracking for a project
-  ${colorize('upgrade doctor', 'bright')}             Diagnose upgrade readiness
   ${colorize('upgrade path', 'bright')}               Show upgrade path to target version
   ${colorize('upgrade prepare', 'bright')}            Prepare local upgrade context
   ${colorize('upgrade record', 'bright')}             Record an applied/skipped intention in boilerplate.json
   ${colorize('upgrade finish', 'bright')}             Set source.currentVersion after all intentions are resolved
-  ${colorize('upgrade status', 'bright')}             Show current upgrade status
+  ${colorize('upgrade status', 'bright')}             Show tracking state and upgrade readiness
 ${colorize('Options:', 'cyan')}
 
   ${colorize('--project <path>', 'bright')}           Consumer project to operate on (default: this repository)
   ${colorize('--to <version|latest>', 'bright')}      Target version; ${colorize('latest', 'dim')} resolves to the newest release
   ${colorize('--fetch', 'bright')}                    Fetch boilerplate release tags first (needed for ${colorize('latest', 'dim')})
+  ${colorize('--select', 'bright')}                   Interactively choose intentions during ${colorize('upgrade prepare', 'dim')}
+  ${colorize('--include <ids>', 'bright')}            Comma-separated intention ids to stage during ${colorize('upgrade prepare', 'dim')}
+  ${colorize('--exclude <ids>', 'bright')}            Comma-separated intention ids to skip from the prepared workspace
   ${colorize('--id <id>', 'bright')}                  Intention id for ${colorize('upgrade record', 'dim')}
   ${colorize('--applied', 'bright')}                  Record an intention as applied
   ${colorize('--skipped', 'bright')}                  Record an intention as skipped (requires ${colorize('--reason', 'dim')})
@@ -1340,9 +1538,9 @@ ${colorize('Examples:', 'cyan')}
   ${colorize('boilerplate intentions lint', 'dim')}
   ${colorize('boilerplate versions list', 'dim')}
   ${colorize('boilerplate upgrade init --project ./my-project', 'dim')}
-  ${colorize('boilerplate upgrade doctor --project ./my-project', 'dim')}
   ${colorize('boilerplate upgrade path --from 1.0.0 --to 1.5.0', 'dim')}
-  ${colorize('boilerplate upgrade prepare --project ./my-project --to 1.5.0', 'dim')}
+  ${colorize('boilerplate upgrade prepare --project ./my-project --to 1.5.0 --select', 'dim')}
+  ${colorize('boilerplate upgrade prepare --to 1.5.0 --exclude v1.5.0/optional-ai', 'dim')}
   ${colorize('boilerplate upgrade record --id v1.5.0/example --applied', 'dim')}
   ${colorize('boilerplate upgrade finish --to 1.5.0', 'dim')}
   ${colorize('boilerplate upgrade prepare --to latest --fetch', 'dim')}
@@ -1383,11 +1581,12 @@ async function main(): Promise<void> {
       const project = readOptionValue(args, '--project') || '.'
       const json = args.includes('--json')
       const fetch = args.includes('--fetch')
+      const includeIds = parseCommaSeparatedOption(readOptionValue(args, '--include'))
+      const excludeIds = parseCommaSeparatedOption(readOptionValue(args, '--exclude'))
+      const select = args.includes('--select')
 
       if (subcommand === 'init') {
         await cmdUpgradeInit(project)
-      } else if (subcommand === 'doctor') {
-        cmdUpgradeDoctor(project, json)
       } else if (subcommand === 'path') {
         if (!to) {
           console.error(`  ${colorize('❌', 'red')} --to is required`)
@@ -1405,7 +1604,14 @@ async function main(): Promise<void> {
           console.error(`  ${colorize('❌', 'red')} --to is required`)
           process.exit(1)
         }
-        await cmdUpgradePrepare({ projectPath: project, toVersion: to, fetch })
+        await cmdUpgradePrepare({
+          projectPath: project,
+          toVersion: to,
+          fetch,
+          includeIds,
+          excludeIds,
+          select,
+        })
       } else if (subcommand === 'record') {
         const id = readOptionValue(args, '--id')
         const reason = readOptionValue(args, '--reason')
@@ -1451,4 +1657,4 @@ if (isDirectExecution) {
   main()
 }
 
-export { archiveGitReference }
+export { archiveGitReference, extractIntentionReferencePaths }

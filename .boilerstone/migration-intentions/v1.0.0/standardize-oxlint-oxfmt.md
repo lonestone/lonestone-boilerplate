@@ -8,43 +8,59 @@ classification: migration
 
 ## Goal
 
-Align an older consumer project with the v1.0.0 lint and format baseline using `oxlint` and `oxfmt`.
+The project lints with `oxlint` and formats with `oxfmt`, exposed through the root `lint`, `lint:fix`, `fmt`, and `fmt:check` scripts.
 
 ## Why
 
-The v1.0.0 boilerplate standardizes fast static checks and formatting around Oxlint and Oxfmt. Projects created before this baseline may still use another lint/format stack or incomplete scripts, which makes future boilerplate changes harder to validate consistently.
+The v1.0.0 boilerplate standardizes fast static checks and formatting on Oxlint and Oxfmt. Projects on another stack (or with incomplete scripts) cannot validate future boilerplate changes consistently — every later intention's validation step assumes these four scripts exist.
 
 ## Applies When
 
-- The project wants to follow the boilerplate tooling domain.
-- The root `package.json` does not expose the v1.0.0 `lint`, `lint:fix`, `fmt`, and `fmt:check` scripts.
-- The project does not intentionally use a custom lint/format stack.
+- The project tracks the `tooling` domain.
+- The root `package.json` does not expose the v1.0.0 `lint`, `lint:fix`, `fmt`, and `fmt:check` scripts backed by oxlint/oxfmt.
 
 ## Do Not Apply When
 
-- The project intentionally standardized on another formatter or linter.
-- The project has custom lint rules that cannot be represented by the boilerplate baseline without a human decision.
-- The project does not track the `tooling` domain.
+- The project intentionally standardized on another formatter or linter — record as skipped with that reason.
+- The project has custom lint rules that cannot be mapped to the Oxlint baseline without a human decision (stop and ask).
+
+## Observable Gaps
+
+Work through each gap independently; skip any that is already closed.
+
+1. **Scripts** — signal: the root `package.json` lacks `lint`, `lint:fix`, `fmt`, or `fmt:check`, or they point to another tool.
+   Align the four scripts with the staged reference `package.json`. Keep every project-specific script untouched.
+   Done when: the four scripts exist and invoke oxlint/oxfmt.
+
+2. **Dev dependencies** — signal: `oxlint` or `oxfmt` missing from the root `devDependencies`.
+   Add them at the versions in the staged reference. Remove the superseded linter/formatter packages only when nothing else in the project references them; otherwise leave them and note it in the PR summary.
+   Done when: `pnpm install` completes.
+
+3. **Config files** — signal: no `.oxlintrc.json` or `.oxfmtrc.json` at the project root.
+   Copy the staged references, then port the project's own rule intent from the old config. If a rule cannot be mapped, stop and ask rather than silently dropping it.
+   Done when: `pnpm lint` and `pnpm fmt:check` run (their findings are handled in gap 4).
+
+4. **Formatting pass** — signal: `pnpm fmt:check` fails broadly on the existing codebase.
+   Run `pnpm fmt` in a **dedicated commit** so the mechanical reformat stays separate from every other change in the upgrade branch.
+   Done when: `pnpm fmt:check` passes.
+
+## Out of Scope
+
+- CI pipeline changes — covered by the `ci` domain, not this intention.
+- Fixing lint findings beyond `oxlint --fix` autofixes; genuine rule violations in project code are the project's call.
+- Lint/format configs of tools embedded in sub-apps for other purposes.
 
 ## Reference Paths
 
 - `package.json`
-- `pnpm-lock.yaml`
-- `.oxlintrc.json` or equivalent Oxlint configuration when present in the target reference
-
-## Suggested Agent Workflow
-
-1. Compare the project's root `package.json` scripts and dev dependencies with the v1.0.0 reference.
-2. Add or align the missing Oxlint/Oxfmt scripts with the smallest package.json change.
-3. Add missing dev dependencies only when the project does not already provide equivalent tooling.
-4. Preserve project-specific scripts and custom lint commands.
-5. Run formatting only if required to satisfy the new formatter; avoid cosmetic rewrites unrelated to the tooling migration.
+- `.oxlintrc.json`
+- `.oxfmtrc.json`
 
 ## Validation
 
 - `pnpm install` completes if dependencies changed.
 - `pnpm lint` runs.
-- `pnpm fmt:check` runs.
+- `pnpm fmt:check` passes.
 
 ## Record Result
 
