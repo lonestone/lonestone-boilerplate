@@ -2,6 +2,8 @@
 id: v1.0.0/align-better-auth-mikro-orm-adapter
 domain: auth
 classification: migration
+requires:
+  - v1.0.0/migrate-mikro-orm-v7
 ---
 
 # Align Better Auth MikroORM Adapter

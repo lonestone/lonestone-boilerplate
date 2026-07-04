@@ -85,13 +85,14 @@ Before tagging a boilerplate release, follow [docs/release-maintainer-runbook.md
 
 1. Pick the version and create `.boilerstone/migration-intentions/vX.Y.Z/`
 2. Inventory `git diff --name-status vPREVIOUS..HEAD`
-3. Classify every meaningful change in `classification.md`
-4. Write one intention per actionable adaptation
+3. Classify every meaningful change in its intention's frontmatter (`no-migration`, `informational`, `migration`, `breaking-manual`); release-level no-migration prose goes in the release README intro
+4. Write one intention per actionable adaptation, named `NN-slug.md` in execution order, with `requires:` for dependencies
 5. Update `CHANGELOG.md` and `.boilerstone/boilerplate.example.json`
-6. Run `pnpm fmt:check`, `pnpm typecheck`, `pnpm test`, and `pnpm --filter @boilerstone/boilerplate lint:intentions`
-7. Run `pnpm boilerplate upgrade path --from <previous-version> --to <next-version> --json`
-8. Smoke test install/onboard in a temporary consumer
-9. Create and push the `vX.Y.Z` git tag after merge to `main`
+6. Run `pnpm boilerplate intentions sync` to regenerate the release README's intentions block
+7. Run `pnpm fmt:check`, `pnpm typecheck`, `pnpm test`, and `pnpm --filter @boilerstone/boilerplate lint:intentions`
+8. Run `pnpm boilerplate upgrade path --from <previous-version> --to <next-version> --json`
+9. Smoke test install/onboard in a temporary consumer
+10. Create and push the `vX.Y.Z` git tag after merge to `main`
 
 ## Detaching from the boilerplate
 

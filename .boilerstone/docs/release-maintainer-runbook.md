@@ -72,31 +72,11 @@ Group the changed files by domain:
 - `docker-env`: Docker Compose, `.env.example`, ports, service names.
 - `ci`: GitHub Actions, release automation, checks.
 
-Then write a short release inventory in `.boilerstone/migration-intentions/vX.Y.Z/classification.md`.
+Then decide the classification for every meaningful change (see rule of thumb above).
 
 ## 3. Classify every change
 
-Create `.boilerstone/migration-intentions/vX.Y.Z/classification.md` with this shape:
-
-```markdown
-# Change Classification - vX.Y.Z
-
-## No Migration
-
-- Short description of changes that do not require consumer action.
-
-## Informational
-
-- Short description of things consumers should know but not replay automatically.
-
-## Migration Intentions
-
-- [slug](./slug.md): one bounded adaptation that can be validated.
-
-## Breaking / Manual
-
-- [slug](./slug.md): one adaptation that must stop for a human decision before edits.
-```
+There is no separate classification file — classification lives in each intention's own frontmatter (`classification: no-migration | informational | migration | breaking-manual`). Release-level "no-migration" prose (what ships as baseline with no consumer action) goes in the release README's intro, under a `## Shipped as baseline (no migration)` section.
 
 Rules:
 
@@ -127,6 +107,8 @@ Bad examples:
 - `sync-api`
 - `apply-v1-1`
 - `modernize-project`
+
+Name each file `NN-slug.md`, where `NN` is a zero-padded execution-order prefix (`00`, `01`, `02`, ...) — the filename sort order within the release directory IS the execution order. The frontmatter `id:` never carries the `NN-` prefix. Declare dependencies with `requires:` in the frontmatter (a list of intention ids); `pnpm boilerplate intentions lint` validates that every `requires:` id exists and appears earlier in the execution order.
 
 Each intention must answer:
 
@@ -163,12 +145,13 @@ Do not edit generated consumer state by hand during upgrades. Maintainers update
 
 ## 6. Validate the release draft
 
-Run:
+Run `pnpm boilerplate intentions sync` to regenerate the release README's intentions block — `intentions lint` fails when it is stale.
 
 ```bash
 pnpm fmt:check
 pnpm typecheck
 pnpm test
+pnpm boilerplate intentions sync
 pnpm --filter @boilerstone/boilerplate lint:intentions
 pnpm boilerplate upgrade path --from <previous-version> --to <next-version> --json
 ```

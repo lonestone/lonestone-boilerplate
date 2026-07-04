@@ -2,17 +2,24 @@
 id: vX.Y.Z/slug
 domain: tooling
 classification: migration
+requires:
+  - vX.Y.Z/other-slug
 ---
 
 # Migration Intention Template
 
 > The frontmatter block above must stay on the very first line of the file — the parser only reads it there.
 
+## Filename
+
+Name the file `NN-slug.md`, where `NN` is a zero-padded execution-order prefix (`00`, `01`, `02`, ...). The filename sort order within a release directory IS the execution order — it drives both intention staging and the generated session checklist. The frontmatter `id:` never carries the `NN-` prefix. `pnpm boilerplate intentions lint` validates every `requires:` entry against this order.
+
 ## Metadata
 
 - `id`: stable identifier recorded in `.boilerstone/boilerplate.json`
 - `domain`: one of the consumer project's tracked domains (`tooling`, `api`, `frontend`, `ci`, `docker-env`, `monitoring`, `email`, `auth`, `storage`)
 - `classification`: `migration` or `breaking-manual` for actionable intentions
+- `requires`: ids of intentions that must be applied or staged first (optional)
 
 ## Goal
 

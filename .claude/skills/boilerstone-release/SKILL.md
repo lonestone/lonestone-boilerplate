@@ -19,11 +19,12 @@ The expected workflow is human-in-the-loop: the maintainer pilots you, and you u
 ```bash
 git tag --list 'v*' --sort=-v:refname                          # previous version
 git diff --name-status vPREVIOUS..HEAD                          # inventory the changes
+pnpm boilerplate intentions sync                                # regenerate the release README intentions block
 pnpm boilerplate intentions lint                                # validate intention metadata
 pnpm boilerplate upgrade path --from <prev> --to <next> --json  # dry-run the resulting path
 ```
 
-Write one intention per bounded adaptation from `.boilerstone/migration-intentions/TEMPLATE.md` — Observable Gaps (greppable signal, staged reference, binary "Done when") and Out of Scope are required sections. Classify every meaningful change: `no-migration`, `informational`, `migration`, or `breaking-manual`.
+Write one intention per bounded adaptation from `.boilerstone/migration-intentions/TEMPLATE.md` — Observable Gaps (greppable signal, staged reference, binary "Done when") and Out of Scope are required sections. Classify every meaningful change: `no-migration`, `informational`, `migration`, or `breaking-manual`. Name each file `NN-slug.md` in execution order (filename sort order IS the execution order) and declare dependencies with frontmatter `requires:`.
 
 ## Guardrails (from the runbook — non-negotiable)
 

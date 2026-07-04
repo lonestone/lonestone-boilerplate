@@ -24,6 +24,7 @@ import {
   ensureGitignoreLine,
   ensurePackageJsonWiring,
   getFallbackIntentionId,
+  getIntentionOrderIssues,
   parseIntentionMetadataContent,
   parseReferencePaths,
   PRODUCER_ARTIFACTS,
@@ -154,6 +155,38 @@ describe('boilerplate core', () => {
     ).toEqual(['invalid classification: manual-ish', 'missing classification'])
   })
 
+  it('parses a requires: block list into metadata.requires', () => {
+    const withRequires = [
+      '---',
+      'id: v1.0.0/align-shared-dependency-versions',
+      'domain: tooling',
+      'classification: migration',
+      'requires:',
+      '  - v1.0.0/align-dependency-baseline',
+      '  - v1.0.0/another-dependency',
+      '---',
+      '',
+      '## Goal',
+      '',
+      'Test intention.',
+    ].join('\n')
+
+    expect(parseIntentionMetadataContent(withRequires).metadata.requires).toEqual([
+      'v1.0.0/align-dependency-baseline',
+      'v1.0.0/another-dependency',
+    ])
+
+    expect(
+      parseIntentionMetadataContent(
+        createIntentionContent({
+          id: 'v1.2.0/no-requires',
+          domain: 'api',
+          classification: 'migration',
+        }),
+      ).metadata.requires,
+    ).toBeUndefined()
+  })
+
   it('rejects malformed option values', () => {
     expect(readOptionValue(['upgrade', 'path', '--to', '1.2.0'], '--to')).toBe('1.2.0')
     expect(readOptionValue(['upgrade', 'path'], '--to')).toBeUndefined()
@@ -276,6 +309,59 @@ describe('boilerplate core', () => {
 
   it('keeps nested fallback intention ids deterministic', () => {
     expect(getFallbackIntentionId('1.2.0', 'api/nested/update.md')).toBe('v1.2.0/api/nested/update')
+  })
+
+  it('strips the numeric execution-order filename prefix from fallback ids', () => {
+    expect(getFallbackIntentionId('1.0.0', '03-align-shared-dependency-versions.md')).toBe(
+      'v1.0.0/align-shared-dependency-versions',
+    )
+  })
+
+  it('validates the requires graph against execution order', () => {
+    expect(
+      getIntentionOrderIssues([
+        {
+          id: 'v1.0.0/align-dependency-baseline',
+          file: '02-align-dependency-baseline.md',
+          requires: [],
+        },
+        {
+          id: 'v1.0.0/align-shared-dependency-versions',
+          file: '03-align-shared-dependency-versions.md',
+          requires: ['v1.0.0/align-dependency-baseline'],
+        },
+      ]),
+    ).toEqual([])
+
+    expect(
+      getIntentionOrderIssues([
+        {
+          id: 'v1.0.0/align-shared-dependency-versions',
+          file: '03-align-shared-dependency-versions.md',
+          requires: ['v1.0.0/does-not-exist'],
+        },
+      ]),
+    ).toEqual([
+      {
+        file: '03-align-shared-dependency-versions.md',
+        issue: 'unknown requires: v1.0.0/does-not-exist',
+      },
+    ])
+
+    const laterDependency = getIntentionOrderIssues([
+      {
+        id: 'v1.0.0/align-shared-dependency-versions',
+        file: '03-align-shared-dependency-versions.md',
+        requires: ['v1.0.0/align-dependency-baseline'],
+      },
+      {
+        id: 'v1.0.0/align-dependency-baseline',
+        file: '04-align-dependency-baseline.md',
+        requires: [],
+      },
+    ])
+    expect(laterDependency).toHaveLength(1)
+    expect(laterDependency[0].issue).toContain('must come earlier')
   })
 
   it('resolves the "latest" keyword to the newest release', () => {
@@ -651,6 +737,45 @@ describe('boilerplate CLI smoke', () => {
           join(projectPath, '.boilerstone/upgrade/intentions/v1.0.0-standardize-oxlint-oxfmt.md'),
         ),
       ).toBe(true)
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses to stage an intention without its required dependency', () => {
+    const projectPath = createGitRepo('boilerplate-prepare-missing-dep-')
+
+    try {
+      mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
+      writeFileSync(
+        join(projectPath, '.boilerstone', 'boilerplate.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'init'])
+
+      const result = runCli([
+        'upgrade',
+        'prepare',
+        '--project',
+        projectPath,
+        '--to',
+        '1.0.0',
+        '--include',
+        'v1.0.0/align-shared-dependency-versions',
+      ])
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('requires v1.0.0/align-dependency-baseline')
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }

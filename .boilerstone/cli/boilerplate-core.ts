@@ -13,6 +13,7 @@ interface MigrationIntention {
   content: string
   domain?: string
   classification: IntentionClassification
+  requires: string[]
   metadataIssues: string[]
 }
 
@@ -20,6 +21,7 @@ interface IntentionMetadata {
   id?: string
   domain?: string
   classification?: IntentionClassification
+  requires?: string[]
 }
 
 interface ParsedIntentionMetadata {
@@ -72,10 +74,27 @@ function parseIntentionMetadataContent(content: string): ParsedIntentionMetadata
 
   const metadata: IntentionMetadata = {}
   const issues: string[] = []
+  let inRequiresList = false
   for (const line of match.groups.body.split(/\r?\n/)) {
+    // YAML block-list items belong to a preceding `requires:` line
+    const listItem = line.match(/^\s+-\s+(.+)$/)
+    if (inRequiresList && listItem) {
+      metadata.requires = [...(metadata.requires ?? []), listItem[1].trim()]
+      continue
+    }
+    inRequiresList = false
+
     const [rawKey, ...rawValue] = line.split(':')
     const key = rawKey?.trim()
     const value = rawValue.join(':').trim()
+    if (key === 'requires') {
+      if (value) {
+        metadata.requires = [...(metadata.requires ?? []), value]
+      } else {
+        inRequiresList = true
+      }
+      continue
+    }
     if (!key || !value) {
       continue
     }
@@ -128,7 +147,11 @@ function versionLte(a: string, b: string): boolean {
 }
 
 function getFallbackIntentionId(version: string, relativePath: string): string {
-  return `v${version}/${relativePath.replace(/\.md$/, '')}`
+  // Filenames carry an execution-order prefix (NN-slug.md); ids never do.
+  const withoutExtension = relativePath.replace(/\.md$/, '')
+  const segments = withoutExtension.split('/')
+  segments[segments.length - 1] = segments[segments.length - 1].replace(/^\d+-/, '')
+  return `v${version}/${segments.join('/')}`
 }
 
 function getUpgradeBranchName(sourceVersion: string, targetVersion: string): string {
@@ -219,6 +242,7 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
         content: file.content,
         domain,
         classification,
+        requires: metadata.requires ?? [],
         metadataIssues: parsedMetadata.issues,
       })
     }
@@ -303,6 +327,42 @@ function resolveTargetVersion(requested: string, releases: ReleaseInfo[]): strin
   return [...releases].sort((a, b) => compareVersions(b.version, a.version))[0].version
 }
 
+interface IntentionOrderInput {
+  id: string
+  file: string
+  requires: string[]
+}
+
+/**
+ * Validates the `requires:` graph against the on-disk execution order
+ * (filename-prefix order, as passed in). Dependencies must exist and appear
+ * earlier — same-release cycles surface as an order violation by construction.
+ */
+function getIntentionOrderIssues(
+  intentions: IntentionOrderInput[],
+): Array<{ file: string; issue: string }> {
+  const issues: Array<{ file: string; issue: string }> = []
+  const positionById = new Map(intentions.map((intention, index) => [intention.id, index]))
+
+  intentions.forEach((intention, index) => {
+    for (const requiredId of intention.requires) {
+      const requiredPosition = positionById.get(requiredId)
+      if (requiredPosition === undefined) {
+        issues.push({ file: intention.file, issue: `unknown requires: ${requiredId}` })
+        continue
+      }
+      if (requiredPosition >= index) {
+        issues.push({
+          file: intention.file,
+          issue: `requires ${requiredId}, which must come earlier in execution order (filename prefix)`,
+        })
+      }
+    }
+  })
+
+  return issues
+}
+
 /**
  * Extracts the repo-relative paths declared in an intention's
  * "## Reference Paths" section. Only backticked tokens that look like paths
@@ -362,6 +422,7 @@ export {
   ensureGitignoreLine,
   ensurePackageJsonWiring,
   getFallbackIntentionId,
+  getIntentionOrderIssues,
   getUpgradeBranchName,
   type IntentionClassification,
   type IntentionFileInput,

@@ -2,6 +2,8 @@
 id: v1.0.0/align-shared-dependency-versions
 domain: tooling
 classification: migration
+requires:
+  - v1.0.0/align-dependency-baseline
 ---
 
 # Align Shared Dependency Versions
