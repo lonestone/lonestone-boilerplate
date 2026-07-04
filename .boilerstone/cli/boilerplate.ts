@@ -1386,11 +1386,9 @@ function createHealthReport(projectPath: string): HealthReport {
     )
   }
 
-  const producerArtifacts = [
-    '.boilerstone/migration-intentions',
-    '.boilerstone/docs/ai-upgrades-implementation.md',
-    '.boilerstone/docs/pilot-rollout.md',
-  ].filter((file) => existsSync(join(projectPath, file)))
+  const producerArtifacts = PRODUCER_ARTIFACTS.map((artifact) => `.boilerstone/${artifact}`).filter(
+    (file) => existsSync(join(projectPath, file)),
+  )
 
   checks.push(
     producerArtifacts.length === 0

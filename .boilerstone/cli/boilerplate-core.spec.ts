@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
-import { cleanupBoilerplateFiles } from '../../cli/setup'
+import { cleanupBoilerplateFiles, PRODUCER_FILES_TO_REMOVE } from '../../cli/setup'
 import { isolatedGitEnv } from '../../cli/utils'
 import { archiveGitReference, extractIntentionReferencePaths } from './boilerplate'
 import {
@@ -420,6 +420,14 @@ describe('boilerplate core', () => {
   it('drops the producer-only artifacts in consumer mode', () => {
     expect(PRODUCER_ARTIFACTS).toContain('migration-intentions')
     expect(PRODUCER_ARTIFACTS).toContain('boilerplate.example.json')
+  })
+
+  it('keeps the setup cleanup list in sync with PRODUCER_ARTIFACTS', () => {
+    // cli/setup.ts must stay importable after `rm -rf .boilerstone`, so it
+    // mirrors the list instead of importing it — this test is the sync lock.
+    for (const artifact of PRODUCER_ARTIFACTS) {
+      expect(PRODUCER_FILES_TO_REMOVE).toContain(`.boilerstone/${artifact}`)
+    }
   })
 
   it('keeps the vendored CLI utils in sync with the root setup utils', () => {

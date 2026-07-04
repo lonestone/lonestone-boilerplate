@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Migration intentions framework for human-supervised AI agents.
 - Consumer project tracking via `.boilerstone/boilerplate.json`, including source version and source commit when known.
-- Boilerplate lifecycle CLI: `bootstrap`, `versions list`, `upgrade status`, `upgrade doctor`, `upgrade path`, `upgrade prepare`, `upgrade record`, `upgrade finish`, and `intentions lint`.
+- Boilerplate lifecycle CLI: `bootstrap`, `versions list`, `upgrade status`, `upgrade path`, `upgrade prepare`, `upgrade record`, `upgrade finish`, `intentions lint`, and `intentions sync`.
 - Curl installer with `init`, `onboard`, and `upgrade` entry points.
 - Claude Code and Cursor skills for the supervised upgrade workflow.
 - Upgrade runbook and generated upgrade session prompt for one-intention-at-a-time execution.

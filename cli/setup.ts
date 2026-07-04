@@ -49,6 +49,27 @@ function getConfiguredBoilerplateRemote(): string {
   return process.env.BOILERPLATE_REPO?.trim() || defaultBoilerplateRemote
 }
 
+// Files and directories that are only useful for maintaining or publishing the
+// boilerplate itself. Consumer projects keep the local upgrade state and CLI, but
+// fetch published intentions from the boilerplate repository.
+// The .boilerstone/ subset deliberately mirrors PRODUCER_ARTIFACTS in
+// boilerplate-core.ts (a spec test enforces the sync): this file must stay
+// importable after `rm -rf .boilerstone`, so it cannot import from there.
+export const PRODUCER_FILES_TO_REMOVE = [
+  // The curl installer is the boilerplate's own entry point, not the app's
+  'install.sh',
+  '.boilerstone/docs/ai-upgrades-implementation.md',
+  '.boilerstone/docs/pilot-rollout.md',
+  // Producer-side upgrade artifacts published by the boilerplate, not maintained inside consumers
+  '.boilerstone/migration-intentions',
+  '.boilerstone/boilerplate.example.json',
+  // Maintainer/onboarding-only skills; consumers keep only the boilerstone-upgrade skill
+  '.claude/skills/boilerstone-release',
+  '.cursor/skills/boilerstone-release',
+  '.claude/skills/boilerstone-init',
+  '.cursor/skills/boilerstone-init',
+]
+
 interface AvailableApps {
   api: boolean
   webSpa: boolean
@@ -944,24 +965,7 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
     return
   }
 
-  // Files and directories that are only useful for maintaining or publishing the boilerplate itself.
-  // Consumer projects keep the local upgrade state and CLI, but fetch published intentions from the boilerplate repository.
-  const filesToRemove = [
-    // The curl installer is the boilerplate's own entry point, not the app's
-    'install.sh',
-    '.boilerstone/docs/ai-upgrades-implementation.md',
-    '.boilerstone/docs/pilot-rollout.md',
-    // Producer-side upgrade artifacts published by the boilerplate, not maintained inside consumers
-    '.boilerstone/migration-intentions',
-    '.boilerstone/boilerplate.example.json',
-    // Maintainer/onboarding-only skills; consumers keep only the boilerstone-upgrade skill
-    '.claude/skills/boilerstone-release',
-    '.cursor/skills/boilerstone-release',
-    '.claude/skills/boilerstone-init',
-    '.cursor/skills/boilerstone-init',
-  ]
-
-  for (const file of filesToRemove) {
+  for (const file of PRODUCER_FILES_TO_REMOVE) {
     const filePath = join(rootPath, file)
     if (existsSync(filePath)) {
       try {
