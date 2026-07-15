@@ -40,25 +40,14 @@
           "examples": ["9fceb02f0a2b6f0d2cfb7f9c1a2d3e4f5a6b7c8d"]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "trackedDomains": {
       "type": "array",
-      "description": "Domains this project follows from the boilerplate",
+      "description": "Domains this project follows from the boilerplate. Known in this release: tooling, api, frontend, ci, docker-env, monitoring, email, auth, storage, ai. Domains introduced by newer releases are preserved by older CLIs with a warning.",
       "items": {
         "type": "string",
-        "enum": [
-          "tooling",
-          "api",
-          "frontend",
-          "ci",
-          "docker-env",
-          "monitoring",
-          "email",
-          "auth",
-          "storage",
-          "ai"
-        ]
+        "minLength": 1
       },
       "uniqueItems": true
     },
@@ -83,7 +72,7 @@
                 "description": "Date the intention was applied (YYYY-MM-DD)"
               }
             },
-            "additionalProperties": false
+            "additionalProperties": true
           }
         },
         "skipped": {
@@ -103,12 +92,12 @@
                 "minLength": 10
               }
             },
-            "additionalProperties": false
+            "additionalProperties": true
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     }
   },
-  "additionalProperties": false
+  "additionalProperties": true
 }

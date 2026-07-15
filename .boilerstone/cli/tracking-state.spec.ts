@@ -7,16 +7,6 @@ import { trackingState } from './tracking-state'
 
 const temporaryProjects: string[] = []
 
-interface SchemaChange {
-  source?: Record<string, unknown>
-  intentions?: {
-    extra?: boolean
-    appliedExtra?: boolean
-    skippedExtra?: boolean
-  }
-  extra?: boolean
-}
-
 function writeTrackingState(value: unknown): string {
   const projectPath = mkdtempSync(join(tmpdir(), 'boilerstone-tracking-state-'))
   temporaryProjects.push(projectPath)
@@ -117,16 +107,32 @@ describe('tracking state lifecycle', () => {
     expect(() => trackingState.read(projectPath)).toThrow(expectedMessage)
   })
 
-  it.each([
-    [['tooling', 'unknown'], 'trackedDomains contains unknown domain: unknown'],
-    [['tooling', 'tooling'], 'trackedDomains contains duplicate domain: tooling'],
-  ])('rejects invalid tracked domains %#', (trackedDomains, expectedMessage) => {
+  it('rejects a duplicate tracked domain', () => {
     const projectPath = writeTrackingState({
       ...trackingState.create({ currentVersion: '1.2.3' }),
-      trackedDomains,
+      trackedDomains: ['tooling', 'tooling'],
     })
 
-    expect(() => trackingState.read(projectPath)).toThrow(expectedMessage)
+    expect(() => trackingState.read(projectPath)).toThrow(
+      'trackedDomains contains duplicate domain: tooling',
+    )
+  })
+
+  it('keeps an unknown tracked domain and warns on read', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const projectPath = writeTrackingState({
+        ...trackingState.create({ currentVersion: '1.2.3' }),
+        trackedDomains: ['tooling', 'payments'],
+      })
+
+      expect(trackingState.read(projectPath)?.trackedDomains).toEqual(['tooling', 'payments'])
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('trackedDomains contains unknown domain: payments'),
+      )
+    } finally {
+      warnSpy.mockRestore()
+    }
   })
 
   it.each([
@@ -358,55 +364,90 @@ describe('tracking state lifecycle', () => {
     ).toEqual([])
   })
 
-  it.each<[SchemaChange, string]>([
-    [
-      { source: { currentVersion: '1.2' } },
-      'source.currentVersion must match ^v?\\d+\\.\\d+\\.\\d+$',
-    ],
-    [{ extra: true }, 'tracking state contains unknown property: extra'],
-    [{ source: { extra: true } }, 'source contains unknown property: extra'],
-    [{ intentions: { extra: true } }, 'intentions contains unknown property: extra'],
-    [
-      { intentions: { appliedExtra: true } },
-      'intentions.applied[0] contains unknown property: extra',
-    ],
-    [
-      { intentions: { skippedExtra: true } },
-      'intentions.skipped[0] contains unknown property: extra',
-    ],
-  ])('enforces the declared schema object shape %#', (change, expectedMessage) => {
-    const validState = trackingState.record(
-      trackingState.record(trackingState.create({ currentVersion: '1.2.3' }), {
-        status: 'applied',
-        id: 'v1.2.3/applied',
-        appliedAt: '2026-07-15',
-      }),
-      {
-        status: 'skipped',
-        id: 'v1.2.3/skipped',
-        reason: 'A valid skip reason',
-      },
-    )
-    const state = {
+  it('rejects a malformed current version', () => {
+    const validState = trackingState.create({ currentVersion: '1.2.3' })
+    const projectPath = writeTrackingState({
       ...validState,
-      ...change,
-      source: { ...validState.source, ...change.source },
-      intentions: {
-        ...validState.intentions,
-        ...change.intentions,
-        applied: change.intentions?.appliedExtra
-          ? [{ ...validState.intentions.applied[0], extra: true }]
-          : validState.intentions.applied,
-        skipped: change.intentions?.skippedExtra
-          ? [{ ...validState.intentions.skipped[0], extra: true }]
-          : validState.intentions.skipped,
-      },
-    }
-    delete state.intentions.appliedExtra
-    delete state.intentions.skippedExtra
-    const projectPath = writeTrackingState(state)
+      source: { ...validState.source, currentVersion: '1.2' },
+    })
 
-    expect(() => trackingState.read(projectPath)).toThrow(expectedMessage)
+    expect(() => trackingState.read(projectPath)).toThrow(
+      'source.currentVersion must match ^v?\\d+\\.\\d+\\.\\d+$',
+    )
+  })
+
+  it('preserves unknown properties from a newer release and warns on read', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const validState = trackingState.record(
+        trackingState.record(trackingState.create({ currentVersion: '1.2.3' }), {
+          status: 'applied',
+          id: 'v1.2.3/applied',
+          appliedAt: '2026-07-15',
+        }),
+        {
+          status: 'skipped',
+          id: 'v1.2.3/skipped',
+          reason: 'A valid skip reason',
+        },
+      )
+      const projectPath = writeTrackingState({
+        ...validState,
+        pinnedModules: ['ai'],
+        source: { ...validState.source, channel: 'stable' },
+        intentions: {
+          applied: [{ ...validState.intentions.applied[0], evidence: 'ci-run-42' }],
+          skipped: [{ ...validState.intentions.skipped[0], reviewedBy: 'agent' }],
+          deferred: [],
+        },
+      })
+
+      const state = trackingState.read(projectPath)
+      expect(state).toMatchObject({
+        pinnedModules: ['ai'],
+        source: { channel: 'stable' },
+        intentions: {
+          applied: [{ id: 'v1.2.3/applied', evidence: 'ci-run-42' }],
+          skipped: [{ id: 'v1.2.3/skipped', reviewedBy: 'agent' }],
+          deferred: [],
+        },
+      })
+      for (const message of [
+        'tracking state contains unknown property: pinnedModules',
+        'source contains unknown property: channel',
+        'intentions contains unknown property: deferred',
+        'intentions.applied[0] contains unknown property: evidence',
+        'intentions.skipped[0] contains unknown property: reviewedBy',
+      ]) {
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(message))
+      }
+
+      // Round-trip: an older CLI recording an outcome must not strip newer fields
+      if (!state) {
+        throw new Error('expected tracking state to be readable')
+      }
+      trackingState.write(
+        projectPath,
+        trackingState.record(state, {
+          status: 'applied',
+          id: 'v1.2.3/later',
+          appliedAt: '2026-07-16',
+        }),
+      )
+      expect(
+        JSON.parse(readFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), 'utf-8')),
+      ).toMatchObject({
+        pinnedModules: ['ai'],
+        source: { channel: 'stable' },
+        intentions: {
+          applied: [{ evidence: 'ci-run-42' }, { id: 'v1.2.3/later' }],
+          skipped: [{ reviewedBy: 'agent' }],
+          deferred: [],
+        },
+      })
+    } finally {
+      warnSpy.mockRestore()
+    }
   })
 
   it('keeps setup and the consumer module tracking defaults synchronized', () => {

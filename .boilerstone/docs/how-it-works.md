@@ -23,7 +23,7 @@ This is why the system is just markdown and JSON. It doesn't care whether the ex
 
 ## The three moving pieces
 
-- **`boilerplate.json`** — the only state committed to your repo. It records the boilerplate version/commit you started from and which intentions you've applied or skipped. The CLI validates it against the declared schema invariants whenever it reads or writes it, persists versions without a leading `v`, and persists intention IDs as `vX.Y.Z/...` (legacy IDs without `v` are migrated automatically).
+- **`boilerplate.json`** — the only state committed to your repo. It records the boilerplate version/commit you started from and which intentions you've applied or skipped. The CLI validates it against the declared schema invariants whenever it reads or writes it, persists versions without a leading `v`, and persists intention IDs as `vX.Y.Z/...` (legacy IDs without `v` are migrated automatically). Fields and domains introduced by a newer release are preserved with a warning rather than rejected, so an older vendored CLI keeps working across version skew; `schemaVersion` is the hard compatibility gate.
 - **Migration intentions** — published per release, fetched from the boilerplate's git tags.
 - **The CLI** (`pnpm boilerplate …`) — reads your state, computes what's left to do, and stages the work. It never edits your application code itself.
 

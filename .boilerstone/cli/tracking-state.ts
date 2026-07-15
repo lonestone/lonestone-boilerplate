@@ -81,37 +81,43 @@ function isValidDate(value: unknown): value is string {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
 }
 
-function getUnknownProperty(value: Record<string, unknown>, allowed: string[]): string | undefined {
-  return Object.keys(value).find((property) => !allowed.includes(property))
+function getUnknownProperties(value: Record<string, unknown>, allowed: string[]): string[] {
+  return Object.keys(value).filter((property) => !allowed.includes(property))
 }
 
-function normalize(value: unknown, context: string): TrackingState {
+// Unknown properties and domains are version skew, not corruption: a consumer's
+// vendored CLI is often older than the release that wrote the state. They are
+// preserved as-is and reported through onWarning; only schemaVersion is the
+// hard compatibility gate.
+function normalize(
+  value: unknown,
+  context: string,
+  onWarning: (message: string) => void = () => undefined,
+): TrackingState {
   const invalid = (reason: string): never => {
     throw new Error(`Malformed ${context}: ${reason}`)
   }
 
   const state = isRecord(value) ? value : invalid('expected a JSON object')
-  const unknownStateProperty = getUnknownProperty(state, [
+  for (const property of getUnknownProperties(state, [
     'schemaVersion',
     'source',
     'trackedDomains',
     'intentions',
-  ])
-  if (unknownStateProperty) {
-    invalid(`tracking state contains unknown property: ${unknownStateProperty}`)
+  ])) {
+    onWarning(`tracking state contains unknown property: ${property}`)
   }
   if (state.schemaVersion !== 1) {
     invalid('schemaVersion must be 1')
   }
   const source = isRecord(state.source) ? state.source : invalid('source must be an object')
-  const unknownSourceProperty = getUnknownProperty(source, [
+  for (const property of getUnknownProperties(source, [
     'repository',
     'remote',
     'currentVersion',
     'commit',
-  ])
-  if (unknownSourceProperty) {
-    invalid(`source contains unknown property: ${unknownSourceProperty}`)
+  ])) {
+    onWarning(`source contains unknown property: ${property}`)
   }
   if (typeof source.repository !== 'string' || source.repository.length === 0) {
     invalid('source.repository must be a non-empty string')
@@ -143,20 +149,22 @@ function normalize(value: unknown, context: string): TrackingState {
     : invalid('trackedDomains must be an array')
   const trackedDomains = new Set<string>()
   for (const domain of domainValues) {
-    if (typeof domain !== 'string' || !KNOWN_TRACKED_DOMAINS.has(domain)) {
-      invalid(`trackedDomains contains unknown domain: ${String(domain)}`)
+    if (typeof domain !== 'string') {
+      invalid(`trackedDomains must contain strings, got: ${String(domain)}`)
     }
     if (trackedDomains.has(domain)) {
       invalid(`trackedDomains contains duplicate domain: ${domain}`)
+    }
+    if (!KNOWN_TRACKED_DOMAINS.has(domain)) {
+      onWarning(`trackedDomains contains unknown domain: ${domain}`)
     }
     trackedDomains.add(domain)
   }
   const intentions = isRecord(state.intentions)
     ? state.intentions
     : invalid('intentions must be an object')
-  const unknownIntentionsProperty = getUnknownProperty(intentions, ['applied', 'skipped'])
-  if (unknownIntentionsProperty) {
-    invalid(`intentions contains unknown property: ${unknownIntentionsProperty}`)
+  for (const property of getUnknownProperties(intentions, ['applied', 'skipped'])) {
+    onWarning(`intentions contains unknown property: ${property}`)
   }
   const applied = Array.isArray(intentions.applied)
     ? intentions.applied
@@ -174,9 +182,8 @@ function normalize(value: unknown, context: string): TrackingState {
     ) {
       invalid(`intentions.applied[${index}].id is invalid`)
     }
-    const unknownOutcomeProperty = getUnknownProperty(outcome, ['id', 'appliedAt'])
-    if (unknownOutcomeProperty) {
-      invalid(`intentions.applied[${index}] contains unknown property: ${unknownOutcomeProperty}`)
+    for (const property of getUnknownProperties(outcome, ['id', 'appliedAt'])) {
+      onWarning(`intentions.applied[${index}] contains unknown property: ${property}`)
     }
     if (!isValidDate(outcome.appliedAt)) {
       invalid(`intentions.applied[${index}].appliedAt must be a valid YYYY-MM-DD date`)
@@ -186,7 +193,7 @@ function normalize(value: unknown, context: string): TrackingState {
       invalid(`duplicate intention id: ${id}`)
     }
     appliedIds.add(id)
-    normalizedApplied.push({ id, appliedAt: outcome.appliedAt })
+    normalizedApplied.push({ ...outcome, id, appliedAt: outcome.appliedAt })
   }
   const skippedIds = new Set<string>()
   const normalizedSkipped: SkippedIntention[] = []
@@ -198,9 +205,8 @@ function normalize(value: unknown, context: string): TrackingState {
     ) {
       invalid(`intentions.skipped[${index}].id is invalid`)
     }
-    const unknownOutcomeProperty = getUnknownProperty(outcome, ['id', 'reason'])
-    if (unknownOutcomeProperty) {
-      invalid(`intentions.skipped[${index}] contains unknown property: ${unknownOutcomeProperty}`)
+    for (const property of getUnknownProperties(outcome, ['id', 'reason'])) {
+      onWarning(`intentions.skipped[${index}] contains unknown property: ${property}`)
     }
     if (typeof outcome.reason !== 'string' || outcome.reason.length < 10) {
       invalid(`intentions.skipped[${index}].reason must be at least 10 characters`)
@@ -213,7 +219,7 @@ function normalize(value: unknown, context: string): TrackingState {
       invalid(`contradictory intention resolution: ${id}`)
     }
     skippedIds.add(id)
-    normalizedSkipped.push({ id, reason: outcome.reason })
+    normalizedSkipped.push({ ...outcome, id, reason: outcome.reason })
   }
 
   return {
@@ -222,7 +228,11 @@ function normalize(value: unknown, context: string): TrackingState {
       ...source,
       currentVersion: currentVersion.replace(/^v(?=\d)/, ''),
     },
-    intentions: { applied: normalizedApplied, skipped: normalizedSkipped },
+    intentions: {
+      ...intentions,
+      applied: normalizedApplied,
+      skipped: normalizedSkipped,
+    },
   } as TrackingState
 }
 
@@ -257,7 +267,9 @@ function read(projectPath: string): TrackingState | null {
       `Invalid JSON in ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
     )
   }
-  return normalize(parsed, filePath)
+  return normalize(parsed, filePath, (message) =>
+    console.warn(`  ⚠ ${filePath}: ${message} — kept for forward compatibility`),
+  )
 }
 
 function record(state: TrackingState, outcome: IntentionOutcome): TrackingState {
@@ -272,6 +284,7 @@ function record(state: TrackingState, outcome: IntentionOutcome): TrackingState 
   const intentions =
     outcome.status === 'applied'
       ? {
+          ...currentState.intentions,
           applied: [
             ...currentState.intentions.applied,
             {
@@ -282,6 +295,7 @@ function record(state: TrackingState, outcome: IntentionOutcome): TrackingState 
           skipped: [...currentState.intentions.skipped],
         }
       : {
+          ...currentState.intentions,
           applied: [...currentState.intentions.applied],
           skipped: [
             ...currentState.intentions.skipped,
