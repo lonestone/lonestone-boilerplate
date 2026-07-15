@@ -732,7 +732,45 @@ function cmdUpgradeRecord(options: UpgradeRecordCommandOptions): void {
 function cmdUpgradeFinish(options: UpgradeFinishCommandOptions): void {
   const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
   const state = ensureInitializedState(absolutePath)
-  state.source.currentVersion = options.targetVersion.replace(/^v/, '')
+  const targetVersion = options.targetVersion.replace(/^v/, '')
+
+  // finish is the statement that every intention in the range was applied or
+  // skipped — verify it instead of trusting the caller. Fail closed: a range
+  // that is invisible (release not fetched) is not an empty range.
+  const releases = getReleases(absolutePath)
+  if (!releases.some((release) => release.version === targetVersion)) {
+    console.error(
+      `  ${colorize('❌', 'red')} Refusing to finish: release v${targetVersion} is not available locally`,
+    )
+    console.error(
+      `  ${colorize('→', 'cyan')} Fetch the boilerplate releases first: ${colorize(getFetchReleasesCommand(getBoilerplateRemote(state)), 'bright')}`,
+    )
+    process.exit(1)
+  }
+
+  const path = resolveUpgradePath({
+    sourceVersion: state.source.currentVersion,
+    targetVersion,
+    trackedDomains: state.trackedDomains,
+    appliedIntentions: state.intentions.applied.map((intention) => intention.id),
+    skippedIntentions: state.intentions.skipped.map((intention) => intention.id),
+    releases,
+    cwd: absolutePath,
+  })
+  if (path.intentions.length > 0) {
+    console.error(
+      `  ${colorize('❌', 'red')} Refusing to finish: ${path.intentions.length} intention(s) in v${path.sourceVersion} → v${path.targetVersion} are neither applied nor skipped:`,
+    )
+    for (const intention of path.intentions) {
+      console.error(`      - ${intention.id}`)
+    }
+    console.error(
+      `  ${colorize('→', 'cyan')} Record each one first: ${colorize('pnpm boilerplate upgrade record --id <id> --applied', 'bright')} or ${colorize('--skipped --reason "..."', 'bright')}`,
+    )
+    process.exit(1)
+  }
+
+  state.source.currentVersion = targetVersion
   writeBoilerplateJson(absolutePath, state)
   console.log(
     `  ${colorize('✓', 'green')} Updated source.currentVersion to ${state.source.currentVersion}`,

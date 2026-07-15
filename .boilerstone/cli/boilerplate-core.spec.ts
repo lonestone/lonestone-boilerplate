@@ -612,13 +612,14 @@ describe('boilerplate CLI smoke', () => {
     expect(JSON.parse(result.stdout)).toEqual({ ok: true, issues: [] })
   })
 
-  it('records intention outcomes and finishes the tracked version without manual JSON edits', () => {
-    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-record-'))
+  it('refuses a premature finish, then finishes once every intention is recorded', () => {
+    const projectPath = createGitRepo('boilerplate-record-')
 
     try {
-      mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
-      writeFileSync(
-        join(projectPath, '.boilerstone', 'boilerplate.json'),
+      writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
         `${JSON.stringify(
           {
             schemaVersion: 1,
@@ -630,6 +631,29 @@ describe('boilerplate CLI smoke', () => {
           2,
         )}\n`,
       )
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.1.0/README.md',
+        '# v1.1.0\n',
+      )
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.1.0/00-example-intention.md',
+        createIntentionContent({
+          id: 'v1.1.0/example-intention',
+          domain: 'tooling',
+          classification: 'migration',
+        }),
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'init'])
+      runGit(projectPath, ['tag', 'v1.1.0'])
+
+      // The v1.0.0 pilot incident: finish before resolving the range must fail
+      const premature = runCli(['upgrade', 'finish', '--project', projectPath, '--to', '1.1.0'])
+      expect(premature.status).toBe(1)
+      expect(premature.stderr).toContain('Refusing to finish')
+      expect(premature.stderr).toContain('v1.1.0/example-intention')
 
       const record = runCli([
         'upgrade',
@@ -651,6 +675,39 @@ describe('boilerplate CLI smoke', () => {
         { id: 'v1.1.0/example-intention', appliedAt: expect.any(String) },
       ])
       expect(state.source.currentVersion).toBe('1.1.0')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses to finish when the target release is not available locally', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-finish-norelease-'))
+
+    try {
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+
+      const finish = runCli(['upgrade', 'finish', '--project', projectPath, '--to', '1.1.0'])
+
+      expect(finish.status).toBe(1)
+      expect(finish.stderr).toContain('release v1.1.0 is not available locally')
+      expect(finish.stderr).toContain('refs/boilerstone/v*')
+      const state = JSON.parse(
+        readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8'),
+      )
+      expect(state.source.currentVersion).toBe('1.0.0')
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }

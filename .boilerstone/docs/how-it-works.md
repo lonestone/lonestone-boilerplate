@@ -53,7 +53,7 @@ After `prepare`, the actual work begins — applying the staged intentions one a
 
 **`upgrade record`** — records a validated intention outcome in `boilerplate.json`. Use it instead of editing the JSON by hand.
 
-**`upgrade finish`** — updates `source.currentVersion` after every intention in the prepared range is applied or skipped. This is the final upgrade commit, never an intermediate step.
+**`upgrade finish`** — updates `source.currentVersion` after every intention in the prepared range is applied or skipped. This is the final upgrade commit, never an intermediate step — the CLI refuses to finish while any intention in the range is neither applied nor skipped, or while the target release is not fetched.
 
 ## What ends up on your repo
 

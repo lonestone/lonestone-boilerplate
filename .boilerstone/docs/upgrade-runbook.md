@@ -64,4 +64,4 @@ Stay on the dedicated `upgrade/…` branch. For risky or large upgrades, commit 
 
 ## Finishing
 
-When every staged intention is applied or skipped, run `pnpm boilerplate upgrade finish --to <target-version>`, commit the final state, then open a PR. Summarize what happened: intentions applied, intentions skipped (with reasons), anything blocked, and the validation results. Do not update `source.currentVersion` before this final step.
+When every staged intention is applied or skipped, run `pnpm boilerplate upgrade finish --to <target-version>`, commit the final state, then open a PR. The CLI enforces this: `finish` refuses while any intention in the range is neither applied nor skipped. Summarize what happened: intentions applied, intentions skipped (with reasons), anything blocked, and the validation results. Do not update `source.currentVersion` before this final step.
