@@ -51,9 +51,9 @@ Only proceed once the "Applies When" gate is confirmed by a human. Then work thr
 
 ## Reference Paths
 
-- `apps/api/src/modules/ai/`
-- `apps/api/src/instrument.ts`
-- `apps/documentation/src/content/docs/core-features/4_ai.mdx`
+- `apps/api/src/modules/ai/` — **adapt**
+- `apps/api/src/instrument.ts` — **adapt**
+- `apps/documentation/src/content/docs/core-features/4_ai.mdx` — **adapt**
 
 ## Validation
 

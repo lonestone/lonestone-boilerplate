@@ -2,11 +2,21 @@ import type {
   IntentionFileInput,
   MigrationIntention,
   PackageJsonShape,
+  ReferencePathDeclaration,
   ReleaseInfo,
   UpgradePath,
 } from './boilerplate-core'
+import type { TrackingState } from './tracking-state'
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
@@ -20,12 +30,14 @@ import {
   getIntentionOrderIssues,
   getUpgradeBranchName,
   parseIntentionMetadataContent,
+  parseReferencePathDeclarations,
   parseReferencePaths,
   PRODUCER_ARTIFACTS,
   readOptionValue,
   resolveTargetVersion,
 } from './boilerplate-core'
 import { colorize, isolatedGitEnv } from './utils'
+import { trackingState } from './tracking-state'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -34,21 +46,6 @@ const boilerplateDir = join(projectRoot, '.boilerstone')
 const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
 // Pinned to match the boilerplate's own tsx version; used when wiring a consumer's package.json.
 const defaultTsxVersion = '^4.21.0'
-
-interface BoilerplateState {
-  schemaVersion: number
-  source: {
-    repository: string
-    remote?: string
-    currentVersion: string
-    commit?: string
-  }
-  trackedDomains: string[]
-  intentions: {
-    applied: Array<{ id: string; appliedAt: string }>
-    skipped: Array<{ id: string; reason: string }>
-  }
-}
 
 async function prompt(message: string, initial: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -64,6 +61,13 @@ function getProjectPath(projectPath: string): string {
   return isAbsolute(projectPath) ? projectPath : resolve(process.cwd(), projectPath)
 }
 
+function normalizeSemanticVersion(version: string, label: 'source' | 'target'): string {
+  if (!/^v?\d+\.\d+\.\d+$/.test(version)) {
+    throw new Error(`Invalid ${label} version: ${version}`)
+  }
+  return version.replace(/^v/, '')
+}
+
 function runGitCommand(args: string[], cwd = projectRoot): string {
   return execFileSync('git', args, {
     cwd,
@@ -77,8 +81,15 @@ function getConfiguredBoilerplateRemote(): string {
   return process.env.BOILERPLATE_REPO?.trim() || defaultBoilerplateRemote
 }
 
-function getBoilerplateRemote(state: BoilerplateState | null): string {
+function getBoilerplateRemote(state: TrackingState | null): string {
   return state?.source.remote || getConfiguredBoilerplateRemote()
+}
+
+function quotePosixShellArgument(value: string): string {
+  if (/[\u0000-\u001f\u007f]/.test(value) || value.includes('```')) {
+    throw new Error('Cannot render unsafe shell argument containing control characters or ```')
+  }
+  return `'${value.replaceAll("'", `'"'"'`)}'`
 }
 
 // Boilerplate releases are fetched into a dedicated ref namespace instead of
@@ -88,7 +99,7 @@ const RELEASE_REF_PREFIX = 'refs/boilerstone/'
 const RELEASE_FETCH_REFSPEC = '+refs/tags/v*:refs/boilerstone/v*'
 
 function getFetchReleasesCommand(remoteUrl: string): string {
-  return `git fetch --no-tags ${remoteUrl} "${RELEASE_FETCH_REFSPEC}"`
+  return `git fetch --no-tags ${quotePosixShellArgument(remoteUrl)} "${RELEASE_FETCH_REFSPEC}"`
 }
 
 // Resolves a release tag name (v1.0.0) to the ref that actually holds it:
@@ -103,11 +114,86 @@ function releaseRef(tag: string, cwd = projectRoot): string {
   }
 }
 
-function printMissingReleaseTags(state: BoilerplateState | null, _cwd = projectRoot): void {
-  const remoteUrl = getBoilerplateRemote(state)
-  console.error(`  ${colorize('❌', 'red')} No local boilerplate releases found.`)
-  console.error(`  ${colorize('→', 'cyan')} Fetch the boilerplate releases first:`)
-  console.error(`    ${colorize(getFetchReleasesCommand(remoteUrl), 'bright')}`)
+interface ResolvedGitReference {
+  ref: string
+  cwd: string
+  label: string
+  isDraft: boolean
+  provenance: 'consumer-ref' | 'producer-ref' | 'producer-draft'
+}
+
+function hasGitReference(reference: string, cwd: string): boolean {
+  try {
+    runGitCommand(['rev-parse', '--verify', '--quiet', reference], cwd)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function resolvePublishedReleaseRef(release: ReleaseInfo, cwd: string): string | null {
+  const namespacedRef = `${RELEASE_REF_PREFIX}${release.tag}`
+  if (hasGitReference(namespacedRef, cwd)) {
+    return namespacedRef
+  }
+
+  if (
+    hasGitReference(release.tag, cwd) &&
+    gitFileExists(release.tag, `.boilerstone/migration-intentions/${release.tag}/README.md`, cwd)
+  ) {
+    return release.tag
+  }
+
+  return null
+}
+
+function resolveTargetReference(
+  release: ReleaseInfo,
+  consumerPath: string,
+  producerPath = projectRoot,
+): ResolvedGitReference {
+  const consumerRef = resolvePublishedReleaseRef(release, consumerPath)
+  if (consumerRef) {
+    return {
+      ref: consumerRef,
+      cwd: consumerPath,
+      label: consumerRef,
+      isDraft: false,
+      provenance: 'consumer-ref',
+    }
+  }
+
+  const producerRef = resolvePublishedReleaseRef(release, producerPath)
+  if (producerRef) {
+    return {
+      ref: producerRef,
+      cwd: producerPath,
+      label: producerRef,
+      isDraft: false,
+      provenance: 'producer-ref',
+    }
+  }
+
+  if (release.date === 'local-draft' && hasGitReference('HEAD', producerPath)) {
+    const releaseReadme = `.boilerstone/migration-intentions/${release.tag}/README.md`
+    if (!gitFileExists('HEAD', releaseReadme, producerPath)) {
+      throw new Error(`Draft release ${release.tag} must exist in producer HEAD before preparation`)
+    }
+    if (runGitCommand(['status', '--porcelain'], producerPath)) {
+      throw new Error(
+        'Producer checkout is dirty. Commit or discard producer changes before preparation.',
+      )
+    }
+    return {
+      ref: 'HEAD',
+      cwd: producerPath,
+      label: `HEAD (producer draft for ${release.tag})`,
+      isDraft: true,
+      provenance: 'producer-draft',
+    }
+  }
+
+  throw new Error(`Target ref ${release.tag} is not available in the consumer or producer checkout`)
 }
 
 // Fetch the boilerplate release tags straight from the remote URL, without adding
@@ -117,25 +203,31 @@ function printMissingReleaseTags(state: BoilerplateState | null, _cwd = projectR
 // (offline, bad URL) degrades to the locally available releases.
 function fetchBoilerplateReleases(
   absolutePath: string,
-  state: BoilerplateState | null,
-  { required }: { required: boolean },
-): void {
+  state: TrackingState | null,
+  { required, report = true }: { required: boolean; report?: boolean },
+): string | undefined {
   const remoteUrl = getBoilerplateRemote(state)
-  console.log(`  ${colorize('→', 'cyan')} Fetching boilerplate releases from ${remoteUrl}`)
+  if (report) {
+    console.log(`  ${colorize('→', 'cyan')} Fetching boilerplate releases from ${remoteUrl}`)
+  }
   try {
     // --no-tags: git would otherwise auto-follow tags into refs/tags anyway
     runGitCommand(['fetch', '--no-tags', remoteUrl, RELEASE_FETCH_REFSPEC], absolutePath)
-    console.log(`  ${colorize('✓', 'green')} Releases fetched into ${RELEASE_REF_PREFIX}`)
-  } catch (error) {
-    if (required) {
-      console.error(
-        `  ${colorize('❌', 'red')} Failed to fetch releases from ${remoteUrl}: ${error instanceof Error ? error.message : String(error)}`,
-      )
-      process.exit(1)
+    if (report) {
+      console.log(`  ${colorize('✓', 'green')} Releases fetched into ${RELEASE_REF_PREFIX}`)
     }
-    console.log(
-      `  ${colorize('⚠', 'yellow')} Could not fetch from ${remoteUrl} — using locally available releases`,
-    )
+    return undefined
+  } catch (error) {
+    const message = `Failed to fetch releases from ${remoteUrl}: ${error instanceof Error ? error.message : String(error)}`
+    if (required) {
+      throw new Error(message)
+    }
+    if (report) {
+      console.log(
+        `  ${colorize('⚠', 'yellow')} Could not fetch from ${remoteUrl} — using locally available releases`,
+      )
+    }
+    return `${message} — using locally available releases`
   }
 }
 
@@ -188,6 +280,24 @@ function extractIntentionReferencePaths(
   execFileSync('tar', ['-xf', tarFile, '-C', destination])
   rmSync(tarFile, { force: true })
   return existingPaths
+}
+
+function getReferencePathDeclarations(
+  intentions: Array<Pick<MigrationIntention, 'content'>>,
+): ReferencePathDeclaration[] {
+  const declarationsByPath = new Map<string, ReferencePathDeclaration>()
+
+  for (const intention of intentions) {
+    for (const declaration of parseReferencePathDeclarations(intention.content).references) {
+      const current = declarationsByPath.get(declaration.path)
+      declarationsByPath.set(declaration.path, {
+        path: declaration.path,
+        mode: current?.mode === 'adapt' || declaration.mode === 'adapt' ? 'adapt' : 'copy',
+      })
+    }
+  }
+
+  return [...declarationsByPath.values()].sort((a, b) => a.path.localeCompare(b.path))
 }
 
 function gitFileExists(reference: string, filePath: string, cwd = projectRoot): boolean {
@@ -270,8 +380,8 @@ function getGitTagNames(cwd = projectRoot): string[] {
   return tags.split('\n').filter(Boolean)
 }
 
-function getDiskReleaseInfos(): ReleaseInfo[] {
-  const intentionsDir = join(boilerplateDir, 'migration-intentions')
+function getDiskReleaseInfos(producerPath = projectRoot): ReleaseInfo[] {
+  const intentionsDir = join(producerPath, '.boilerstone', 'migration-intentions')
   if (!existsSync(intentionsDir)) {
     return []
   }
@@ -409,6 +519,9 @@ function getIntentionLintIssues(): IntentionLintIssue[] {
     for (const issue of parsed.issues) {
       issues.push({ file: relative(projectRoot, file), issue })
     }
+    for (const issue of parseReferencePathDeclarations(content).issues) {
+      issues.push({ file: relative(projectRoot, file), issue })
+    }
 
     const id = parsed.metadata.id
     if (id && !isValidIntentionId(id)) {
@@ -535,7 +648,7 @@ function getReleaseTagNames(cwd = projectRoot): string[] {
   return [...names]
 }
 
-function getReleases(cwd = projectRoot): ReleaseInfo[] {
+function getReleases(cwd = projectRoot, producerPath = projectRoot): ReleaseInfo[] {
   const releasesByVersion = new Map<string, ReleaseInfo>()
 
   for (const tag of getReleaseTagNames(cwd)) {
@@ -556,7 +669,7 @@ function getReleases(cwd = projectRoot): ReleaseInfo[] {
     })
   }
 
-  for (const release of getDiskReleaseInfos()) {
+  for (const release of getDiskReleaseInfos(producerPath)) {
     if (!releasesByVersion.has(release.version)) {
       releasesByVersion.set(release.version, release)
     }
@@ -593,6 +706,28 @@ interface ResolveUpgradePathOptions {
   skippedIntentions: string[]
   releases?: ReleaseInfo[]
   cwd?: string
+  producerPath?: string
+  targetReference?: ResolvedGitReference
+}
+
+type PublicationAccessPolicy = 'local-only' | 'refresh-if-needed' | 'refresh-required'
+
+interface ResolveUpgradePathRequest {
+  projectPath: string
+  producerPath?: string
+  sourceVersion?: string
+  targetVersion: string
+  publicationPolicy: PublicationAccessPolicy
+}
+
+interface UpgradePathResolution {
+  path: UpgradePath
+  branchName: string
+  targetRelease: ReleaseInfo
+  targetReference: ResolvedGitReference
+  sourceReference: ResolvedGitReference | null
+  state: TrackingState | null
+  warnings: string[]
 }
 
 interface UpgradePathCommandOptions {
@@ -612,6 +747,22 @@ interface UpgradePrepareCommandOptions {
   select?: boolean
 }
 
+interface PrepareUpgradeRequest extends UpgradePrepareCommandOptions {
+  producerPath?: string
+  selectIntentions: (path: UpgradePath) => Promise<UpgradePath>
+}
+
+interface PreparedUpgrade {
+  branchName: string
+  sourceVersion: string
+  targetVersion: string
+  stagedIntentionCount: number
+  availableIntentionCount: number
+  targetRelease: ReleaseInfo
+  targetReference: ResolvedGitReference
+  warnings: string[]
+}
+
 interface UpgradeRecordCommandOptions {
   projectPath: string
   id: string
@@ -624,163 +775,115 @@ interface UpgradeFinishCommandOptions {
   targetVersion: string
 }
 
-function assertBoilerplateState(
-  value: unknown,
-  filePath: string,
-): asserts value is BoilerplateState {
-  const invalid = (reason: string): never => {
-    throw new Error(
-      `Malformed ${filePath}: ${reason}. Fix it or re-run \`pnpm boilerplate upgrade init\`.`,
-    )
+function syncUpgradeSessionProgress(projectPath: string, state: TrackingState): void {
+  const sessionPath = join(projectPath, '.boilerstone', 'upgrade', 'upgrade-session.md')
+  if (!existsSync(sessionPath)) {
+    return
   }
 
-  if (typeof value !== 'object' || value === null) {
-    invalid('expected a JSON object')
-  }
+  const resolvedIds = new Set([
+    ...state.intentions.applied.map((intention) => intention.id),
+    ...state.intentions.skipped.map((intention) => intention.id),
+  ])
+  const currentContent = readFileSync(sessionPath, 'utf-8')
+  const nextContent = currentContent
+    .split('\n')
+    .map((line) => {
+      if (!line.startsWith('- [ ]')) {
+        return line
+      }
+      const backtickedId = line.match(/`([^`]+)`/)?.[1]
+      const legacyId = line.match(/^- \[ \] (v?\d+\.\d+\.\d+\/[^ ]+)/)?.[1]
+      const id = backtickedId ?? legacyId
+      return id && resolvedIds.has(id) ? line.replace('- [ ]', '- [x]') : line
+    })
+    .join('\n')
 
-  const state = value as Record<string, unknown>
-  if (typeof state.source !== 'object' || state.source === null) {
-    invalid('source must be an object')
+  if (nextContent !== currentContent) {
+    writeFileSync(sessionPath, nextContent, 'utf-8')
   }
-  const source = state.source as Record<string, unknown>
-  if (typeof source.currentVersion !== 'string') {
-    invalid('source.currentVersion must be a string')
-  }
-  if (source.commit !== undefined && typeof source.commit !== 'string') {
-    invalid('source.commit must be a string when present')
-  }
-  if (!Array.isArray(state.trackedDomains)) {
-    invalid('trackedDomains must be an array')
-  }
-
-  const intentions = state.intentions as Record<string, unknown> | undefined
-  if (!intentions || !Array.isArray(intentions.applied) || !Array.isArray(intentions.skipped)) {
-    invalid('intentions.applied and intentions.skipped must be arrays')
-  }
-}
-
-function readBoilerplateJson(projectPath: string): BoilerplateState | null {
-  const boilerplateJsonPath = join(projectPath, '.boilerstone', 'boilerplate.json')
-  if (!existsSync(boilerplateJsonPath)) {
-    return null
-  }
-
-  const content = readFileSync(boilerplateJsonPath, 'utf-8')
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(content)
-  } catch (error) {
-    throw new Error(
-      `Invalid JSON in ${boilerplateJsonPath}: ${error instanceof Error ? error.message : String(error)}`,
-    )
-  }
-
-  assertBoilerplateState(parsed, boilerplateJsonPath)
-  return parsed
-}
-
-function writeBoilerplateJson(projectPath: string, state: BoilerplateState): void {
-  mkdirSync(join(projectPath, '.boilerstone'), { recursive: true })
-  const boilerplateJsonPath = join(projectPath, '.boilerstone', 'boilerplate.json')
-  writeFileSync(boilerplateJsonPath, `${JSON.stringify(state, null, 2)}\n`, 'utf-8')
 }
 
 function isValidIntentionId(id: string): boolean {
   return /^v?\d+\.\d+\.\d+(?:\/[a-z0-9-]+)+$/.test(id)
 }
 
-function getToday(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function ensureInitializedState(projectPath: string): BoilerplateState {
-  const state = readBoilerplateJson(projectPath)
-  if (!state) {
-    throw new Error(`No boilerplate.json found in ${projectPath}`)
-  }
-  return state
-}
-
 function cmdUpgradeRecord(options: UpgradeRecordCommandOptions): void {
   const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
-  if (!isValidIntentionId(options.id)) {
-    throw new Error(`Invalid intention id: ${options.id}`)
+  const currentState = trackingState.read(absolutePath)
+  if (!currentState) {
+    throw new Error(`No boilerplate.json found in ${absolutePath}`)
   }
+  const state =
+    options.status === 'applied'
+      ? trackingState.record(currentState, { status: 'applied', id: options.id })
+      : trackingState.record(currentState, {
+          status: 'skipped',
+          id: options.id,
+          reason: options.reason ?? '',
+        })
 
-  const state = ensureInitializedState(absolutePath)
-  const alreadyResolved =
-    state.intentions.applied.some((intention) => intention.id === options.id) ||
-    state.intentions.skipped.some((intention) => intention.id === options.id)
-  if (alreadyResolved) {
-    throw new Error(`Intention already recorded: ${options.id}`)
+  trackingState.write(absolutePath, state)
+  const recordedId =
+    options.status === 'applied'
+      ? state.intentions.applied.at(-1)?.id
+      : state.intentions.skipped.at(-1)?.id
+  console.log(`  ${colorize('✓', 'green')} Recorded ${options.status}: ${recordedId}`)
+  try {
+    syncUpgradeSessionProgress(absolutePath, state)
+  } catch (error) {
+    console.warn(
+      `  ${colorize('⚠', 'yellow')} Tracking state was saved, but upgrade-session.md could not be synchronized: ${error instanceof Error ? error.message : String(error)}`,
+    )
   }
+}
 
-  if (options.status === 'applied') {
-    state.intentions.applied.push({ id: options.id, appliedAt: getToday() })
-  } else {
-    const reason = options.reason?.trim()
-    if (!reason || reason.length < 10) {
-      throw new Error('--reason must be at least 10 characters when recording a skipped intention')
+function finishUpgrade(options: UpgradeFinishCommandOptions): UpgradePathResolution {
+  const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
+  const targetVersion = options.targetVersion.replace(/^v/, '')
+  let resolution: UpgradePathResolution
+  try {
+    resolution = resolveUpgradePath({
+      projectPath: absolutePath,
+      targetVersion,
+      publicationPolicy: 'local-only',
+    })
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Unknown boilerplate target version:')) {
+      const state = trackingState.read(absolutePath)
+      throw new Error(
+        `Refusing to finish: release v${targetVersion} is not available locally. Fetch the boilerplate releases first: ${getFetchReleasesCommand(getBoilerplateRemote(state))}`,
+      )
     }
-    state.intentions.skipped.push({ id: options.id, reason })
+    throw error
   }
 
-  writeBoilerplateJson(absolutePath, state)
-  console.log(`  ${colorize('✓', 'green')} Recorded ${options.status}: ${options.id}`)
+  const state = resolution.state
+  if (!state) {
+    throw new Error(`No boilerplate.json found in ${absolutePath}`)
+  }
+  const path = resolution.path
+  if (path.intentions.length > 0) {
+    throw new Error(
+      `Refusing to finish: ${path.intentions.length} intention(s) in v${path.sourceVersion} → v${path.targetVersion} are neither applied nor skipped:\n${path.intentions.map((intention) => `  - ${intention.id}`).join('\n')}\nRecord each one first with boilerplate upgrade record.`,
+    )
+  }
+
+  trackingState.write(absolutePath, trackingState.finish(state, targetVersion))
+  return resolution
 }
 
 function cmdUpgradeFinish(options: UpgradeFinishCommandOptions): void {
-  const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
-  const state = ensureInitializedState(absolutePath)
-  const targetVersion = options.targetVersion.replace(/^v/, '')
-
-  // finish is the statement that every intention in the range was applied or
-  // skipped — verify it instead of trusting the caller. Fail closed: a range
-  // that is invisible (release not fetched) is not an empty range.
-  const releases = getReleases(absolutePath)
-  if (!releases.some((release) => release.version === targetVersion)) {
-    console.error(
-      `  ${colorize('❌', 'red')} Refusing to finish: release v${targetVersion} is not available locally`,
-    )
-    console.error(
-      `  ${colorize('→', 'cyan')} Fetch the boilerplate releases first: ${colorize(getFetchReleasesCommand(getBoilerplateRemote(state)), 'bright')}`,
-    )
-    process.exit(1)
-  }
-
-  const path = resolveUpgradePath({
-    sourceVersion: state.source.currentVersion,
-    targetVersion,
-    trackedDomains: state.trackedDomains,
-    appliedIntentions: state.intentions.applied.map((intention) => intention.id),
-    skippedIntentions: state.intentions.skipped.map((intention) => intention.id),
-    releases,
-    cwd: absolutePath,
-  })
-  if (path.intentions.length > 0) {
-    console.error(
-      `  ${colorize('❌', 'red')} Refusing to finish: ${path.intentions.length} intention(s) in v${path.sourceVersion} → v${path.targetVersion} are neither applied nor skipped:`,
-    )
-    for (const intention of path.intentions) {
-      console.error(`      - ${intention.id}`)
-    }
-    console.error(
-      `  ${colorize('→', 'cyan')} Record each one first: ${colorize('pnpm boilerplate upgrade record --id <id> --applied', 'bright')} or ${colorize('--skipped --reason "..."', 'bright')}`,
-    )
-    process.exit(1)
-  }
-
-  state.source.currentVersion = targetVersion
-  writeBoilerplateJson(absolutePath, state)
+  const resolution = finishUpgrade(options)
   console.log(
-    `  ${colorize('✓', 'green')} Updated source.currentVersion to ${state.source.currentVersion}`,
+    `  ${colorize('✓', 'green')} Updated source.currentVersion to ${resolution.path.targetVersion}`,
   )
 }
 
 function detectSourceVersion(
   projectPath: string,
 ): { version: string; confidence: 'high' | 'medium' } | null {
-  const state = readBoilerplateJson(projectPath)
+  const state = trackingState.read(projectPath)
   if (state) {
     return { version: state.source.currentVersion, confidence: 'high' }
   }
@@ -891,7 +994,7 @@ async function cmdUpgradeInit(projectPath: string): Promise<void> {
     process.exit(1)
   }
 
-  const existing = readBoilerplateJson(absolutePath)
+  const existing = trackingState.read(absolutePath)
   if (existing) {
     console.log(`  ${colorize('✓', 'green')} boilerplate.json already exists`)
     console.log(`  ${colorize('Current version:', 'dim')} ${existing.source.currentVersion}`)
@@ -926,33 +1029,13 @@ async function cmdUpgradeInit(projectPath: string): Promise<void> {
     )
   }
   const sourceVersion = envVersion || (await prompt('Enter source boilerplate version', version))
-  const state: BoilerplateState = {
-    schemaVersion: 1,
-    source: {
-      repository: 'lonestone/lonestone-boilerplate',
-      remote: getConfiguredBoilerplateRemote(),
-      currentVersion: sourceVersion,
-      commit: process.env.BOILERPLATE_SOURCE_COMMIT?.trim() || undefined,
-    },
-    trackedDomains: [
-      'tooling',
-      'api',
-      'frontend',
-      'ci',
-      'docker-env',
-      'monitoring',
-      'email',
-      'auth',
-      'storage',
-      'ai',
-    ],
-    intentions: {
-      applied: [],
-      skipped: [],
-    },
-  }
+  const state = trackingState.create({
+    currentVersion: sourceVersion,
+    remote: getConfiguredBoilerplateRemote(),
+    commit: process.env.BOILERPLATE_SOURCE_COMMIT?.trim() || undefined,
+  })
 
-  writeBoilerplateJson(absolutePath, state)
+  trackingState.write(absolutePath, state)
   console.log(`\n  ${colorize('✓', 'green')} Created boilerplate.json`)
   console.log(`  ${colorize('Remote:', 'dim')} ${state.source.remote}`)
   console.log(`  ${colorize('Source version:', 'dim')} ${sourceVersion}`)
@@ -981,12 +1064,12 @@ function formatCountList(counts: Record<string, number>): string {
   return entries.map(([name, count]) => `- ${name}: ${count}`).join('\n')
 }
 
-function formatIntentionPromptItem(intention: MigrationIntention): string {
+function formatIntentionPromptItem(intention: MigrationIntention, index: number): string {
   const stopFirst =
     intention.classification === 'breaking-manual'
       ? ' - STOP FIRST: requires human decision before edits'
       : ''
-  return `- [ ] ${intention.id} (${intention.classification})${stopFirst}`
+  return `- [ ] ${index + 1}. \`${intention.id}\` (${intention.classification})${stopFirst}`
 }
 
 function formatMetadataWarnings(intentions: MigrationIntention[]): string {
@@ -1087,10 +1170,32 @@ async function selectUpgradePathIntentions(path: UpgradePath): Promise<UpgradePa
   }
 }
 
-function getIntentionFiles(releases: ReleaseInfo[], cwd = projectRoot): IntentionFileInput[] {
+function getIntentionFiles(
+  releases: ReleaseInfo[],
+  cwd = projectRoot,
+  producerPath = projectRoot,
+  targetReference?: ResolvedGitReference,
+): IntentionFileInput[] {
   return releases.flatMap((release) => {
-    // Git tag first: consumers forked before this release only have it in git
     const releaseDirInGit = `.boilerstone/migration-intentions/v${release.version}`
+    const isTargetReference =
+      targetReference?.isDraft === true &&
+      release.version === targetReference.label.match(/v(\d+\.\d+\.\d+)/)?.[1]
+    if (
+      isTargetReference &&
+      gitFileExists(targetReference.ref, `${releaseDirInGit}/README.md`, targetReference.cwd)
+    ) {
+      return listGitMarkdownFiles(targetReference.ref, releaseDirInGit, targetReference.cwd)
+        .filter((file) => !file.endsWith('README.md') && !file.endsWith('classification.md'))
+        .map((file) => ({
+          releaseVersion: release.version,
+          file: `${targetReference.label}:${file}`,
+          relativePath: file.slice(releaseDirInGit.length + 1),
+          content: readGitFile(targetReference.ref, file, targetReference.cwd),
+        }))
+    }
+
+    // Git tag first: consumers forked before this release only have it in git
     const ref = releaseRef(release.tag, cwd)
     if (gitFileExists(ref, `${releaseDirInGit}/README.md`, cwd)) {
       return listGitMarkdownFiles(ref, releaseDirInGit, cwd)
@@ -1104,7 +1209,12 @@ function getIntentionFiles(releases: ReleaseInfo[], cwd = projectRoot): Intentio
     }
 
     // Disk fallback: release drafted in the boilerplate repo but not tagged yet
-    const releaseDir = join(boilerplateDir, 'migration-intentions', `v${release.version}`)
+    const releaseDir = join(
+      producerPath,
+      '.boilerstone',
+      'migration-intentions',
+      `v${release.version}`,
+    )
     const releaseReadme = join(releaseDir, 'README.md')
     if (!existsSync(releaseReadme)) {
       return []
@@ -1121,8 +1231,8 @@ function getIntentionFiles(releases: ReleaseInfo[], cwd = projectRoot): Intentio
   })
 }
 
-function resolveUpgradePath(options: ResolveUpgradePathOptions): UpgradePath {
-  const releases = options.releases ?? getReleases(options.cwd)
+function computeAvailableUpgradePath(options: ResolveUpgradePathOptions): UpgradePath {
+  const releases = options.releases ?? getReleases(options.cwd, options.producerPath)
   return computeUpgradePath({
     sourceVersion: options.sourceVersion,
     targetVersion: options.targetVersion,
@@ -1130,58 +1240,125 @@ function resolveUpgradePath(options: ResolveUpgradePathOptions): UpgradePath {
     appliedIntentions: options.appliedIntentions,
     skippedIntentions: options.skippedIntentions,
     releases,
-    intentionFiles: getIntentionFiles(releases, options.cwd),
+    intentionFiles: getIntentionFiles(
+      releases,
+      options.cwd,
+      options.producerPath,
+      options.targetReference,
+    ),
   })
+}
+
+function resolveUpgradePath(options: ResolveUpgradePathRequest): UpgradePathResolution {
+  const absolutePath = getProjectPath(options.projectPath)
+  const producerPath = options.producerPath ? getProjectPath(options.producerPath) : projectRoot
+  const state = trackingState.read(absolutePath)
+  const sourceVersionInput = options.sourceVersion ?? state?.source.currentVersion
+  if (!sourceVersionInput) {
+    if (!state) {
+      throw new Error(
+        'No boilerplate.json found and no source version was provided. Initialize boilerplate tracking or pass a source version.',
+      )
+    }
+    throw new Error(
+      'No source version specified or detected. Initialize boilerplate tracking or pass a source version.',
+    )
+  }
+  const sourceVersion = normalizeSemanticVersion(sourceVersionInput, 'source')
+  const requestedTarget =
+    options.targetVersion === 'latest'
+      ? options.targetVersion
+      : normalizeSemanticVersion(options.targetVersion, 'target')
+
+  const warnings: string[] = []
+  let releases = getReleases(absolutePath, producerPath)
+  const shouldRefresh =
+    options.publicationPolicy === 'refresh-required' ||
+    (options.publicationPolicy === 'refresh-if-needed' &&
+      (options.targetVersion === 'latest' || releases.length === 0))
+  if (shouldRefresh) {
+    const warning = fetchBoilerplateReleases(absolutePath, state, {
+      required: options.publicationPolicy === 'refresh-required',
+      report: false,
+    })
+    if (warning) {
+      warnings.push(warning)
+    }
+    releases = getReleases(absolutePath, producerPath)
+  }
+
+  if (releases.length === 0) {
+    throw new Error(
+      `No local boilerplate releases found. Fetch them with ${getFetchReleasesCommand(getBoilerplateRemote(state))}`,
+    )
+  }
+
+  const targetVersion = resolveTargetVersion(requestedTarget, releases)
+  const targetRelease = releases.find((release) => release.version === targetVersion)
+  if (!targetRelease) {
+    throw new Error(`Unknown boilerplate target version: ${requestedTarget}`)
+  }
+  if (compareVersions(targetVersion, sourceVersion) < 0) {
+    throw new Error(`Cannot downgrade from ${sourceVersion} to ${targetVersion}`)
+  }
+  const targetReference = resolveTargetReference(targetRelease, absolutePath, producerPath)
+
+  const path = computeAvailableUpgradePath({
+    sourceVersion,
+    targetVersion,
+    trackedDomains: state?.trackedDomains ?? [],
+    appliedIntentions: state?.intentions.applied.map((intention) => intention.id) ?? [],
+    skippedIntentions: state?.intentions.skipped.map((intention) => intention.id) ?? [],
+    releases,
+    cwd: absolutePath,
+    producerPath,
+    targetReference,
+  })
+  const sourceRelease = releases.find((release) => release.version === path.sourceVersion)
+  let sourceReference: ResolvedGitReference | null = null
+  if (sourceRelease) {
+    try {
+      sourceReference = resolveTargetReference(sourceRelease, absolutePath, producerPath)
+    } catch {
+      warnings.push(`No source publication is available for ${path.sourceTag}`)
+    }
+  }
+
+  return {
+    path,
+    branchName: getUpgradeBranchName(path.sourceVersion, path.targetVersion),
+    targetRelease,
+    targetReference,
+    sourceReference,
+    state,
+    warnings,
+  }
 }
 
 function cmdUpgradePath(options: UpgradePathCommandOptions): void {
   const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
-  const state = readBoilerplateJson(absolutePath)
-
-  let sourceVersion = options.fromVersion
-  let trackedDomains: string[] = []
-  let appliedIntentions: string[] = []
-  let skippedIntentions: string[] = []
-
-  if (state) {
-    sourceVersion = options.fromVersion || state.source.currentVersion
-    trackedDomains = state.trackedDomains
-    appliedIntentions = state.intentions.applied.map((i) => i.id)
-    skippedIntentions = state.intentions.skipped.map((i) => i.id)
-  }
-
-  if (!sourceVersion) {
-    console.error(`  ${colorize('❌', 'red')} No source version specified or detected`)
-    console.error(
-      `  ${colorize('→', 'cyan')} Run ${colorize(`boilerplate upgrade init --project ${options.projectPath}`, 'bright')} or pass ${colorize('--from <version>', 'bright')}`,
-    )
-    process.exit(1)
-  }
-
-  if (options.fetch) {
-    fetchBoilerplateReleases(absolutePath, state, { required: true })
-  }
-
-  const releases = getReleases(absolutePath)
-  if (releases.length === 0) {
-    printMissingReleaseTags(state, absolutePath)
-    process.exit(1)
-  }
-
-  const targetVersion = resolveTargetVersion(options.toVersion, releases)
-  const path = resolveUpgradePath({
-    sourceVersion,
-    targetVersion,
-    trackedDomains,
-    appliedIntentions,
-    skippedIntentions,
-    releases,
-    cwd: absolutePath,
+  const resolution = resolveUpgradePath({
+    projectPath: absolutePath,
+    sourceVersion: options.fromVersion || undefined,
+    targetVersion: options.toVersion,
+    publicationPolicy: options.fetch ? 'refresh-required' : 'local-only',
   })
-  const branchName = getUpgradeBranchName(path.sourceVersion, path.targetVersion)
+  const { path, branchName } = resolution
 
   if (options.json) {
-    console.log(JSON.stringify({ ...path, branchName }, null, 2))
+    console.log(
+      JSON.stringify(
+        {
+          ...path,
+          branchName,
+          targetRelease: resolution.targetRelease,
+          targetReference: resolution.targetReference,
+          warnings: resolution.warnings,
+        },
+        null,
+        2,
+      ),
+    )
     return
   }
 
@@ -1199,6 +1376,9 @@ function cmdUpgradePath(options: UpgradePathCommandOptions): void {
     `  ${colorize('Release range:', 'dim')} ${colorize(`v${path.sourceVersion} → v${path.targetVersion}`, 'bright')}`,
   )
   console.log(`  ${colorize('Target branch:', 'dim')} ${colorize(branchName, 'bright')}`)
+  console.log(
+    `  ${colorize('Target publication:', 'dim')} ${colorize(resolution.targetReference.label, 'bright')} (${resolution.targetReference.provenance})`,
+  )
   console.log(`  ${colorize('Releases:', 'dim')} ${path.releases.length}`)
   console.log(`  ${colorize('Already applied/skipped:', 'dim')} ${path.alreadyResolvedCount}`)
   console.log(`  ${colorize('Migration intentions:', 'dim')} ${migrationIntentions.length}`)
@@ -1206,6 +1386,9 @@ function cmdUpgradePath(options: UpgradePathCommandOptions): void {
     `  ${colorize('Breaking/manual intentions:', 'dim')} ${breakingManualIntentions.length}`,
   )
   console.log(`  ${colorize('Metadata warnings:', 'dim')} ${metadataIssueCount}`)
+  for (const warning of resolution.warnings) {
+    console.log(`  ${colorize('Publication warning:', 'dim')} ${warning}`)
+  }
 
   console.log(`\n  ${colorize('Counts by classification (whole range):', 'cyan')}\n`)
   console.log(
@@ -1249,7 +1432,7 @@ function cmdUpgradePath(options: UpgradePathCommandOptions): void {
 
 function cmdUpgradeStatus(projectPath: string, json = false): void {
   const absolutePath = projectPath ? getProjectPath(projectPath) : projectRoot
-  const state = readBoilerplateJson(absolutePath)
+  const state = trackingState.read(absolutePath)
   const report = createHealthReport(absolutePath)
 
   if (json) {
@@ -1347,7 +1530,7 @@ interface HealthReport {
 
 function createHealthReport(projectPath: string): HealthReport {
   const checks: HealthCheck[] = []
-  const state = readBoilerplateJson(projectPath)
+  const state = trackingState.read(projectPath)
 
   checks.push(
     state
@@ -1468,75 +1651,46 @@ function formatHealthIcon(status: HealthCheck['status']): string {
   return colorize('✗', 'red')
 }
 
-async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise<void> {
-  console.log(`\n${colorize('📦 Preparing Upgrade Context', 'cyan')}\n`)
-
+async function prepareUpgrade(options: PrepareUpgradeRequest): Promise<PreparedUpgrade> {
   const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
-  const state = readBoilerplateJson(absolutePath)
-
+  const state = trackingState.read(absolutePath)
   if (!state) {
-    console.error(`  ${colorize('❌', 'red')} No boilerplate.json found.`)
-    console.error(
-      `  ${colorize('→', 'cyan')} Run ${colorize(`boilerplate upgrade init --project ${options.projectPath}`, 'bright')} first.`,
+    throw new Error(
+      `No boilerplate.json found. Run boilerplate upgrade init --project ${options.projectPath} first.`,
     )
-    process.exit(1)
   }
-
   const dirtyOutput = runGitCommand(['status', '--porcelain'], absolutePath)
   if (dirtyOutput) {
-    console.error(`  ${colorize('❌', 'red')} Git worktree is dirty. Clean before upgrading.`)
-    console.error(
-      `  ${colorize('→', 'cyan')} Inspect changes with ${colorize(`git -C ${absolutePath} status --short`, 'bright')}`,
+    throw new Error(
+      `Git worktree is dirty. Clean before upgrading. Inspect changes with git -C ${quotePosixShellArgument(absolutePath)} status --short`,
     )
-    process.exit(1)
+  }
+  const upgradeDir = join(absolutePath, '.boilerstone', 'upgrade')
+  if (existsSync(upgradeDir)) {
+    throw new Error(
+      'An upgrade workspace already exists. Finish it, remove it, or use a fresh branch before preparing again.',
+    )
   }
 
   const requestedVersion = options.toVersion || 'latest'
-
-  if (options.fetch) {
-    fetchBoilerplateReleases(absolutePath, state, { required: true })
-  }
-
-  let releases = getReleases(absolutePath)
-  // Fetch automatically when it is needed: no releases yet, or `latest` should
-  // reflect the remote. Best-effort — offline, local releases still work.
-  if (!options.fetch && (releases.length === 0 || requestedVersion === 'latest')) {
-    fetchBoilerplateReleases(absolutePath, state, { required: false })
-    releases = getReleases(absolutePath)
-  }
-  if (releases.length === 0) {
-    printMissingReleaseTags(state, absolutePath)
-    process.exit(1)
-  }
-
-  const targetVersion = resolveTargetVersion(requestedVersion, releases)
-
-  const resolvedPath = resolveUpgradePath({
-    sourceVersion: state.source.currentVersion,
-    targetVersion,
-    trackedDomains: state.trackedDomains,
-    appliedIntentions: state.intentions.applied.map((i) => i.id),
-    skippedIntentions: state.intentions.skipped.map((i) => i.id),
-    releases,
-    cwd: absolutePath,
+  const resolution = resolveUpgradePath({
+    projectPath: absolutePath,
+    producerPath: options.producerPath,
+    targetVersion: requestedVersion,
+    publicationPolicy: options.fetch ? 'refresh-required' : 'refresh-if-needed',
   })
+  const resolvedPath = resolution.path
+  const warnings = [...resolution.warnings]
+
   if (resolvedPath.intentions.length === 0) {
-    console.error(
-      `  ${colorize('⚠', 'yellow')} No intentions apply between v${resolvedPath.sourceVersion} and v${resolvedPath.targetVersion} — nothing to prepare.`,
-    )
     if (resolvedPath.alreadyResolvedCount > 0) {
-      console.error(
-        `  ${colorize('→', 'cyan')} All ${resolvedPath.alreadyResolvedCount} intention(s) in range are already applied or skipped; run ${colorize(`boilerplate upgrade finish --to ${resolvedPath.targetVersion}`, 'bright')} to record the version bump.`,
-      )
-    } else {
-      console.error(
-        `  ${colorize('→', 'cyan')} Intentions tagged v${resolvedPath.sourceVersion} are never replayed. If this project actually predates them, lower ${colorize('source.currentVersion', 'bright')} in .boilerstone/boilerplate.json (e.g. 0.0.0) and re-run.`,
-      )
-      console.error(
-        `  ${colorize('→', 'cyan')} If the source version is correct and this upgrade is genuinely empty, run ${colorize(`boilerplate upgrade finish --to ${resolvedPath.targetVersion}`, 'bright')}.`,
+      throw new Error(
+        `No intentions apply between v${resolvedPath.sourceVersion} and v${resolvedPath.targetVersion} — all ${resolvedPath.alreadyResolvedCount} intention(s) in range are already applied or skipped. Run boilerplate upgrade finish --to ${resolvedPath.targetVersion}.`,
       )
     }
-    process.exit(1)
+    throw new Error(
+      `No intentions apply between v${resolvedPath.sourceVersion} and v${resolvedPath.targetVersion} — nothing to prepare. Intentions tagged v${resolvedPath.sourceVersion} are never replayed. If this project predates them, lower source.currentVersion in .boilerstone/boilerplate.json (e.g. 0.0.0); otherwise run boilerplate upgrade finish --to ${resolvedPath.targetVersion}.`,
+    )
   }
 
   const filteredPath = filterUpgradePathIntentions(
@@ -1544,16 +1698,7 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
     options.includeIds,
     options.excludeIds,
   )
-  // Interactive selection is the default on a terminal; explicit --include/
-  // --exclude (agents, scripts) or no TTY skip the prompt.
-  const interactiveSelect =
-    options.select ??
-    (process.stdin.isTTY === true &&
-      options.includeIds.length === 0 &&
-      options.excludeIds.length === 0)
-  const upgradePath = interactiveSelect
-    ? await selectUpgradePathIntentions(filteredPath)
-    : filteredPath
+  const upgradePath = await options.selectIntentions(filteredPath)
 
   const stagedIds = new Set(upgradePath.intentions.map((intention) => intention.id))
   const resolvedIds = new Set([
@@ -1569,97 +1714,235 @@ async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise
     }
   }
   if (missingDependencies.length > 0) {
-    for (const { id, requires } of missingDependencies) {
-      console.error(
-        `  ${colorize('❌', 'red')} ${id} requires ${requires} — include it in the selection or resolve it first.`,
+    throw new Error(
+      missingDependencies
+        .map(
+          ({ id, requires }) =>
+            `${id} requires ${requires} — include it in the selection or resolve it first.`,
+        )
+        .join('\n'),
+    )
+  }
+
+  const branchName = resolution.branchName
+  const targetReference = resolution.targetReference
+  const temporaryUpgradeDir = join(
+    absolutePath,
+    '.boilerstone',
+    `upgrade.tmp-${process.pid}-${Date.now()}`,
+  )
+  let isPublished = false
+
+  try {
+    mkdirSync(join(temporaryUpgradeDir, 'reference', 'source'), { recursive: true })
+    mkdirSync(join(temporaryUpgradeDir, 'reference', 'target'), { recursive: true })
+    mkdirSync(join(temporaryUpgradeDir, 'intentions'), { recursive: true })
+
+    const orderWidth = Math.max(2, String(upgradePath.intentions.length).length)
+    for (const [index, intention] of upgradePath.intentions.entries()) {
+      // Content was resolved from the release git tag (or disk fallback); write it
+      // instead of copying, since the source may not exist as a local file
+      const order = String(index + 1).padStart(orderWidth, '0')
+      const destFile = join(
+        temporaryUpgradeDir,
+        'intentions',
+        `${order}-${intention.id.replace(/\//g, '-')}.md`,
+      )
+      writeFileSync(destFile, intention.content, 'utf-8')
+    }
+
+    // Source and target are independent: a 0.0.0 project has no source ref, but
+    // the complete target remains mandatory.
+    const referenceDeclarations = getReferencePathDeclarations(upgradePath.intentions)
+    let stagedSourceReferencePaths: string[] = []
+    const sourceReference = resolution.sourceReference
+    const sourceRef = sourceReference?.ref ?? upgradePath.sourceTag
+    if (sourceReference) {
+      archiveGitReference(
+        sourceReference.ref,
+        join(temporaryUpgradeDir, 'reference', 'source'),
+        sourceReference.cwd,
+      )
+      stagedSourceReferencePaths = extractIntentionReferencePaths(
+        upgradePath.intentions,
+        sourceReference.ref,
+        join(temporaryUpgradeDir, 'reference', 'source'),
+        sourceReference.cwd,
+      )
+    } else {
+      writeFileSync(
+        join(temporaryUpgradeDir, 'reference', 'source', 'NO-SOURCE-REFERENCE.md'),
+        `Release ${upgradePath.sourceTag} does not exist locally — the project predates the first tracked release. Compare against reference/target/ only.\n`,
+        'utf-8',
+      )
+      warnings.push(
+        `No source reference for ${upgradePath.sourceTag} (release not found) — comparing against the target only`,
       )
     }
-    process.exit(1)
-  }
 
-  const branchName = getUpgradeBranchName(upgradePath.sourceVersion, upgradePath.targetVersion)
-  ensureUpgradeBranch(absolutePath, branchName)
-  console.log(`  ${colorize('→', 'cyan')} Working on branch: ${colorize(branchName, 'bright')}`)
+    archiveGitReference(
+      targetReference.ref,
+      join(temporaryUpgradeDir, 'reference', 'target'),
+      targetReference.cwd,
+    )
+    const stagedTargetReferencePaths = extractIntentionReferencePaths(
+      upgradePath.intentions,
+      targetReference.ref,
+      join(temporaryUpgradeDir, 'reference', 'target'),
+      targetReference.cwd,
+    )
+    const stagedTargetPaths = new Set(stagedTargetReferencePaths)
+    const missingCopyPath = referenceDeclarations.find(
+      (declaration) => declaration.mode === 'copy' && !stagedTargetPaths.has(declaration.path),
+    )
+    if (missingCopyPath) {
+      throw new Error(`copy reference path is missing from the target ref: ${missingCopyPath.path}`)
+    }
 
-  const upgradeDir = join(absolutePath, '.boilerstone', 'upgrade')
-  if (existsSync(upgradeDir)) {
-    rmSync(upgradeDir, { recursive: true, force: true })
-  }
-
-  mkdirSync(join(upgradeDir, 'reference', 'source'), { recursive: true })
-  mkdirSync(join(upgradeDir, 'reference', 'target'), { recursive: true })
-  mkdirSync(join(upgradeDir, 'intentions'), { recursive: true })
-
-  for (const intention of upgradePath.intentions) {
-    // Content was resolved from the release git tag (or disk fallback); write it
-    // instead of copying, since the source may not exist as a local file
-    const destFile = join(upgradeDir, 'intentions', `${intention.id.replace(/\//g, '-')}.md`)
-    writeFileSync(destFile, intention.content, 'utf-8')
-  }
-
-  // Extract reference files from git tags. Source and target are independent:
-  // a project onboarded at 0.0.0 has no source tag, but the target reference
-  // (and its staged intention paths) must still be extracted.
-  let stagedReferencePaths: string[] = []
-  const sourceRef = releaseRef(upgradePath.sourceTag, absolutePath)
-  const targetRef = releaseRef(upgradePath.targetTag, absolutePath)
-  try {
-    archiveGitReference(sourceRef, join(upgradeDir, 'reference', 'source'), absolutePath)
-  } catch {
+    const referenceContext: SessionReferenceContext = {
+      declarations: referenceDeclarations,
+      sourceRef,
+      targetRef: targetReference.ref,
+      targetCwd: targetReference.cwd,
+      targetLabel: targetReference.label,
+      isTargetDraft: targetReference.isDraft,
+      stagedSourcePaths: stagedSourceReferencePaths,
+      stagedTargetPaths: stagedTargetReferencePaths,
+    }
     writeFileSync(
-      join(upgradeDir, 'reference', 'source', 'NO-SOURCE-REFERENCE.md'),
-      `Release ${upgradePath.sourceTag} does not exist locally — the project predates the first tracked release. Compare against reference/target/ only.\n`,
+      join(temporaryUpgradeDir, 'reference', 'README.md'),
+      generateReferenceReadme(referenceContext),
       'utf-8',
     )
-    console.log(
-      `  ${colorize('⚠', 'yellow')} No source reference for ${upgradePath.sourceTag} (release not found) — comparing against the target only`,
-    )
-  }
-  try {
-    archiveGitReference(targetRef, join(upgradeDir, 'reference', 'target'), absolutePath)
-    stagedReferencePaths = extractIntentionReferencePaths(
-      upgradePath.intentions,
-      targetRef,
-      join(upgradeDir, 'reference', 'target'),
-      absolutePath,
-    )
-    if (stagedReferencePaths.length > 0) {
-      console.log(
-        `  ${colorize('✓', 'green')} Staged ${stagedReferencePaths.length} app reference path(s) from ${upgradePath.targetTag}`,
-      )
+    const sessionPrompt = generateSessionPrompt(upgradePath, state, referenceContext)
+    writeFileSync(join(temporaryUpgradeDir, 'upgrade-session.md'), sessionPrompt, 'utf-8')
+
+    ensureUpgradeBranch(absolutePath, branchName)
+    renameSync(temporaryUpgradeDir, upgradeDir)
+    isPublished = true
+
+    return {
+      branchName,
+      sourceVersion: upgradePath.sourceVersion,
+      targetVersion: upgradePath.targetVersion,
+      stagedIntentionCount: upgradePath.intentions.length,
+      availableIntentionCount: resolvedPath.intentions.length,
+      targetRelease: resolution.targetRelease,
+      targetReference,
+      warnings,
     }
-  } catch (error) {
-    console.log(
-      `  ${colorize('⚠', 'yellow')} Could not extract the target reference from ${upgradePath.targetTag}: ${error instanceof Error ? error.message : String(error)}`,
-    )
-    console.log(
-      `  ${colorize('→', 'cyan')} That git reference must exist locally. Fetch it with ${colorize('git fetch <boilerplate-remote> --tags', 'bright')}`,
-    )
+  } finally {
+    if (!isPublished) {
+      rmSync(temporaryUpgradeDir, { recursive: true, force: true })
+    }
   }
+}
 
-  const sessionPrompt = generateSessionPrompt(upgradePath, state, stagedReferencePaths, targetRef)
-  writeFileSync(join(upgradeDir, 'upgrade-session.md'), sessionPrompt, 'utf-8')
+async function cmdUpgradePrepare(options: UpgradePrepareCommandOptions): Promise<void> {
+  console.log(`\n${colorize('📦 Preparing Upgrade Context', 'cyan')}\n`)
 
+  const interactiveSelect =
+    options.select === true ||
+    (process.stdin.isTTY === true &&
+      options.includeIds.length === 0 &&
+      options.excludeIds.length === 0)
+  const result = await prepareUpgrade({
+    ...options,
+    selectIntentions: interactiveSelect
+      ? selectUpgradePathIntentions
+      : async (path: UpgradePath): Promise<UpgradePath> => path,
+  })
+
+  for (const warning of result.warnings) {
+    console.log(`  ${colorize('⚠', 'yellow')} ${warning}`)
+  }
+  console.log(
+    `  ${colorize('→', 'cyan')} Working on branch: ${colorize(result.branchName, 'bright')}`,
+  )
+  console.log(
+    `  ${colorize('✓', 'green')} Target source of truth: ${colorize(result.targetReference.label, 'bright')} (${result.targetReference.provenance})`,
+  )
   console.log(`  ${colorize('✓', 'green')} Created .boilerstone/upgrade/ workspace`)
   console.log(`  ${colorize('✓', 'green')} Generated upgrade-session.md`)
   console.log(
-    `  ${colorize('→', 'cyan')} ${upgradePath.intentions.length}/${resolvedPath.intentions.length} intentions ready for execution`,
+    `  ${colorize('→', 'cyan')} ${result.stagedIntentionCount}/${result.availableIntentionCount} intentions ready for execution`,
   )
   console.log()
 }
 
+interface SessionReferenceContext {
+  declarations: ReferencePathDeclaration[]
+  sourceRef: string
+  targetRef: string
+  targetCwd: string
+  targetLabel: string
+  isTargetDraft: boolean
+  stagedSourcePaths: string[]
+  stagedTargetPaths: string[]
+}
+
+function formatReferencePolicyTable(context: SessionReferenceContext): string {
+  if (context.declarations.length === 0) {
+    return '_No app-code reference paths declared._'
+  }
+
+  const sourcePaths = new Set(context.stagedSourcePaths)
+  const targetPaths = new Set(context.stagedTargetPaths)
+  const rows = context.declarations.map(
+    ({ path, mode }) =>
+      `| \`${path}\` | ${mode} | ${sourcePaths.has(path) ? 'staged' : 'not available'} | ${targetPaths.has(path) ? 'staged' : 'not available'} |`,
+  )
+
+  return [
+    '| Path | Policy | Source projection | Target projection |',
+    '| --- | --- | --- | --- |',
+    ...rows,
+  ].join('\n')
+}
+
+function formatReferenceGitCommand(context: SessionReferenceContext, args: string): string {
+  return `git -C ${quotePosixShellArgument(context.targetCwd)} ${args}`
+}
+
+function generateReferenceReadme(context: SessionReferenceContext): string {
+  const draftNotice = context.isTargetDraft
+    ? '\n> Draft mode: the producer checkout HEAD is the temporary source of truth until the release is tagged.\n'
+    : ''
+
+  return `# Upgrade References
+
+- Source ref: \`${context.sourceRef}\`
+- Target ref (source of truth): \`${context.targetLabel}\`
+${draftNotice}
+
+\`reference/target/\` is a disposable projection of the target ref. \`reference/source/\` is the matching source projection. They make review convenient for human and AI executors; the refs remain authoritative.
+
+## Reference Policy
+
+- **copy**: copy the target projection verbatim; it is the declared source of truth for that path.
+- **adapt**: compare the project with both projections, preserve project-specific deltas, and apply only the source-to-target change. If the source projection is unavailable, preserve project behavior and use the target only as a reference.
+
+${formatReferencePolicyTable(context)}
+
+Inspect a target file without using the projection:
+
+\`\`\`bash
+${formatReferenceGitCommand(context, `show ${context.targetRef}:<path>`)}
+${formatReferenceGitCommand(context, `archive ${context.targetRef} -- <path>`)} | tar -x -C .boilerstone/upgrade/reference/target/
+\`\`\`
+`
+}
+
 function generateSessionPrompt(
   path: UpgradePath,
-  state: BoilerplateState,
-  stagedReferencePaths: string[] = [],
-  targetArchiveRef = `v${path.targetVersion}`,
+  state: TrackingState,
+  referenceContext: SessionReferenceContext,
 ): string {
   const targetTag = `v${path.targetVersion}`
   const remoteUrl = getBoilerplateRemote(state)
-  const stagedReferenceLines =
-    stagedReferencePaths.length > 0
-      ? stagedReferencePaths.map((referencePath) => `  - \`${referencePath}\``).join('\n')
-      : '  - _none staged (release tags were not available locally)_'
+  const fullReferenceFallback = referenceContext.isTargetDraft
+    ? `${formatReferenceGitCommand(referenceContext, `archive ${referenceContext.targetRef} -- <path>`)} | tar -x -C .boilerstone/upgrade/reference/target/`
+    : `git clone --depth 1 --branch ${quotePosixShellArgument(targetTag)} ${quotePosixShellArgument(remoteUrl)} ${quotePosixShellArgument('.boilerstone/upgrade/reference/full')}`
 
   return `# Upgrade Session: v${path.sourceVersion} → v${path.targetVersion}
 
@@ -1674,13 +1957,14 @@ You are the executor — a developer or an AI agent — applying boilerplate upg
 3. Run applicability checks from the intention
 4. **Stop** if a "Do not apply when" condition matches
 5. For \`breaking-manual\` intentions, **stop before editing files** and write a blocked report describing the required human decision
-6. For every file under an intention's Reference Paths, run \`diff <file> .boilerstone/upgrade/reference/target/<file>\` **before** editing — never write these files from memory
-7. No project-specific delta in the diff → **copy the staged reference file verbatim**; project deltas → keep them and apply only the reference-side hunks
-8. Everywhere else apply the **smallest safe change** and **preserve** all project-specific behavior
-9. Run validation after each intention
-10. After successful validation, record the outcome with \`pnpm boilerplate upgrade record --id <id> --applied\` or \`--skipped --reason "..."\`
-11. **Stop** on unsafe ambiguity and write a blocked report
-12. After the last intention is resolved, run \`pnpm boilerplate upgrade finish --to ${path.targetVersion}\`
+6. Follow the declared Reference Policy for every path; never write a referenced file from memory
+7. **copy**: copy the target projection verbatim and verify the resulting diff
+8. **adapt**: compare project, source, and target before editing; preserve project-specific deltas and apply only the source-to-target change
+9. Everywhere else apply the **smallest safe change** and **preserve** all project-specific behavior
+10. Run validation after each intention
+11. After successful validation, record the outcome with \`pnpm boilerplate upgrade record --id <id> --applied\` or \`--skipped --reason "..."\`
+12. **Stop** on unsafe ambiguity and write a blocked report
+13. After the last intention is resolved, run \`pnpm boilerplate upgrade finish --to ${path.targetVersion}\`
 
 ### Git Policy
 
@@ -1709,18 +1993,25 @@ ${formatMetadataWarnings(path.intentions)}
 
 ## Reference Files
 
+- Target ref (source of truth): \`${referenceContext.targetLabel}\`
+- Reference provenance: \`.boilerstone/upgrade/reference/README.md\`
 - Source reference: \`.boilerstone/upgrade/reference/source/\`
 - Target reference: \`.boilerstone/upgrade/reference/target/\`
 - Intention files: \`.boilerstone/upgrade/intentions/\`
-- App-code reference paths staged at ${targetTag} under \`reference/target/\`:
-${stagedReferenceLines}
+
+### Reference Policy
+
+- **copy**: copy the target projection verbatim.
+- **adapt**: compare project, source, and target; preserve project-specific behavior.
+
+${formatReferencePolicyTable(referenceContext)}
 
 Need a reference file that is not staged? Extract it from the target tag:
 
 \`\`\`bash
-git archive ${targetArchiveRef} -- <path> | tar -x -C .boilerstone/upgrade/reference/target/
-# or clone the full boilerplate at the target version (disposable, gitignored):
-git clone --depth 1 --branch ${targetTag} ${remoteUrl} .boilerstone/upgrade/reference/full
+${formatReferenceGitCommand(referenceContext, `archive ${referenceContext.targetRef} -- <path>`)} | tar -x -C .boilerstone/upgrade/reference/target/
+# Full reference fallback:
+${fullReferenceFallback}
 \`\`\`
 
 Begin with the first intention.
@@ -1888,4 +2179,20 @@ if (isDirectExecution) {
   main()
 }
 
-export { archiveGitReference, extractIntentionReferencePaths }
+export {
+  archiveGitReference,
+  extractIntentionReferencePaths,
+  finishUpgrade,
+  generateReferenceReadme,
+  generateSessionPrompt,
+  getFetchReleasesCommand,
+  prepareUpgrade,
+  resolveUpgradePath,
+  resolveTargetReference,
+  type PrepareUpgradeRequest,
+  type PreparedUpgrade,
+  type ResolveUpgradePathRequest,
+  type ResolvedGitReference,
+  type SessionReferenceContext,
+  type UpgradePathResolution,
+}

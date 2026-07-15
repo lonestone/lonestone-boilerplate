@@ -29,5 +29,5 @@ Write one intention per bounded adaptation from `.boilerstone/migration-intentio
 ## Guardrails (from the runbook — non-negotiable)
 
 - Never one vague intention for a whole release; never force optional capabilities on consumers.
-- Keep Reference Paths small and specific — `upgrade prepare` stages them (no lockfiles, no generated artifacts).
+- Keep Reference Paths small and specific, and label every path `copy` or `adapt` — `upgrade prepare` stages them (no lockfiles, no generated artifacts).
 - Update `CHANGELOG.md` and smoke-test install/onboard before handing back for the tag.

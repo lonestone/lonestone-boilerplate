@@ -59,9 +59,12 @@ Name the file `NN-slug.md`, where `NN` is a zero-padded execution-order prefix (
 ## Reference Paths
 
 <!-- Files or directories from the boilerplate to compare. -->
-<!-- `upgrade prepare` stages these from the target tag into reference/target/, -->
-<!-- so keep them small and specific — no lockfiles or generated artifacts. -->
-<!-- Example: "- `apps/api/src/modules/storage/`" -->
+<!-- Every path must declare its policy: -->
+<!-- - copy: the target ref is the source of truth; copy it verbatim. -->
+<!-- - adapt: compare project, source and target; preserve project-specific deltas. -->
+<!-- `upgrade prepare` stages available paths from both refs, so keep them small -->
+<!-- and specific — no lockfiles or generated artifacts. -->
+<!-- Example: "- `apps/api/src/modules/storage/` — **adapt**" -->
 
 ## Validation
 

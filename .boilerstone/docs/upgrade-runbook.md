@@ -6,7 +6,7 @@ Commands that accept `--json` emit machine-readable output; prefer it when the e
 
 ## Before you start
 
-You need a valid `.boilerstone/boilerplate.json` (run `upgrade init`, or `bootstrap` on an older project), a clean git worktree, and the boilerplate releases available locally. `upgrade status` checks all three and prints the exact fetch command when releases are missing. Releases are fetched into the `refs/boilerstone/` namespace — never into your own tags, so they cannot collide with your app's versioning.
+You need a valid `.boilerstone/boilerplate.json` (run `upgrade init`, or `bootstrap` on an older project), a clean git worktree, no existing `.boilerstone/upgrade/` workspace, and the boilerplate releases available locally. `upgrade status` checks the state, worktree, and releases. Releases are fetched into the `refs/boilerstone/` namespace — never into your own tags, so they cannot collide with your app's versioning. If a workspace already exists, finish or deliberately remove it before preparing again; `prepare` never overwrites partial progress.
 
 Then stage the upgrade:
 
@@ -14,7 +14,7 @@ Then stage the upgrade:
 pnpm boilerplate upgrade
 ```
 
-That one command targets the latest release, fetches it when needed, and lets you choose the intentions interactively. You can skip `upgrade path`; the path is computed internally. For explicit control:
+That one command targets the latest release, refreshes publications when needed, and lets you choose the intentions interactively. A failed best-effort refresh can use an already available local publication with a warning; pass `--fetch` when refresh failure must stop preparation. You can skip `upgrade path`; the same resolution module computes the path internally. For explicit control:
 
 ```bash
 pnpm boilerplate upgrade --to <version>
@@ -22,13 +22,16 @@ pnpm boilerplate upgrade prepare --to <version> --include v1.2.0/foo,v1.2.0/bar
 pnpm boilerplate upgrade prepare --to <version> --exclude v1.2.0/optional-ai
 ```
 
-This creates the `upgrade/v<source>-to-v<target>` branch and the `.boilerstone/upgrade/` workspace:
+This first builds and validates a temporary workspace. A missing target ref or missing `copy` path fails without creating a branch or publishing partial material. Once complete, it creates the `upgrade/v<source>-to-v<target>` branch and atomically publishes `.boilerstone/upgrade/`:
+
+For an untagged producer draft, commit the release folder and intentions first and keep the producer checkout clean. `prepare` reads both intentions and references from that exact producer `HEAD`; it refuses working-tree-only draft content.
 
 ```
 .boilerstone/upgrade/        # disposable, gitignored
-  intentions/                # the intentions to process, one file each
-  reference/source/          # .boilerstone tree at the source tag
-  reference/target/          # .boilerstone tree at the target tag
+  intentions/                # numbered intentions in execution order
+  reference/README.md        # refs, provenance, and copy/adapt policy
+  reference/source/          # source-ref projection, including declared app paths
+  reference/target/          # target-ref projection, including declared app paths
   upgrade-session.md         # the session prompt / checklist
 ```
 
@@ -38,10 +41,10 @@ Work through `upgrade-session.md` one intention at a time. For each:
 
 1. **Read it.** Note its `classification` and `domain` in the frontmatter, and understand the goal and the why.
 2. **Decide if it applies.** Check the "Applies when" and "Do not apply when" conditions against your project. If it doesn't apply, record it as skipped with a reason and move on. If its classification is `breaking-manual`, stop and get a human decision before touching anything. Intentions reference boilerplate paths (`apps/api/…`, root configs); if your project's layout differs, translate them to your structure — never reorganize the project to match the boilerplate.
-3. **Understand the change** by comparing `reference/source/` with `reference/target/`. The app-code paths each intention declares under "Reference Paths" are staged at the target version inside `reference/target/`; if you need a file that isn't staged, `upgrade-session.md` contains ready-made `git archive` / `git clone` commands to pull it from the target tag. You're after the _meaning_ of the change; the diff against the staged reference tells you where a literal copy is safe and where adaptation is needed.
-4. **Diff first — never retype.** For each file the intention references, run `diff <file> .boilerstone/upgrade/reference/target/<file>` before editing. No project-specific delta → copy the staged reference verbatim. Project deltas → keep them and apply only the reference-side hunks. Manifest files (`package.json`, `pnpm-workspace.yaml`) are always merges, never copies: treat each dependency line as its own hunk, and only touch the lines the intention names. Elsewhere, make the smallest safe change and preserve project-specific behavior; avoid cosmetic edits.
+3. **Understand the provenance.** Read `reference/README.md`. The target git ref is the source of truth; `reference/target/` is its disposable projection. Available app-code paths are staged from both source and target refs so the executor can distinguish a boilerplate change from a project-specific delta. If a path is missing, the session contains ready-made `git show`, `git archive`, and `git clone` commands.
+4. **Follow the declared reference policy — never retype.** A `copy` path uses the target ref as its source of truth: copy the target projection verbatim and verify the diff. An `adapt` path requires a three-way comparison of project, source, and target: preserve project-specific deltas and apply only the source-to-target change. When the source projection is unavailable, preserve project behavior and use the target only as a reference. Manifest files (`package.json`, `pnpm-workspace.yaml`) are `adapt`, never `copy`.
 5. **Validate.** Run the intention's own validation first, then the global checks that exist in your project: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. Report a missing script as unavailable, not as passing. For boilerplate-owned files, the diff against the staged reference must be empty — or every remaining delta must be project-specific and named in your summary.
-6. **Record.** Only once validation passes, run `pnpm boilerplate upgrade record --id <id> --applied` (or `--skipped --reason "..."`).
+6. **Record.** Only once validation passes, run `pnpm boilerplate upgrade record --id <id> --applied` (or `--skipped --reason "..."`). `boilerplate.json` remains the source of truth; the command checks the matching box in `upgrade-session.md` as a synchronized view. If that view cannot be updated after the state is saved, treat the warning as recoverable and do not retry the already-recorded outcome.
 
 Recorded outcomes look like this:
 
@@ -64,4 +67,4 @@ Stay on the dedicated `upgrade/…` branch. For risky or large upgrades, commit 
 
 ## Finishing
 
-When every staged intention is applied or skipped, run `pnpm boilerplate upgrade finish --to <target-version>`, commit the final state, then open a PR. The CLI enforces this: `finish` refuses while any intention in the range is neither applied nor skipped. Summarize what happened: intentions applied, intentions skipped (with reasons), anything blocked, and the validation results. Do not update `source.currentVersion` before this final step.
+When every staged intention is applied or skipped, run `pnpm boilerplate upgrade finish --to <target-version>`, commit the final state, then open a PR. The CLI enforces this: `finish` resolves from local publications only and refuses while any intention in the range is neither applied nor skipped. Summarize what happened: intentions applied, intentions skipped (with reasons), anything blocked, and the validation results. Do not update `source.currentVersion` before this final step.

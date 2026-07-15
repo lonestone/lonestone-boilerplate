@@ -16,11 +16,14 @@
       "properties": {
         "repository": {
           "type": "string",
+          "minLength": 1,
           "description": "Source boilerplate repository identifier",
           "examples": ["lonestone/lonestone-boilerplate"]
         },
         "remote": {
           "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!.*```)[^\\u0000-\\u001F\\u007F]+$",
           "description": "Git remote URL used to fetch boilerplate release tags in consumer projects",
           "examples": ["https://github.com/lonestone/lonestone-boilerplate.git"]
         },
@@ -71,7 +74,7 @@
             "properties": {
               "id": {
                 "type": "string",
-                "description": "Intention ID in format `vX.Y.Z/slug` (slug may be nested, e.g. `vX.Y.Z/api/logger`)",
+                "description": "Intention ID in canonical format `vX.Y.Z/slug`; legacy IDs without `v` are accepted on read and migrated on write",
                 "pattern": "^v?\\d+\\.\\d+\\.\\d+(/[a-z0-9-]+)+$"
               },
               "appliedAt": {
@@ -91,7 +94,7 @@
             "properties": {
               "id": {
                 "type": "string",
-                "description": "Intention ID in format `vX.Y.Z/slug` (slug may be nested, e.g. `vX.Y.Z/api/logger`)",
+                "description": "Intention ID in canonical format `vX.Y.Z/slug`; legacy IDs without `v` are accepted on read and migrated on write",
                 "pattern": "^v?\\d+\\.\\d+\\.\\d+(/[a-z0-9-]+)+$"
               },
               "reason": {

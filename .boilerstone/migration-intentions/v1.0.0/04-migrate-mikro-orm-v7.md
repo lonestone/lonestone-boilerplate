@@ -50,9 +50,9 @@ Work through each gap independently; skip any that is already closed.
 
 ## Reference Paths
 
-- `apps/api/package.json`
-- `apps/api/src/modules/db/`
-- `apps/api/src/test/helpers/test-db.helper.ts`
+- `apps/api/package.json` — **adapt**
+- `apps/api/src/modules/db/` — **adapt**
+- `apps/api/src/test/helpers/test-db.helper.ts` — **adapt**
 
 ## Validation
 

@@ -15,8 +15,8 @@ Follow the normal flow on the pilot: `bootstrap` (or `upgrade init`), then `upgr
 - **Detection** — did `init` infer the right source version, and were the tracked domains appropriate?
 - **The plan** — was the resolved path explainable? Were the pending intentions actually relevant to this project?
 - **The intentions themselves** — precise enough? Were the applicability checks and stop conditions clear and correct? Were the reference files useful?
-- **Execution** — did the executor preserve project-specific behavior, keep changes minimal, commit atomically, and stop when it should have? Were skips justified with clear reasons?
-- **Safety** — did the clean-worktree check, dedicated branch, and no-auto-push rules hold? Was partial progress preserved when something failed?
+- **Execution** — did the executor follow the numbered order, use the target ref as source of truth, obey each path's `copy`/`adapt` policy, preserve project-specific behavior, keep changes minimal, commit atomically, and stop when it should have? Did `upgrade record` check the matching session item? Were skips justified with clear reasons?
+- **Safety** — did the clean-worktree check, atomic workspace publication, dedicated branch, existing-workspace protection, and no-auto-push rules hold? Did an incomplete target fail before mutation, and was partial execution progress preserved?
 
 ## After the pilot
 

@@ -17,7 +17,7 @@ In the boilerplate repository, this directory contains both producer-side artifa
 ```
 boilerplate.json          # This project's state: source version/commit, applied/skipped intentions
 boilerplate.schema.json   # Schema for the state file
-cli/                      # CLI: status, path, prepare (pure logic in boilerplate-core.ts, tested)
+cli/                      # CLI modules: tracking lifecycle, path resolution, preparation, commands
 docs/how-it-works.md      # Philosophy + each command, in plain terms (start here)
 docs/upgrade-runbook.md   # The execution procedure — same steps for humans and AI agents
 docs/release-maintainer-runbook.md # Maintainer procedure for creating a new release
@@ -46,7 +46,7 @@ Pin a release with `--ref <tag>`; point at a fork/private repo with `BOILERPLATE
 
 - **`init`** clones the template and runs `pnpm rock` (the normal first-run setup).
 - **`onboard`** fetches `.boilerstone/` plus the `boilerstone-upgrade` skills, runs `bootstrap` (below), then offers to commit the onboarding (`[Y/n]`, default yes).
-- **`upgrade [version]`** runs `pnpm boilerplate upgrade --to <version|latest>` — auto-fetch and interactive selection are the defaults (with no terminal, the selection falls back to staging every intention). It fetches the boilerplate releases into `refs/boilerstone/` (never into your own tags), **creates a branch** `upgrade/v<current>-to-v<target>`, and stages a gitignored `.boilerstone/upgrade/` workspace (intentions + reference trees + session prompt). It does **not** touch your app code, commit, or push — applying the staged intentions is a separate, reviewable step (see the runbook).
+- **`upgrade [version]`** runs `pnpm boilerplate upgrade --to <version|latest>` — auto-fetch and interactive selection are the defaults (with no terminal, the selection falls back to staging every intention). It fetches releases into `refs/boilerstone/`, resolves and selects before mutation, builds a temporary workspace, validates the target, then **creates a branch** `upgrade/v<current>-to-v<target>` and atomically publishes `.boilerstone/upgrade/` (numbered intentions + source/target projections + reference policy + session checklist). It refuses to overwrite an existing workspace. The target ref remains the source of truth. It does **not** touch your app code, commit, or push — applying the staged intentions is a separate, reviewable step (see the runbook).
 
 `bootstrap` wires the root `package.json` (adds the `boilerplate` script and a `tsx` devDependency), ignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It is idempotent and never overwrites existing entries. It does **not** run `pnpm rock` (which renames packages and rewrites env/docker — safe only on a fresh template, destructive on an existing project).
 
@@ -77,7 +77,9 @@ pnpm boilerplate upgrade finish --to 1.6.0
 - **Human executor**: follow [docs/upgrade-runbook.md](./docs/upgrade-runbook.md).
 - **AI executor**: the Claude Code skill and Cursor skill `boilerstone-upgrade` follow the same runbook.
 
-Tests for the CLI live in `cli/*.spec.ts` and run with the regular workspace test suite (`pnpm test`).
+Path resolution has one interface across `upgrade path`, `prepare`, and `finish`. `path` is local-only unless `--fetch` requires a refresh; `prepare` refreshes `latest` when needed and treats `--fetch` as mandatory; `finish` is local-only and fails closed. Explicit unknown targets are always rejected.
+
+The consumer CLI owns the complete tracking-state lifecycle behind the `trackingState` interface in `cli/tracking-state.ts`: creation, parsing, normalization, schema-aligned validation, outcome recording, upgrade finalization, and persistence. Commands only translate its results and errors into CLI output. Tests for the CLI live in `cli/*.spec.ts` and run with the regular workspace test suite (`pnpm test`).
 
 ## Maintainer release checklist
 

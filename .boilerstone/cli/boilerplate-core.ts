@@ -364,19 +364,32 @@ function getIntentionOrderIssues(
 }
 
 /**
- * Extracts the repo-relative paths declared in an intention's
- * "## Reference Paths" section. Only backticked tokens that look like paths
- * are kept; `.boilerstone/` entries are dropped since the reference trees
- * already contain them.
+ * Parses the repo-relative paths and copy/adapt policy declared in an
+ * intention's "## Reference Paths" section. Published legacy intentions
+ * without a policy remain safe by defaulting to adapt, while producer lint can
+ * surface the returned issue.
  */
-function parseReferencePaths(content: string): string[] {
+type ReferencePathMode = 'copy' | 'adapt'
+
+interface ReferencePathDeclaration {
+  path: string
+  mode: ReferencePathMode
+}
+
+interface ParsedReferencePathDeclarations {
+  references: ReferencePathDeclaration[]
+  issues: string[]
+}
+
+function parseReferencePathDeclarations(content: string): ParsedReferencePathDeclarations {
   const lines = content.split('\n')
   const sectionStart = lines.findIndex((line) => line.trim() === '## Reference Paths')
   if (sectionStart === -1) {
-    return []
+    return { references: [], issues: [] }
   }
 
-  const paths = new Set<string>()
+  const referencesByPath = new Map<string, ReferencePathDeclaration>()
+  const issues: string[] = []
   for (const line of lines.slice(sectionStart + 1)) {
     if (line.startsWith('## ')) {
       break
@@ -384,6 +397,8 @@ function parseReferencePaths(content: string): string[] {
     if (!line.trim().startsWith('-')) {
       continue
     }
+    const modeMatch = line.match(/(?:—|-)\s*\**(copy|adapt)\**\s*$/i)
+    const mode = (modeMatch?.[1]?.toLowerCase() as ReferencePathMode | undefined) ?? 'adapt'
     for (const match of line.matchAll(/`([^`]+)`/g)) {
       const candidate = match[1].trim().replace(/\/+$/, '')
       if (
@@ -392,12 +407,26 @@ function parseReferencePaths(content: string): string[] {
         !candidate.includes('://') &&
         !candidate.startsWith('.boilerstone')
       ) {
-        paths.add(candidate)
+        const current = referencesByPath.get(candidate)
+        referencesByPath.set(candidate, {
+          path: candidate,
+          mode: current?.mode === 'adapt' || mode === 'adapt' ? 'adapt' : 'copy',
+        })
+        if (!modeMatch) {
+          issues.push(`reference path ${candidate} must declare copy or adapt`)
+        }
       }
     }
   }
 
-  return [...paths].sort()
+  return {
+    references: [...referencesByPath.values()].sort((a, b) => a.path.localeCompare(b.path)),
+    issues: [...new Set(issues)],
+  }
+}
+
+function parseReferencePaths(content: string): string[] {
+  return parseReferencePathDeclarations(content).references.map((reference) => reference.path)
 }
 
 /**
@@ -432,8 +461,11 @@ export {
   type PackageJsonShape,
   type ParsedIntentionMetadata,
   parseIntentionMetadataContent,
+  parseReferencePathDeclarations,
   parseReferencePaths,
   PRODUCER_ARTIFACTS,
+  type ReferencePathDeclaration,
+  type ReferencePathMode,
   readOptionValue,
   type ReleaseInfo,
   resolveTargetVersion,

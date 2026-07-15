@@ -31,9 +31,9 @@ This avoids the circular flow where an intention would be required to create the
 
 ## Reference Paths
 
-- `.boilerstone/boilerplate.example.json`
-- `.boilerstone/boilerplate.schema.json`
-- `.boilerstone/docs/upgrade-runbook.md`
+- `.boilerstone/boilerplate.example.json` — **copy**
+- `.boilerstone/boilerplate.schema.json` — **copy**
+- `.boilerstone/docs/upgrade-runbook.md` — **copy**
 
 ## Suggested Agent Workflow
 

@@ -118,7 +118,7 @@ Each intention must answer:
 - **Do Not Apply When**: exact skip/stop conditions.
 - **Observable Gaps**: 3-6 independent, detectable deltas — each with a greppable signal, the reference file to compare, and a binary "Done when".
 - **Out of Scope**: what the intention must not touch, even if it looks related.
-- **Reference Paths**: files to compare in source and target tags. `upgrade prepare` stages them, so keep them small — no lockfiles or generated artifacts.
+- **Reference Paths**: files to compare in source and target refs. Every path declares `copy` when the target is the source of truth, or `adapt` when project-specific deltas must survive. `upgrade prepare` stages available paths from both refs, so keep them small — no lockfiles or generated artifacts. Producer lint rejects a missing policy; published legacy intentions safely default to `adapt`.
 - **Validation**: commands or checks that prove the adaptation worked.
 - **Record Result**: the exact `upgrade record` command.
 

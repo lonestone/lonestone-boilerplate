@@ -690,7 +690,9 @@ function getBoilerplateSourceVersion(rootPath: string): string {
   }
 
   const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: unknown }
-  return typeof packageJson.version === 'string' ? packageJson.version : '1.0.0'
+  return typeof packageJson.version === 'string'
+    ? packageJson.version.replace(/^v(?=\d)/, '')
+    : '1.0.0'
 }
 
 function getBoilerplateSourceCommit(): string | undefined {

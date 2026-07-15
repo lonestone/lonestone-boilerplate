@@ -47,9 +47,9 @@ Work **one catalog family at a time** (e.g. `frontend`, `auth`), in this loop; n
 
 ## Reference Paths
 
-- `pnpm-workspace.yaml`
-- `package.json`
-- `apps/api/package.json`
+- `pnpm-workspace.yaml` — **adapt**
+- `package.json` — **adapt**
+- `apps/api/package.json` — **adapt**
 
 ## Validation
 

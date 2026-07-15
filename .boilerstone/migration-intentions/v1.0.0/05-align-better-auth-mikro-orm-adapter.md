@@ -52,8 +52,8 @@ Auth state is production user data: prefer stopping over guessing, and never tou
 
 ## Reference Paths
 
-- `apps/api/src/modules/auth/`
-- `pnpm-workspace.yaml`
+- `apps/api/src/modules/auth/` — **adapt**
+- `pnpm-workspace.yaml` — **adapt**
 
 ## Validation
 

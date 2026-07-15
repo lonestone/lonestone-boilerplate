@@ -44,8 +44,8 @@ Future releases ship dependency changes as catalog diffs — adopting the mechan
 
 ## Reference Paths
 
-- `package.json`
-- `pnpm-workspace.yaml`
+- `package.json` — **adapt**
+- `pnpm-workspace.yaml` — **adapt**
 
 ## Validation
 

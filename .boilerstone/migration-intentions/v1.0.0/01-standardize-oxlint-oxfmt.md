@@ -52,9 +52,9 @@ Work through each gap independently; skip any that is already closed.
 
 ## Reference Paths
 
-- `package.json`
-- `.oxlintrc.json`
-- `.oxfmtrc.json`
+- `package.json` — **adapt**
+- `.oxlintrc.json` — **adapt**
+- `.oxfmtrc.json` — **copy**
 
 ## Validation
 

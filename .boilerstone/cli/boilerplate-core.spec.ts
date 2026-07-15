@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -15,7 +16,17 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { cleanupBoilerplateFiles, PRODUCER_FILES_TO_REMOVE } from '../../cli/setup'
 import { isolatedGitEnv } from '../../cli/utils'
-import { archiveGitReference, extractIntentionReferencePaths } from './boilerplate'
+import {
+  archiveGitReference,
+  extractIntentionReferencePaths,
+  finishUpgrade,
+  generateReferenceReadme,
+  generateSessionPrompt,
+  getFetchReleasesCommand,
+  prepareUpgrade,
+  resolveUpgradePath,
+  resolveTargetReference,
+} from './boilerplate'
 import {
   BOILERPLATE_SCRIPT_COMMAND,
   BOILERPLATE_SCRIPT_NAME,
@@ -26,6 +37,7 @@ import {
   getFallbackIntentionId,
   getIntentionOrderIssues,
   parseIntentionMetadataContent,
+  parseReferencePathDeclarations,
   parseReferencePaths,
   PRODUCER_ARTIFACTS,
   readOptionValue,
@@ -457,6 +469,32 @@ describe('boilerplate core', () => {
 })
 
 describe('parseReferencePaths', () => {
+  it('parses explicit copy and adapt policies for human and AI executors', () => {
+    const content = [
+      '## Reference Paths',
+      '',
+      '- `package.json` — adapt',
+      '- `.oxlintrc.json` — copy',
+    ].join('\n')
+
+    expect(parseReferencePathDeclarations(content)).toEqual({
+      references: [
+        { path: '.oxlintrc.json', mode: 'copy' },
+        { path: 'package.json', mode: 'adapt' },
+      ],
+      issues: [],
+    })
+  })
+
+  it('defaults legacy reference paths to adapt and reports the missing policy', () => {
+    const content = ['## Reference Paths', '', '- `package.json`'].join('\n')
+
+    expect(parseReferencePathDeclarations(content)).toEqual({
+      references: [{ path: 'package.json', mode: 'adapt' }],
+      issues: ['reference path package.json must declare copy or adapt'],
+    })
+  })
+
   it('extracts backticked paths from the Reference Paths section only', () => {
     const content = [
       '# Intention',
@@ -549,6 +587,503 @@ describe('archiveGitReference', () => {
   })
 })
 
+describe('generated shell commands', () => {
+  it.each([
+    ['/tmp/producer checkout', "'/tmp/producer checkout'"],
+    ["/tmp/producer's checkout", "'/tmp/producer'\"'\"'s checkout'"],
+    ['/tmp/producer;touch-pwned', "'/tmp/producer;touch-pwned'"],
+    ['/tmp/producer$(touch-pwned)', "'/tmp/producer$(touch-pwned)'"],
+    ['/tmp/producer`touch-pwned`', "'/tmp/producer`touch-pwned`'"],
+  ])('keeps a target cwd containing %s in one safely quoted command line', (targetCwd, quoted) => {
+    const readme = generateReferenceReadme({
+      declarations: [],
+      sourceRef: 'v1.0.0',
+      targetRef: 'v1.1.0',
+      targetCwd,
+      targetLabel: 'v1.1.0',
+      isTargetDraft: false,
+      stagedSourcePaths: [],
+      stagedTargetPaths: [],
+    })
+    const commandBlock = readme.match(/```bash\n(?<commands>[\s\S]*?)\n```/)?.groups?.commands
+
+    expect(commandBlock?.split('\n')).toEqual([
+      `git -C ${quoted} show v1.1.0:<path>`,
+      `git -C ${quoted} archive v1.1.0 -- <path> | tar -x -C .boilerstone/upgrade/reference/target/`,
+    ])
+  })
+
+  it.each([
+    ['https://example.com/boilerplate.git', "'https://example.com/boilerplate.git'"],
+    ['/tmp/local boilerplate.git', "'/tmp/local boilerplate.git'"],
+    ["/tmp/local'boilerplate.git", "'/tmp/local'\"'\"'boilerplate.git'"],
+    ['/tmp/local;touch-pwned', "'/tmp/local;touch-pwned'"],
+    ['/tmp/local$(touch-pwned)', "'/tmp/local$(touch-pwned)'"],
+    ['/tmp/local`touch-pwned`', "'/tmp/local`touch-pwned`'"],
+  ])('quotes a Git remote containing %s in fetch and session commands', (remote, quoted) => {
+    const state = {
+      schemaVersion: 1,
+      source: {
+        repository: 'lonestone/lonestone-boilerplate',
+        remote,
+        currentVersion: '1.0.0',
+      },
+      trackedDomains: [],
+      intentions: { applied: [], skipped: [] },
+    }
+    const session = generateSessionPrompt(
+      {
+        sourceVersion: '1.0.0',
+        targetVersion: '1.1.0',
+        releases: ['v1.1.0'],
+        intentions: [],
+        sourceTag: 'v1.0.0',
+        targetTag: 'v1.1.0',
+        classificationCounts: {
+          'no-migration': 0,
+          informational: 0,
+          migration: 0,
+          'breaking-manual': 0,
+        },
+        skippedByDomain: {},
+        alreadyResolvedCount: 0,
+      },
+      state,
+      {
+        declarations: [],
+        sourceRef: 'v1.0.0',
+        targetRef: 'v1.1.0',
+        targetCwd: '/tmp/producer',
+        targetLabel: 'v1.1.0',
+        isTargetDraft: false,
+        stagedSourcePaths: [],
+        stagedTargetPaths: [],
+      },
+    )
+
+    expect(getFetchReleasesCommand(remote)).toBe(
+      `git fetch --no-tags ${quoted} "+refs/tags/v*:refs/boilerstone/v*"`,
+    )
+    expect(session).toContain(
+      `git clone --depth 1 --branch 'v1.1.0' ${quoted} '.boilerstone/upgrade/reference/full'`,
+    )
+    expect(session.match(/touch-pwned/g)?.length ?? 0).toBe(remote.includes('touch-pwned') ? 1 : 0)
+  })
+
+  it.each(['line\nbreak', 'line\rbreak', 'fence```break', 'control\u0001break'])(
+    'rejects command arguments that can break generated Markdown: %s',
+    (unsafeValue) => {
+      expect(() => getFetchReleasesCommand(unsafeValue)).toThrow(
+        'Cannot render unsafe shell argument',
+      )
+    },
+  )
+})
+
+describe('resolveUpgradePath', () => {
+  it('resolves the latest local publication from the tracked project context', () => {
+    const projectPath = createGitRepo('boilerplate-resolve-latest-')
+
+    try {
+      writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: {
+              repository: 'lonestone/lonestone-boilerplate',
+              remote: '/definitely/missing/boilerstone.git',
+              currentVersion: '0.0.0',
+            },
+            trackedDomains: ['tooling'],
+            intentions: {
+              applied: [{ id: '1.0.0/already-applied', appliedAt: '2026-07-14' }],
+              skipped: [{ id: 'v1.0.0/already-skipped', reason: 'Already handled locally' }],
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.0.0/README.md',
+        '# v1.0.0\n',
+      )
+      for (const id of ['already-applied', 'already-skipped', 'pending']) {
+        writeProjectFile(
+          projectPath,
+          `.boilerstone/migration-intentions/v1.0.0/${id}.md`,
+          createIntentionContent({
+            id: `v1.0.0/${id}`,
+            domain: 'tooling',
+            classification: 'migration',
+          }),
+        )
+      }
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'boilerstone release'])
+      runGit(projectPath, ['tag', 'v1.0.0'])
+
+      const result = resolveUpgradePath({
+        projectPath,
+        targetVersion: 'latest',
+        publicationPolicy: 'local-only',
+      })
+      const refreshedResult = resolveUpgradePath({
+        projectPath,
+        targetVersion: 'latest',
+        publicationPolicy: 'refresh-if-needed',
+      })
+
+      expect(result.path.intentions.map((intention) => intention.id)).toEqual(['v1.0.0/pending'])
+      expect(result.path.alreadyResolvedCount).toBe(2)
+      expect(result.branchName).toBe('upgrade/v0.0.0-to-v1.0.0')
+      expect(result.targetRelease.version).toBe('1.0.0')
+      expect(result.targetReference.provenance).toBe('consumer-ref')
+      expect(result.state?.trackedDomains).toEqual(['tooling'])
+      expect(result.state?.intentions.applied[0]?.id).toBe('v1.0.0/already-applied')
+      expect(result.warnings).toEqual([])
+      expect(refreshedResult.path).toEqual(result.path)
+      expect(refreshedResult.warnings[0]).toContain(
+        'Failed to fetch releases from /definitely/missing/boilerstone.git',
+      )
+      expect(existsSync(join(projectPath, '.boilerstone', 'upgrade'))).toBe(false)
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects an unknown explicit target instead of computing an empty path', () => {
+    const projectPath = createGitRepo('boilerplate-resolve-unknown-')
+
+    try {
+      writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.0.0/README.md',
+        '# v1.0.0\n',
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'boilerstone release'])
+      runGit(projectPath, ['tag', 'v1.0.0'])
+
+      expect(() =>
+        resolveUpgradePath({
+          projectPath,
+          sourceVersion: '0.0.0',
+          targetVersion: '9.9.9',
+          publicationPolicy: 'local-only',
+        }),
+      ).toThrow('Unknown boilerplate target version: 9.9.9')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('uses a source override without dropping tracked domains or resolved intentions', () => {
+    const projectPath = createGitRepo('boilerplate-resolve-override-')
+
+    try {
+      writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
+            trackedDomains: ['api'],
+            intentions: {
+              applied: [{ id: 'v1.0.0/applied', appliedAt: '2026-07-14' }],
+              skipped: [{ id: 'v1.0.0/skipped', reason: 'Already handled locally' }],
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.0.0/README.md',
+        '# v1.0.0\n',
+      )
+      for (const id of ['applied', 'skipped', 'pending']) {
+        writeProjectFile(
+          projectPath,
+          `.boilerstone/migration-intentions/v1.0.0/${id}.md`,
+          createIntentionContent({
+            id: `v1.0.0/${id}`,
+            domain: 'api',
+            classification: 'migration',
+          }),
+        )
+      }
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.0.0/frontend.md',
+        createIntentionContent({
+          id: 'v1.0.0/frontend',
+          domain: 'frontend',
+          classification: 'migration',
+        }),
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'boilerstone release'])
+      runGit(projectPath, ['tag', 'v1.0.0'])
+
+      const result = resolveUpgradePath({
+        projectPath,
+        sourceVersion: '0.0.0',
+        targetVersion: '1.0.0',
+        publicationPolicy: 'local-only',
+      })
+
+      expect(result.path.sourceVersion).toBe('0.0.0')
+      expect(result.path.intentions.map((intention) => intention.id)).toEqual(['v1.0.0/pending'])
+      expect(result.path.alreadyResolvedCount).toBe(2)
+      expect(result.path.skippedByDomain).toEqual({ frontend: 1 })
+      expect(result.state?.source.currentVersion).toBe('1.0.0')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('propagates refresh failures when publication refresh is required', () => {
+    const projectPath = createGitRepo('boilerplate-resolve-required-refresh-')
+
+    try {
+      writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: {
+              repository: 'lonestone/lonestone-boilerplate',
+              remote: '/definitely/missing/boilerstone.git',
+              currentVersion: '0.0.0',
+            },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'consumer project'])
+
+      expect(() =>
+        resolveUpgradePath({
+          projectPath,
+          targetVersion: 'latest',
+          publicationPolicy: 'refresh-required',
+        }),
+      ).toThrow('Failed to fetch releases from /definitely/missing/boilerstone.git')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects an explicit non-SemVer source before attempting a required refresh', () => {
+    const projectPath = createGitRepo('boilerplate-resolve-invalid-source-')
+
+    try {
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify({
+          schemaVersion: 1,
+          source: {
+            repository: 'lonestone/lonestone-boilerplate',
+            remote: '/sentinel/must-not-be-fetched',
+            currentVersion: '1.0.0',
+          },
+          trackedDomains: [],
+          intentions: { applied: [], skipped: [] },
+        })}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'consumer project'])
+
+      expect(() =>
+        resolveUpgradePath({
+          projectPath,
+          sourceVersion: 'not-semver',
+          targetVersion: 'latest',
+          publicationPolicy: 'refresh-required',
+        }),
+      ).toThrow('Invalid source version: not-semver')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a downgrade in resolution and finish without changing tracking state', () => {
+    const projectPath = createGitRepo('boilerplate-resolve-downgrade-')
+    const statePath = join(projectPath, '.boilerstone/boilerplate.json')
+
+    try {
+      writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.0.0/README.md',
+        '# v1.0.0\n',
+      )
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify({
+          schemaVersion: 1,
+          source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '2.0.0' },
+          trackedDomains: [],
+          intentions: { applied: [], skipped: [] },
+        })}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'consumer project'])
+      runGit(projectPath, ['tag', 'v1.0.0'])
+      const initialState = readFileSync(statePath, 'utf-8')
+
+      expect(() =>
+        resolveUpgradePath({
+          projectPath,
+          targetVersion: '1.0.0',
+          publicationPolicy: 'local-only',
+        }),
+      ).toThrow('Cannot downgrade from 2.0.0 to 1.0.0')
+      expect(() => finishUpgrade({ projectPath, targetVersion: '1.0.0' })).toThrow(
+        'Cannot downgrade from 2.0.0 to 1.0.0',
+      )
+      expect(readFileSync(statePath, 'utf-8')).toBe(initialState)
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('does not use an application tag that collides with a producer release', () => {
+    const projectPath = createGitRepo('boilerplate-resolve-app-tag-')
+
+    try {
+      writeProjectFile(projectPath, '.boilerstone/README.md', '# consumer files only\n')
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'application release'])
+      runGit(projectPath, ['tag', 'v1.0.0'])
+
+      const result = resolveUpgradePath({
+        projectPath,
+        sourceVersion: '0.0.0',
+        targetVersion: '1.0.0',
+        publicationPolicy: 'local-only',
+      })
+
+      expect(result.targetReference.provenance).toBe('producer-ref')
+      expect(result.targetReference.label).toBe('v1.0.0')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('lets finish reuse the local resolution and refuses unresolved intentions', () => {
+    const projectPath = createGitRepo('boilerplate-resolve-finish-')
+    const statePath = join(projectPath, '.boilerstone/boilerplate.json')
+    const intentionId = 'v1.0.0/finish-me'
+
+    try {
+      writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.0.0/README.md',
+        '# v1.0.0\n',
+      )
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.0.0/finish-me.md',
+        createIntentionContent({
+          id: intentionId,
+          domain: 'tooling',
+          classification: 'migration',
+        }),
+      )
+      const state = {
+        schemaVersion: 1,
+        source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
+        trackedDomains: [],
+        intentions: { applied: [] as Array<{ id: string; appliedAt: string }>, skipped: [] },
+      }
+      writeProjectFile(projectPath, '.boilerstone/boilerplate.json', `${JSON.stringify(state)}\n`)
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'boilerstone release'])
+      runGit(projectPath, ['tag', 'v1.0.0'])
+
+      expect(() => finishUpgrade({ projectPath, targetVersion: '1.0.0' })).toThrow(
+        `  - ${intentionId}`,
+      )
+      expect(JSON.parse(readFileSync(statePath, 'utf-8')).source.currentVersion).toBe('0.0.0')
+
+      state.intentions.applied.push({ id: intentionId, appliedAt: '2026-07-15' })
+      writeFileSync(statePath, `${JSON.stringify(state)}\n`)
+      const expectedResolution = resolveUpgradePath({
+        projectPath,
+        targetVersion: '1.0.0',
+        publicationPolicy: 'local-only',
+      })
+
+      const actualResolution = finishUpgrade({ projectPath, targetVersion: '1.0.0' })
+
+      expect(actualResolution.path).toEqual(expectedResolution.path)
+      expect(actualResolution.targetRelease).toEqual(expectedResolution.targetRelease)
+      expect(actualResolution.targetReference).toEqual(expectedResolution.targetReference)
+      expect(JSON.parse(readFileSync(statePath, 'utf-8')).source.currentVersion).toBe('1.0.0')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('resolveTargetReference', () => {
+  it('uses the producer HEAD explicitly for an untagged local draft', () => {
+    const consumerPath = createGitRepo('boilerplate-draft-consumer-')
+    const producerPath = createGitRepo('boilerplate-draft-producer-')
+
+    try {
+      writeProjectFile(
+        producerPath,
+        '.boilerstone/migration-intentions/v9.9.9/README.md',
+        '# draft\n',
+      )
+      runGit(producerPath, ['add', '-A'])
+      runGit(producerPath, ['commit', '-m', 'draft release'])
+
+      expect(
+        resolveTargetReference(
+          {
+            version: '9.9.9',
+            tag: 'v9.9.9',
+            date: 'local-draft',
+            hasMigrations: true,
+          },
+          consumerPath,
+          producerPath,
+        ),
+      ).toEqual({
+        ref: 'HEAD',
+        cwd: producerPath,
+        label: 'HEAD (producer draft for v9.9.9)',
+        isDraft: true,
+        provenance: 'producer-draft',
+      })
+    } finally {
+      rmSync(consumerPath, { recursive: true, force: true })
+      rmSync(producerPath, { recursive: true, force: true })
+    }
+  })
+})
+
 describe('boilerplate CLI smoke', () => {
   it('prints help without modifying the repository', () => {
     const result = runCli([])
@@ -592,6 +1127,38 @@ describe('boilerplate CLI smoke', () => {
     expect(
       payload.checks.some((check: { name: string }) => check.name === 'boilerplate.json'),
     ).toBe(true)
+  })
+
+  it('initializes canonical tracking state through the consumer module', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-init-state-'))
+
+    try {
+      const result = runCli(['upgrade', 'init', '--project', projectPath], undefined, {
+        BOILERPLATE_SOURCE_VERSION: 'v1.2.3',
+        BOILERPLATE_SOURCE_COMMIT: 'abcdef1234567890',
+      })
+
+      expect(result.status).toBe(0)
+      const state = JSON.parse(
+        readFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), 'utf-8'),
+      )
+      expect(state.source.currentVersion).toBe('1.2.3')
+      expect(state.source.commit).toBe('abcdef1234567890')
+      expect(state.trackedDomains).toEqual([
+        'tooling',
+        'api',
+        'frontend',
+        'ci',
+        'docker-env',
+        'monitoring',
+        'email',
+        'auth',
+        'storage',
+        'ai',
+      ])
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
   })
 
   it('emits machine-readable upgrade paths with --json', () => {
@@ -680,6 +1247,45 @@ describe('boilerplate CLI smoke', () => {
     }
   })
 
+  it('records state successfully with a recoverable warning when session sync fails', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-record-session-warning-'))
+
+    try {
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify({
+          schemaVersion: 1,
+          source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
+          trackedDomains: [],
+          intentions: { applied: [], skipped: [] },
+        })}\n`,
+      )
+      mkdirSync(join(projectPath, '.boilerstone/upgrade/upgrade-session.md'), { recursive: true })
+
+      const result = runCli([
+        'upgrade',
+        'record',
+        '--project',
+        projectPath,
+        '--id',
+        '1.1.0/example',
+        '--applied',
+      ])
+
+      expect(result.status).toBe(0)
+      expect(result.stdout).toContain('Recorded applied: v1.1.0/example')
+      expect(result.stderr).toContain('state was saved')
+      expect(result.stderr).toContain('upgrade-session.md could not be synchronized')
+      expect(
+        JSON.parse(readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8'))
+          .intentions.applied,
+      ).toEqual([{ id: 'v1.1.0/example', appliedAt: expect.any(String) }])
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
   it('refuses to finish when the target release is not available locally', () => {
     const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-finish-norelease-'))
 
@@ -736,17 +1342,41 @@ describe('boilerplate CLI smoke', () => {
 
       const result = runCli(['upgrade', 'prepare', '--project', projectPath, '--to', '1.0.0'])
 
-      expect(result.status).toBe(0)
+      expect(result.status, result.stderr).toBe(0)
       expect(existsSync(join(projectPath, '.boilerstone', 'upgrade', 'upgrade-session.md'))).toBe(
         true,
       )
+      expect(
+        existsSync(
+          join(
+            projectPath,
+            '.boilerstone',
+            'upgrade',
+            'intentions',
+            '01-v1.0.0-standardize-oxlint-oxfmt.md',
+          ),
+        ),
+      ).toBe(true)
+      const referenceReadme = readFileSync(
+        join(projectPath, '.boilerstone', 'upgrade', 'reference', 'README.md'),
+        'utf-8',
+      )
+      expect(referenceReadme).toContain('Target ref (source of truth): `v1.0.0`')
+      expect(referenceReadme).toContain('`reference/target/` is a disposable projection')
+      expect(referenceReadme).toContain('show v1.0.0:<path>')
+      expect(referenceReadme).toContain('| `.oxfmtrc.json` | copy |')
+      expect(referenceReadme).toContain('| `package.json` | adapt |')
 
       const sessionPrompt = readFileSync(
         join(projectPath, '.boilerstone', 'upgrade', 'upgrade-session.md'),
         'utf-8',
       )
       expect(sessionPrompt).toContain('You are the executor')
-      expect(sessionPrompt).toContain('git archive v1.0.0 -- <path>')
+      expect(sessionPrompt).toContain('archive v1.0.0 -- <path>')
+      expect(sessionPrompt).toContain('Target ref (source of truth): `v1.0.0`')
+      expect(sessionPrompt).toContain('**copy**: copy the target projection verbatim')
+      expect(sessionPrompt).toContain('**adapt**: compare project, source, and target')
+      expect(sessionPrompt).toContain('- [ ] 1. `v1.0.0/standardize-oxlint-oxfmt` (migration)')
 
       const branch = spawnSync('git', ['branch', '--show-current'], {
         cwd: projectPath,
@@ -754,6 +1384,106 @@ describe('boilerplate CLI smoke', () => {
         env: isolatedGitEnv(),
       }).stdout.trim()
       expect(branch).toBe('upgrade/v0.9.0-to-v1.0.0')
+
+      const record = runCli([
+        'upgrade',
+        'record',
+        '--project',
+        projectPath,
+        '--id',
+        'v1.0.0/standardize-oxlint-oxfmt',
+        '--applied',
+      ])
+      expect(record.status).toBe(0)
+      expect(
+        readFileSync(join(projectPath, '.boilerstone', 'upgrade', 'upgrade-session.md'), 'utf-8'),
+      ).toContain('- [x] 1. `v1.0.0/standardize-oxlint-oxfmt` (migration)')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('runs the dirty-worktree preflight before any required publication fetch', () => {
+    const projectPath = createGitRepo('boilerplate-prepare-dirty-preflight-')
+
+    try {
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify({
+          schemaVersion: 1,
+          source: {
+            repository: 'lonestone/lonestone-boilerplate',
+            remote: '/sentinel/must-not-be-fetched',
+            currentVersion: '1.0.0',
+          },
+          trackedDomains: [],
+          intentions: { applied: [], skipped: [] },
+        })}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'consumer project'])
+      writeProjectFile(projectPath, 'dirty.txt', 'uncommitted\n')
+
+      const result = runCli([
+        'upgrade',
+        'prepare',
+        '--project',
+        projectPath,
+        '--to',
+        'latest',
+        '--fetch',
+      ])
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('Git worktree is dirty')
+      expect(result.stderr).not.toContain('/sentinel/must-not-be-fetched')
+      expect(result.stderr).not.toContain('Failed to fetch releases')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('preserves an existing workspace before any required publication fetch', () => {
+    const projectPath = createGitRepo('boilerplate-prepare-workspace-preflight-')
+
+    try {
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify({
+          schemaVersion: 1,
+          source: {
+            repository: 'lonestone/lonestone-boilerplate',
+            remote: '/sentinel/must-not-be-fetched',
+            currentVersion: '1.0.0',
+          },
+          trackedDomains: [],
+          intentions: { applied: [], skipped: [] },
+        })}\n`,
+      )
+      writeProjectFile(projectPath, '.gitignore', '.boilerstone/upgrade/\n')
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'consumer project'])
+      writeProjectFile(projectPath, '.boilerstone/upgrade/keep.txt', 'unfinished work\n')
+
+      const result = runCli([
+        'upgrade',
+        'prepare',
+        '--project',
+        projectPath,
+        '--to',
+        'latest',
+        '--fetch',
+      ])
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('An upgrade workspace already exists')
+      expect(result.stderr).not.toContain('/sentinel/must-not-be-fetched')
+      expect(result.stderr).not.toContain('Failed to fetch releases')
+      expect(readFileSync(join(projectPath, '.boilerstone/upgrade/keep.txt'), 'utf-8')).toBe(
+        'unfinished work\n',
+      )
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
@@ -792,16 +1522,13 @@ describe('boilerplate CLI smoke', () => {
       ])
 
       expect(result.status).toBe(0)
+      const stagedIntentionFiles = readdirSync(
+        join(projectPath, '.boilerstone', 'upgrade', 'intentions'),
+      )
       expect(
-        existsSync(
-          join(projectPath, '.boilerstone/upgrade/intentions/v1.0.0-adopt-ai-module-baseline.md'),
-        ),
+        stagedIntentionFiles.some((file) => file.endsWith('adopt-ai-module-baseline.md')),
       ).toBe(false)
-      expect(
-        existsSync(
-          join(projectPath, '.boilerstone/upgrade/intentions/v1.0.0-standardize-oxlint-oxfmt.md'),
-        ),
-      ).toBe(true)
+      expect(stagedIntentionFiles).toContain('01-v1.0.0-standardize-oxlint-oxfmt.md')
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
@@ -919,7 +1646,7 @@ describe('boilerplate CLI smoke', () => {
         [
           '---',
           'id: v9.9.9/demo',
-          'domain: tooling',
+          'domain: storage',
           'classification: migration',
           '---',
           '',
@@ -936,7 +1663,7 @@ describe('boilerplate CLI smoke', () => {
           {
             schemaVersion: 1,
             source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
-            trackedDomains: [],
+            trackedDomains: ['storage'],
             intentions: { applied: [], skipped: [] },
           },
           null,
@@ -950,7 +1677,7 @@ describe('boilerplate CLI smoke', () => {
       // v-prefixed --to must be accepted and normalized
       const result = runCli(['upgrade', 'prepare', '--project', projectPath, '--to', 'v9.9.9'])
 
-      expect(result.status).toBe(0)
+      expect(result.status, result.stderr).toBe(0)
       const upgradeDir = join(projectPath, '.boilerstone', 'upgrade')
       expect(existsSync(join(upgradeDir, 'reference', 'source', 'NO-SOURCE-REFERENCE.md'))).toBe(
         true,
@@ -960,6 +1687,363 @@ describe('boilerplate CLI smoke', () => {
         existsSync(join(upgradeDir, 'reference', 'target', '.boilerstone', 'boilerplate.json')),
       ).toBe(true)
       expect(result.stdout).toContain('upgrade/v0.0.0-to-v9.9.9')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('stages declared adapt paths from both source and target refs', async () => {
+    const projectPath = createGitRepo('boilerplate-prepare-three-way-')
+
+    try {
+      writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.0.0/README.md',
+        '# v1.0.0\n',
+      )
+      writeProjectFile(projectPath, 'apps/demo.txt', 'source version\n')
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'source release'])
+      runGit(projectPath, ['tag', 'v1.0.0'])
+
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.1.0/README.md',
+        '# v1.1.0\n',
+      )
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.1.0/01-update-demo.md',
+        [
+          '---',
+          'id: v1.1.0/update-demo',
+          'domain: tooling',
+          'classification: migration',
+          '---',
+          '',
+          '## Reference Paths',
+          '',
+          '- `apps/demo.txt` — **adapt**',
+        ].join('\n'),
+      )
+      writeProjectFile(projectPath, 'apps/demo.txt', 'target version\n')
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'target release'])
+      runGit(projectPath, ['tag', 'v1.1.0'])
+
+      let selectableIds: string[] = []
+      const result = await prepareUpgrade({
+        projectPath,
+        toVersion: '1.1.0',
+        fetch: false,
+        includeIds: [],
+        excludeIds: [],
+        selectIntentions: async (path) => {
+          selectableIds = path.intentions.map((intention) => intention.id)
+          return path
+        },
+      })
+
+      expect(result.targetRelease.version).toBe('1.1.0')
+      expect(result.targetReference.label).toBe('v1.1.0')
+      expect(result.targetReference.provenance).toBe('consumer-ref')
+      expect(selectableIds).toEqual(['v1.1.0/update-demo'])
+      const referenceDir = join(projectPath, '.boilerstone', 'upgrade', 'reference')
+      expect(readFileSync(join(referenceDir, 'source', 'apps', 'demo.txt'), 'utf-8')).toBe(
+        'source version\n',
+      )
+      expect(readFileSync(join(referenceDir, 'target', 'apps', 'demo.txt'), 'utf-8')).toBe(
+        'target version\n',
+      )
+      expect(readFileSync(join(referenceDir, 'README.md'), 'utf-8')).toContain(
+        '| `apps/demo.txt` | adapt | staged | staged |',
+      )
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('prepares a complete producer draft from the producer HEAD', async () => {
+    const projectPath = createGitRepo('boilerplate-prepare-draft-consumer-')
+    const producerPath = createGitRepo('boilerplate-prepare-draft-producer-')
+
+    try {
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify({
+          schemaVersion: 1,
+          source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
+          trackedDomains: ['tooling'],
+          intentions: { applied: [], skipped: [] },
+        })}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'consumer project'])
+
+      writeProjectFile(
+        producerPath,
+        '.boilerstone/migration-intentions/v9.9.9/README.md',
+        '# v9.9.9 draft\n',
+      )
+      writeProjectFile(
+        producerPath,
+        '.boilerstone/migration-intentions/v9.9.9/01-draft-example.md',
+        [
+          '---',
+          'id: v9.9.9/draft-example',
+          'domain: tooling',
+          'classification: migration',
+          '---',
+          '',
+          '## Goal',
+          '',
+          'Committed producer HEAD intention.',
+          '',
+          '## Reference Paths',
+          '',
+          '- `apps/draft.txt` — **copy**',
+        ].join('\n'),
+      )
+      writeProjectFile(producerPath, 'apps/draft.txt', 'committed producer HEAD reference\n')
+      runGit(producerPath, ['add', '-A'])
+      runGit(producerPath, ['commit', '-m', 'draft release'])
+
+      const result = await prepareUpgrade({
+        projectPath,
+        producerPath,
+        toVersion: '9.9.9',
+        fetch: false,
+        includeIds: [],
+        excludeIds: [],
+        selectIntentions: async (path) => path,
+      })
+
+      expect(result.targetReference.provenance).toBe('producer-draft')
+      expect(result.targetReference.ref).toBe('HEAD')
+      expect(result.stagedIntentionCount).toBe(1)
+      const upgradeDir = join(projectPath, '.boilerstone/upgrade')
+      expect(
+        readFileSync(join(upgradeDir, 'intentions/01-v9.9.9-draft-example.md'), 'utf-8'),
+      ).toContain('Committed producer HEAD intention.')
+      expect(readFileSync(join(upgradeDir, 'reference/target/apps/draft.txt'), 'utf-8')).toBe(
+        'committed producer HEAD reference\n',
+      )
+      expect(readFileSync(join(upgradeDir, 'reference/README.md'), 'utf-8')).toContain(
+        'producer checkout HEAD is the temporary source of truth',
+      )
+      expect(
+        spawnSync('git', ['branch', '--show-current'], {
+          cwd: projectPath,
+          encoding: 'utf-8',
+          env: isolatedGitEnv(),
+        }).stdout.trim(),
+      ).toBe('upgrade/v0.0.0-to-v9.9.9')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+      rmSync(producerPath, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses a dirty producer draft before creating a branch or workspace', async () => {
+    const projectPath = createGitRepo('boilerplate-prepare-dirty-draft-consumer-')
+    const producerPath = createGitRepo('boilerplate-prepare-dirty-draft-producer-')
+
+    try {
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify({
+          schemaVersion: 1,
+          source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
+          trackedDomains: [],
+          intentions: { applied: [], skipped: [] },
+        })}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'consumer project'])
+      const initialBranch = spawnSync('git', ['branch', '--show-current'], {
+        cwd: projectPath,
+        encoding: 'utf-8',
+        env: isolatedGitEnv(),
+      }).stdout.trim()
+
+      writeProjectFile(
+        producerPath,
+        '.boilerstone/migration-intentions/v9.9.9/README.md',
+        '# v9.9.9 draft\n',
+      )
+      writeProjectFile(
+        producerPath,
+        '.boilerstone/migration-intentions/v9.9.9/01-example.md',
+        createIntentionContent({
+          id: 'v9.9.9/example',
+          domain: 'tooling',
+          classification: 'migration',
+        }),
+      )
+      runGit(producerPath, ['add', '-A'])
+      runGit(producerPath, ['commit', '-m', 'draft release'])
+      writeProjectFile(producerPath, 'dirty.txt', 'uncommitted producer change\n')
+
+      await expect(
+        prepareUpgrade({
+          projectPath,
+          producerPath,
+          toVersion: '9.9.9',
+          fetch: false,
+          includeIds: [],
+          excludeIds: [],
+          selectIntentions: async (path) => path,
+        }),
+      ).rejects.toThrow('Producer checkout is dirty')
+      expect(existsSync(join(projectPath, '.boilerstone/upgrade'))).toBe(false)
+      expect(
+        spawnSync('git', ['branch', '--show-current'], {
+          cwd: projectPath,
+          encoding: 'utf-8',
+          env: isolatedGitEnv(),
+        }).stdout.trim(),
+      ).toBe(initialBranch)
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+      rmSync(producerPath, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses an uncommitted producer draft release before creating a workspace', async () => {
+    const projectPath = createGitRepo('boilerplate-prepare-uncommitted-draft-consumer-')
+    const producerPath = createGitRepo('boilerplate-prepare-uncommitted-draft-producer-')
+
+    try {
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify({
+          schemaVersion: 1,
+          source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
+          trackedDomains: [],
+          intentions: { applied: [], skipped: [] },
+        })}\n`,
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'consumer project'])
+      writeProjectFile(producerPath, 'README.md', '# producer\n')
+      runGit(producerPath, ['add', '-A'])
+      runGit(producerPath, ['commit', '-m', 'producer baseline'])
+      writeProjectFile(
+        producerPath,
+        '.boilerstone/migration-intentions/v9.9.9/README.md',
+        '# uncommitted draft\n',
+      )
+      writeProjectFile(
+        producerPath,
+        '.boilerstone/migration-intentions/v9.9.9/01-example.md',
+        createIntentionContent({
+          id: 'v9.9.9/example',
+          domain: 'tooling',
+          classification: 'migration',
+        }),
+      )
+
+      await expect(
+        prepareUpgrade({
+          projectPath,
+          producerPath,
+          toVersion: '9.9.9',
+          fetch: false,
+          includeIds: [],
+          excludeIds: [],
+          selectIntentions: async (path) => path,
+        }),
+      ).rejects.toThrow('Draft release v9.9.9 must exist in producer HEAD')
+      expect(existsSync(join(projectPath, '.boilerstone/upgrade'))).toBe(false)
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+      rmSync(producerPath, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses an incomplete copy target without creating a branch or workspace', () => {
+    const projectPath = createGitRepo('boilerplate-prepare-missing-copy-')
+
+    try {
+      writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.1.0/README.md',
+        '# v1.1.0\n',
+      )
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/migration-intentions/v1.1.0/01-copy-missing.md',
+        [
+          '---',
+          'id: v1.1.0/copy-missing',
+          'domain: tooling',
+          'classification: migration',
+          '---',
+          '',
+          '## Reference Paths',
+          '',
+          '- `apps/missing.txt` — **copy**',
+        ].join('\n'),
+      )
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'release with missing copy source'])
+      runGit(projectPath, ['tag', 'v1.1.0'])
+      const initialBranch = spawnSync('git', ['branch', '--show-current'], {
+        cwd: projectPath,
+        encoding: 'utf-8',
+        env: isolatedGitEnv(),
+      }).stdout.trim()
+
+      const result = runCli(['upgrade', 'prepare', '--project', projectPath, '--to', '1.1.0'])
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('copy reference path is missing from the target ref')
+      expect(existsSync(join(projectPath, '.boilerstone', 'upgrade'))).toBe(false)
+      expect(
+        readdirSync(join(projectPath, '.boilerstone')).some((file) =>
+          file.startsWith('upgrade.tmp-'),
+        ),
+      ).toBe(false)
+      expect(
+        spawnSync('git', ['branch', '--show-current'], {
+          cwd: projectPath,
+          encoding: 'utf-8',
+          env: isolatedGitEnv(),
+        }).stdout.trim(),
+      ).toBe(initialBranch)
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
@@ -1025,6 +2109,42 @@ describe('boilerplate CLI smoke', () => {
 
       expect(result.status).toBe(1)
       expect(result.stderr).toContain('already exists')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('preserves an existing workspace on the active upgrade branch', () => {
+    const projectPath = createGitRepo('boilerplate-existing-workspace-')
+
+    try {
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify(
+          {
+            schemaVersion: 1,
+            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.9.0' },
+            trackedDomains: [],
+            intentions: { applied: [], skipped: [] },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      writeProjectFile(projectPath, '.gitignore', '.boilerstone/upgrade/\n')
+      runGit(projectPath, ['add', '-A'])
+      runGit(projectPath, ['commit', '-m', 'init'])
+      runGit(projectPath, ['checkout', '-b', 'upgrade/v0.9.0-to-v1.0.0'])
+      writeProjectFile(projectPath, '.boilerstone/upgrade/keep.txt', 'unfinished work\n')
+
+      const result = runCli(['upgrade', 'prepare', '--project', projectPath, '--to', '1.0.0'])
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('An upgrade workspace already exists')
+      expect(readFileSync(join(projectPath, '.boilerstone/upgrade/keep.txt'), 'utf-8')).toBe(
+        'unfinished work\n',
+      )
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
