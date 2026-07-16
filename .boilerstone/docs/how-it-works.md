@@ -58,6 +58,18 @@ After `prepare`, the actual work begins — applying the staged intentions one a
 
 **`upgrade finish`** — updates `source.currentVersion` after every intention in the prepared range is applied or skipped. This is the final upgrade commit, never an intermediate step — resolution is local-only and fails closed while any intention in the range is neither applied nor skipped, or while the target release is not available locally.
 
+## Tutorial: running an upgrade with an AI agent
+
+The protocol is executor-neutral, but the supported path ships with the system: onboarding copies a `boilerstone-upgrade` skill for Claude Code (`.claude/skills/`) and Cursor (`.cursor/skills/`), both thin shims over the same runbook.
+
+1. **Stage the upgrade** — run `pnpm boilerplate upgrade` yourself, or let the agent run it. This is the contained part described above: clean worktree required, dedicated branch, disposable workspace.
+2. **Open an agent session in your project** — not in the boilerplate repository — and invoke the skill: `/boilerstone-upgrade` in Claude Code, or the `boilerstone-upgrade` skill in Cursor. It reads `.boilerstone/upgrade/upgrade-session.md` and follows the [runbook](./upgrade-runbook.md) exactly.
+3. **What the agent does, one intention at a time** — decide applicability against "Applies when" / "Do not apply when", follow each reference path's declared `copy`/`adapt` policy (diff first, never retype), run the intention's validation plus your project's global checks, then `pnpm boilerplate upgrade record`, one commit per intention.
+4. **Where it must stop** — a "Do not apply when" match, a `breaking-manual` classification, failing validation, or unsafe ambiguity. Stopping means writing `.boilerstone/upgrade/blocked.md` and handing back to you, without recording anything.
+5. **Your job** — review each commit like a PR, answer the stops, and once everything in the range is applied or skipped, run `pnpm boilerplate upgrade finish --to <version>` and open the PR. The CLI refuses a premature finish, so a runaway session cannot silently mark the upgrade done.
+
+Any other agent works the same way: point it at `.boilerstone/upgrade/upgrade-session.md` (the staged session prompt) and the [runbook](./upgrade-runbook.md) — markdown, JSON and git are the whole interface, and the commands that matter accept `--json`.
+
 ## What ends up on your repo
 
 - `boilerplate.json` — committed, small, the source of truth for your progress.
