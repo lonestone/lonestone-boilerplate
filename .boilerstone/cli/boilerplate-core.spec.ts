@@ -2005,7 +2005,10 @@ describe('boilerplate CLI smoke', () => {
       )
       runGit(producerPath, ['add', '-A'])
       runGit(producerPath, ['commit', '-m', 'draft release'])
+      // Dirt outside .boilerstone/ (build artifacts, scratch files) must not
+      // block preparation — only the tree the draft serves counts.
       writeProjectFile(producerPath, 'dirty.txt', 'uncommitted producer change\n')
+      writeProjectFile(producerPath, '.boilerstone/notes.md', 'uncommitted draft change\n')
 
       await expect(
         prepareUpgrade({
@@ -2017,7 +2020,7 @@ describe('boilerplate CLI smoke', () => {
           excludeIds: [],
           selectIntentions: async (path) => path,
         }),
-      ).rejects.toThrow('Producer checkout is dirty')
+      ).rejects.toThrow('Producer .boilerstone/ has uncommitted changes')
       expect(existsSync(join(projectPath, '.boilerstone/upgrade'))).toBe(false)
       expect(
         spawnSync('git', ['branch', '--show-current'], {

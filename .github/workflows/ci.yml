@@ -14,8 +14,13 @@ jobs:
       node-version: 24.13.0
       pnpm-version: 10.28.2
     steps:
+      # Full history + tags: the boilerstone test suite resolves this checkout
+      # as the release producer, and releases are git tags.
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: 🔧 Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm

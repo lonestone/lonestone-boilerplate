@@ -48,7 +48,7 @@ Everything travels over plain git from a single URL: `source.remote` in your `bo
 3. it builds a complete workspace in a temporary directory and refuses a missing target ref or missing `copy` path;
 4. only after validation, it creates or confirms the dedicated branch `upgrade/v<current>-to-v<target>` and atomically publishes `.boilerstone/upgrade/` with numbered intentions, source and target projections, provenance, `copy`/`adapt` policy, and a session checklist.
 
-The fetched target ref remains the source of truth; the projected files only make human and AI review convenient. While a maintainer tests an untagged local release, a clean producer checkout `HEAD` is the temporary source of truth for both intentions and references; the draft release must already be committed there. A consumer never falls back to its own `HEAD`.
+The fetched target ref remains the source of truth; the projected files only make human and AI review convenient. While a maintainer tests an untagged local release, the producer checkout's committed `HEAD` is the temporary source of truth for both intentions and references; the draft must already be committed there, and uncommitted changes under the producer's `.boilerstone/` block preparation. A consumer never falls back to its own `HEAD`.
 
 It does **not** edit your application code, commit, or push. The everyday form is simply `pnpm boilerplate upgrade`: it targets the latest release, refreshes publications when needed (falling back to an available local publication with a warning), and offers interactive intention selection on a terminal. `--fetch` makes that refresh mandatory; an explicit target without `--fetch` can remain entirely local when already available.
 

@@ -24,7 +24,7 @@ pnpm boilerplate upgrade prepare --to <version> --exclude v1.2.0/optional-ai
 
 This first builds and validates a temporary workspace. A missing target ref or missing `copy` path fails without creating a branch or publishing partial material. Once complete, it creates the `upgrade/v<source>-to-v<target>` branch and atomically publishes `.boilerstone/upgrade/`:
 
-For an untagged producer draft, commit the release folder and intentions first and keep the producer checkout clean. `prepare` reads both intentions and references from that exact producer `HEAD`; it refuses working-tree-only draft content.
+For an untagged producer draft, commit the release folder and intentions first and keep the producer's `.boilerstone/` clean — uncommitted changes there block preparation. `prepare` reads both intentions and references from that exact producer `HEAD`; it refuses working-tree-only draft content.
 
 ```
 .boilerstone/upgrade/        # disposable, gitignored

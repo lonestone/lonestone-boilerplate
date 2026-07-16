@@ -187,9 +187,13 @@ function resolveTargetReference(
     if (!gitFileExists('HEAD', releaseReadme, producerPath)) {
       throw new Error(`Draft release ${release.tag} must exist in producer HEAD before preparation`)
     }
-    if (runGitCommand(['status', '--porcelain'], producerPath)) {
+    // Scoped to .boilerstone/: that is the tree a draft serves (intentions and
+    // reference archives read from HEAD). Build artifacts elsewhere in the
+    // checkout must not block preparation; app-code reference paths are
+    // covered by the runbook's commit-first rule.
+    if (runGitCommand(['status', '--porcelain', '--', '.boilerstone'], producerPath)) {
       throw new Error(
-        'Producer checkout is dirty. Commit or discard producer changes before preparation.',
+        'Producer .boilerstone/ has uncommitted changes. Commit or discard them before preparation.',
       )
     }
     return {
