@@ -48,6 +48,12 @@ const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerp
 const defaultTsxVersion = '^4.21.0'
 
 async function prompt(message: string, initial: string): Promise<string> {
+  // Without a terminal the question would never resolve and the process would
+  // silently exit with the work half-done — take the default instead.
+  if (process.stdin.isTTY !== true) {
+    console.log(`  ${colorize('ℹ', 'cyan')} ${message}: ${initial || '(none)'} (non-interactive)`)
+    return initial
+  }
   const rl = createInterface({ input: process.stdin, output: process.stdout })
   try {
     const answer = await rl.question(`${message}${initial ? ` (${initial})` : ''}: `)
@@ -1006,7 +1012,9 @@ async function cmdUpgradeInit(projectPath: string): Promise<void> {
   const detected = detectSourceVersion(absolutePath)
   const envVersion = process.env.BOILERPLATE_SOURCE_VERSION?.trim().replace(/^v/, '')
 
-  let version = envVersion || '1.0.0'
+  // No trace of a boilerplate version means the project predates the upgrade
+  // system: default to 0.0.0 so every intention stays applicable.
+  let version = envVersion || '0.0.0'
   if (envVersion) {
     console.log(
       `  ${colorize('🔍', 'cyan')} Using source version from environment: ${colorize(envVersion, 'bright')}`,
@@ -1017,7 +1025,9 @@ async function cmdUpgradeInit(projectPath: string): Promise<void> {
     )
     version = detected.version
   } else {
-    console.log(`  ${colorize('⚠', 'yellow')} Could not detect source version`)
+    console.log(
+      `  ${colorize('⚠', 'yellow')} Could not detect source version — defaulting to 0.0.0`,
+    )
   }
 
   if (!envVersion) {

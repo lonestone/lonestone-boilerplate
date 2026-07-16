@@ -1161,6 +1161,24 @@ describe('boilerplate CLI smoke', () => {
     }
   })
 
+  it('defaults the source version to 0.0.0 when nothing is detectable', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-init-default-'))
+
+    try {
+      // No env, no git history, no boilerplate.json: a project that predates
+      // the upgrade system. Non-interactive stdin must take the default.
+      const result = runCli(['upgrade', 'init', '--project', projectPath])
+
+      expect(result.status).toBe(0)
+      const state = JSON.parse(
+        readFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), 'utf-8'),
+      )
+      expect(state.source.currentVersion).toBe('0.0.0')
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
   it('emits machine-readable upgrade paths with --json', () => {
     const result = runCli(['upgrade', 'path', '--from', '0.9.0', '--to', '1.0.0', '--json'])
 
