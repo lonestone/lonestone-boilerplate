@@ -34,14 +34,17 @@ import {
   computeUpgradePath,
   ensureGitignoreLine,
   ensurePackageJsonWiring,
+  getChangelogIssues,
   getFallbackIntentionId,
   getIntentionOrderIssues,
+  isChangelogUnreleasedEmpty,
   parseIntentionMetadataContent,
   parseReferencePathDeclarations,
   parseReferencePaths,
   PRODUCER_ARTIFACTS,
   readOptionValue,
   resolveTargetVersion,
+  stampChangelogRelease,
 } from './boilerplate-core'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -465,6 +468,84 @@ describe('boilerplate core', () => {
     expect(pattern.test(getFallbackIntentionId('1.1.0', 'api/nested/no-id.md'))).toBe(true)
     expect(pattern.test('v1.0.0')).toBe(false)
     expect(pattern.test('v1.0.0/Bad_Slug')).toBe(false)
+  })
+})
+
+describe('changelog lifecycle', () => {
+  const releasedChangelog = [
+    '# Changelog',
+    '',
+    '## [Unreleased]',
+    '',
+    '## [1.0.0] - 2026-07-16',
+    '',
+    '### Added',
+    '',
+    '- Initial release.',
+    '',
+  ].join('\n')
+
+  it('accepts a canonical changelog', () => {
+    expect(getChangelogIssues(releasedChangelog)).toEqual([])
+    expect(isChangelogUnreleasedEmpty(releasedChangelog)).toBe(true)
+  })
+
+  it('reports missing or misplaced [Unreleased] and unknown headings', () => {
+    expect(getChangelogIssues('# Changelog\n\n## [1.0.0] - 2026-07-16\n')).toEqual([
+      'missing "## [Unreleased]" section',
+    ])
+    expect(
+      getChangelogIssues('# Changelog\n\n## [1.0.0] - 2026-07-16\n\n## [Unreleased]\n'),
+    ).toEqual(['"## [Unreleased]" must be the first section'])
+    expect(getChangelogIssues(`${releasedChangelog}\n### Misc\n\n- Something.\n`)).toEqual([
+      'unknown changelog heading "### Misc" — use one of: Added, Changed, Deprecated, Removed, Fixed, Security, Migration',
+    ])
+    expect(getChangelogIssues(`${releasedChangelog}\n## [v1.0.0] - 2026-07-17\n`)).toEqual([
+      'duplicate version section: 1.0.0',
+    ])
+  })
+
+  it('treats heading-only [Unreleased] sections as empty', () => {
+    const headingsOnly = releasedChangelog.replace(
+      '## [Unreleased]\n',
+      '## [Unreleased]\n\n### Added\n',
+    )
+    expect(isChangelogUnreleasedEmpty(headingsOnly)).toBe(true)
+    const withEntry = releasedChangelog.replace(
+      '## [Unreleased]\n',
+      '## [Unreleased]\n\n### Added\n\n- New module.\n',
+    )
+    expect(isChangelogUnreleasedEmpty(withEntry)).toBe(false)
+  })
+
+  it('stamps [Unreleased] as the released version and re-creates a fresh section', () => {
+    const withEntry = releasedChangelog.replace(
+      '## [Unreleased]\n',
+      '## [Unreleased]\n\n### Added\n\n- New storage module.\n',
+    )
+    const stamped = stampChangelogRelease(withEntry, 'v1.1.0', '2026-08-01')
+
+    expect(getChangelogIssues(stamped)).toEqual([])
+    expect(isChangelogUnreleasedEmpty(stamped)).toBe(true)
+    expect(stamped).toContain('## [1.1.0] - 2026-08-01\n\n### Added\n\n- New storage module.')
+    expect(stamped.indexOf('## [Unreleased]')).toBeLessThan(stamped.indexOf('## [1.1.0]'))
+    expect(stamped.indexOf('## [1.1.0]')).toBeLessThan(stamped.indexOf('## [1.0.0]'))
+  })
+
+  it('refuses to stamp an empty section, a released version, or an invalid version', () => {
+    const withEntry = releasedChangelog.replace(
+      '## [Unreleased]\n',
+      '## [Unreleased]\n\n- Something changed.\n',
+    )
+    expect(() => stampChangelogRelease(releasedChangelog, '1.1.0', '2026-08-01')).toThrow(
+      'nothing to release',
+    )
+    expect(() => stampChangelogRelease(withEntry, '1.0.0', '2026-08-01')).toThrow(
+      'already has a changelog section',
+    )
+    expect(() => stampChangelogRelease(withEntry, 'latest', '2026-08-01')).toThrow(
+      'Invalid release version: latest',
+    )
   })
 })
 
@@ -1195,6 +1276,13 @@ describe('boilerplate CLI smoke', () => {
 
     expect(result.status).toBe(0)
     expect(JSON.parse(result.stdout)).toEqual({ ok: true, issues: [] })
+  })
+
+  it('validates the repository changelog structure', () => {
+    const result = runCli(['changelog', 'check'])
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('Changelog is valid')
   })
 
   it('refuses a premature finish, then finishes once every intention is recorded', () => {

@@ -18,7 +18,9 @@ The expected workflow is human-in-the-loop: the maintainer pilots you, and you u
 
 ```bash
 git tag --list 'v*' --sort=-v:refname                          # previous version
-git diff --name-status vPREVIOUS..HEAD                          # inventory the changes
+sed -n '/## \[Unreleased\]/,/## \[/p' CHANGELOG.md              # primary inventory (per-PR entries)
+git diff --name-status vPREVIOUS..HEAD                          # cross-check the inventory
+pnpm boilerplate changelog release --to <next>                  # stamp [Unreleased] as the release
 pnpm boilerplate intentions sync                                # regenerate the release README intentions block
 pnpm boilerplate intentions lint                                # validate intention metadata
 pnpm boilerplate upgrade path --from <prev> --to <next> --json  # dry-run the resulting path
@@ -30,4 +32,5 @@ Write one intention per bounded adaptation from `.boilerstone/migration-intentio
 
 - Never one vague intention for a whole release; never force optional capabilities on consumers.
 - Keep Reference Paths small and specific, and label every path `copy` or `adapt` — `upgrade prepare` stages them (no lockfiles, no generated artifacts).
-- Update `CHANGELOG.md` and smoke-test install/onboard before handing back for the tag.
+- The `## [Unreleased]` changelog entries are the release inventory — a change without an entry, or an entry without a change, is a hole to resolve before classifying.
+- Stamp the changelog with `changelog release` (never rename the section by hand), then smoke-test install/onboard before handing back for the tag.

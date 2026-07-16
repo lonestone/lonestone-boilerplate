@@ -429,6 +429,121 @@ function parseReferencePaths(content: string): string[] {
   return parseReferencePathDeclarations(content).references.map((reference) => reference.path)
 }
 
+// Keep a Changelog entry headings, plus this repository's own Migration section.
+const CHANGELOG_ENTRY_HEADINGS = [
+  'Added',
+  'Changed',
+  'Deprecated',
+  'Removed',
+  'Fixed',
+  'Security',
+  'Migration',
+]
+
+const CHANGELOG_UNRELEASED_HEADER = /^## \[Unreleased\]\s*$/
+const CHANGELOG_VERSION_HEADER = /^## \[(v?\d+\.\d+\.\d+)\]/
+
+interface ChangelogSection {
+  header: string
+  lines: string[]
+}
+
+function parseChangelogSections(content: string): ChangelogSection[] {
+  const sections: ChangelogSection[] = []
+  let current: ChangelogSection | null = null
+  for (const line of content.split('\n')) {
+    if (line.startsWith('## ')) {
+      current = { header: line, lines: [] }
+      sections.push(current)
+    } else if (current) {
+      current.lines.push(line)
+    }
+  }
+  return sections
+}
+
+/**
+ * Structural rules for the root CHANGELOG.md (Keep a Changelog): a single
+ * [Unreleased] section must lead the file to receive per-PR entries, entry
+ * headings must come from the known set, and a version appears only once.
+ */
+function getChangelogIssues(content: string): string[] {
+  const issues: string[] = []
+  const sections = parseChangelogSections(content)
+  const unreleasedCount = sections.filter((section) =>
+    CHANGELOG_UNRELEASED_HEADER.test(section.header),
+  ).length
+  if (unreleasedCount === 0) {
+    issues.push('missing "## [Unreleased]" section')
+  } else if (unreleasedCount > 1) {
+    issues.push('multiple "## [Unreleased]" sections')
+  } else if (!CHANGELOG_UNRELEASED_HEADER.test(sections[0].header)) {
+    issues.push('"## [Unreleased]" must be the first section')
+  }
+
+  const seenVersions = new Set<string>()
+  for (const section of sections) {
+    const version = section.header.match(CHANGELOG_VERSION_HEADER)?.[1]?.replace(/^v/, '')
+    if (version) {
+      if (seenVersions.has(version)) {
+        issues.push(`duplicate version section: ${version}`)
+      }
+      seenVersions.add(version)
+    }
+    for (const line of section.lines) {
+      const heading = line.match(/^### (.+?)\s*$/)?.[1]
+      if (heading && !CHANGELOG_ENTRY_HEADINGS.includes(heading)) {
+        issues.push(
+          `unknown changelog heading "### ${heading}" — use one of: ${CHANGELOG_ENTRY_HEADINGS.join(', ')}`,
+        )
+      }
+    }
+  }
+  return issues
+}
+
+function isChangelogUnreleasedEmpty(content: string): boolean {
+  const section = parseChangelogSections(content).find((candidate) =>
+    CHANGELOG_UNRELEASED_HEADER.test(candidate.header),
+  )
+  if (!section) {
+    return true
+  }
+  return section.lines.every((line) => line.trim() === '' || line.startsWith('### '))
+}
+
+/**
+ * Stamps the accumulated [Unreleased] section as a released version: renames
+ * its header to `## [X.Y.Z] - date` and re-creates a fresh empty [Unreleased]
+ * above it. Refuses malformed changelogs, an empty section (nothing to
+ * release) and versions that already have a section.
+ */
+function stampChangelogRelease(content: string, version: string, date: string): string {
+  const canonicalVersion = version.replace(/^v/, '')
+  if (!/^\d+\.\d+\.\d+$/.test(canonicalVersion)) {
+    throw new Error(`Invalid release version: ${version}`)
+  }
+  const issues = getChangelogIssues(content)
+  if (issues.length > 0) {
+    throw new Error(`Changelog is not releasable: ${issues.join('; ')}`)
+  }
+  if (isChangelogUnreleasedEmpty(content)) {
+    throw new Error('The [Unreleased] section is empty — nothing to release')
+  }
+  const alreadyReleased = parseChangelogSections(content).some(
+    (section) =>
+      section.header.match(CHANGELOG_VERSION_HEADER)?.[1]?.replace(/^v/, '') === canonicalVersion,
+  )
+  if (alreadyReleased) {
+    throw new Error(`Version ${canonicalVersion} already has a changelog section`)
+  }
+
+  const lines = content.split('\n')
+  const headerIndex = lines.findIndex((line) => CHANGELOG_UNRELEASED_HEADER.test(line))
+  lines.splice(headerIndex, 1, '## [Unreleased]', '', `## [${canonicalVersion}] - ${date}`)
+  return lines.join('\n')
+}
+
 /**
  * Appends a line to .gitignore content if it is not already present.
  * Idempotent and newline-safe.
@@ -450,8 +565,10 @@ export {
   type ComputeUpgradePathOptions,
   ensureGitignoreLine,
   ensurePackageJsonWiring,
+  getChangelogIssues,
   getFallbackIntentionId,
   getIntentionOrderIssues,
+  isChangelogUnreleasedEmpty,
   getUpgradeBranchName,
   type IntentionClassification,
   type IntentionFileInput,
@@ -469,6 +586,7 @@ export {
   readOptionValue,
   type ReleaseInfo,
   resolveTargetVersion,
+  stampChangelogRelease,
   type UpgradePath,
   versionGt,
   versionLte,

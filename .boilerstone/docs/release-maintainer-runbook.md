@@ -31,6 +31,10 @@ Dependency rule: **never write an unbounded "update dependencies" step.** A vers
 - **Coherent-set alignment** — `align-shared-dependency-versions`: one catalog family at a time, validated and committed per family, with pin-and-name as the escape hatch. Releases that change catalog versions rely on this protocol.
 - **Framework migrations** — the owning intention ships its own bumps and documents the breakage (the MikroORM intention bumps `@mikro-orm/*`; a React major would get its own intention).
 
+## Changelog discipline (every PR, not just releases)
+
+Release preparation starts at PR time, not at tag time. Every PR with consumer-visible impact adds curated entries under `## [Unreleased]` in the root `CHANGELOG.md`, using the Keep a Changelog headings (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`, plus `Migration`). The `Changelog` CI check (`pnpm boilerplate changelog check --base origin/main`) refuses a PR that changes files without touching the changelog; label a PR `no-changelog` only when it truly has no consumer-visible impact. Write the meaning of the change, one line per change, while it is fresh — never paste commit messages.
+
 ## 1. Pick the version
 
 1. Inspect the last release tag:
@@ -53,11 +57,15 @@ mkdir -p .boilerstone/migration-intentions/vX.Y.Z
 
 ## 2. Inventory the changes
 
-Compare this release with the previous tag:
+The primary inventory is the `## [Unreleased]` section of the root `CHANGELOG.md`: every merged PR with consumer-visible impact added its entry there when the context was fresh (the `changelog check` CI gate enforces it; PRs labeled `no-changelog` opted out explicitly). Read it first — those entries are the candidate intentions.
+
+Then cross-check against the actual diff since the previous tag:
 
 ```bash
 git diff --name-status vPREVIOUS..HEAD
 ```
+
+A change without a changelog entry, or an entry without a matching change, is a hole — resolve it before classifying.
 
 Group the changed files by domain:
 
@@ -124,7 +132,13 @@ Each intention must answer:
 
 ## 5. Update release metadata
 
-Update the root `CHANGELOG.md` under the chosen version:
+Stamp the accumulated changelog section with the chosen version:
+
+```bash
+pnpm boilerplate changelog release --to X.Y.Z
+```
+
+This renames `## [Unreleased]` to `## [X.Y.Z] - date` and re-creates a fresh empty `[Unreleased]` section. It refuses an empty section (nothing to release) and versions that already have one. Then review and refine the stamped section:
 
 - summarize the full release for humans;
 - list important new baseline capabilities;
