@@ -1,5 +1,5 @@
-import type { MiddlewareConsumer, NestModule } from '@nestjs/common'
 import type { AuthContext, MiddlewareContext, MiddlewareOptions } from 'better-auth'
+import type { MiddlewareConsumer, NestModule } from '@nestjs/common'
 import { MikroORM } from '@mikro-orm/core'
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Global, Inject, Module, RequestMethod } from '@nestjs/common'

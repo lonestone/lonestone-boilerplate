@@ -1,5 +1,10 @@
 import process from 'node:process'
 
+// Vendored copy of cli/utils.ts so that .boilerstone/cli/ stays self-contained:
+// a consumer can fetch only the .boilerstone/ directory (e.g. via tiged) and run
+// the CLI without the producer-side cli/ folder being present. Keep in sync with
+// the root cli/utils.ts.
+
 // ANSI color codes for console output
 export const colors = {
   reset: '\x1B[0m',

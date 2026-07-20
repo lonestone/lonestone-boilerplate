@@ -1,17 +1,18 @@
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import {
   copyFileSync,
   existsSync,
   readdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
-import { colorize } from './utils'
+import { colorize, isolatedGitEnv } from './utils'
 
 interface InputPromptOptions {
   message: string
@@ -42,6 +43,32 @@ const { Input, Confirm } = Enquirer as unknown as EnquirerConstructors
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..')
+const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
+
+function getConfiguredBoilerplateRemote(): string {
+  return process.env.BOILERPLATE_REPO?.trim() || defaultBoilerplateRemote
+}
+
+// Files and directories that are only useful for maintaining or publishing the
+// boilerplate itself. Consumer projects keep the local upgrade state and CLI, but
+// fetch published intentions from the boilerplate repository.
+// The .boilerstone/ subset deliberately mirrors PRODUCER_ARTIFACTS in
+// boilerplate-core.ts (a spec test enforces the sync): this file must stay
+// importable after `rm -rf .boilerstone`, so it cannot import from there.
+export const PRODUCER_FILES_TO_REMOVE = [
+  // The curl installer is the boilerplate's own entry point, not the app's
+  'install.sh',
+  '.boilerstone/docs/ai-upgrades-implementation.md',
+  '.boilerstone/docs/pilot-rollout.md',
+  // Producer-side upgrade artifacts published by the boilerplate, not maintained inside consumers
+  '.boilerstone/migration-intentions',
+  '.boilerstone/boilerplate.example.json',
+  // Maintainer/onboarding-only skills; consumers keep only the boilerstone-upgrade skill
+  '.claude/skills/boilerstone-release',
+  '.cursor/skills/boilerstone-release',
+  '.claude/skills/boilerstone-init',
+  '.cursor/skills/boilerstone-init',
+]
 
 interface AvailableApps {
   api: boolean
@@ -110,6 +137,31 @@ function runCommand(command: string, args: string[]): Promise<void> {
       reject(error)
     })
   })
+}
+
+function normalizeGitRemote(value: string): string {
+  return value
+    .trim()
+    .replace(/^git@github\.com:/, 'https://github.com/')
+    .replace(/^ssh:\/\/git@github\.com\//, 'https://github.com/')
+    .replace(/\/$/, '')
+    .replace(/\.git$/, '')
+    .toLowerCase()
+}
+
+function isBoilerplateMaintainerCheckout(rootPath: string): boolean {
+  try {
+    const originUrl = execFileSync('git', ['remote', 'get-url', 'origin'], {
+      cwd: rootPath,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      env: isolatedGitEnv(),
+    })
+
+    return normalizeGitRemote(originUrl) === normalizeGitRemote(defaultBoilerplateRemote)
+  } catch {
+    return false
+  }
 }
 
 function sleep(ms: number): Promise<void> {
@@ -585,6 +637,21 @@ interface PackageJson {
   [key: string]: unknown
 }
 
+interface BoilerplateState {
+  schemaVersion: number
+  source: {
+    repository: string
+    remote: string
+    currentVersion: string
+    commit?: string
+  }
+  trackedDomains: string[]
+  intentions: {
+    applied: Array<{ id: string; appliedAt: string }>
+    skipped: Array<{ id: string; reason: string }>
+  }
+}
+
 function updateRootScripts(
   packageJson: PackageJson,
   oldPrefix: string,
@@ -609,6 +676,78 @@ function updateRootScripts(
     ...packageJson,
     scripts: nextScripts,
   }
+}
+
+function getBoilerplateSourceVersion(rootPath: string): string {
+  const envVersion = process.env.BOILERPLATE_SOURCE_VERSION?.trim().replace(/^v/, '')
+  if (envVersion) {
+    return envVersion
+  }
+
+  const packageJsonPath = join(rootPath, 'package.json')
+  if (!existsSync(packageJsonPath)) {
+    return '1.0.0'
+  }
+
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: unknown }
+  return typeof packageJson.version === 'string'
+    ? packageJson.version.replace(/^v(?=\d)/, '')
+    : '1.0.0'
+}
+
+function getBoilerplateSourceCommit(): string | undefined {
+  const commit = process.env.BOILERPLATE_SOURCE_COMMIT?.trim()
+  return commit || undefined
+}
+
+function createBoilerplateState(rootPath: string): BoilerplateState {
+  const state: BoilerplateState = {
+    schemaVersion: 1,
+    source: {
+      repository: 'lonestone/lonestone-boilerplate',
+      remote: getConfiguredBoilerplateRemote(),
+      currentVersion: getBoilerplateSourceVersion(rootPath),
+    },
+    trackedDomains: [
+      'tooling',
+      'api',
+      'frontend',
+      'ci',
+      'docker-env',
+      'monitoring',
+      'email',
+      'auth',
+      'storage',
+      'ai',
+    ],
+    intentions: {
+      applied: [],
+      skipped: [],
+    },
+  }
+
+  const commit = getBoilerplateSourceCommit()
+  if (commit) {
+    state.source.commit = commit
+  }
+
+  return state
+}
+
+function initializeBoilerplateTracking(rootPath: string): void {
+  const targetPath = join(rootPath, '.boilerstone', 'boilerplate.json')
+  if (existsSync(targetPath)) {
+    return
+  }
+
+  writeFileSync(
+    targetPath,
+    `${JSON.stringify(createBoilerplateState(rootPath), null, 2)}\n`,
+    'utf-8',
+  )
+  console.log(
+    `  ${colorize('✓', 'green')} Created ${colorize('.boilerstone/boilerplate.json', 'dim')}`,
+  )
 }
 
 async function renameProjects(projectName: string, availableApps: AvailableApps): Promise<void> {
@@ -816,6 +955,33 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   console.log(`  ${colorize('✓', 'green')} Configuration values have been updated in .env files`)
 }
 
+function cleanupBoilerplateFiles(rootPath = projectRoot): void {
+  console.log(`\n${colorize('🧹 Cleaning up boilerplate-only files', 'cyan')}\n`)
+
+  initializeBoilerplateTracking(rootPath)
+
+  if (isBoilerplateMaintainerCheckout(rootPath)) {
+    console.log(
+      `  ${colorize('→', 'cyan')} Skipped producer-side cleanup in boilerplate maintainer checkout`,
+    )
+    return
+  }
+
+  for (const file of PRODUCER_FILES_TO_REMOVE) {
+    const filePath = join(rootPath, file)
+    if (existsSync(filePath)) {
+      try {
+        rmSync(filePath, { recursive: true, force: true })
+        console.log(`  ${colorize('✓', 'green')} Removed ${colorize(file, 'dim')}`)
+      } catch {
+        console.log(`  ${colorize('⚠', 'yellow')} Failed to remove ${colorize(file, 'dim')}`)
+      }
+    }
+  }
+
+  console.log(`\n  ${colorize('✓', 'green')} Boilerplate cleanup completed`)
+}
+
 async function main(): Promise<void> {
   console.log(`\n${colorize('🚀 Development Environment Setup', 'bright')}\n`)
 
@@ -860,6 +1026,9 @@ async function main(): Promise<void> {
 
     // Update Vite config ports (SPA/SSR)
     updateViteConfigPorts(config, availableApps)
+
+    // Template cleanup: remove boilerplate-only files
+    cleanupBoilerplateFiles()
 
     console.log(`\n${colorize('✅ Setup completed successfully!', 'green')}`)
     console.log(`\n${colorize('📝 Configuration Summary:', 'cyan')}`)
@@ -966,4 +1135,9 @@ async function main(): Promise<void> {
   }
 }
 
-main()
+const isDirectExecution = process.argv[1] ? resolve(process.argv[1]) === __filename : false
+if (isDirectExecution) {
+  main()
+}
+
+export { cleanupBoilerplateFiles }

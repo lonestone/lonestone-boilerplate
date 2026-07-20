@@ -74,7 +74,7 @@
     "zod-openapi": "catalog:validation"
   },
   "devDependencies": {
-"@better-fetch/fetch": "1.1.21",
+    "@better-fetch/fetch": "1.1.21",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.19",
     "@swc-node/register": "^1.11.1",

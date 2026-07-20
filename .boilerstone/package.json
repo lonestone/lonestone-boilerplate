@@ -1,0 +1,15 @@
+{
+  "name": "@boilerstone/boilerplate",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Boilerplate upgrade system: state, migration intentions and CLI",
+  "type": "module",
+  "scripts": {
+    "lint:intentions": "tsx ./cli/boilerplate.ts intentions lint",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.5"
+  }
+}

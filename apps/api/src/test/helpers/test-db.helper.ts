@@ -4,6 +4,7 @@
 // This provides maximum isolation with one container per test.
 
 import { MikroORM } from '@mikro-orm/core'
+import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy'
 import { createTestMikroOrmOptions } from '../../modules/db/db.config'
 
 export interface TestOrmContext {
@@ -46,6 +47,7 @@ export async function createTestOrm(dbConfig: {
     user: dbConfig.user,
     password: dbConfig.password,
     preferTs: true,
+    metadataProvider: ReflectMetadataProvider,
   })
 
   const orm = await MikroORM.init(mikroOrmOptions)
