@@ -60,9 +60,16 @@ export const PRODUCER_FILES_TO_REMOVE = [
   'install.sh',
   '.boilerstone/docs/ai-upgrades-implementation.md',
   '.boilerstone/docs/pilot-rollout.md',
+  '.boilerstone/docs/release-maintainer-runbook.md',
   // Producer-side upgrade artifacts published by the boilerplate, not maintained inside consumers
   '.boilerstone/migration-intentions',
   '.boilerstone/boilerplate.example.json',
+  // CLI tests stay in the boilerplate repo only — consumers vendor the runtime CLI
+  '.boilerstone/cli/boilerplate-core.spec.ts',
+  '.boilerstone/cli/tracking-state.spec.ts',
+  '.boilerstone/cli/install.spec.ts',
+  '.boilerstone/cli/vitest.setup.ts',
+  '.boilerstone/vitest.config.ts',
   // Maintainer/onboarding-only skills; consumers keep only the boilerstone-upgrade skill
   '.claude/skills/boilerstone-release',
   '.cursor/skills/boilerstone-release',
@@ -976,6 +983,36 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
       } catch {
         console.log(`  ${colorize('⚠', 'yellow')} Failed to remove ${colorize(file, 'dim')}`)
       }
+    }
+  }
+
+  // Consumers vendor the CLI runtime only — drop the producer's Vitest wiring.
+  const boilerstonePkgPath = join(rootPath, '.boilerstone/package.json')
+  if (existsSync(boilerstonePkgPath)) {
+    try {
+      const pkg = JSON.parse(readFileSync(boilerstonePkgPath, 'utf-8')) as {
+        scripts?: Record<string, string>
+        devDependencies?: Record<string, string>
+      }
+      let changed = false
+      if (pkg.scripts?.test) {
+        delete pkg.scripts.test
+        changed = true
+      }
+      if (pkg.devDependencies?.vitest) {
+        delete pkg.devDependencies.vitest
+        changed = true
+      }
+      if (changed) {
+        writeFileSync(boilerstonePkgPath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf-8')
+        console.log(
+          `  ${colorize('✓', 'green')} Stripped test tooling from ${colorize('.boilerstone/package.json', 'dim')}`,
+        )
+      }
+    } catch {
+      console.log(
+        `  ${colorize('⚠', 'yellow')} Failed to strip test tooling from ${colorize('.boilerstone/package.json', 'dim')}`,
+      )
     }
   }
 

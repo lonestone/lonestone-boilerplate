@@ -24,7 +24,7 @@ docs/release-maintainer-runbook.md # Maintainer procedure for creating a new rel
 migration-intentions/     # Published intentions, one directory per release
 ```
 
-When a new project runs `pnpm rock`, the setup script switches `.boilerstone/` to consumer mode: it keeps local tracking and the upgrade CLI, but removes producer-only artifacts such as `migration-intentions/` and internal rollout docs. Published intentions are resolved from the boilerplate repository and git tags when an upgrade is prepared.
+When a new project runs `pnpm rock`, the setup script switches `.boilerstone/` to consumer mode: it keeps local tracking and the upgrade CLI runtime, but removes producer-only artifacts such as `migration-intentions/`, CLI tests/Vitest config, the release-maintainer runbook, and internal rollout docs. Published intentions are resolved from the boilerplate repository and git tags when an upgrade is prepared.
 
 ## Onboarding a project
 

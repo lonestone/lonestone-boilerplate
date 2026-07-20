@@ -272,6 +272,12 @@ const PRODUCER_ARTIFACTS = [
   'boilerplate.example.json',
   'docs/pilot-rollout.md',
   'docs/ai-upgrades-implementation.md',
+  'docs/release-maintainer-runbook.md',
+  'cli/boilerplate-core.spec.ts',
+  'cli/tracking-state.spec.ts',
+  'cli/install.spec.ts',
+  'cli/vitest.setup.ts',
+  'vitest.config.ts',
 ]
 
 interface PackageJsonShape {
@@ -306,6 +312,34 @@ function ensurePackageJsonWiring(pkg: PackageJsonShape, tsxVersion: string): Pac
   if (!hasTsx) {
     next.devDependencies = { ...next.devDependencies, tsx: tsxVersion }
     changes.push(`added "tsx" devDependency (${tsxVersion})`)
+  }
+
+  return { pkg: next, changes }
+}
+
+/**
+ * Strips producer-only test tooling from the vendored `.boilerstone/package.json`
+ * so consumer workspaces do not run or depend on the boilerplate's own Vitest suite.
+ * Idempotent.
+ */
+function ensureConsumerBoilerstonePackageJson(pkg: PackageJsonShape): PackageJsonWiring {
+  const next: PackageJsonShape = {
+    ...pkg,
+    scripts: { ...pkg.scripts },
+    devDependencies: { ...pkg.devDependencies },
+  }
+  const changes: string[] = []
+
+  if (next.scripts?.test) {
+    const { test: _removed, ...scripts } = next.scripts
+    next.scripts = scripts
+    changes.push('removed "test" script')
+  }
+
+  if (next.devDependencies?.vitest) {
+    const { vitest: _removed, ...devDependencies } = next.devDependencies
+    next.devDependencies = devDependencies
+    changes.push('removed "vitest" devDependency')
   }
 
   return { pkg: next, changes }
@@ -565,6 +599,7 @@ export {
   type ComputeUpgradePathOptions,
   ensureGitignoreLine,
   ensurePackageJsonWiring,
+  ensureConsumerBoilerstonePackageJson,
   getChangelogIssues,
   getFallbackIntentionId,
   getIntentionOrderIssues,

@@ -26,6 +26,7 @@ import {
   computeUpgradePath,
   ensureGitignoreLine,
   ensurePackageJsonWiring,
+  ensureConsumerBoilerstonePackageJson,
   getChangelogIssues,
   getFallbackIntentionId,
   getIntentionOrderIssues,
@@ -1023,6 +1024,21 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
     console.log(`  ${colorize('✓', 'green')} .boilerstone/ already in consumer mode`)
   }
 
+  // 3b. Strip producer test tooling from the vendored package.json.
+  const boilerstonePkgPath = join(dir, 'package.json')
+  if (existsSync(boilerstonePkgPath)) {
+    const boilerstonePkg = JSON.parse(
+      readFileSync(boilerstonePkgPath, 'utf-8'),
+    ) as PackageJsonShape
+    const consumerPkg = ensureConsumerBoilerstonePackageJson(boilerstonePkg)
+    if (consumerPkg.changes.length > 0) {
+      writeFileSync(boilerstonePkgPath, `${JSON.stringify(consumerPkg.pkg, null, 2)}\n`, 'utf-8')
+      for (const change of consumerPkg.changes) {
+        console.log(`  ${colorize('✓', 'green')} .boilerstone/package.json: ${change}`)
+      }
+    }
+  }
+
   // 4. Initialize tracking state (detects/confirms the source version).
   await cmdUpgradeInit(projectPath)
 
@@ -1691,7 +1707,7 @@ function createHealthReport(projectPath: string): HealthReport {
           status: 'warning',
           message: `Producer-only artifacts are present: ${producerArtifacts.join(', ')}`,
           suggestion:
-            'This is expected in the boilerplate repository; generated projects should re-run pnpm rock or remove producer artifacts manually',
+            'This is expected in the boilerplate repository; generated or onboarded projects should re-run `pnpm boilerplate bootstrap` (or `pnpm rock` on a fresh template) to drop producer artifacts',
         },
   )
 

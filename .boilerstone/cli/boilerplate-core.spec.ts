@@ -34,6 +34,7 @@ import {
   computeUpgradePath,
   ensureGitignoreLine,
   ensurePackageJsonWiring,
+  ensureConsumerBoilerstonePackageJson,
   getChangelogIssues,
   getFallbackIntentionId,
   getIntentionOrderIssues,
@@ -435,6 +436,23 @@ describe('boilerplate core', () => {
   it('drops the producer-only artifacts in consumer mode', () => {
     expect(PRODUCER_ARTIFACTS).toContain('migration-intentions')
     expect(PRODUCER_ARTIFACTS).toContain('boilerplate.example.json')
+    expect(PRODUCER_ARTIFACTS).toContain('cli/boilerplate-core.spec.ts')
+    expect(PRODUCER_ARTIFACTS).toContain('vitest.config.ts')
+    expect(PRODUCER_ARTIFACTS).toContain('docs/release-maintainer-runbook.md')
+  })
+
+  it('strips Vitest tooling from the vendored boilerstone package.json', () => {
+    const first = ensureConsumerBoilerstonePackageJson({
+      name: '@boilerstone/boilerplate',
+      scripts: { test: 'vitest run', typecheck: 'tsc --noEmit' },
+      devDependencies: { vitest: '^4.1.5' },
+    })
+    expect(first.pkg.scripts).toEqual({ typecheck: 'tsc --noEmit' })
+    expect(first.pkg.devDependencies).toEqual({})
+    expect(first.changes).toEqual(['removed "test" script', 'removed "vitest" devDependency'])
+
+    const second = ensureConsumerBoilerstonePackageJson(first.pkg)
+    expect(second.changes).toEqual([])
   })
 
   it('keeps the setup cleanup list in sync with PRODUCER_ARTIFACTS', () => {

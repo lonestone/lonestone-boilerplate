@@ -73,6 +73,7 @@ the inventory for that release's migration intentions.
 
 - Migration intentions no longer treat the prior stack as a skip reason (ESLint/Prettier → Oxlint/Oxfmt, Better Auth `pg` pool → MikroORM adapter, MikroORM below v7 → v7).
 - Added the missing `v1.0.0/adopt-knip` intention (script, `knip.json`, and CI job).
+- Consumer onboarding (`bootstrap` / `pnpm rock`) keeps only the CLI runtime: Vitest suite/config and the release-maintainer runbook are dropped. Re-run `pnpm boilerplate bootstrap` on an already-onboarded project to clean up.
 
 ### Security
 

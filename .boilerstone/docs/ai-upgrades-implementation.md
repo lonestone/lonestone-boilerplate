@@ -43,7 +43,7 @@ Intentions carry a `classification` in their frontmatter. `no-migration` and `in
 
 ## Producer vs consumer (one directory, two modes)
 
-In the boilerplate repo everything is present: published intentions, the CLI, tests, these maintainer docs. In a generated or onboarded project, the producer side is dropped — `cleanupBoilerplateFiles()` in [`cli/setup.ts`](../../cli/setup.ts) (for `pnpm rock`) and the `bootstrap` command (for existing projects) both remove `migration-intentions/`, the example state, and these internal docs, while keeping the local state, the CLI, the schema, and the consumer-facing docs. Future-release intentions are then read from git tags rather than from disk.
+In the boilerplate repo everything is present: published intentions, the CLI, tests, these maintainer docs. In a generated or onboarded project, the producer side is dropped — `cleanupBoilerplateFiles()` in [`cli/setup.ts`](../../cli/setup.ts) (for `pnpm rock`) and the `bootstrap` command (for existing projects) both remove `migration-intentions/`, the example state, CLI Vitest suite/config, the release-maintainer runbook, and these internal docs, while keeping the local state, the CLI runtime, the schema, and the consumer-facing docs. Future-release intentions are then read from git tags rather than from disk.
 
 The list of producer-only paths has one source of truth, `PRODUCER_ARTIFACTS` in `boilerplate-core.ts`: the status "consumer cleanup" readiness check derives from it, and `PRODUCER_FILES_TO_REMOVE` in `cli/setup.ts` mirrors its `.boilerstone/` subset (a spec test enforces the sync — setup cannot import from `.boilerstone/`, which must stay removable in one move).
 
