@@ -13,6 +13,10 @@ the inventory for that release's migration intentions.
 
 ## [Unreleased]
 
+### Changed
+
+- The installer now resolves `--ref latest` to the newest published SemVer tag by default. `--ref` accepts only `latest` or an explicit `vX.Y.Z` release tag; branch refs such as `main` are rejected.
+
 ## [1.0.0] - 2026-07-20
 
 ### Added

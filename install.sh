@@ -16,7 +16,7 @@ main() {
   MODE="${1:-help}"
   [ "$#" -gt 0 ] && shift || true
 
-  REF="main"
+  REF="latest"
   POSITIONAL=""
   POSITIONAL_COUNT=0
   while [ "$#" -gt 0 ]; do
@@ -28,11 +28,13 @@ main() {
       *) POSITIONAL="$1"; POSITIONAL_COUNT=$((POSITIONAL_COUNT + 1)); shift ;;
     esac
   done
+  validate_release_ref
 
   case "$MODE" in
     init)
       [ "$POSITIONAL_COUNT" -le 1 ] || die "init accepts at most one directory argument"
       need git; need pnpm
+      resolve_release_ref
       dir="${POSITIONAL:-my-app}"
       [ -e "$dir" ] && die "Directory '$dir' already exists"
       info "Creating new project in $dir from $REPO_URL@$REF"
@@ -57,6 +59,7 @@ main() {
     onboard)
       [ "$POSITIONAL_COUNT" -eq 0 ] || die "onboard does not accept positional arguments"
       need git; need pnpm
+      resolve_release_ref
       [ -f package.json ] || die "Run this at the root of an existing project (package.json not found)"
       fetch_subdirs ".boilerstone" ".claude/skills/boilerstone-upgrade" ".cursor/skills/boilerstone-upgrade"
       # The repo ships its own tracking state; drop it so init detects THIS project's version.
@@ -87,6 +90,24 @@ ok() { printf '%b\n' "${C_GREEN}✓${C_RESET} $*"; }
 die() { printf '%b\n' "${C_RED}✗${C_RESET} $*" >&2; exit 1; }
 
 need() { command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"; }
+
+validate_release_ref() {
+  [ "$REF" = "latest" ] && return 0
+  printf '%s\n' "$REF" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+    || die "--ref accepts only 'latest' or a release tag (vX.Y.Z); branches such as main are not supported"
+}
+
+resolve_release_ref() {
+  [ "$REF" = "latest" ] || return 0
+  REF="$(
+    git ls-remote --tags --refs --sort=-version:refname "$REPO_URL" 'v*' \
+      | grep -E 'refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$' \
+      | sed -n '1{s#.*refs/tags/##;p;}'
+  )"
+  [ -n "$REF" ] || die "No published boilerplate release found at $REPO_URL"
+  validate_release_ref
+  info "Resolved latest release: $REF"
+}
 
 # Offer to commit the onboarding files. Defaults to yes — including when there
 # is no terminal to ask on — so declining is the only path that leaves the
@@ -156,7 +177,7 @@ Commands:
   upgrade [version]   Prepare a boilerplate upgrade in an already-wired project (default: latest)
 
 Options:
-  --ref <git-ref>     Branch or tag to fetch (default: main)
+  --ref <latest|tag>  Published release to fetch (default: latest; tag format: vX.Y.Z)
 
 Environment:
   BOILERPLATE_REPO    Override the repository URL (e.g. an SSH URL for a private fork)

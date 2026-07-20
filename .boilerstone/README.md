@@ -28,7 +28,7 @@ When a new project runs `pnpm rock`, the setup script switches `.boilerstone/` t
 
 ## Onboarding a project
 
-The installer at the repository root ([`install.sh`](../install.sh)) is the single entry point for the whole lifecycle. It needs only `git` and `pnpm` — no GitHub "Use this template", no third-party scaffolder. It downloads a repository snapshot with `git` (full clone for a new project, sparse-checkout for `.boilerstone/` alone).
+The installer at the repository root ([`install.sh`](../install.sh)) is the single entry point for the whole lifecycle. It needs only `git` and `pnpm` — no GitHub "Use this template", no third-party scaffolder. It resolves the latest published SemVer tag by default, then downloads that immutable repository snapshot with `git` (full clone for a new project, sparse-checkout for `.boilerstone/` alone).
 
 ```bash
 # Create a new project from scratch
@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/mai
 curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- upgrade 1.6.0
 ```
 
-Pin a release with `--ref <tag>`; point at a fork/private repo with `BOILERPLATE_REPO=<url>`.
+`--ref latest` is the default. Pin a release with `--ref vX.Y.Z`; branch refs such as `main` are rejected so a generated or onboarded project never starts from unreleased code. Point at a fork/private repo with `BOILERPLATE_REPO=<url>`; that repository must publish compatible `vX.Y.Z` tags.
 
 - **`init`** clones the template and runs `pnpm rock` (the normal first-run setup).
 - **`onboard`** fetches `.boilerstone/` plus the `boilerstone-upgrade` skills, runs `bootstrap` (below), then offers to commit the onboarding (`[Y/n]`, default yes).
