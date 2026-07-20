@@ -175,6 +175,12 @@ jobs:
           node-version: ${{ needs.setup.outputs.node-version }}
           pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
 
+      # The real v1.0.0 release tag is created after merge. Until then, the
+      # boilerstone tests need a local v1.0.0 tag to resolve the checkout as the
+      # release producer. This tag is local to the runner and never pushed.
+      - name: 🏷️ Tag local v1.0.0 fixture
+        run: git tag v1.0.0 ${{ github.sha }}
+
       - name: 🧪 Run test
         run: pnpm test
         env:
