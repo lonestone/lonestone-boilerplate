@@ -37,9 +37,11 @@ Name the file `NN-slug.md`, where `NN` is a zero-padded execution-order prefix (
 
 ## Do Not Apply When
 
-<!-- Explicit stop conditions -->
+<!-- Hard stop conditions only — not the starting stack this intention migrates away from. -->
+<!-- Skip for "still on the old tool" is an anti-pattern; agents must propose apply/skip to a human. -->
 <!-- Example: "- Project uses a custom storage solution" -->
 <!-- Example: "- Project does not have the `api` app" -->
+<!-- Example: "- A human explicitly decided to keep the prior stack after review" -->
 
 ## Observable Gaps
 

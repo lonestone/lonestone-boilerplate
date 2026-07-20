@@ -18,13 +18,13 @@ The v1.0.0 boilerplate backs Better Auth with a local MikroORM adapter (`auth-db
 
 ## Applies When
 
-- The project uses Better Auth.
-- The project stores auth state through MikroORM entities or an adapter derived from the boilerplate.
-- The project tracks the `auth` domain.
+- The project uses Better Auth and tracks the `auth` domain.
+- Auth persistence is not yet the v1.0.0 `mikroOrmAdapter` baseline — including projects still on the Better Auth Postgres/`pg` pool adapter, Drizzle, Prisma, or an older local adapter. That prior persistence is the normal starting state this intention migrates away from.
 
 ## Do Not Apply When
 
-- The project does not use Better Auth, or uses another auth provider or persistence layer — record as skipped.
+- The project does not use Better Auth, or uses a different auth product entirely (Clerk, Auth0, custom JWT-only, etc.) — record as skipped.
+- A human has explicitly decided to keep a non-MikroORM Better Auth persistence (pg pool, Drizzle, Prisma, …) after reviewing this intention — record as skipped with that reason. Still being on pg pool (or another Better Auth adapter) is **not** a skip condition.
 - The project has customized auth semantics (login flows, organizations, permissions) that conflict with the baseline adapter (stop and ask).
 - Closing a gap would rename or drop auth tables/columns — stop; that needs a human-approved data migration plan.
 
@@ -32,9 +32,9 @@ The v1.0.0 boilerplate backs Better Auth with a local MikroORM adapter (`auth-db
 
 Auth state is production user data: prefer stopping over guessing, and never touch stored data. Work through each gap independently; skip any that is already closed.
 
-1. **Adapter implementation** — signal: the project's adapter predates the staged reference `auth-db.adapter.ts` (missing fixes, diverging query behavior), or auth is wired through something other than the local `mikroOrmAdapter`.
-   Diff the project's adapter against the staged reference first. No project delta → copy the reference verbatim. Otherwise port only the reference-side hunks, without changing table or column names, and keep project-specific query behavior that tests depend on.
-   Done when: the adapter unit tests (the `auth-db.adapter*.spec.ts` pattern) pass, `pnpm --filter=api typecheck` passes, and the diff against the staged reference is empty or every remaining delta is project-specific and named.
+1. **Adapter implementation** — signal: auth is still wired through the Better Auth Postgres/`pg` pool adapter (or Drizzle/Prisma/another adapter), or the local adapter predates the staged reference `auth-db.adapter.ts`.
+   Introduce or replace with the local `mikroOrmAdapter` from the staged reference. Diff first: no project delta → copy the reference adapter files verbatim. Otherwise port only the reference-side hunks, without changing table or column names, and keep project-specific query behavior that tests depend on.
+   Done when: Better Auth uses `mikroOrmAdapter`, the adapter unit tests (the `auth-db.adapter*.spec.ts` pattern) pass, `pnpm --filter=api typecheck` passes, and the diff against the staged reference is empty or every remaining delta is project-specific and named.
 
 2. **Entities vs schema codegen** — signal: the project's auth entities diverge from what `auth-schema-codegen.ts` generates for its Better Auth config.
    Regenerate and compare; apply only additive or neutral differences. Any rename/drop is a stop condition (see above).

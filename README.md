@@ -6,7 +6,7 @@
 
 This repository represents the typical project structure at Lonestone, consisting of an API and one to several frontends.
 
-To start a new project using this boilerplate, simply create a project on Github and select the boilerplate from the template list.
+Start new projects with the versioned installer described below. It resolves the latest published boilerplate release by default, so projects never start from unreleased changes on `main`.
 
 For more details, see the [documentation](https://lonestone.github.io/lonestone-boilerplate/) or check out the local documentation in the `apps/documentation` folder.
 
@@ -52,14 +52,45 @@ See the [Project Structure](apps/documentation/src/content/docs/explanations/1_a
 
 ## 🚀 Installation
 
-1. Once your project is created with this template, clone the repository
+### Create a new project
+
+Run the installer from the directory that should contain the new project:
 
 ```bash
-git clone https://github.com/lonestone/yourproject.git
-cd yourproject
+curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh \
+  | sh -s -- init my-project
 ```
 
-2. Ensure you have the correct node and pnpm versions (see root `package.json` file's `engines` property).
+The installer resolves the latest stable `vX.Y.Z` tag, creates the project, installs dependencies, and runs the interactive `pnpm rock` setup. Pin a specific release when reproducibility requires it:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh \
+  | sh -s -- init my-project --ref v1.0.0
+```
+
+`--ref` accepts only `latest` (the default) or an explicit release tag such as `v1.0.0`. Branches such as `main` are intentionally rejected.
+
+### Onboard an existing project
+
+Run this once at the root of a project originally generated from the boilerplate but not yet tracked by Boilerstone:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh \
+  | sh -s -- onboard
+```
+
+Then inspect and prepare the latest applicable upgrade:
+
+```bash
+pnpm boilerplate upgrade status
+pnpm boilerplate upgrade
+```
+
+The upgrade command stages release intentions and references on a dedicated branch; it does not overwrite application code automatically. See the [Boilerstone overview](.boilerstone/README.md), [how it works](.boilerstone/docs/how-it-works.md), and the [upgrade runbook](.boilerstone/docs/upgrade-runbook.md) for the complete lifecycle.
+
+### Prerequisites and manual setup
+
+Ensure you have the correct Node.js and pnpm versions (see the root `package.json` file's `engines` property).
 
 You can use [fnm](https://github.com/Schniz/fnm) for managing your node version
 
@@ -68,13 +99,13 @@ fnm use 24.13.0
 npm i -g pnpm@10.28.2
 ```
 
-3. Install dependencies:
+When working from an existing checkout rather than the installer, install dependencies manually:
 
 ```bash
 pnpm install
 ```
 
-4. Run the setup script
+Then run the setup script:
 
 The project includes an automated setup script that will:
 - Detect available applications (API, Web SPA, Web SSR, OpenAPI Generator)
@@ -96,7 +127,7 @@ The script will guide you through the configuration process interactively. It wi
 - Automatically update all `.env` files with your configuration
 - Set up proper API URLs and trusted origins across all applications
 
-5. Start applications in development mode:
+Start applications in development mode:
 
 ```bash
 pnpm dev

@@ -13,10 +13,6 @@ the inventory for that release's migration intentions.
 
 ## [Unreleased]
 
-### Changed
-
-- The installer now resolves `--ref latest` to the newest published SemVer tag by default. `--ref` accepts only `latest` or an explicit `vX.Y.Z` release tag; branch refs such as `main` are rejected.
-
 ## [1.0.0] - 2026-07-20
 
 ### Added
@@ -52,6 +48,7 @@ the inventory for that release's migration intentions.
 - Starlight documentation app with architecture, general, frontend, backend, and feature guides.
 - Documentation index generation for agent-readable navigation.
 - Oxlint and oxfmt configuration for repository-wide static checks and formatting.
+- Knip configuration and CI job for unused-file and unused-dependency detection.
 - Vitest setup for unit and e2e tests.
 - GitHub Actions documentation and CI/CD workflow templates.
 
@@ -63,12 +60,19 @@ the inventory for that release's migration intentions.
 - Curl installer with `init`, `onboard`, and `upgrade` entry points.
 - Claude Code and Cursor skills for the supervised upgrade workflow.
 - Upgrade runbook and generated upgrade session prompt for one-intention-at-a-time execution.
+- Agent executors must propose apply/skip for every pending intention and wait for human confirmation before editing or recording skips.
 
 ### Changed
 
 - `v1.0.0/setup-boilerplate-tracking` is informational: onboarding is handled by `bootstrap`/`onboard` before normal upgrade paths are computed.
 - Upgrade execution records intention outcomes through CLI commands instead of manual JSON edits.
 - `source.currentVersion` is updated only through `upgrade finish`, after all intentions in an upgrade range are applied or skipped.
+- The installer now resolves `--ref latest` to the newest published SemVer tag by default. `--ref` accepts only `latest` or an explicit `vX.Y.Z` release tag; branch refs such as `main` are rejected.
+
+### Fixed
+
+- Migration intentions no longer treat the prior stack as a skip reason (ESLint/Prettier → Oxlint/Oxfmt, Better Auth `pg` pool → MikroORM adapter, MikroORM below v7 → v7).
+- Added the missing `v1.0.0/adopt-knip` intention (script, `knip.json`, and CI job).
 
 ### Security
 
@@ -78,6 +82,7 @@ the inventory for that release's migration intentions.
 
 - No migration required for new projects.
 - Existing projects that predate the upgrade system should run `onboard`/`bootstrap` to create `.boilerstone/boilerplate.json` before preparing future upgrades.
-- Existing projects can then apply only the v1.0.0 baseline intentions that match their tracked domains and applicability checks, such as Oxlint/Oxfmt tooling, MikroORM v7, Better Auth MikroORM persistence, or optional AI module conventions.
+- Existing projects can then apply only the v1.0.0 baseline intentions that match their tracked domains and applicability checks, such as Oxlint/Oxfmt tooling, Knip, MikroORM v7, Better Auth MikroORM persistence, or optional AI module conventions.
+- Prior tooling or auth stacks (ESLint/Prettier, Better Auth `pg` pool, MikroORM below v7) are starting states to migrate from — not skip reasons. Skip only after an explicit human decision.
 - Optional capabilities are not forced. For example, projects that do not use AI should not track the `ai` domain and should skip the AI baseline intention.
 - See [migration intentions](./.boilerstone/migration-intentions/v1.0.0/README.md) for the v1.0.0 classification.

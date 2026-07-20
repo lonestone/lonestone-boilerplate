@@ -17,11 +17,11 @@ The v1.0.0 boilerplate standardizes fast static checks and formatting on Oxlint 
 ## Applies When
 
 - The project tracks the `tooling` domain.
-- The root `package.json` does not expose the v1.0.0 `lint`, `lint:fix`, `fmt`, and `fmt:check` scripts backed by oxlint/oxfmt.
+- The root `package.json` does not expose the v1.0.0 `lint`, `lint:fix`, `fmt`, and `fmt:check` scripts backed by oxlint/oxfmt — including projects still on ESLint, Prettier, Biome, or another stack. That prior stack is the normal starting state this intention migrates away from.
 
 ## Do Not Apply When
 
-- The project intentionally standardized on another formatter or linter — record as skipped with that reason.
+- A human has explicitly decided to keep another linter/formatter after reviewing this intention — record as skipped with that reason. Still using ESLint/Prettier/Biome (or incomplete scripts) is **not** a skip condition.
 - The project has custom lint rules that cannot be mapped to the Oxlint baseline without a human decision (stop and ask).
 
 ## Observable Gaps

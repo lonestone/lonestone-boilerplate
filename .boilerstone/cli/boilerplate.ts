@@ -2020,19 +2020,21 @@ You are the executor — a developer or an AI agent — applying boilerplate upg
 
 ### Rules
 
-1. Work **one intention at a time**
-2. Read each intention file before starting
-3. Run applicability checks from the intention
-4. **Stop** if a "Do not apply when" condition matches
-5. For \`breaking-manual\` intentions, **stop before editing files** and write a blocked report describing the required human decision
-6. Follow the declared Reference Policy for every path; never write a referenced file from memory
-7. **copy**: copy the target projection verbatim and verify the resulting diff
-8. **adapt**: compare project, source, and target before editing; preserve project-specific deltas and apply only the source-to-target change
-9. Everywhere else apply the **smallest safe change** and **preserve** all project-specific behavior
-10. Run validation after each intention
-11. After successful validation, record the outcome with \`pnpm boilerplate upgrade record --id <id> --applied\` or \`--skipped --reason "..."\`
-12. **Stop** on unsafe ambiguity and write a blocked report
-13. After the last intention is resolved, run \`pnpm boilerplate upgrade finish --to ${path.targetVersion}\`
+1. **Propose first (agents):** before any edit or skip record, read every pending intention below, inspect the project, and present an apply / skip / ask table to the human. Wait for confirmation.
+2. **Anti-pattern:** never skip because the project is still on the stack this intention migrates away from (ESLint/Prettier, Better Auth \`pg\` pool, MikroORM below v7, missing Knip, …). That is evidence to **apply**.
+3. Soft skips (optional capability unused) still need human confirmation before \`upgrade record --skipped\`.
+4. Work **one confirmed intention at a time** (or a small batch the human explicitly allowed)
+5. Read each intention file before starting
+6. Re-check "Applies when" / "Do not apply when" — if a hard skip now seems clear, re-propose to the human; do not silently skip
+7. For \`breaking-manual\` intentions, **stop before editing files** and write a blocked report describing the required human decision
+8. Follow the declared Reference Policy for every path; never write a referenced file from memory
+9. **copy**: copy the target projection verbatim and verify the resulting diff
+10. **adapt**: compare project, source, and target before editing; preserve project-specific deltas and apply only the source-to-target change
+11. Everywhere else apply the **smallest safe change** and **preserve** all project-specific behavior
+12. Run validation after each intention
+13. After successful validation, record the outcome with \`pnpm boilerplate upgrade record --id <id> --applied\` (or \`--skipped --reason "..."\` only after human confirmation)
+14. **Stop** on unsafe ambiguity and write a blocked report
+15. After the last intention is resolved, run \`pnpm boilerplate upgrade finish --to ${path.targetVersion}\`
 
 ### Git Policy
 
@@ -2040,7 +2042,6 @@ You are the executor — a developer or an AI agent — applying boilerplate upg
 - Never rewrite divergent files wholesale
 - Never apply cosmetic alignment unless required
 - Do not mark an intention as applied before validation passes
-- If not applicable, record as skipped with a reason
 - Do not update \`source.currentVersion\` before every intention is applied or skipped
 
 ## Pending Intentions
@@ -2082,7 +2083,7 @@ ${formatReferenceGitCommand(referenceContext, `archive ${referenceContext.target
 ${fullReferenceFallback}
 \`\`\`
 
-Begin with the first intention.
+Begin with the apply/skip proposal table for the human, then the first confirmed intention.
 `
 }
 

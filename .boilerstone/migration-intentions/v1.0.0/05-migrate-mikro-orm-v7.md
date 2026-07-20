@@ -16,14 +16,13 @@ MikroORM v7 moved decorator metadata into `@mikro-orm/decorators` (`ReflectMetad
 
 ## Applies When
 
-- The project has a NestJS API app based on the boilerplate.
-- `apps/api/package.json` declares `@mikro-orm/*` packages below v7.
-- The project wants to track the boilerplate `api` domain.
+- The project has a NestJS API app based on the boilerplate and tracks the `api` domain.
+- `apps/api/package.json` declares `@mikro-orm/*` packages below v7. Being on v5/v6 is the normal starting state this intention migrates away from.
 
 ## Do Not Apply When
 
 - The project has no API app or does not use MikroORM.
-- The project intentionally pinned an older MikroORM version — record as skipped with that reason.
+- A human has explicitly decided to stay on an older MikroORM major after reviewing this intention — record as skipped with that reason. Still being on MikroORM below v7 is **not** a skip condition.
 - Closing a gap would require regenerating existing migration history (stop and ask a human).
 
 ## Observable Gaps

@@ -12,7 +12,7 @@ So the boilerplate doesn't ship diffs. Each release ships **migration intentions
 
 - **Goal** — the end state to reach.
 - **Why** — the reason it exists.
-- **Applies when / Do not apply when** — when to act, and when to skip.
+- **Applies when / Do not apply when** — signals for the executor; agents **propose** apply/skip to a human rather than deciding alone. Prior stacks the intention migrates away from are never skip reasons.
 - **Reference paths** — which files to look at to understand the change.
 
 An **executor** — you, or an AI agent — reads an intention and **replays the smallest safe equivalent change** in your project, keeping your behavior intact.
@@ -64,9 +64,10 @@ The protocol is executor-neutral, but the supported path ships with the system: 
 
 1. **Stage the upgrade** — run `pnpm boilerplate upgrade` yourself, or let the agent run it. This is the contained part described above: clean worktree required, dedicated branch, disposable workspace.
 2. **Open an agent session in your project** — not in the boilerplate repository — and invoke the skill: `/boilerstone-upgrade` in Claude Code, or the `boilerstone-upgrade` skill in Cursor. It reads `.boilerstone/upgrade/upgrade-session.md` and follows the [runbook](./upgrade-runbook.md) exactly.
-3. **What the agent does, one intention at a time** — decide applicability against "Applies when" / "Do not apply when", follow each reference path's declared `copy`/`adapt` policy (diff first, never retype), run the intention's validation plus your project's global checks, then `pnpm boilerplate upgrade record`, one commit per intention.
-4. **Where it must stop** — a "Do not apply when" match, a `breaking-manual` classification, failing validation, or unsafe ambiguity. Stopping means writing `.boilerstone/upgrade/blocked.md` and handing back to you, without recording anything.
-5. **Your job** — review each commit like a PR, answer the stops, and once everything in the range is applied or skipped, run `pnpm boilerplate upgrade finish --to <version>` and open the PR. The CLI refuses a premature finish, so a runaway session cannot silently mark the upgrade done.
+3. **What the agent does first** — read every pending intention, inspect the project, and **propose** apply / skip / ask for each (with one observable signal). Prior stacks the intention migrates away from (ESLint, Better Auth `pg` pool, MikroORM below v7, missing Knip, …) are evidence to **apply**, never to skip. Wait for your confirmation before editing or recording skips.
+4. **Then one confirmed intention at a time** — follow each reference path's declared `copy`/`adapt` policy (diff first, never retype), run the intention's validation plus your project's global checks, then `pnpm boilerplate upgrade record`, one commit per intention (or a small supervised batch).
+5. **Where it must stop** — `breaking-manual`, failing validation, unsafe ambiguity, or a skip/apply call you have not confirmed. Stopping means writing `.boilerstone/upgrade/blocked.md` and handing back to you, without recording anything.
+6. **Your job** — confirm the proposal table, review each commit like a PR, answer the stops, and once everything in the range is applied or skipped, run `pnpm boilerplate upgrade finish --to <version>` and open the PR. The CLI refuses a premature finish, so a runaway session cannot silently mark the upgrade done.
 
 Any other agent works the same way: point it at `.boilerstone/upgrade/upgrade-session.md` (the staged session prompt) and the [runbook](./upgrade-runbook.md) — markdown, JSON and git are the whole interface, and the commands that matter accept `--json`.
 

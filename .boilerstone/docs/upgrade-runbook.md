@@ -35,16 +35,43 @@ For an untagged producer draft, commit the release folder and intentions first a
   upgrade-session.md         # the session prompt / checklist
 ```
 
-## Applying one intention
+## Applying intentions
 
-Work through `upgrade-session.md` one intention at a time. For each:
+Work through `upgrade-session.md`. Agents must not decide apply/skip alone.
+
+### 0. Propose the plan (agents — required before any edit or skip record)
+
+1. Read every pending intention in the session checklist (goal, Applies When, Do Not Apply When, Observable Gaps).
+2. Inspect the project for greppable signals (scripts, deps, configs, adapters).
+3. Present a short table to the human:
+
+   | Intention | Proposal | Why (one observable signal) |
+   |---|---|---|
+   | `vX.Y.Z/slug` | **apply** / **skip** / **ask** | … |
+
+4. **Anti-pattern (never do this):** treat the *starting stack* the intention migrates away from as a skip reason.
+   - Still on ESLint/Prettier → evidence to **apply** oxlint/oxfmt, not skip.
+   - Still on Better Auth `pg` pool → evidence to **apply** the MikroORM adapter intention, not skip.
+   - Still on MikroORM below v7 → evidence to **apply** the v7 migration, not skip.
+5. Wait for the human to confirm or adjust the plan. Only then start work or record skips.
+6. Soft / optional domains (e.g. no AI features → skip AI) may be proposed as skip, but still need human confirmation before `upgrade record --skipped`.
+
+### 1. Apply one confirmed intention at a time
+
+For each intention the human marked **apply**:
 
 1. **Read it.** Note its `classification` and `domain` in the frontmatter, and understand the goal and the why.
-2. **Decide if it applies.** Check the "Applies when" and "Do not apply when" conditions against your project. If it doesn't apply, record it as skipped with a reason and move on. If its classification is `breaking-manual`, stop and get a human decision before touching anything. Intentions reference boilerplate paths (`apps/api/…`, root configs); if your project's layout differs, translate them to your structure — never reorganize the project to match the boilerplate.
+2. **Re-check applicability.** If a hard "Do not apply when" now clearly matches (capability absent, different product entirely), stop and re-propose to the human — do not silently skip. If classification is `breaking-manual`, stop and get a human decision before touching anything. Intentions reference boilerplate paths (`apps/api/…`, root configs); if your project's layout differs, translate them to your structure — never reorganize the project to match the boilerplate.
 3. **Understand the provenance.** Read `reference/README.md`. The target git ref is the source of truth; `reference/target/` is its disposable projection. Available app-code paths are staged from both source and target refs so the executor can distinguish a boilerplate change from a project-specific delta. If a path is missing, the session contains ready-made `git show`, `git archive`, and `git clone` commands.
 4. **Follow the declared reference policy — never retype.** A `copy` path uses the target ref as its source of truth: copy the target projection verbatim and verify the diff. An `adapt` path requires a three-way comparison of project, source, and target: preserve project-specific deltas and apply only the source-to-target change. When the source projection is unavailable, preserve project behavior and use the target only as a reference. Manifest files (`package.json`, `pnpm-workspace.yaml`) are `adapt`, never `copy`.
 5. **Validate.** Run the intention's own validation first, then the global checks that exist in your project: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. Report a missing script as unavailable, not as passing. For boilerplate-owned files, the diff against the staged reference must be empty — or every remaining delta must be project-specific and named in your summary.
-6. **Record.** Only once validation passes, run `pnpm boilerplate upgrade record --id <id> --applied` (or `--skipped --reason "..."`). `boilerplate.json` remains the source of truth; the command checks the matching box in `upgrade-session.md` as a synchronized view. If that view cannot be updated after the state is saved, treat the warning as recoverable and do not retry the already-recorded outcome.
+6. **Record.** Only once validation passes, run `pnpm boilerplate upgrade record --id <id> --applied`. `boilerplate.json` remains the source of truth; the command checks the matching box in `upgrade-session.md` as a synchronized view. If that view cannot be updated after the state is saved, treat the warning as recoverable and do not retry the already-recorded outcome.
+
+For each intention the human marked **skip**, record only after confirmation:
+
+```bash
+pnpm boilerplate upgrade record --id <id> --skipped --reason "…"
+```
 
 Recorded outcomes look like this:
 
@@ -59,7 +86,7 @@ Recorded outcomes look like this:
 
 ## When to stop
 
-Stop — don't guess through — if a "Do not apply when" condition matches, if validation keeps failing, if there's unsafe ambiguity, or if applying the change would lose project-specific behavior. When the executor is an agent, stopping means writing a short blocked report to `.boilerstone/upgrade/blocked.md` (intention id, reason, failed checks, suggested next step) and handing back to a human — **without** recording the intention or changing `source.currentVersion`.
+Stop — don't guess through — if validation keeps failing, if there's unsafe ambiguity, if applying the change would lose project-specific behavior, or if a hard "Do not apply when" match needs a human call you have not yet confirmed. When the executor is an agent, stopping means writing a short blocked report to `.boilerstone/upgrade/blocked.md` (intention id, reason, failed checks, suggested next step) and handing back to a human — **without** recording the intention or changing `source.currentVersion`. Never auto-skip an intention whose Observable Gaps are still open just because the project is still on the old stack.
 
 ## Git discipline
 

@@ -11,7 +11,7 @@ For example, a project that does not use AI should not track the `ai` domain. Ev
 - Initial monorepo baseline: API, SPA, SSR frontend, documentation app, shared UI package, i18n package, OpenAPI generator, and schematics package.
 - Backend baseline: NestJS, MikroORM/PostgreSQL, Better Auth, email, file storage, AI helpers, monitoring/tracing, and example modules.
 - Frontend baseline: React applications, shared UI primitives, authentication screens, example feature flows, and generated API contracts.
-- Development baseline: PNPM workspace scripts, Docker Compose services, oxlint/oxfmt, Vitest, documentation tooling, and CI/CD templates.
+- Development baseline: PNPM workspace scripts, Docker Compose services, oxlint/oxfmt, Knip, Vitest, documentation tooling, and CI/CD templates.
 - Initial `.boilerstone/` upgrade system: state schema, CLI, docs, and tests.
 - `install.sh` lifecycle entry point: `init`, `onboard`, and `upgrade`.
 - Human-supervised AI workflow docs and shims for Claude Code and Cursor.
@@ -23,10 +23,11 @@ For example, a project that does not use AI should not track the `ai` domain. Ev
 
 - [`00-setup-boilerplate-tracking.md`](./00-setup-boilerplate-tracking.md) — `informational` · `tooling` — Document the bootstrap step that initializes boilerplate upgrade tracking in an existing project.
 - [`01-standardize-oxlint-oxfmt.md`](./01-standardize-oxlint-oxfmt.md) — `migration` · `tooling` — The project lints with `oxlint` and formats with `oxfmt`, exposed through the root `lint`, `lint:fix`, `fmt`, and `fmt:check` scripts.
-- [`02-align-dependency-baseline.md`](./02-align-dependency-baseline.md) — `migration` · `tooling` — The project's dependency _plumbing_ matches the v1.0.0 boilerplate: `engines`/`packageManager` pins and the pnpm catalogs mechanism. This intention changes **no dependency version** except the toolchain itself.
-- [`03-align-shared-dependency-versions.md`](./03-align-shared-dependency-versions.md) — `migration` · `tooling` — Every dependency family the project shares with the boilerplate is either raised to the boilerplate's tested version set, or explicitly pinned older in the project's catalogs with a named reason. — requires `v1.0.0/align-dependency-baseline`
-- [`04-migrate-mikro-orm-v7.md`](./04-migrate-mikro-orm-v7.md) — `migration` · `api` — The API project uses the MikroORM v7 baseline: v7 packages, `defineConfig` + `ReflectMetadataProvider` wiring, and the v7-compatible test database helper.
-- [`05-align-better-auth-mikro-orm-adapter.md`](./05-align-better-auth-mikro-orm-adapter.md) — `migration` · `auth` — The project's Better Auth integration uses the v1.0.0 MikroORM adapter baseline: the local `mikroOrmAdapter`, schema-codegen-aligned entities, and the reference adapter behavior. — requires `v1.0.0/migrate-mikro-orm-v7`
-- [`06-adopt-ai-module-baseline.md`](./06-adopt-ai-module-baseline.md) — `migration` · `ai` — A project that already ships AI features follows the v1.0.0 AI module baseline: module layout, rate limiting, and Langfuse tracing.
+- [`02-adopt-knip.md`](./02-adopt-knip.md) — `migration` · `tooling` — The project runs Knip for unused-file and unused-dependency detection via a root `knip` script, a committed `knip.json`, and a CI job that executes `pnpm knip`.
+- [`03-align-dependency-baseline.md`](./03-align-dependency-baseline.md) — `migration` · `tooling` — The project's dependency _plumbing_ matches the v1.0.0 boilerplate: `engines`/`packageManager` pins and the pnpm catalogs mechanism. This intention changes **no dependency version** except the toolchain itself.
+- [`04-align-shared-dependency-versions.md`](./04-align-shared-dependency-versions.md) — `migration` · `tooling` — Every dependency family the project shares with the boilerplate is either raised to the boilerplate's tested version set, or explicitly pinned older in the project's catalogs with a named reason. — requires `v1.0.0/align-dependency-baseline`
+- [`05-migrate-mikro-orm-v7.md`](./05-migrate-mikro-orm-v7.md) — `migration` · `api` — The API project uses the MikroORM v7 baseline: v7 packages, `defineConfig` + `ReflectMetadataProvider` wiring, and the v7-compatible test database helper.
+- [`06-align-better-auth-mikro-orm-adapter.md`](./06-align-better-auth-mikro-orm-adapter.md) — `migration` · `auth` — The project's Better Auth integration uses the v1.0.0 MikroORM adapter baseline: the local `mikroOrmAdapter`, schema-codegen-aligned entities, and the reference adapter behavior. — requires `v1.0.0/migrate-mikro-orm-v7`
+- [`07-adopt-ai-module-baseline.md`](./07-adopt-ai-module-baseline.md) — `migration` · `ai` — A project that already ships AI features follows the v1.0.0 AI module baseline: module layout, rate limiting, and Langfuse tracing.
 
 <!-- boilerstone:intentions:end -->
