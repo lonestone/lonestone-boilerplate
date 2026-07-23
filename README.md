@@ -86,7 +86,7 @@ pnpm boilerplate upgrade status
 pnpm boilerplate upgrade
 ```
 
-The upgrade command stages release intentions and references on a dedicated branch; it does not overwrite application code automatically. See the [Boilerstone overview](.boilerstone/README.md), [how it works](.boilerstone/docs/how-it-works.md), and the [upgrade runbook](.boilerstone/docs/upgrade-runbook.md) for the complete lifecycle.
+The upgrade command stages release intentions and references on a dedicated branch; it does not overwrite application code automatically. See [Boilerplate upgrades](apps/documentation/src/content/docs/explanations/7_boilerplate-upgrades.mdx) in the documentation app, or the [`.boilerstone/` overview](.boilerstone/README.md) and [upgrade runbook](.boilerstone/docs/upgrade-runbook.md).
 
 ### Prerequisites and manual setup
 
@@ -262,7 +262,7 @@ This documentation is also used by our custom cursor rules.
 - [Backend Guidelines](apps/documentation/src/content/docs/references/backend.mdx)
 - [API Readme](apps/api/README.md)
 - [Frontend Readme](apps/web-spa/README.md)
-- [Boilerplate upgrade system](.boilerstone/README.md) — keep a project in sync with this template (human or AI executed, removable)
+- [Boilerplate upgrades](apps/documentation/src/content/docs/explanations/7_boilerplate-upgrades.mdx) — keep a project in sync with this template ([`.boilerstone/` overview](.boilerstone/README.md) for maintainers)
 
 The `docs/features` directory should contain a list of folder for each new features. In those you can write specification document and TODO tasks for a feature you are implementing. Feature specifications can can also point toward README.md files inside the packages' features, that should provide more details about the implementation within the scope of the package.
 

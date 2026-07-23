@@ -26,6 +26,7 @@
 - [4_network-architecture.mdx](./src/content/docs/explanations/4_network-architecture.mdx) - Understanding the network architecture of the boilerplate
 - [5_orm.mdx](./src/content/docs/explanations/5_orm.mdx) - How to work with your DB
 - [6_database-migrations.mdx](./src/content/docs/explanations/6_database-migrations.mdx) - Understanding database migrations with MikroORM
+- [7_boilerplate-upgrades.mdx](./src/content/docs/explanations/7_boilerplate-upgrades.mdx) - How a generated project stays in sync with the Lonestone boilerplate over time
 
 ## Guides
 

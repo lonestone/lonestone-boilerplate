@@ -13,9 +13,14 @@ the inventory for that release's migration intentions.
 
 ## [Unreleased]
 
+### Added
+
+- Documentation app page [Boilerplate upgrades](apps/documentation/src/content/docs/explanations/7_boilerplate-upgrades.mdx) — consumer overview of Boilerstone, with a callout for maintainers.
+
 ### Changed
 
 - Rewrote the `.boilerstone/` documentation (README and `docs/`) in a clearer, more conversational style: shorter paragraphs, concrete examples, maintainer-only details marked as such, and stale status notes fixed (v1.0.0 is published with eight intentions). No behavior change; all commands, rules, and file names are unchanged.
+- Slimmed `.boilerstone/README.md` to a big-picture digest; onboarding and command details live in `docs/how-it-works.md`. Added a vocabulary block to the upgrade runbook, and a release checklist item to update those docs when CLI behavior changes.
 
 ### Changed
 
