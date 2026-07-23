@@ -177,6 +177,8 @@ Review the `upgrade path` output:
 - informational and no-migration entries are absent from the actionable path;
 - no intention has metadata warnings.
 
+If this release changed CLI command behavior, flags, safety rules, or the meaning of a term used in the docs, update the matching `.boilerstone/docs/` pages (`how-it-works.md`, `upgrade-runbook.md`, and the docs-app explanation page) in the same PR. The changelog entry is not enough — agents and humans execute from those runbooks.
+
 ## 7. Smoke test as a consumer
 
 Before tagging, create a temporary consumer project and run the lifecycle:

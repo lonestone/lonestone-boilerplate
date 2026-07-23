@@ -4,6 +4,19 @@ This is the procedure for applying a boilerplate upgrade to your project once `u
 
 When the executor is a program, prefer the `--json` flag on commands that accept it.
 
+## Definitions
+
+- **Intention** (migration intention): a markdown file that describes one bounded adaptation — goal, why, when it applies, what to change, how to validate.
+- **Publication**: a boilerplate release available locally (usually a fetched git tag under `refs/boilerstone/v*`).
+- **Domain**: an area of the stack an intention belongs to (`tooling`, `api`, `auth`, `ai`, …). Your project tracks a subset; intentions outside that subset are filtered out.
+- **Classification**: how actionable an intention is — `migration`, `breaking-manual`, `informational`, or `no-migration`.
+- **Executor**: whoever applies the intention — a human, or an AI agent supervised by a human.
+- **Producer / consumer**: the boilerplate repository publishes intentions (producer); a generated or onboarded project applies them (consumer).
+- **Workspace**: the disposable `.boilerstone/upgrade/` directory created by `prepare` — numbered intentions, reference files, and the session checklist.
+- **Projection**: a copy of selected files extracted from a source or target git ref into the workspace, so you can diff without checking out that ref.
+- **Provenance**: which git refs the workspace material came from, and whether each path is `copy` (target is truth) or `adapt` (keep project-specific deltas).
+- **Session**: `upgrade-session.md` — the checklist the executor works through.
+
 ## Before you start
 
 You need four things, and `upgrade status` checks the first three for you:
