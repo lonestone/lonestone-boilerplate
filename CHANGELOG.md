@@ -15,6 +15,10 @@ the inventory for that release's migration intentions.
 
 ### Changed
 
+- Rewrote the `.boilerstone/` documentation (README and `docs/`) in a clearer, more conversational style: shorter paragraphs, concrete examples, maintainer-only details marked as such, and stale status notes fixed (v1.0.0 is published with eight intentions). No behavior change; all commands, rules, and file names are unchanged.
+
+### Changed
+
 - Upgraded React Router from 7.18 to 8.3 across SPA, SSR, and the shared UI package; route `meta` and `useMatches` now use `loaderData` instead of the removed `data` field.
 - Refreshed workspace dependencies within current majors, including Better Auth 1.6.25, NestJS 11.1.28, React 19.2.8, Vercel AI SDK / `@ai-sdk/*`, Sentry 10.69, and frontend catalog packages (React Query, Tailwind, react-hook-form).
 - Pinned documentation Astro to 7.1.1 and overrode `cookie` to 1.1.1 so Express and Astro stay compatible under the hoisted pnpm layout.

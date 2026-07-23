@@ -1,34 +1,36 @@
-# `.boilerstone/` — Upgrade system
+# `.boilerstone/` — Boilerplate upgrade system
 
-This directory is the tool-agnostic home of the boilerplate upgrade system. A project created from this template diverges forever, so upstream changes cannot be merged as code. Instead, each release publishes **migration intentions** — the *meaning* of a change (goal, why, applicability, stop conditions) — and an executor (a human developer or an AI agent) replays that meaning in the consumer project as the smallest safe equivalent change.
+Once a project is generated from this boilerplate, the code is yours and it diverges immediately. That means upstream improvements can never be merged back as plain diffs — a diff would land on top of code that has moved on and clobber your work.
 
-Everything an executor needs lives here, in markdown and JSON, independent of which AI tool (if any) the team uses. Tool-specific entry points (e.g. `.claude/skills/boilerstone-upgrade/`, `.cursor/skills/boilerstone-upgrade/`) are thin shims pointing at this directory.
+So instead of diffs, each boilerplate release publishes **migration intentions**: short markdown files that say what changed, why, and how to tell whether it concerns your project. You (or an AI agent you supervise) read each intention and make the smallest equivalent change in your own code.
 
-The nominal workflow is human-in-the-loop: a developer pilots an agentic AI, and the agent uses the CLI, git, tests, and the migration intention files as tools. The system is optimized for that supervised agent flow, while staying readable enough for a human to execute manually when needed.
+Everything the system needs lives in this directory, as markdown and JSON. It doesn't depend on any particular AI tool: the `.claude/skills/boilerstone-*` and `.cursor/skills/boilerstone-*` directories are thin entry points that just point back here. The workflow we actually run day to day is a developer piloting an agent — the agent reads the intentions and edits, the developer reviews every commit — but you can execute an upgrade entirely by hand with the same documents.
 
-**New here?** Read [docs/how-it-works.md](./docs/how-it-works.md) — the philosophy and every command, in plain terms.
+Where to start:
 
-**Publishing a new boilerplate version?** Follow [docs/release-maintainer-runbook.md](./docs/release-maintainer-runbook.md) — the `boilerstone-release` skill (Claude Code / Cursor) pilots exactly that runbook. Do not rely on memory or a vague release summary.
+- **New here?** Read [docs/how-it-works.md](./docs/how-it-works.md). It explains why the system exists and walks through every command.
+- **Running an upgrade?** Follow [docs/upgrade-runbook.md](./docs/upgrade-runbook.md).
+- **Publishing a boilerplate release?** Follow [docs/release-maintainer-runbook.md](./docs/release-maintainer-runbook.md), not your memory. The `boilerstone-release` skill walks through that exact runbook.
 
-## Contents
-
-In the boilerplate repository, this directory contains both producer-side artifacts (published intentions, release helpers, tests) and consumer-side artifacts (local project state and upgrade runner):
+## What's in here
 
 ```
-boilerplate.json          # This project's state: source version/commit, applied/skipped intentions
+boilerplate.json          # This project's state: source version, applied/skipped intentions
 boilerplate.schema.json   # Schema for the state file
-cli/                      # CLI modules: tracking lifecycle, path resolution, preparation, commands
-docs/how-it-works.md      # Philosophy + each command, in plain terms (start here)
-docs/upgrade-runbook.md   # The execution procedure — same steps for humans and AI agents
-docs/release-maintainer-runbook.md # Maintainer procedure for creating a new release
-migration-intentions/     # Published intentions, one directory per release
+cli/                      # The upgrade CLI (and its tests, in the boilerplate repo)
+docs/how-it-works.md      # Why the system exists + what each command does (start here)
+docs/upgrade-runbook.md   # The upgrade procedure — same steps for humans and AI agents
+docs/release-maintainer-runbook.md # How to publish a new release (boilerplate repo only)
+migration-intentions/     # Published intentions, one directory per release (boilerplate repo only)
 ```
 
-When a new project runs `pnpm rock`, the setup script switches `.boilerstone/` to consumer mode: it keeps local tracking and the upgrade CLI runtime, but removes producer-only artifacts such as `migration-intentions/`, CLI tests/Vitest config, the release-maintainer runbook, and internal rollout docs. Published intentions are resolved from the boilerplate repository and git tags when an upgrade is prepared.
+In the boilerplate repository this directory carries both sides: the producer side (published intentions, release tooling, CLI tests, maintainer docs) and the consumer side (tracking state and the upgrade CLI). 
+
+When a new project runs `pnpm rock`, the setup script strips the producer side and keeps only what a consumer needs. From then on, published intentions come from the boilerplate's git tags, not from disk — so if you're in a generated project and don't see `migration-intentions/`, that's expected.
 
 ## Onboarding a project
 
-The installer at the repository root ([`install.sh`](../install.sh)) is the single entry point for the whole lifecycle. It needs only `git` and `pnpm` — no GitHub "Use this template", no third-party scaffolder. It resolves the latest published SemVer tag by default, then downloads that immutable repository snapshot with `git` (full clone for a new project, sparse-checkout for `.boilerstone/` alone).
+[`install.sh`](../install.sh) at the repository root is the single entry point for the whole lifecycle. It only needs `git` and `pnpm` — no GitHub "Use this template", no third-party scaffolder. By default it resolves the latest published release tag and downloads that exact snapshot: a full clone for a new project, a sparse checkout of `.boilerstone/` alone for onboarding.
 
 ```bash
 # Create a new project from scratch
@@ -42,17 +44,19 @@ curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/mai
 curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- upgrade 1.6.0
 ```
 
-`--ref latest` is the default. Pin a release with `--ref vX.Y.Z`; branch refs such as `main` are rejected so a generated or onboarded project never starts from unreleased code. Point at a fork/private repo with `BOILERPLATE_REPO=<url>`; that repository must publish compatible `vX.Y.Z` tags.
+`--ref latest` is the default; pin a release with `--ref vX.Y.Z`. Branch refs like `main` are deliberately rejected, so a project never starts from unreleased code. To use a fork or private mirror, set `BOILERPLATE_REPO=<url>` — that repository must publish the same kind of `vX.Y.Z` tags.
 
-- **`init`** clones the template and runs `pnpm rock` (the normal first-run setup).
-- **`onboard`** fetches `.boilerstone/` plus the `boilerstone-upgrade` skills, runs `bootstrap` (below), then offers to commit the onboarding (`[Y/n]`, default yes).
-- **`upgrade [version]`** runs `pnpm boilerplate upgrade --to <version|latest>` — auto-fetch and interactive selection are the defaults (with no terminal, the selection falls back to staging every intention). It fetches releases into `refs/boilerstone/`, resolves and selects before mutation, builds a temporary workspace, validates the target, then **creates a branch** `upgrade/v<current>-to-v<target>` and atomically publishes `.boilerstone/upgrade/` (numbered intentions + source/target projections + reference policy + session checklist). It refuses to overwrite an existing workspace. The target ref remains the source of truth. It does **not** touch your app code, commit, or push — applying the staged intentions is a separate, reviewable step (see the runbook).
+What each command does:
 
-`bootstrap` wires the root `package.json` (adds the `boilerplate` script and a `tsx` devDependency), ignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It is idempotent and never overwrites existing entries. It does **not** run `pnpm rock` (which renames packages and rewrites env/docker — safe only on a fresh template, destructive on an existing project).
+- **`init`** clones the template and runs `pnpm rock`, the normal first-run setup.
+- **`onboard`** fetches `.boilerstone/` and the `boilerstone-upgrade` skills into an existing project, runs `bootstrap` (below), then offers to commit the result (`[Y/n]`, default yes).
+- **`upgrade [version]`** runs `pnpm boilerplate upgrade --to <version|latest>`. It fetches the release, computes which intentions apply, and lets you pick among them interactively (without a terminal, everything is staged). Then it creates a branch named `upgrade/v<current>-to-v<target>` and publishes `.boilerstone/upgrade/` with the numbered intentions and reference files. It refuses to overwrite an existing workspace, and it never edits your app code, commits, or pushes — applying the staged intentions is a separate, reviewable step (the [runbook](./docs/upgrade-runbook.md)).
 
-> **Scope heads-up:** the v1.0.0 intentions are baseline catch-ups ("align with the v1.0.0 …") — broader than the narrow deltas later releases ship. When onboarding an older project, plan roughly one working session per intention.
+`bootstrap` wires up the project: it adds the `boilerplate` script and a `tsx` devDependency to the root `package.json`, gitignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes the tracking state. It's idempotent and never overwrites what's already there. One thing it deliberately does **not** do is run `pnpm rock` — that script renames packages and rewrites env/docker files, which is fine on a fresh template and destructive on a real project.
 
-Without the installer, the same two steps run by `onboard` are:
+> **Heads-up on v1.0.0:** its intentions are baseline catch-ups ("align with the v1.0.0 …"), much broader than the narrow deltas later releases ship. When onboarding an older project, budget roughly one working session per intention.
+
+If you'd rather not pipe a script from the internet, `onboard` boils down to two steps you can run yourself:
 
 ```bash
 git clone --depth 1 --filter=blob:none --sparse <repo> _bp && git -C _bp sparse-checkout set .boilerstone
@@ -75,15 +79,13 @@ pnpm boilerplate upgrade finish --to 1.6.0
 ```
 
 - **Human executor**: follow [docs/upgrade-runbook.md](./docs/upgrade-runbook.md).
-- **AI executor**: the Claude Code skill and Cursor skill `boilerstone-upgrade` follow the same runbook.
+- **AI executor**: the Claude Code and Cursor `boilerstone-upgrade` skills follow the same runbook.
 
-Path resolution has one interface across `upgrade path`, `prepare`, and `finish`. `path` is local-only unless `--fetch` requires a refresh; `prepare` refreshes `latest` when needed and treats `--fetch` as mandatory; `finish` is local-only and fails closed. Explicit unknown targets are always rejected.
-
-The consumer CLI owns the complete tracking-state lifecycle behind the `trackingState` interface in `cli/tracking-state.ts`: creation, parsing, normalization, schema-aligned validation, outcome recording, upgrade finalization, and persistence. Commands only translate its results and errors into CLI output. Tests for the CLI live in `cli/*.spec.ts` and run with the regular workspace test suite (`pnpm test`).
+If you want to know how the CLI is structured internally (path resolution, tracking-state lifecycle), that's covered in `docs/ai-upgrades-implementation.md` in the boilerplate repository. Tests live in `cli/*.spec.ts` and run with the regular `pnpm test`.
 
 ## Maintainer release checklist
 
-Before tagging a boilerplate release, follow [docs/release-maintainer-runbook.md](./docs/release-maintainer-runbook.md). Short version:
+Before tagging a boilerplate release, follow [docs/release-maintainer-runbook.md](./docs/release-maintainer-runbook.md). The short version:
 
 1. Pick the version and create `.boilerstone/migration-intentions/vX.Y.Z/`
 2. Inventory `git diff --name-status vPREVIOUS..HEAD`
@@ -98,7 +100,7 @@ Before tagging a boilerplate release, follow [docs/release-maintainer-runbook.md
 
 ## Detaching from the boilerplate
 
-This system is designed to be removable in one move. If your project no longer wants boilerplate upgrades:
+Leaving is cheap by design. If your project no longer wants boilerplate upgrades:
 
 1. `rm -rf .boilerstone`
 2. Remove the `boilerplate` script from the root `package.json`
@@ -110,4 +112,4 @@ Nothing else in the repository depends on this directory.
 
 ## Roadmap
 
-The longer-term intent is for this directory to also act as a **module registry** (à la shadcn): importing optional boilerplate modules (a storage module, an AI module, ...) into an existing project on demand, with the same philosophy — declared knowledge, local execution, easy removal. Not built yet; the upgrade system above is the first brick.
+Longer term we'd like this directory to also act as a module registry, shadcn-style: import an optional boilerplate module (storage, AI, …) into an existing project on demand, with the same philosophy — declared knowledge, local execution, easy removal. Not built yet; the upgrade system is the first brick.
