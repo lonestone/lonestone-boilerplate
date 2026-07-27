@@ -1,5 +1,7 @@
 # Contribution and release system — decisions and plan
 
+> Une version française existe : [SPEC.fr.md](./SPEC.fr.md). This file is the reference; keep both in sync when editing.
+
 Status: **agreed design, not yet built**. This document records every decision, its rationale, and how the pieces fit together. It exists so we never re-litigate a choice without new information.
 
 The system applies to **the boilerplate repository** and to **consumer projects** generated from it. Differences between the two are marked throughout and summarized in [Boilerplate vs consumer](#boilerplate-vs-consumer).
