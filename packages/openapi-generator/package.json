@@ -19,7 +19,7 @@
     "@hey-api/openapi-ts": "^0.91.1",
     "cross-env": "^10.1.0",
     "node-fetch": "^3.3.2",
-    "wait-on": "^9.0.10"
+    "wait-on": "^9.1.0"
   },
   "peerDependencies": {
     "zod": "catalog:validation"

@@ -17,11 +17,11 @@
     "@hookform/resolvers": "catalog:frontend",
     "@react-router/node": "catalog:frontend",
     "@react-router/serve": "catalog:frontend",
-    "@tanstack/query-core": "^5.101.2",
+    "@tanstack/query-core": "^5.101.4",
     "@tanstack/react-query": "catalog:frontend",
-    "isbot": "^5.1.44",
+    "isbot": "^5.2.1",
     "lucide-react": "^0.563.0",
-    "motion": "^12.42.2",
+    "motion": "^12.43.0",
     "react": "catalog:frontend",
     "react-dom": "catalog:frontend",
     "react-hook-form": "catalog:frontend",
@@ -37,7 +37,7 @@
     "tailwindcss": "catalog:frontend",
     "typescript": "catalog:build",
     "vite": "catalog:build",
-    "vite-plugin-devtools-json": "^1.0.0",
+    "vite-plugin-devtools-json": "^1.1.0",
     "vite-tsconfig-paths": "catalog:build"
   }
 }

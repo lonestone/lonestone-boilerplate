@@ -19,7 +19,7 @@
     "apps/api": {
       "entry": [
         "src/main.ts!",
-        "src/modules/auth/auth.cli.ts!",
+        "src/modules/auth/auth.cli.mts!",
         "src/modules/db/db.config.ts!",
         "src/modules/db/migrations/**/*.ts!",
         "src/seeders/**/*.ts!",
