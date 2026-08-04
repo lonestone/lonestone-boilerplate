@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Boilerplate Project State",
+  "description": "Tracks a consumer project's relationship to the boilerplate for AI-assisted upgrades",
+  "type": "object",
+  "required": ["schemaVersion", "source", "trackedDomains", "intentions"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "description": "Schema version for future compatibility",
+      "const": 1
+    },
+    "source": {
+      "type": "object",
+      "required": ["repository", "currentVersion"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Source boilerplate repository identifier",
+          "examples": ["lonestone/lonestone-boilerplate"]
+        },
+        "remote": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!.*```)[^\\u0000-\\u001F\\u007F]+$",
+          "description": "Git remote URL used to fetch boilerplate release tags in consumer projects",
+          "examples": ["https://github.com/lonestone/lonestone-boilerplate.git"]
+        },
+        "currentVersion": {
+          "type": "string",
+          "description": "Current tracked boilerplate version (SemVer)",
+          "pattern": "^v?\\d+\\.\\d+\\.\\d+$",
+          "examples": ["1.5.0", "v1.5.0"]
+        },
+        "commit": {
+          "type": "string",
+          "description": "Boilerplate git commit used to generate the project, when known",
+          "pattern": "^[a-f0-9]{7,40}$",
+          "examples": ["9fceb02f0a2b6f0d2cfb7f9c1a2d3e4f5a6b7c8d"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "trackedDomains": {
+      "type": "array",
+      "description": "Domains this project follows from the boilerplate. Known in this release: tooling, api, frontend, ci, docker-env, monitoring, email, auth, storage, ai. Domains introduced by newer releases are preserved by older CLIs with a warning.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "intentions": {
+      "type": "object",
+      "required": ["applied", "skipped"],
+      "properties": {
+        "applied": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "appliedAt"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Intention ID in canonical format `vX.Y.Z/slug`; legacy IDs without `v` are accepted on read and migrated on write",
+                "pattern": "^v?\\d+\\.\\d+\\.\\d+(/[a-z0-9-]+)+$"
+              },
+              "appliedAt": {
+                "type": "string",
+                "format": "date",
+                "description": "Date the intention was applied (YYYY-MM-DD)"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "reason"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Intention ID in canonical format `vX.Y.Z/slug`; legacy IDs without `v` are accepted on read and migrated on write",
+                "pattern": "^v?\\d+\\.\\d+\\.\\d+(/[a-z0-9-]+)+$"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Reason for skipping this intention",
+                "minLength": 10
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
