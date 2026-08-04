@@ -151,6 +151,9 @@
     "description": "Parcourez vos articles de blog",
     "searchPlaceholder": "Rechercher des articles...",
     "noPosts": "Aucun article trouvé",
+    "noResults": "Aucun résultat",
+    "noResultsDescription": "Aucun article ne correspond à « {{search}} ». Essayez une autre recherche.",
+    "emptyDescription": "Créez votre premier article pour commencer.",
     "createNew": "Créer un nouvel article",
     "showing": "Affichage",
     "to": "à",
@@ -164,6 +167,28 @@
       "creating": "Création...",
       "created": "Créé !",
       "error": "Une erreur s'est produite lors de la création de l'article"
+    },
+    "form": {
+      "title": "Titre",
+      "titlePlaceholder": "Entrez un titre accrocheur...",
+      "titleRequired": "Le titre est requis",
+      "titleMinLength": "Le titre doit contenir au moins 3 caractères",
+      "coverImage": "URL de l'image de couverture",
+      "coverImagePlaceholder": "https://images.example.com/cover.jpg",
+      "tags": "Tags",
+      "tagsPlaceholder": "Séparés par des virgules, ex. TypeScript, React",
+      "content": "Contenu",
+      "addContent": "Ajouter {{type}}",
+      "contentEmpty": "Aucun contenu pour l'instant. Utilisez les boutons ci-dessus pour en ajouter.",
+      "contentLabel": "Contenu {{type}}",
+      "contentRequired": "Le contenu {{type}} est requis",
+      "textPlaceholder": "Saisissez votre texte ici...",
+      "imagePlaceholder": "Entrez l'URL de l'image ou importez-en une...",
+      "videoPlaceholder": "Entrez l'URL de la vidéo (YouTube, Vimeo, etc.)",
+      "videoUrl": "URL de la vidéo :",
+      "imagePreviewAlt": "Aperçu",
+      "save": "Enregistrer l'article",
+      "saving": "Enregistrement..."
     }
   },
   "profile": {
@@ -176,5 +201,13 @@
     "verified": "Vérifié",
     "unverified": "Non vérifié",
     "userId": "ID utilisateur"
+  },
+  "errorCodes": {
+    "PASSWORDS_DO_NOT_MATCH": "Les mots de passe ne correspondent pas"
+  },
+  "common": {
+    "user": "Utilisateur",
+    "active": "Actif",
+    "error": "Erreur"
   }
 }

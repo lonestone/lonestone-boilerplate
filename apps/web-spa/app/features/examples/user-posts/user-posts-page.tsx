@@ -180,11 +180,11 @@ export default function PostsListPage() {
       ) : (
         <EmptyState
           icon={<FileText className="size-6 text-muted-foreground" />}
-          title={searchValue ? 'No results found' : t('posts.noPosts')}
+          title={searchValue ? t('posts.noResults') : t('posts.noPosts')}
           description={
             searchValue
-              ? `No posts match "${searchValue}". Try a different search.`
-              : 'Create your first post to get started.'
+              ? t('posts.noResultsDescription', { search: searchValue })
+              : t('posts.emptyDescription')
           }
           action={
             !searchValue

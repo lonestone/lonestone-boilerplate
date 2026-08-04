@@ -1,3 +1,4 @@
+import type { SupportedLocale } from '@boilerstone/i18n/config'
 import { SUPPORTED_LOCALES } from '@boilerstone/i18n/config'
 import { AppLayout, AppLayoutHeader, AppLoader } from '@boilerstone/ui/components/app'
 import {
@@ -61,18 +62,15 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
     navigate('/login')
   }
 
-  const handleLanguageChange = (locale: string) => {
-    const localeConfig = SUPPORTED_LOCALES[locale as keyof typeof SUPPORTED_LOCALES]
-    if (localeConfig) {
-      setLanguage(localeConfig.defaultLocale)
-    }
+  const handleLanguageChange = (locale: SupportedLocale) => {
+    setLanguage(locale)
   }
 
   const handleThemeToggle = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
   }
 
-  const userName = sessionData?.user?.name ?? sessionData?.user?.email ?? 'User'
+  const userName = sessionData?.user?.name ?? sessionData?.user?.email ?? t('common.user')
   const userInitials = userName
     .split(' ')
     .map((n: string) => n[0])
@@ -226,16 +224,21 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
                     <span>{t('dashboard.language')}</span>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
-                    {Object.entries(SUPPORTED_LOCALES).map(([key, config]) => (
-                      <DropdownMenuItem key={key} onClick={() => handleLanguageChange(key)}>
-                        <span>
-                          {config.flag} {config.name}
-                        </span>
-                        {i18n.language === config.defaultLocale && (
-                          <span className="ml-auto text-[10px] text-muted-foreground">Active</span>
-                        )}
-                      </DropdownMenuItem>
-                    ))}
+                    {(Object.keys(SUPPORTED_LOCALES) as SupportedLocale[]).map((key) => {
+                      const config = SUPPORTED_LOCALES[key]
+                      return (
+                        <DropdownMenuItem key={key} onClick={() => handleLanguageChange(key)}>
+                          <span>
+                            {config.flag} {config.name}
+                          </span>
+                          {i18n.language === key && (
+                            <span className="ml-auto text-[10px] text-muted-foreground">
+                              {t('common.active')}
+                            </span>
+                          )}
+                        </DropdownMenuItem>
+                      )
+                    })}
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
 
@@ -258,10 +261,8 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
 }
 
 export default function DashboardPage() {
-  const { i18n } = useTranslation()
   const { data: sessionData, isPending } = authClient.useSession()
   const navigate = useNavigate()
-  const { language } = useI18nStore()
   const [commandOpen, setCommandOpen] = useState(false)
 
   useEffect(() => {
@@ -269,12 +270,6 @@ export default function DashboardPage() {
       navigate('/login')
     }
   }, [sessionData, navigate, isPending])
-
-  useEffect(() => {
-    if (language && i18n.language !== language) {
-      i18n.changeLanguage(language)
-    }
-  }, [language, i18n])
 
   // Global ⌘K / Ctrl+K listener
   useEffect(() => {

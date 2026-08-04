@@ -5,6 +5,7 @@ import { cn } from '@boilerstone/ui/lib/utils'
 import { Image, Loader2, MoveDown, MoveUp, Plus, Trash2, Type, Video, X } from 'lucide-react'
 import { useState } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 
 interface PostContentItem {
   type: 'text' | 'image' | 'video'
@@ -29,6 +30,7 @@ export default function UserPostForm({
   initialData,
   isSubmitting = false,
 }: UserPostFormProps) {
+  const { t } = useTranslation()
   const [activeContentType, setActiveContentType] = useState<'text' | 'image' | 'video'>('text')
 
   const {
@@ -57,8 +59,6 @@ export default function UserPostForm({
         coverImage: data.coverImage?.trim() ? data.coverImage.trim() : undefined,
         tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
       })
-      // Optionally reset the form after successful submission
-      // reset();
     } catch (error) {
       console.error('Error submitting form:', error)
     }
@@ -71,44 +71,41 @@ export default function UserPostForm({
   return (
     <div className="space-y-8 max-w-3xl">
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-        {/* Title Input */}
         <div className="space-y-2">
           <label htmlFor="title" className="block text-sm font-medium">
-            Title
+            {t('posts.form.title')}
           </label>
           <Input
             id="title"
-            placeholder="Enter a captivating title..."
+            placeholder={t('posts.form.titlePlaceholder')}
             className="w-full"
             {...register('title', {
-              required: 'Title is required',
+              required: t('posts.form.titleRequired'),
               minLength: {
                 value: 3,
-                message: 'Title must be at least 3 characters',
+                message: t('posts.form.titleMinLength'),
               },
             })}
           />
           {errors.title && <p className="text-sm text-destructive mt-1">{errors.title.message}</p>}
         </div>
 
-        {/* Cover image */}
         <div className="space-y-2">
           <label htmlFor="coverImage" className="block text-sm font-medium">
-            Cover image URL
+            {t('posts.form.coverImage')}
           </label>
           <Input
             id="coverImage"
             type="url"
-            placeholder="https://images.example.com/cover.jpg"
+            placeholder={t('posts.form.coverImagePlaceholder')}
             className="w-full"
             {...register('coverImage')}
           />
         </div>
 
-        {/* Tags */}
         <div className="space-y-2">
           <label htmlFor="tags" className="block text-sm font-medium">
-            Tags
+            {t('posts.form.tags')}
           </label>
           <Controller
             control={control}
@@ -116,7 +113,7 @@ export default function UserPostForm({
             render={({ field }) => (
               <Input
                 id="tags"
-                placeholder="Comma-separated, e.g. TypeScript, React"
+                placeholder={t('posts.form.tagsPlaceholder')}
                 className="w-full"
                 value={(field.value ?? []).join(', ')}
                 onChange={(event) =>
@@ -132,10 +129,9 @@ export default function UserPostForm({
           />
         </div>
 
-        {/* Content Items */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <label className="block text-sm font-medium">Content</label>
+            <label className="block text-sm font-medium">{t('posts.form.content')}</label>
             <div className="flex items-center space-x-2">
               <div className="bg-muted rounded-md p-1 flex">
                 <button
@@ -183,16 +179,14 @@ export default function UserPostForm({
                 className="flex items-center gap-1"
               >
                 <Plus className="size-3.5" />
-                Add {activeContentType}
+                {t('posts.form.addContent', { type: activeContentType })}
               </Button>
             </div>
           </div>
 
           {fields.length === 0 && (
             <div className="text-center py-8 border border-dashed rounded-md">
-              <p className="text-muted-foreground">
-                No content added yet. Use the buttons above to add content.
-              </p>
+              <p className="text-muted-foreground">{t('posts.form.contentEmpty')}</p>
             </div>
           )}
 
@@ -237,7 +231,9 @@ export default function UserPostForm({
                   {field.type === 'text' && <Type className="size-4" />}
                   {field.type === 'image' && <Image className="size-4" />}
                   {field.type === 'video' && <Video className="size-4" />}
-                  <span className="text-sm font-medium capitalize">{field.type} Content</span>
+                  <span className="text-sm font-medium capitalize">
+                    {t('posts.form.contentLabel', { type: field.type })}
+                  </span>
                 </div>
 
                 <Controller
@@ -249,14 +245,16 @@ export default function UserPostForm({
                 <Controller
                   control={control}
                   name={`content.${index}.data`}
-                  rules={{ required: `${field.type} content is required` }}
+                  rules={{
+                    required: t('posts.form.contentRequired', { type: field.type }),
+                  }}
                   render={({ field: controllerField, fieldState }) => (
                     <div>
                       {field.type === 'text' && (
                         <div className="space-y-1">
                           <textarea
                             {...controllerField}
-                            placeholder="Enter your text content here..."
+                            placeholder={t('posts.form.textPlaceholder')}
                             className={cn(
                               'border-input placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground flex w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm min-h-[120px] resize-y',
                               'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
@@ -274,7 +272,7 @@ export default function UserPostForm({
                         <div className="space-y-1">
                           <Input
                             {...controllerField}
-                            placeholder="Enter image URL or upload..."
+                            placeholder={t('posts.form.imagePlaceholder')}
                             className={cn(fieldState.error && 'border-destructive')}
                           />
                           {fieldState.error && (
@@ -284,7 +282,7 @@ export default function UserPostForm({
                             <div className="mt-2 relative rounded-md overflow-hidden border">
                               <img
                                 src={controllerField.value}
-                                alt="Preview"
+                                alt={t('posts.form.imagePreviewAlt')}
                                 className="max-h-[200px] w-full object-cover"
                                 onError={(e) => {
                                   e.currentTarget.src =
@@ -309,7 +307,7 @@ export default function UserPostForm({
                         <div className="space-y-1">
                           <Input
                             {...controllerField}
-                            placeholder="Enter video URL (YouTube, Vimeo, etc.)"
+                            placeholder={t('posts.form.videoPlaceholder')}
                             className={cn(fieldState.error && 'border-destructive')}
                           />
                           {fieldState.error && (
@@ -318,8 +316,7 @@ export default function UserPostForm({
                           {controllerField.value && (
                             <div className="mt-2 p-2 bg-muted/50 rounded-md">
                               <p className="text-sm">
-                                Video URL:
-                                {controllerField.value}
+                                {t('posts.form.videoUrl')} {controllerField.value}
                               </p>
                             </div>
                           )}
@@ -333,16 +330,15 @@ export default function UserPostForm({
           </div>
         </div>
 
-        {/* Submit Button */}
         <div className="pt-4">
           <Button type="submit" className="w-full" disabled={isSubmitting} id="button">
             {isSubmitting ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="size-4 animate-spin" />
-                Saving post...
+                {t('posts.form.saving')}
               </span>
             ) : (
-              'Save Post'
+              t('posts.form.save')
             )}
           </Button>
         </div>
@@ -362,7 +358,6 @@ export function UserPostFormSkeleton() {
       <div className="space-y-2">
         <Skeleton className="h-6 w-40" />
         <div className="space-y-4">
-          {/* Skeleton for content items */}
           {Array.from({ length: 1 }).map((_, index) => (
             // oxlint-disable-next-line react/no-array-index-key
             <div key={`skeleton-${index}`} className="space-y-2 border rounded-md p-4">
@@ -375,11 +370,9 @@ export function UserPostFormSkeleton() {
           ))}
         </div>
 
-        {/* Add content button skeleton */}
         <Skeleton className="h-10 w-40 mt-4" />
       </div>
 
-      {/* Submit button skeleton */}
       <div className="flex justify-end">
         <Skeleton className="h-10 w-32" />
       </div>
