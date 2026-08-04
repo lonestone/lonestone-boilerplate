@@ -18,6 +18,14 @@ the inventory for that release's migration intentions.
 - Upgraded workspace dependencies (`pnpm upgrade -r`), including TypeScript 6.0.3, Better Auth 1.6.25, and related frontend/tooling packages.
 - Pinned documentation Astro to 7.1.1 and overrode `cookie` to 1.1.1 so Express and Astro stay compatible under the hoisted pnpm layout.
 
+#### Frontend
+
+- Unify `@boilerstone/i18n` around language keys `en`|`fr`, with localStorage persistence and a cookie mirror for future SSR.
+
+### Migration
+
+- Consumers using BCP-47 values (`fr-FR`, `en-GB`) or `defaultLocale` with i18next/`setLanguage` must migrate to language keys and `htmlLang` metadata; legacy cookie/localStorage values are normalized on read.
+
 ### Fixed
 
 - `install.sh` no longer aborts under `set -e` when `/dev/tty` is unavailable (Linux CI / non-interactive runs).
