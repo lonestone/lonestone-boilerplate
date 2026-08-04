@@ -115,7 +115,7 @@ resolve_release_ref() {
 offer_onboard_commit() {
   git rev-parse --git-dir >/dev/null 2>&1 || { info "Not a git repository — skipping commit"; return 0; }
   answer=""
-  if : </dev/tty 2>/dev/null; then
+  if can_read_tty; then
     printf '%b' "${C_CYAN}→${C_RESET} Commit the onboarding now? [Y/n] "
     read -r answer </dev/tty || answer=""
   fi
@@ -139,7 +139,7 @@ offer_onboard_commit() {
   # the vendored CLI). Onboarding itself succeeded — offer the bypass, don't fail.
   info "Commit was rejected (pre-commit hooks?). The onboarding files are staged."
   answer=""
-  if : </dev/tty 2>/dev/null; then
+  if can_read_tty; then
     printf '%b' "${C_CYAN}→${C_RESET} Retry with --no-verify? [y/N] "
     read -r answer </dev/tty || answer=""
   fi
@@ -154,10 +154,16 @@ offer_onboard_commit() {
   esac
 }
 
+# True when /dev/tty can be opened for reading. Probe in a subshell so a failed
+# open cannot abort the script under `set -e` (dash on Linux CI has no usable tty).
+can_read_tty() {
+  (exec </dev/tty) >/dev/null 2>&1
+}
+
 # Run an interactive command with stdin attached to the terminal when available,
 # so prompts work even when this script itself is being piped from `curl | sh`.
 run_tty() {
-  if : </dev/tty 2>/dev/null; then
+  if can_read_tty; then
     "$@" </dev/tty
   else
     "$@"
