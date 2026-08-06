@@ -7,11 +7,10 @@ import {
   TypedParam,
   TypedRoute,
 } from '@lonestone/nzoth/server'
-import { HttpCode, Param, UseGuards } from '@nestjs/common'
+import { HttpCode, Param } from '@nestjs/common'
+import { AllowAnonymous, Session } from '@thallesp/nestjs-better-auth'
 import { z } from 'zod'
 import { LoggedInBetterAuthSession } from '../../auth/auth.config'
-import { Session } from '../../auth/auth.decorator'
-import { AuthGuard } from '../../auth/auth.guard'
 import {
   CreatePostInput,
   createPostSchema,
@@ -36,7 +35,6 @@ import { PostService } from './posts.service'
 @TypedController('admin/posts', undefined, {
   tags: ['Admin Posts'],
 })
-@UseGuards(AuthGuard)
 export class PostController {
   constructor(
     private readonly postService: PostService,
@@ -101,6 +99,7 @@ export class PostController {
   }
 }
 
+@AllowAnonymous()
 @TypedController('public/posts', undefined, {
   tags: ['Public Posts'],
 })
@@ -141,6 +140,7 @@ export class PublicPostController {
   }
 }
 
+@AllowAnonymous()
 @TypedController('public/authors', undefined, {
   tags: ['Public Authors'],
 })

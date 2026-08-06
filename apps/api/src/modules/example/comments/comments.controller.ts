@@ -7,10 +7,8 @@ import {
   TypedParam,
   TypedRoute,
 } from '@lonestone/nzoth/server'
-import { Optional, UseGuards } from '@nestjs/common'
+import { AllowAnonymous, OptionalAuth, Session } from '@thallesp/nestjs-better-auth'
 import { z } from 'zod'
-import { Session } from '../../auth/auth.decorator'
-import { AuthGuard } from '../../auth/auth.guard'
 import { CommentsMapper } from './comments.mapper'
 import { CommentsService } from './comments.service'
 import {
@@ -40,17 +38,19 @@ export class CommentsController {
     private readonly commentsMapper: CommentsMapper,
   ) {}
 
+  @OptionalAuth()
   @TypedRoute.Post('', commentSchema)
   async createComment(
     @TypedParam('postSlug', z.string()) postSlug: string,
     @TypedBody(createCommentSchema) body: CreateCommentInput,
-    @Optional() @Session() session?: { user: { id: string } },
+    @Session() session?: { user: { id: string } },
   ): Promise<CommentResponse> {
     const userId = session?.user?.id
     const comment = await this.commentsService.createComment(postSlug, body, userId)
     return this.commentsMapper.toComment(comment)
   }
 
+  @AllowAnonymous()
   @TypedRoute.Get('', commentsSchema)
   async getComments(
     @TypedParam('postSlug', z.string()) postSlug: string,
@@ -62,12 +62,14 @@ export class CommentsController {
     return this.commentsMapper.toCommentsResponse(result)
   }
 
+  @AllowAnonymous()
   @TypedRoute.Get('count')
   async getCommentCount(@TypedParam('postSlug', z.string()) postSlug: string) {
     const count = await this.commentsService.getCommentCount(postSlug)
     return { count }
   }
 
+  @AllowAnonymous()
   @TypedRoute.Get(':commentId/replies', commentsSchema)
   async getCommentReplies(
     @TypedParam('commentId', z.string()) commentId: string,
@@ -79,7 +81,6 @@ export class CommentsController {
   }
 
   @TypedRoute.Delete(':commentId')
-  @UseGuards(AuthGuard)
   async deleteComment(
     @TypedParam('commentId', z.string()) commentId: string,
     @Session() session: { user: { id: string } },

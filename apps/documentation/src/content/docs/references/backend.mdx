@@ -252,18 +252,32 @@ export class User {
 
 ## Authentication & Authorization
 
-- Use Better Auth for authentication
-- Use guards for protecting routes
-- Use decorators for role-based access control
-- Validate user permissions in services
+- Use Better Auth for authentication via `@thallesp/nestjs-better-auth`
+- Routes are protected by a **global** `AuthGuard` — mark public routes with `@AllowAnonymous()`, optional auth with `@OptionalAuth()`
+- Use `@Session()` to access the current session; use `@Roles()` / `@OrgRoles()` for plugin-based RBAC
+- Validate user permissions in services when business rules go beyond role metadata
 
 Example:
 
 ```typescript
+import { AllowAnonymous, Session } from '@thallesp/nestjs-better-auth'
+import { LoggedInBetterAuthSession } from '../../auth/auth.config'
+
 @Controller('admin/users')
-@UseGuards(AuthGuard)
 export class UserController {
-  // Protected endpoints
+  @Get('me')
+  getMe(@Session() session: LoggedInBetterAuthSession) {
+    return session.user
+  }
+}
+
+@AllowAnonymous()
+@Controller('public')
+export class PublicController {
+  @Get('health')
+  health() {
+    return { ok: true }
+  }
 }
 ```
 

@@ -8,6 +8,8 @@ strictPeerDependencies: true
 peerDependencyRules:
   allowedVersions:
     typescript: '6'
+    # @thallesp/nestjs-better-auth peers express@5; Nest API still runs on Express 4
+    express: '4'
 # cookie@1 keeps Express (parse/serialize) and Astro <=7.1.1 (parseCookie) compatible under shamefully-hoist
 overrides:
   cookie: 1.1.1

@@ -18,6 +18,8 @@ async function bootstrap() {
   // Initialize telemetry
   initialiazeTelemetry()
 
+  // bodyParser must be false so Better Auth (@thallesp/nestjs-better-auth) can
+  // handle the raw body on /api/auth and re-add JSON parsers for other routes.
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
   })
@@ -32,17 +34,14 @@ async function bootstrap() {
   // Registering custom exception filter for the Nzoth package
   app.useGlobalFilters(new ZodValidationExceptionFilter(), new ZodSerializationExceptionFilter())
 
+  // Stripe webhooks need the raw body for signature verification.
+  // AuthModule enables req.rawBody via bodyParser.rawBody; this early middleware
+  // keeps express.raw for the webhook path when a Stripe handler is added.
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    // If is routes of better auth, next
-    if (req.originalUrl.startsWith(`${PREFIX}/auth`)) {
-      return next()
-    }
-    // If is stripe webhook, we need the raw body
     if (req.originalUrl.startsWith(`${PREFIX}/stripe/webhook`)) {
       return express.raw({ type: 'application/json' })(req, res, next)
     }
-    // Else, apply the express json middleware
-    express.json()(req, res, next)
+    next()
   })
 
   app.enableCors({
