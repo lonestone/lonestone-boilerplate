@@ -360,10 +360,14 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
   )
 }
 
-export function meta({ data }: Route.MetaArgs) {
+export function meta({ loaderData }: Route.MetaArgs) {
   return [
-    { title: data.post?.title ? `${data.post.title} — Lonestone` : 'Article — Lonestone' },
-    { property: 'og:title', content: data.post?.title },
-    { name: 'description', content: data.post?.title },
+    {
+      title: loaderData.post?.title
+        ? `${loaderData.post.title} — Lonestone`
+        : 'Article — Lonestone',
+    },
+    { property: 'og:title', content: loaderData.post?.title },
+    { name: 'description', content: loaderData.post?.title },
   ]
 }

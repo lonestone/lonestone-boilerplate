@@ -6,7 +6,7 @@ function useDehydratedState(): DehydratedState {
 
   const dehydratedStates = matches
     .map((match) => {
-      const matchData = match.data as { dehydratedState?: DehydratedState }
+      const matchData = match.loaderData as { dehydratedState?: DehydratedState } | undefined
       return matchData?.dehydratedState
     })
     .filter((state): state is DehydratedState => state !== undefined)

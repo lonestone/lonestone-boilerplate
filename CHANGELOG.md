@@ -15,6 +15,7 @@ the inventory for that release's migration intentions.
 
 ### Changed
 
+- Upgraded React Router from 7.18 to 8.3 across SPA, SSR, and the shared UI package; route `meta` and `useMatches` now use `loaderData` instead of the removed `data` field.
 - Upgraded workspace dependencies (`pnpm upgrade -r`), including TypeScript 6.0.3, Better Auth 1.6.25, and related frontend/tooling packages.
 - Pinned documentation Astro to 7.1.1 and overrode `cookie` to 1.1.1 so Express and Astro stay compatible under the hoisted pnpm layout.
 

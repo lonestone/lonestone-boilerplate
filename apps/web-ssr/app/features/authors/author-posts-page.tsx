@@ -141,8 +141,9 @@ export default function AuthorPostsPage({ loaderData }: Route.ComponentProps) {
   )
 }
 
-export function meta({ data }: Route.MetaArgs) {
-  const authorName = data.authorPosts?.data[0]?.author.name ?? data.authorSlug
+export function meta({ loaderData }: Route.MetaArgs) {
+  const authorName =
+    loaderData.authorPosts?.data[0]?.author.name ?? loaderData.authorSlug
   return [
     { title: `${authorName} — Lonestone Journal` },
     { property: 'og:title', content: `Articles by ${authorName}` },
