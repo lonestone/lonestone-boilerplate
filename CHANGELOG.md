@@ -13,6 +13,15 @@ the inventory for that release's migration intentions.
 
 ## [Unreleased]
 
+### Changed
+
+- Upgraded workspace dependencies (`pnpm upgrade -r`), including TypeScript 6.0.3, Better Auth 1.6.25, and related frontend/tooling packages.
+- Pinned documentation Astro to 7.1.1 and overrode `cookie` to 1.1.1 so Express and Astro stay compatible under the hoisted pnpm layout.
+
+### Fixed
+
+- `install.sh` no longer aborts under `set -e` when `/dev/tty` is unavailable (Linux CI / non-interactive runs).
+
 ## [1.0.0] - 2026-07-20
 
 ### Added

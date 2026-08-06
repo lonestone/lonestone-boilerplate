@@ -60,7 +60,7 @@
     "check-translations": "tsx ./src/i18n-sync.ts"
   },
   "dependencies": {
-    "glob": "^13.0.0",
+    "glob": "^13.0.6",
     "i18next": "catalog:frontend",
     "persist-and-sync": "^1.2.3",
     "react-i18next": "catalog:frontend"
@@ -68,7 +68,7 @@
   "devDependencies": {
     "@types/node": "catalog:build",
     "@types/react": "catalog:frontend",
-    "tsx": "^4.21.0",
+    "tsx": "^4.23.5",
     "typescript": "catalog:build"
   }
 }

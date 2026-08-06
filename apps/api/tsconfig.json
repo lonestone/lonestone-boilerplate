@@ -5,6 +5,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "baseUrl": "./",
+    "ignoreDeprecations": "6.0",
     "moduleResolution": "nodenext",
     "resolveJsonModule": true,
     "types": ["node", "vitest/globals"],

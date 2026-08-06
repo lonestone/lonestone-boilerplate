@@ -6,6 +6,7 @@
     "baseUrl": ".",
     "paths": {
       "@boilerstone/*": ["packages/*/src"]
-    }
+    },
+    "ignoreDeprecations": "6.0"
   }
 }
