@@ -13,14 +13,30 @@ the inventory for that release's migration intentions.
 
 ## [Unreleased]
 
+### Added
+
+- NestJS Better Auth integration via `@thallesp/nestjs-better-auth` (global `AuthGuard`, `@AllowAnonymous` / `@OptionalAuth` / `@Session`, hooks, MikroORM `RequestContext` middleware option).
+
 ### Changed
 
 - Upgraded workspace dependencies (`pnpm upgrade -r`), including TypeScript 6.0.3, Better Auth 1.6.25, and related frontend/tooling packages.
 - Pinned documentation Astro to 7.1.1 and overrode `cookie` to 1.1.1 so Express and Astro stay compatible under the hoisted pnpm layout.
+- Auth Nest wiring is now a thin `AuthModule` façade over `@thallesp/nestjs-better-auth` `forRootAsync`; routes are protected by default (global guard). Public example routes are annotated with `@AllowAnonymous()` / `@OptionalAuth()`.
+- Allowed Express 4 as a peer of `@thallesp/nestjs-better-auth` (library peers Express 5) via `pnpm-workspace.yaml` `peerDependencyRules`.
+
+### Removed
+
+- Local Nest auth glue: `auth.guard.ts`, `auth.decorator.ts`, `auth.definition.ts`, and `auth.service.ts` (replaced by the community package exports).
 
 ### Fixed
 
 - `install.sh` no longer aborts under `set -e` when `/dev/tty` is unavailable (Linux CI / non-interactive runs).
+
+### Migration
+
+- Projects that still use the hand-rolled Nest Better Auth module/guard/decorators should switch to `@thallesp/nestjs-better-auth`: keep `createBetterAuth()`, the MikroORM adapter, and entities; replace Nest glue with `AuthModule.forRootAsync`; mark public routes with `@AllowAnonymous()` / `@OptionalAuth()`; update imports of `@Session` / `AuthService` / `AuthGuard` from the package.
+- E2E helpers must mock `auth.api.getSession` (the library `AuthGuard` reads module options, not a local `AuthService`).
+- A formal Boilerstone migration intention will be added when this lands in a stamped release (`vX.Y.Z`).
 
 ## [1.0.0] - 2026-07-20
 
