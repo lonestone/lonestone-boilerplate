@@ -61,7 +61,6 @@
     "test": "vitest run --config=vitest.config.ts"
   },
   "dependencies": {
-    "glob": "^13.0.6",
     "i18next": "catalog:frontend",
     "persist-and-sync": "^1.2.3",
     "react-i18next": "catalog:frontend",

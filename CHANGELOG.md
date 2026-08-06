@@ -29,6 +29,7 @@ the inventory for that release's migration intentions.
 ### Fixed
 
 - `install.sh` no longer aborts under `set -e` when `/dev/tty` is unavailable (Linux CI / non-interactive runs).
+- i18n translation check, Knip, Oxlint, and Oxfmt ignore `.worktrees/` so local git worktree checkouts do not break tooling.
 
 ## [1.0.0] - 2026-07-20
 

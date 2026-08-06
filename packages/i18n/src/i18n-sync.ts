@@ -219,7 +219,15 @@ async function checkTranslationsForDirectory(localesDir: string): Promise<CheckR
 
 function collectLocalesDirectories(rootDir: string): string[] {
   const found = new Set<string>()
-  const ignoredDirNames = new Set(['node_modules', 'dist', 'build', '.git', '.turbo', 'coverage'])
+  const ignoredDirNames = new Set([
+    'node_modules',
+    'dist',
+    'build',
+    '.git',
+    '.turbo',
+    'coverage',
+    '.worktrees',
+  ])
 
   function walk(currentDir: string) {
     let entries: fs.Dirent[]
