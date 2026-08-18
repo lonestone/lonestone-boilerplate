@@ -13,6 +13,10 @@ the inventory for that release's migration intentions.
 
 ## [Unreleased]
 
+### Added
+
+- Documented a whole-repo code and maintainability audit under `docs/features/code-maintainability-audit/`.
+
 ### Changed
 
 - Upgraded workspace dependencies (`pnpm upgrade -r`), including TypeScript 6.0.3, Better Auth 1.6.25, and related frontend/tooling packages.
