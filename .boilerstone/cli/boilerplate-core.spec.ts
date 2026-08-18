@@ -838,11 +838,17 @@ describe('resolveUpgradePath', () => {
         publicationPolicy: 'refresh-if-needed',
       })
 
-      expect(result.path.intentions.map((intention) => intention.id)).toEqual(['v1.0.0/pending'])
+      expect(result.path.intentions.map((intention) => intention.id)).toEqual([
+        'v1.0.0/pending',
+        'v1.1.0/adopt-typescript-6',
+        'v1.1.0/align-shared-dependency-versions',
+        'v1.1.0/pin-cookie-override-for-hoist',
+        'v1.1.0/point-knip-at-auth-cli-mts',
+      ])
       expect(result.path.alreadyResolvedCount).toBe(2)
-      expect(result.branchName).toBe('upgrade/v0.0.0-to-v1.0.0')
-      expect(result.targetRelease.version).toBe('1.0.0')
-      expect(result.targetReference.provenance).toBe('consumer-ref')
+      expect(result.branchName).toBe('upgrade/v0.0.0-to-v1.1.0')
+      expect(result.targetRelease.version).toBe('1.1.0')
+      expect(result.targetReference.provenance).toBe('producer-draft')
       expect(result.state?.trackedDomains).toEqual(['tooling'])
       expect(result.state?.intentions.applied[0]?.id).toBe('v1.0.0/already-applied')
       expect(result.warnings).toEqual([])
@@ -1430,10 +1436,10 @@ describe('boilerplate CLI smoke', () => {
         )}\n`,
       )
 
-      const finish = runCli(['upgrade', 'finish', '--project', projectPath, '--to', '1.1.0'])
+      const finish = runCli(['upgrade', 'finish', '--project', projectPath, '--to', '1.99.0'])
 
       expect(finish.status).toBe(1)
-      expect(finish.stderr).toContain('release v1.1.0 is not available locally')
+      expect(finish.stderr).toContain('release v1.99.0 is not available locally')
       expect(finish.stderr).toContain('refs/boilerstone/v*')
       const state = JSON.parse(
         readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8'),
@@ -1745,7 +1751,8 @@ describe('boilerplate CLI smoke', () => {
       expect(result.status).toBe(0)
       const payload = JSON.parse(result.stdout)
       // latest must resolve to the boilerplate's release, not the app's v5.0.0
-      expect(payload.targetVersion).toBe('1.0.0')
+      expect(payload.targetVersion).toBe('1.1.0')
+      expect(payload.targetVersion).not.toBe('5.0.0')
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }

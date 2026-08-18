@@ -31,6 +31,7 @@ the inventory for that release's migration intentions.
 - Knip's API workspace entry now targets `auth.cli.mts` (the Better Auth CLI script was already `.mts` at v1.0.0).
 - SPA typecheck no longer fails on the `@fontsource/source-sans-pro` CSS import (ambient module declaration).
 - i18n package typecheck excludes the `i18n-sync.ts` CLI script.
+- `pnpm rock` treats a credentialed GitHub `origin` (for example `https://x-access-token@…`) as the same remote as the public boilerplate URL, so a maintainer checkout keeps producer artifacts.
 
 ## [1.0.0] - 2026-07-20
 

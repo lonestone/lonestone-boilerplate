@@ -152,6 +152,7 @@ function normalizeGitRemote(value: string): string {
     .trim()
     .replace(/^git@github\.com:/, 'https://github.com/')
     .replace(/^ssh:\/\/git@github\.com\//, 'https://github.com/')
+    .replace(/^(https?:\/\/)[^/]*@/i, '$1')
     .replace(/\/$/, '')
     .replace(/\.git$/, '')
     .toLowerCase()
