@@ -13,14 +13,24 @@ the inventory for that release's migration intentions.
 
 ## [Unreleased]
 
+### Added
+
+- SPA sign-in French locale now includes the missing `loggedInSuccess` string.
+- Producer-only daily hygiene prompt at `.boilerstone/docs/daily-hygiene-agent.md` (removed from consumer projects by `pnpm rock`).
+
 ### Changed
 
-- Upgraded workspace dependencies (`pnpm upgrade -r`), including TypeScript 6.0.3, Better Auth 1.6.25, and related frontend/tooling packages.
+- Raised the tested dependency constellation (`pnpm upgrade -r`), including TypeScript 6.0.3, Better Auth 1.6.25, catalog families (`frontend`, `auth`, `build`), and related app/tooling packages. TypeScript 6 also needs `ignoreDeprecations: "6.0"` wherever `baseUrl` is set, plus a pnpm `peerDependencyRules` allowance for `typescript@6`.
 - Pinned documentation Astro to 7.1.1 and overrode `cookie` to 1.1.1 so Express and Astro stay compatible under the hoisted pnpm layout.
+- Documentation and README now match the current tree: oxlint/oxfmt (not ESLint), Node 24.13.0 / pnpm 10.28.2, Docker Compose services (PostgreSQL and MailDev only), `pnpm --filter=api` database scripts, and the generated OpenAPI files that actually exist (`zod.gen.ts`, not `schemas.gen.ts`).
+- Removed the dead root `schematics:module` script and leftover schematics ignore/rule paths; the schematics package is not in the workspace.
 
 ### Fixed
 
 - `install.sh` no longer aborts under `set -e` when `/dev/tty` is unavailable (Linux CI / non-interactive runs).
+- Knip's API workspace entry now targets `auth.cli.mts` (the Better Auth CLI script was already `.mts` at v1.0.0).
+- SPA typecheck no longer fails on the `@fontsource/source-sans-pro` CSS import (ambient module declaration).
+- i18n package typecheck excludes the `i18n-sync.ts` CLI script.
 
 ## [1.0.0] - 2026-07-20
 

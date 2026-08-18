@@ -61,6 +61,7 @@ export const PRODUCER_FILES_TO_REMOVE = [
   '.boilerstone/docs/ai-upgrades-implementation.md',
   '.boilerstone/docs/pilot-rollout.md',
   '.boilerstone/docs/release-maintainer-runbook.md',
+  '.boilerstone/docs/daily-hygiene-agent.md',
   // Producer-side upgrade artifacts published by the boilerplate, not maintained inside consumers
   '.boilerstone/migration-intentions',
   '.boilerstone/boilerplate.example.json',
@@ -668,7 +669,7 @@ function updateRootScripts(
     return packageJson
   }
 
-  const scriptsToRewrite = ['dev', 'generate', 'schematics:module', 'docs-only']
+  const scriptsToRewrite = ['dev', 'generate', 'docs-only']
   const nextScripts: Record<string, string> = {}
 
   for (const [key, value] of Object.entries<string>(packageJson.scripts)) {
