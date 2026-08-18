@@ -16,6 +16,7 @@ the inventory for that release's migration intentions.
 ### Added
 
 - Documented a whole-repo code and maintainability audit under `docs/features/code-maintainability-audit/`.
+- Added producer-only daily hygiene agent prompt at `.boilerstone/docs/daily-hygiene-agent.md` (changelog holes, draft migration intentions, mechanical doc drift).
 
 ### Changed
 
