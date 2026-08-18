@@ -29,12 +29,11 @@ pnpm run dev
 
 ## Client
 
-Le client est généré dans le répertoire `./src/client` et comprend :
+Le client est généré dans le répertoire `./client` et comprend :
 
 - `sdk.gen.ts` : Fonctions pour appeler les endpoints de l'API
 - `types.gen.ts` : Types TypeScript pour les modèles de données
 - `zod.gen.ts` : Schémas Zod pour la validation des données
-- `schemas.gen.ts` : Définitions détaillées des schémas
 
 ## Dépendances
 

@@ -48,7 +48,7 @@ const projectRoot = join(__dirname, '..', '..')
 const boilerplateDir = join(projectRoot, '.boilerstone')
 const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
 // Pinned to match the boilerplate's own tsx version; used when wiring a consumer's package.json.
-const defaultTsxVersion = '^4.21.0'
+const defaultTsxVersion = '^4.23.5'
 
 async function prompt(message: string, initial: string): Promise<string> {
   // Without a terminal the question would never resolve and the process would
@@ -1027,9 +1027,7 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
   // 3b. Strip producer test tooling from the vendored package.json.
   const boilerstonePkgPath = join(dir, 'package.json')
   if (existsSync(boilerstonePkgPath)) {
-    const boilerstonePkg = JSON.parse(
-      readFileSync(boilerstonePkgPath, 'utf-8'),
-    ) as PackageJsonShape
+    const boilerstonePkg = JSON.parse(readFileSync(boilerstonePkgPath, 'utf-8')) as PackageJsonShape
     const consumerPkg = ensureConsumerBoilerstonePackageJson(boilerstonePkg)
     if (consumerPkg.changes.length > 0) {
       writeFileSync(boilerstonePkgPath, `${JSON.stringify(consumerPkg.pkg, null, 2)}\n`, 'utf-8')

@@ -19,8 +19,8 @@ This is the web frontend application of our project, built with modern React and
 ## Prerequisites
 
 Before you begin, ensure you have installed:
-- [Node.js](https://nodejs.org/) (v18 or higher)
-- [pnpm](https://pnpm.io/) (v8 or higher)
+- [Node.js](https://nodejs.org/) (version 24.13.0)
+- [pnpm](https://pnpm.io/) (version 10.28.2)
 
 ## Getting Started
 
@@ -51,11 +51,12 @@ The application will be available at `http://localhost:5173`
 ## Project Structure
 
 ```
-src/
-├── components/     # Reusable UI components
-├── features/       # Feature-specific components and logic
+app/
+├── features/      # Feature-specific components and logic
 ├── hooks/         # Custom React hooks
 ├── lib/           # Utility functions and configurations
+├── root.tsx       # Application root
+└── routes.ts      # Route table
 ```
 
 # SSR (Server-Side Rendering) Application

@@ -45,11 +45,11 @@ Work through `upgrade-session.md`. Agents must not decide apply/skip alone.
 2. Inspect the project for greppable signals (scripts, deps, configs, adapters).
 3. Present a short table to the human:
 
-   | Intention | Proposal | Why (one observable signal) |
-   |---|---|---|
-   | `vX.Y.Z/slug` | **apply** / **skip** / **ask** | … |
+   | Intention     | Proposal                       | Why (one observable signal) |
+   | ------------- | ------------------------------ | --------------------------- |
+   | `vX.Y.Z/slug` | **apply** / **skip** / **ask** | …                           |
 
-4. **Anti-pattern (never do this):** treat the *starting stack* the intention migrates away from as a skip reason.
+4. **Anti-pattern (never do this):** treat the _starting stack_ the intention migrates away from as a skip reason.
    - Still on ESLint/Prettier → evidence to **apply** oxlint/oxfmt, not skip.
    - Still on Better Auth `pg` pool → evidence to **apply** the MikroORM adapter intention, not skip.
    - Still on MikroORM below v7 → evidence to **apply** the v7 migration, not skip.

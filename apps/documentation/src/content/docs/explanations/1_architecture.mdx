@@ -46,7 +46,7 @@ After years using GraphQL, we went back to REST (you can find the reasoning in t
 
 - [Docker](https://www.docker.com/) - Containerization platform
 - [PostgreSQL](https://www.postgresql.org/) - Relational database management system
-- [MinIO](https://min.io/) - S3-compatible object storage
+- [MinIO](https://min.io/) or another S3-compatible store — object storage for the file-storage module (not a Docker Compose service in this repo)
 - [DotenvX](https://dotenvx.com/) - Environment variables management
 
 ## Project Structure
@@ -56,11 +56,12 @@ lonestone/
 ├── apps/                  # Main applications
 │   ├── api/               # Backend API (NestJS)
 │   ├── web-spa/           # Web SPA application (React)
-│   └── web-ssr/           # Web SSR application (React)
+│   ├── web-ssr/           # Web SSR application (React)
+│   └── documentation/     # Starlight documentation site
 ├── packages/              # Shared packages
 │   ├── ui/                # Reusable UI components (shadcn/ui)
-│   ├── openapi-generator/ # OpenAPI client generator
-│   └── schematics/        # Schematics used to generate code in API
-├── docs/                  # Project documentation
+│   ├── i18n/              # Shared frontend i18n
+│   └── openapi-generator/ # OpenAPI client generator
+├── docs/                  # Optional project-specific documentation
 └── .github/               # GitHub Actions workflows
 ```

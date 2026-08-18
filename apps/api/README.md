@@ -82,7 +82,7 @@ pnpm db:fresh # Drop the database and re-create from your entity files
 Reset + seed
 
 ```bash
-pnpm db:seed # Same but run seeders afterwards
+pnpm db:fresh:seed # Same but run seeders afterwards
 ```
 
 Drop the DB and perform all database migrations without seeding:
