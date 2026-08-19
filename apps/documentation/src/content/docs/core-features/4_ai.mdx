@@ -40,6 +40,8 @@ The tracing system is initialized in `apps/api/src/instrument.ts` before the Nes
 - **LangfuseSpanProcessor**: Filters and exports only LLM-related spans (instrumentation scope: `langfuse-sdk` or `ai`) to Langfuse
 - **SentrySpanProcessor**: Receives all spans for application monitoring in Sentry
 
+The Langfuse filter is created by a single `createLangfuseSpanProcessor()` factory, so it applies whether Langfuse runs alongside Sentry or on its own. This matters because `OpenTelemetryModule` is always enabled in `app.module.ts` and emits spans for controllers, guards and interceptors on the same global provider: without the filter, those spans would end up in Langfuse.
+
 <Aside type="tip" title="AI Traces in Sentry">
 Because the Vercel AI SDK emits OTEL spans and both processors receive them, **AI traces appear in both Langfuse and Sentry**. This allows you to:
 - See AI calls in the context of full HTTP request traces
