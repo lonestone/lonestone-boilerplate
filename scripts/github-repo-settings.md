@@ -47,6 +47,14 @@ Require pull requests, and require these status checks to pass:
 - [ ] `Release note` (workflow: **Release note**) — other PRs skip this check successfully
 - [ ] Existing CI jobs (`Lint`, `Type Check`, `Build`, `Test`, …)
 
+### Repository variables
+
+- [ ] `REQUIRE_RELEASE_NOTE` — optional. Release notes are not enforced by default; set this variable to `true` to make the **Release note** check block a Release PR until `releases/vX.Y.Z.mdx` exists. The boilerplate repository sets it.
+
+```bash
+gh variable set REQUIRE_RELEASE_NOTE --body true
+```
+
 Do not apply branch protection blindly with the API on a repo that already has rules. Set it in the GitHub UI (Settings → Branches, or Rulesets) so you do not wipe existing rules.
 
 Do not add a workflow that auto-merges the Release PR. Green checks are not consent to ship. A human merges that PR.

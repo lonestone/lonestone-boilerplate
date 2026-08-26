@@ -62,7 +62,7 @@ That creates `migration-intentions/vX.Y.Z/` if needed (with README markers), mov
 git diff --name-status vPREVIOUS..HEAD
 ```
 
-5. Write the release note: `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`. A few sentences on why this release exists and what the bundle means for consumers. Not a second changelog. CI on this PR refuses to merge without that file.
+5. Write the release note: `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`. A few sentences on why this release exists and what the bundle means for consumers. Not a second changelog. This repository sets the `REQUIRE_RELEASE_NOTE` variable, so CI refuses to merge the Release PR without that file (the check is optional by default on consumer projects).
 6. Update `.boilerstone/boilerplate.example.json` so `source.currentVersion` is `X.Y.Z`. Only maintainers edit this example file, and only at release time.
 7. Validate:
 
@@ -119,7 +119,7 @@ The client-wants-B-without-A problem (both merged, A must not ship):
 2. **Escape hatch: release branch.** Branch from the last release tag, cherry-pick B's squash commit (one commit per PR), cut a patch from that branch. Release-please can release from a non-`main` branch. `main`'s next normal release includes both A and B and the branch dies.
 3. Delaying the merge is acceptable occasionally, bad as a habit.
 
-The level 3 release gate removes most other cherry-picking: merging no longer means deploying to production, so unfinished sets can merge freely.
+The versioned release gate removes most other cherry-picking: merging no longer means deploying to production, so unfinished sets can merge freely.
 
 ## What an agent should do when asked to prepare the release
 

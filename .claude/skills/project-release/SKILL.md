@@ -18,7 +18,7 @@ This skill is a thin adapter. The canon lives at `apps/documentation/src/content
 1. Find the open Release PR (label `autorelease: pending`).
 2. Read the next version from `.release-please-manifest.json` on that branch.
 3. Draft `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx` from `CHANGELOG.md` plus `git show` on the listed commits. The note is the human story of why this release exists. It is not a second changelog. Write it on the Release PR.
-4. Verify the Release PR checks, especially the release-note check. If it fails, the error is the fix.
+4. Verify the Release PR checks. The release-note check only blocks when the repository variable `REQUIRE_RELEASE_NOTE` is `true`; write the note anyway — it is the point of this skill. If a check fails, the error is the fix.
 
 ## After the human merges
 
