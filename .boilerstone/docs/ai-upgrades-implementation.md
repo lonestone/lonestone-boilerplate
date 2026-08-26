@@ -51,7 +51,7 @@ The list of producer-only paths has one home, `PRODUCER_ARTIFACTS` in `boilerpla
 
 Be honest with yourself about this when extending the system:
 
-- **Real and working**: the CLI (`bootstrap`, `upgrade init/status/path/prepare/record/finish`, `versions list`, `intentions lint/sync`, `changelog check/release`), the committed state and schema, the curl installer, the consumer switch, and the skill shims. `v1.0.0` is tagged and published with its eight baseline intentions.
+- **Real and working**: the CLI (`bootstrap`, `upgrade init/status/path/prepare/record/finish`, `versions list`, `intentions lint/sync`), the committed state and schema, the curl installer, the consumer switch, and the skill shims. `v1.0.0` is tagged and published with its eight baseline intentions. Changelog generation moved to release-please; the old `changelog check` / `changelog release` commands are gone.
 - **Not proven yet**: no release-to-release upgrade (v1.0.0 → v1.x) has been executed against a real diverged project. Treat the first one as a pilot — see [pilot-rollout.md](./pilot-rollout.md).
 - **The disk fallback for untagged releases** is how maintainers test drafts before tagging. It looks like dead code if you only think about consumers; it isn't.
 - **The module registry** (importing optional modules on demand, shadcn-style) is a design intent, not implemented.

@@ -27,17 +27,17 @@ import {
   ensureGitignoreLine,
   ensurePackageJsonWiring,
   ensureConsumerBoilerstonePackageJson,
-  getChangelogIssues,
   getFallbackIntentionId,
   getIntentionOrderIssues,
   getUpgradeBranchName,
+  isUnreleasedIntentionPath,
   parseIntentionMetadataContent,
   parseReferencePathDeclarations,
   parseReferencePaths,
   PRODUCER_ARTIFACTS,
+  promoteUnreleasedIntentions,
   readOptionValue,
   resolveTargetVersion,
-  stampChangelogRelease,
 } from './boilerplate-core'
 import { colorize, isolatedGitEnv } from './utils'
 import { trackingState } from './tracking-state'
@@ -420,12 +420,16 @@ interface IntentionLintIssue {
 
 function getLocalIntentionMarkdownFiles(): string[] {
   const intentionsDir = join(boilerplateDir, 'migration-intentions')
-  return listMarkdownFiles(intentionsDir, true).filter(
-    (file) =>
-      !file.endsWith('README.md') &&
-      !file.endsWith('classification.md') &&
-      !file.endsWith('TEMPLATE.md'),
-  )
+  return listMarkdownFiles(intentionsDir, true).filter((file) => {
+    if (
+      file.endsWith('README.md') ||
+      file.endsWith('classification.md') ||
+      file.endsWith('TEMPLATE.md')
+    ) {
+      return false
+    }
+    return !isUnreleasedIntentionPath(relative(intentionsDir, file))
+  })
 }
 
 interface LocalIntentionEntry {
@@ -619,6 +623,86 @@ function cmdIntentionsSync(): void {
   }
 }
 
+function defaultReleaseReadme(tag: string): string {
+  return `# Migration Intentions - ${tag}
+
+## Intentions
+
+${INTENTIONS_BLOCK_BEGIN}
+
+${INTENTIONS_BLOCK_END}
+`
+}
+
+function cmdIntentionsPromote(version: string): void {
+  const semver = version.replace(/^v/, '')
+  if (!/^\d+\.\d+\.\d+$/.test(semver)) {
+    console.error(`  ${colorize('❌', 'red')} --to must be a version like X.Y.Z (got ${version})`)
+    process.exit(1)
+  }
+
+  const tag = `v${semver}`
+  const unreleasedDir = join(boilerplateDir, 'migration-intentions', 'unreleased')
+  const destDir = join(boilerplateDir, 'migration-intentions', tag)
+  const skippedNames = new Set(['README.md', 'TEMPLATE.md', 'classification.md'])
+
+  if (!existsSync(unreleasedDir)) {
+    console.log(`  ${colorize('✓', 'green')} No unreleased intentions to promote`)
+    return
+  }
+
+  const sourceFiles = readdirSync(unreleasedDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.md') && !skippedNames.has(entry.name))
+    .map((entry) => entry.name)
+    .sort((a, b) => a.localeCompare(b))
+
+  if (sourceFiles.length === 0) {
+    console.log(`  ${colorize('✓', 'green')} No unreleased intentions to promote`)
+    return
+  }
+
+  mkdirSync(destDir, { recursive: true })
+  const destReadmePath = join(destDir, 'README.md')
+  if (!existsSync(destReadmePath)) {
+    writeFileSync(destReadmePath, defaultReleaseReadme(tag), 'utf-8')
+    console.log(`  ${colorize('✓', 'green')} Created ${relative(projectRoot, destReadmePath)}`)
+  }
+
+  const existingDestFileNames = readdirSync(destDir).filter(
+    (name) => name.endsWith('.md') && !skippedNames.has(name),
+  )
+  const promoted = promoteUnreleasedIntentions({
+    files: sourceFiles.map((fileName) => ({
+      fileName,
+      content: readFileSync(join(unreleasedDir, fileName), 'utf-8'),
+    })),
+    version: semver,
+    existingDestFileNames,
+  })
+
+  for (const item of promoted) {
+    const destPath = join(destDir, item.destFileName)
+    if (existsSync(destPath)) {
+      console.error(
+        `  ${colorize('❌', 'red')} Refusing to overwrite ${relative(projectRoot, destPath)}`,
+      )
+      process.exit(1)
+    }
+  }
+
+  for (const item of promoted) {
+    writeFileSync(join(destDir, item.destFileName), item.content, 'utf-8')
+  }
+  for (const item of promoted) {
+    rmSync(join(unreleasedDir, item.sourceFileName))
+    console.log(
+      `  ${colorize('✓', 'green')} unreleased/${item.sourceFileName} → ${tag}/${item.destFileName} (${item.id})`,
+    )
+  }
+
+  cmdIntentionsSync()
+}
+
 function cmdIntentionsLint(json = false): void {
   const issues = getIntentionLintIssues()
   if (json) {
@@ -640,58 +724,6 @@ function cmdIntentionsLint(json = false): void {
 // Release candidates: namespaced refs fetched from the boilerplate remote, plus
 // local v* tags that carry producer artifacts (the boilerplate checkout itself).
 // A consumer's own app tags never qualify — they have no migration-intentions.
-function readRootChangelog(): { path: string; content: string } {
-  const changelogPath = join(projectRoot, 'CHANGELOG.md')
-  if (!existsSync(changelogPath)) {
-    throw new Error('No CHANGELOG.md found at the repository root')
-  }
-  return { path: changelogPath, content: readFileSync(changelogPath, 'utf-8') }
-}
-
-// Producer-side rail: every PR must land its release notes while the context
-// is fresh — the [Unreleased] section is the release inventory, so a code
-// change without a changelog entry is a hole in the next release.
-function cmdChangelogCheck(options: { base?: string }): void {
-  const changelog = readRootChangelog()
-  const issues = getChangelogIssues(changelog.content)
-  if (issues.length > 0) {
-    for (const issue of issues) {
-      console.error(`  ${colorize('❌', 'red')} CHANGELOG.md: ${issue}`)
-    }
-    process.exit(1)
-  }
-
-  if (options.base) {
-    const changedFiles = runGitCommand(['diff', '--name-only', `${options.base}...HEAD`])
-      .split('\n')
-      .filter(Boolean)
-    if (changedFiles.length > 0 && !changedFiles.includes('CHANGELOG.md')) {
-      console.error(
-        `  ${colorize('❌', 'red')} ${changedFiles.length} file(s) changed since ${options.base} without a CHANGELOG.md entry`,
-      )
-      console.error(
-        `  ${colorize('→', 'cyan')} Add your entry under ${colorize('## [Unreleased]', 'bright')}, or label the PR ${colorize('no-changelog', 'bright')} when it has no consumer-visible impact`,
-      )
-      process.exit(1)
-    }
-  }
-
-  console.log(`  ${colorize('✓', 'green')} Changelog is valid`)
-}
-
-function cmdChangelogRelease(options: { targetVersion: string }): void {
-  const changelog = readRootChangelog()
-  const today = new Date().toISOString().slice(0, 10)
-  const stamped = stampChangelogRelease(changelog.content, options.targetVersion, today)
-  writeFileSync(changelog.path, stamped, 'utf-8')
-  console.log(
-    `  ${colorize('✓', 'green')} Stamped [Unreleased] as [${options.targetVersion.replace(/^v/, '')}] - ${today}`,
-  )
-  console.log(
-    `  ${colorize('→', 'cyan')} Review the section, then use it as the intention inventory (cross-check with git diff)`,
-  )
-}
-
 function getReleaseTagNames(cwd = projectRoot): string[] {
   const names = new Set<string>()
   try {
@@ -2113,10 +2145,9 @@ ${colorize('Usage:', 'cyan')}
 ${colorize('Commands:', 'cyan')}
 
   ${colorize('bootstrap', 'bright')}                  Onboard an existing project (wire CLI + init tracking)
-  ${colorize('changelog check', 'bright')}            Validate CHANGELOG.md; with --base, require an entry for the diff
-  ${colorize('changelog release', 'bright')}          Stamp [Unreleased] as the released version (maintainer)
   ${colorize('intentions lint', 'bright')}            Validate published migration intention metadata
   ${colorize('intentions sync', 'bright')}            Regenerate the release README intentions blocks
+  ${colorize('intentions promote', 'bright')}         Move unreleased/ intentions into vX.Y.Z/ (release time)
   ${colorize('versions list', 'bright')}              List available boilerplate versions
   ${colorize('upgrade', 'bright')}                    Stage the next upgrade (latest, auto-fetch, interactive selection)
   ${colorize('upgrade init', 'bright')}               Initialize boilerplate tracking for a project
@@ -2138,15 +2169,13 @@ ${colorize('Options:', 'cyan')}
   ${colorize('--skipped', 'bright')}                  Record an intention as skipped (requires ${colorize('--reason', 'dim')})
   ${colorize('--reason <text>', 'bright')}            Skip reason for ${colorize('upgrade record --skipped', 'dim')}
   ${colorize('--json', 'bright')}                     Machine-readable output for ${colorize('upgrade status', 'dim')} and ${colorize('upgrade path', 'dim')}
-  ${colorize('--base <ref>', 'bright')}               Diff base for ${colorize('changelog check', 'dim')} (e.g. origin/main)
 
 ${colorize('Examples:', 'cyan')}
 
   ${colorize('boilerplate bootstrap', 'dim')}
-  ${colorize('boilerplate changelog check --base origin/main', 'dim')}
-  ${colorize('boilerplate changelog release --to 1.1.0', 'dim')}
   ${colorize('boilerplate intentions lint', 'dim')}
   ${colorize('boilerplate intentions sync', 'dim')}
+  ${colorize('boilerplate intentions promote --to 1.2.0', 'dim')}
   ${colorize('boilerplate versions list', 'dim')}
   ${colorize('boilerplate upgrade init --project ./my-project', 'dim')}
   ${colorize('boilerplate upgrade', 'dim')}
@@ -2182,19 +2211,13 @@ async function main(): Promise<void> {
         cmdIntentionsLint(json)
       } else if (subcommand === 'sync') {
         cmdIntentionsSync()
-      } else {
-        printUsage()
-      }
-    } else if (command === 'changelog') {
-      if (subcommand === 'check') {
-        cmdChangelogCheck({ base: readOptionValue(args, '--base') })
-      } else if (subcommand === 'release') {
+      } else if (subcommand === 'promote') {
         const to = readOptionValue(args, '--to')
         if (!to) {
           console.error(`  ${colorize('❌', 'red')} --to is required`)
           process.exit(1)
         }
-        cmdChangelogRelease({ targetVersion: to })
+        cmdIntentionsPromote(to)
       } else {
         printUsage()
       }

@@ -44,7 +44,7 @@ pnpm boilerplate upgrade finish --to <version>
 boilerplate.json          # Project state (version + applied/skipped intentions)
 cli/                      # Upgrade CLI
 docs/                     # How it works, upgrade runbook, release runbook
-migration-intentions/     # Published intentions (boilerplate repo only)
+migration-intentions/     # Published intentions + unreleased/ staging (boilerplate repo only)
 ```
 
 In a generated project, the producer side (`migration-intentions/`, release runbook, …) is stripped — intentions then come from git tags. That's expected.

@@ -1,0 +1,62 @@
+name: Intention gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  intention-gate:
+    name: Intention gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect skip conditions
+        id: gate
+        env:
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          if [[ ",${LABELS}," == *",no-intention,"* ]]; then
+            echo "required=false" >> "$GITHUB_OUTPUT"
+            echo "Label no-intention present. Skipping."
+            exit 0
+          fi
+          if [[ ",${LABELS}," == *",autorelease: pending,"* ]]; then
+            echo "required=false" >> "$GITHUB_OUTPUT"
+            echo "Release PR (autorelease: pending). Skipping."
+            exit 0
+          fi
+          echo "required=true" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout repository
+        if: steps.gate.outputs.required == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require a staged unreleased intention
+        if: steps.gate.outputs.required == 'true'
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          added="$(git diff --name-only --diff-filter=A "origin/${{ github.base_ref }}...HEAD")"
+          found=0
+          while IFS= read -r file; do
+            [ -z "${file}" ] && continue
+            case "${file}" in
+              .boilerstone/migration-intentions/unreleased/*.md)
+                base="$(basename "${file}")"
+                if [ "${base}" != "README.md" ] && [ "${base}" != "TEMPLATE.md" ]; then
+                  echo "Found staged intention: ${file}"
+                  found=1
+                fi
+                ;;
+            esac
+          done <<< "${added}"
+          if [ "${found}" -eq 1 ]; then
+            exit 0
+          fi
+          echo "add an intention under .boilerstone/migration-intentions/unreleased/ or apply the no-intention label"
+          exit 1
