@@ -22,12 +22,17 @@
 
 - [0_designphilosophy.mdx](./src/content/docs/explanations/0_designphilosophy.mdx) - Why we chose some tools, why we chose the "removal" path, etc.
 - [1_architecture.mdx](./src/content/docs/explanations/1_architecture.mdx) - Overview of the tech stack used in the project
-- [2_contribution-and-release.mdx](./src/content/docs/explanations/2_contribution-and-release.mdx) - Why commits, files, and artifacts are the durable record — not GitHub surfaces or environment branches
+- [2_contribution-and-release.mdx](./src/content/docs/explanations/2_contribution-and-release.mdx) - Why commits, files, and artifacts are the durable record — the story, the decisions, and their rationale
 - [3_linter.mdx](./src/content/docs/explanations/3_linter.mdx) - How the linter works, how to use it, how to customize it
 - [4_network-architecture.mdx](./src/content/docs/explanations/4_network-architecture.mdx) - Understanding the network architecture of the boilerplate
 - [5_orm.mdx](./src/content/docs/explanations/5_orm.mdx) - How to work with your DB
 - [6_database-migrations.mdx](./src/content/docs/explanations/6_database-migrations.mdx) - Understanding database migrations with MikroORM
 - [7_boilerplate-upgrades.mdx](./src/content/docs/explanations/7_boilerplate-upgrades.mdx) - How a generated project stays in sync with the Lonestone boilerplate over time
+
+## Fr
+
+- [1_release_and_versionning.mdx](./src/content/docs/fr/references/1_release_and_versionning.mdx) - Comment un projet se versionne, et comment les environnements consomment ce que le pipeline construit
+- [2_contribution-and-release.mdx](./src/content/docs/fr/explanations/2_contribution-and-release.mdx) - Pourquoi les commits, les fichiers et les artefacts sont la mémoire durable — l'histoire, les décisions et leurs raisons
 
 ## Guides
 
