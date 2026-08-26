@@ -1,0 +1,60 @@
+name: Promote on release
+
+# Opt-in bridge between "the release exists" and "an environment runs it".
+#
+# When the tag images finish building, this workflow dispatches Promote for
+# the environment named in the repository variable PROMOTE_ON_RELEASE
+# (staging or production). Leave the variable unset to keep deploys fully
+# manual (Actions -> Promote).
+#
+# This does NOT auto-merge the Release PR: a human still merges it, and that
+# merge stays the release consent. To keep a separate deploy consent, add
+# required reviewers on the GitHub Environment - the dispatched Promote run
+# then pauses on an "Approve and deploy" button instead of deploying
+# immediately.
+
+on:
+  workflow_run:
+    workflows: ['Build Docker to GHCR']
+    types: [completed]
+
+permissions:
+  actions: write
+
+jobs:
+  dispatch:
+    name: Dispatch Promote
+    # Only after a successful image build for a v* tag push.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      startsWith(github.event.workflow_run.head_branch, 'v')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET: ${{ vars.PROMOTE_ON_RELEASE }}
+      TAG: ${{ github.event.workflow_run.head_branch }}
+    steps:
+      - name: Dispatch Promote for the released version
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${TARGET}" ]]; then
+            echo "Repository variable PROMOTE_ON_RELEASE is not set. Deploys stay manual: Actions -> Promote."
+            echo "To promote every release automatically, set it to 'staging' or 'production':"
+            echo "  gh variable set PROMOTE_ON_RELEASE --body production"
+            exit 0
+          fi
+
+          if [[ "${TARGET}" != "staging" && "${TARGET}" != "production" ]]; then
+            echo "PROMOTE_ON_RELEASE must be 'staging' or 'production', got '${TARGET}'."
+            exit 1
+          fi
+
+          version="${TAG#v}"
+          echo "Images for ${TAG} are built. Dispatching Promote: ${version} -> ${TARGET}."
+          gh workflow run promote.yml \
+            --repo "${GITHUB_REPOSITORY}" \
+            -f "environment=${TARGET}" \
+            -f "version=${version}"
+          echo "If the '${TARGET}' environment has required reviewers, the Promote run now waits for an approval."

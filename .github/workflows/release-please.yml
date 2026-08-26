@@ -1,0 +1,64 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+# A human merges the Release PR from the GitHub UI as themselves.
+# Do not auto-merge it. Green checks are not consent to ship.
+# Do not merge with GITHUB_TOKEN — that merge does not start the follow-up
+# run that creates the tag.
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open or update the Release PR
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout the tagged commit
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag_name }}
+
+      - name: Mirror the release note to the GitHub Release
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          NOTE="apps/documentation/src/content/docs/releases/v${VERSION}.mdx"
+          if [[ ! -f "$NOTE" ]]; then
+            echo "add ${NOTE} before merging"
+            exit 1
+          fi
+          NOTES_FILE="$(mktemp)"
+          python3 - "$NOTE" "$NOTES_FILE" <<'PY'
+          import re
+          import sys
+
+          source_path, dest_path = sys.argv[1], sys.argv[2]
+          text = open(source_path, encoding="utf-8").read()
+          body = re.sub(r"^---\r?\n[\s\S]*?\r?\n---\r?\n?", "", text, count=1)
+          open(dest_path, "w", encoding="utf-8").write(body.strip() + "\n")
+          PY
+          {
+            cat "$NOTES_FILE"
+            echo
+            echo "---"
+            echo
+            echo "To send this version to an environment, run the [Promote workflow](https://github.com/${GITHUB_REPOSITORY}/actions/workflows/promote.yml). Pick \`staging\` or \`production\` and version \`${VERSION}\`."
+          } > "${NOTES_FILE}.out"
+          mv "${NOTES_FILE}.out" "$NOTES_FILE"
+          gh release edit "$TAG" --notes-file "$NOTES_FILE"

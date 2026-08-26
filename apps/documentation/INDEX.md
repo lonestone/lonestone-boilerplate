@@ -22,25 +22,38 @@
 
 - [0_designphilosophy.mdx](./src/content/docs/explanations/0_designphilosophy.mdx) - Why we chose some tools, why we chose the "removal" path, etc.
 - [1_architecture.mdx](./src/content/docs/explanations/1_architecture.mdx) - Overview of the tech stack used in the project
+- [2_contribution-and-release.mdx](./src/content/docs/explanations/2_contribution-and-release.mdx) - Why commits, files, and artifacts are the durable record — the story, the decisions, and their rationale
 - [3_linter.mdx](./src/content/docs/explanations/3_linter.mdx) - How the linter works, how to use it, how to customize it
 - [4_network-architecture.mdx](./src/content/docs/explanations/4_network-architecture.mdx) - Understanding the network architecture of the boilerplate
 - [5_orm.mdx](./src/content/docs/explanations/5_orm.mdx) - How to work with your DB
 - [6_database-migrations.mdx](./src/content/docs/explanations/6_database-migrations.mdx) - Understanding database migrations with MikroORM
+- [7_boilerplate-upgrades.mdx](./src/content/docs/explanations/7_boilerplate-upgrades.mdx) - How a generated project stays in sync with the Lonestone boilerplate over time
+
+## Fr
+
+- [1_release_and_versionning.mdx](./src/content/docs/fr/references/1_release_and_versionning.mdx) - Comment un projet se versionne, et comment les environnements consomment ce que le pipeline construit
+- [2_contribution-and-release.mdx](./src/content/docs/fr/explanations/2_contribution-and-release.mdx) - Pourquoi les commits, les fichiers et les artefacts sont la mémoire durable — l'histoire, les décisions et leurs raisons
 
 ## Guides
 
 - [api-testing.mdx](./src/content/docs/guides/api-testing.mdx) - Guide to test the API using Vitest
 - [database-management.mdx](./src/content/docs/guides/database-management.mdx) - Guide to manage the database
 - [encrypt-env.mdx](./src/content/docs/guides/encrypt-env.mdx) - Setup env file encryption
+- [feature-flags.mdx](./src/content/docs/guides/feature-flags.mdx) - Ship a merged change dark with a single env-var check
 - [generating-types.mdx](./src/content/docs/guides/generating-types.mdx) - Generate types and SDKs from the OpenAPI schema
 
 ## References
 
 - [0_documentation.mdx](./src/content/docs/references/0_documentation.mdx) - Documentation explanation
-- [1_release_and_versionning.mdx](./src/content/docs/references/1_release_and_versionning.mdx) - How to release and version your project
+- [1_release_and_versionning.mdx](./src/content/docs/references/1_release_and_versionning.mdx) - How a project versions itself, and how environments consume what the pipeline builds
 - [backend.mdx](./src/content/docs/references/backend.mdx) - Guidelines for the backend of the Lonestone project.
 - [frontend.mdx](./src/content/docs/references/frontend.mdx) - Guidelines for the front-end of the Lonestone project.
 - [general.mdx](./src/content/docs/references/general.mdx) - Common guidelines for development on the project
+
+## Releases
+
+- [index.mdx](./src/content/docs/releases/index.mdx) - Why each release exists — the human story, not the changelog
+- [v1.0.0.mdx](./src/content/docs/releases/v1.0.0.mdx) - First public release of the Lonestone boilerplate
 
 ## Root
 

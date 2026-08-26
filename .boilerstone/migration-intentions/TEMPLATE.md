@@ -1,9 +1,9 @@
 ---
-id: vX.Y.Z/slug
+id: unreleased/slug
 domain: tooling
 classification: migration
 requires:
-  - vX.Y.Z/other-slug
+  - unreleased/other-slug
 ---
 
 # Migration Intention Template
@@ -12,14 +12,17 @@ requires:
 
 ## Filename
 
-Name the file `NN-slug.md`, where `NN` is a zero-padded execution-order prefix (`00`, `01`, `02`, ...). The filename sort order within a release directory IS the execution order — it drives both intention staging and the generated session checklist. The frontmatter `id:` never carries the `NN-` prefix. `pnpm boilerplate intentions lint` validates every `requires:` entry against this order.
+**During a pull request**, write the file as `.boilerstone/migration-intentions/unreleased/slug.md`. No `NN-` prefix. The frontmatter `id:` is `unreleased/slug`. Optional `pr:` records the pull request number.
+
+**At release time** the maintainer promotes the file into `vX.Y.Z/NN-slug.md`. `NN` is a zero-padded execution-order prefix (`00`, `01`, `02`, ...). Filename sort order within a release directory IS the execution order — it drives both intention staging and the generated session checklist. The frontmatter `id:` is rewritten to `vX.Y.Z/slug` and never carries the `NN-` prefix. `pnpm boilerplate intentions lint` validates every `requires:` entry against this order.
 
 ## Metadata
 
-- `id`: stable identifier recorded in `.boilerstone/boilerplate.json`
-- `domain`: one of the consumer project's tracked domains (`tooling`, `api`, `frontend`, `ci`, `docker-env`, `monitoring`, `email`, `auth`, `storage`)
+- `id`: stable identifier recorded in `.boilerstone/boilerplate.json` (`unreleased/slug` until promote, then `vX.Y.Z/slug`)
+- `domain`: a tracked domain / commit scope. Valid values live in `commitlint.config.ts` — do not copy the list here
 - `classification`: `migration` or `breaking-manual` for actionable intentions
 - `requires`: ids of intentions that must be applied or staged first (optional)
+- `pr`: pull request number (optional, useful on unreleased files)
 
 ## Goal
 

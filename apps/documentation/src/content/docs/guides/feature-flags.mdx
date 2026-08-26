@@ -1,0 +1,34 @@
+---
+title: Feature flags
+description: Ship a merged change dark with a single env-var check
+---
+
+This is a convention, not a flag platform. One helper. One env var. No dashboard.
+
+Use a flag when two changes are already on `main` and only one of them should reach production. Merge both. Keep the unfinished one dark. Turn the var on when the client is ready.
+
+## The check
+
+Name the flag in `FEATURE_<NAME>`. The helper accepts the name with or without the prefix:
+
+```ts
+import { isFeatureEnabled } from 'src/config/feature-flag'
+
+if (isFeatureEnabled('billing')) {
+  // the new path
+}
+```
+
+`isFeatureEnabled('billing')` and `isFeatureEnabled('FEATURE_BILLING')` both read `FEATURE_BILLING`. The flag is on only for `true` or `1` (any case). Anything else, including unset, is off.
+
+Do not add every flag to the Zod env schema. Flags are optional and unknown ahead of time.
+
+A commented example lives in `apps/api/.env.example`. Do not commit real `FEATURE_*` values there.
+
+## Ship dark
+
+The preferred path is: merge, deploy, leave the flag off. Production runs a pinned version until someone runs Promote, so unfinished work on `main` does not ship by itself. The flag covers the case where the unfinished work is *inside* a release you otherwise want.
+
+## Cherry-pick escape hatch
+
+If a flag is too late or the two changes cannot share a release, cut a release branch from the last tag and cherry-pick the squash commit you do want. That procedure is in the [release maintainer runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md#selective-shipping-d12).

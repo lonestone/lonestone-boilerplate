@@ -35,17 +35,16 @@ import {
   ensureGitignoreLine,
   ensurePackageJsonWiring,
   ensureConsumerBoilerstonePackageJson,
-  getChangelogIssues,
   getFallbackIntentionId,
   getIntentionOrderIssues,
-  isChangelogUnreleasedEmpty,
+  isUnreleasedIntentionPath,
   parseIntentionMetadataContent,
   parseReferencePathDeclarations,
   parseReferencePaths,
   PRODUCER_ARTIFACTS,
+  promoteUnreleasedIntentions,
   readOptionValue,
   resolveTargetVersion,
-  stampChangelogRelease,
 } from './boilerplate-core'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -333,6 +332,69 @@ describe('boilerplate core', () => {
     )
   })
 
+  it('treats unreleased/ paths as unpublished staging, not published intentions', () => {
+    expect(isUnreleasedIntentionPath('unreleased/add-session-revocation.md')).toBe(true)
+    expect(isUnreleasedIntentionPath('unreleased/README.md')).toBe(true)
+    expect(isUnreleasedIntentionPath('v1.0.0/00-setup-boilerplate-tracking.md')).toBe(false)
+    expect(isUnreleasedIntentionPath('TEMPLATE.md')).toBe(false)
+  })
+
+  it('rewrites unreleased ids and assigns NN- prefixes on promote', () => {
+    const inputFiles = [
+      {
+        fileName: 'add-thumbnails.md',
+        content: [
+          '---',
+          'id: unreleased/add-thumbnails',
+          'domain: storage',
+          'classification: migration',
+          'requires:',
+          '  - unreleased/add-session-revocation',
+          '---',
+          '',
+          '## Why',
+          '',
+          'Keep the unreleased/ mention in the body.',
+        ].join('\n'),
+      },
+      {
+        fileName: 'add-session-revocation.md',
+        content: [
+          '---',
+          'id: unreleased/add-session-revocation',
+          'domain: auth',
+          'classification: migration',
+          'pr: 142',
+          '---',
+          '',
+          '## Why',
+          '',
+          'Tombstones rather than deletes.',
+        ].join('\n'),
+      },
+    ]
+
+    const actual = promoteUnreleasedIntentions({
+      files: inputFiles,
+      version: '1.3.0',
+      existingDestFileNames: ['00-already-there.md'],
+    })
+
+    expect(actual.map((file) => file.destFileName)).toEqual([
+      '01-add-session-revocation.md',
+      '02-add-thumbnails.md',
+    ])
+    expect(actual.map((file) => file.id)).toEqual([
+      'v1.3.0/add-session-revocation',
+      'v1.3.0/add-thumbnails',
+    ])
+    expect(actual[0].content).toContain('id: v1.3.0/add-session-revocation')
+    expect(actual[0].content).toContain('pr: 142')
+    expect(actual[1].content).toContain('id: v1.3.0/add-thumbnails')
+    expect(actual[1].content).toContain('  - v1.3.0/add-session-revocation')
+    expect(actual[1].content).toContain('Keep the unreleased/ mention in the body.')
+  })
+
   it('validates the requires graph against execution order', () => {
     expect(
       getIntentionOrderIssues([
@@ -486,84 +548,6 @@ describe('boilerplate core', () => {
     expect(pattern.test(getFallbackIntentionId('1.1.0', 'api/nested/no-id.md'))).toBe(true)
     expect(pattern.test('v1.0.0')).toBe(false)
     expect(pattern.test('v1.0.0/Bad_Slug')).toBe(false)
-  })
-})
-
-describe('changelog lifecycle', () => {
-  const releasedChangelog = [
-    '# Changelog',
-    '',
-    '## [Unreleased]',
-    '',
-    '## [1.0.0] - 2026-07-16',
-    '',
-    '### Added',
-    '',
-    '- Initial release.',
-    '',
-  ].join('\n')
-
-  it('accepts a canonical changelog', () => {
-    expect(getChangelogIssues(releasedChangelog)).toEqual([])
-    expect(isChangelogUnreleasedEmpty(releasedChangelog)).toBe(true)
-  })
-
-  it('reports missing or misplaced [Unreleased] and unknown headings', () => {
-    expect(getChangelogIssues('# Changelog\n\n## [1.0.0] - 2026-07-16\n')).toEqual([
-      'missing "## [Unreleased]" section',
-    ])
-    expect(
-      getChangelogIssues('# Changelog\n\n## [1.0.0] - 2026-07-16\n\n## [Unreleased]\n'),
-    ).toEqual(['"## [Unreleased]" must be the first section'])
-    expect(getChangelogIssues(`${releasedChangelog}\n### Misc\n\n- Something.\n`)).toEqual([
-      'unknown changelog heading "### Misc" — use one of: Added, Changed, Deprecated, Removed, Fixed, Security, Migration',
-    ])
-    expect(getChangelogIssues(`${releasedChangelog}\n## [v1.0.0] - 2026-07-17\n`)).toEqual([
-      'duplicate version section: 1.0.0',
-    ])
-  })
-
-  it('treats heading-only [Unreleased] sections as empty', () => {
-    const headingsOnly = releasedChangelog.replace(
-      '## [Unreleased]\n',
-      '## [Unreleased]\n\n### Added\n',
-    )
-    expect(isChangelogUnreleasedEmpty(headingsOnly)).toBe(true)
-    const withEntry = releasedChangelog.replace(
-      '## [Unreleased]\n',
-      '## [Unreleased]\n\n### Added\n\n- New module.\n',
-    )
-    expect(isChangelogUnreleasedEmpty(withEntry)).toBe(false)
-  })
-
-  it('stamps [Unreleased] as the released version and re-creates a fresh section', () => {
-    const withEntry = releasedChangelog.replace(
-      '## [Unreleased]\n',
-      '## [Unreleased]\n\n### Added\n\n- New storage module.\n',
-    )
-    const stamped = stampChangelogRelease(withEntry, 'v1.1.0', '2026-08-01')
-
-    expect(getChangelogIssues(stamped)).toEqual([])
-    expect(isChangelogUnreleasedEmpty(stamped)).toBe(true)
-    expect(stamped).toContain('## [1.1.0] - 2026-08-01\n\n### Added\n\n- New storage module.')
-    expect(stamped.indexOf('## [Unreleased]')).toBeLessThan(stamped.indexOf('## [1.1.0]'))
-    expect(stamped.indexOf('## [1.1.0]')).toBeLessThan(stamped.indexOf('## [1.0.0]'))
-  })
-
-  it('refuses to stamp an empty section, a released version, or an invalid version', () => {
-    const withEntry = releasedChangelog.replace(
-      '## [Unreleased]\n',
-      '## [Unreleased]\n\n- Something changed.\n',
-    )
-    expect(() => stampChangelogRelease(releasedChangelog, '1.1.0', '2026-08-01')).toThrow(
-      'nothing to release',
-    )
-    expect(() => stampChangelogRelease(withEntry, '1.0.0', '2026-08-01')).toThrow(
-      'already has a changelog section',
-    )
-    expect(() => stampChangelogRelease(withEntry, 'latest', '2026-08-01')).toThrow(
-      'Invalid release version: latest',
-    )
   })
 })
 
@@ -1294,13 +1278,6 @@ describe('boilerplate CLI smoke', () => {
 
     expect(result.status).toBe(0)
     expect(JSON.parse(result.stdout)).toEqual({ ok: true, issues: [] })
-  })
-
-  it('validates the repository changelog structure', () => {
-    const result = runCli(['changelog', 'check'])
-
-    expect(result.status).toBe(0)
-    expect(result.stdout).toContain('Changelog is valid')
   })
 
   it('refuses a premature finish, then finishes once every intention is recorded', () => {

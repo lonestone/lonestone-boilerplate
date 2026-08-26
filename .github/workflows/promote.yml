@@ -1,0 +1,154 @@
+name: Promote
+
+# Sends a published version to one Dokploy environment.
+# Merging the Release PR only publishes the artifacts. This workflow is the
+# environment update: staging and production move independently.
+# Do not hook production to `latest` — that would move it with staging.
+# Every runnable app (API and frontends) is an image. Promote maps each
+# Dokploy application to its matching GHCR image at the same version.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to update
+        type: choice
+        options:
+          - staging
+          - production
+        required: true
+      version:
+        description: Image version (for example 1.3.0). Leave empty to use the latest GitHub Release.
+        type: string
+        required: false
+
+concurrency:
+  group: promote-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    name: Promote to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+      DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+      DOKPLOY_APPLICATIONS: ${{ secrets.DOKPLOY_APPLICATIONS }}
+      VERSION_INPUT: ${{ inputs.version }}
+    steps:
+      - name: Resolve version
+        id: resolve
+        run: |
+          set -euo pipefail
+
+          version="${VERSION_INPUT:-}"
+          version="${version#"${version%%[![:space:]]*}"}"
+          version="${version%"${version##*[![:space:]]}"}"
+
+          if [[ -z "${version}" ]]; then
+            version="$(gh release view --repo "${GITHUB_REPOSITORY}" --json tagName --jq .tagName)"
+            if [[ -z "${version}" ]]; then
+              echo "No GitHub Release found. Pass a version such as 1.3.0."
+              exit 1
+            fi
+            echo "Using latest GitHub Release ${version}."
+          fi
+
+          if [[ "${version}" =~ ^v[0-9] ]]; then
+            version="${version#v}"
+          fi
+
+          if [[ ! "${version}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Invalid version '${version}'. Use a tag like 1.3.0."
+            exit 1
+          fi
+
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "Promoting version ${version} to ${{ inputs.environment }}."
+
+      - name: Update Dokploy and deploy
+        env:
+          VERSION: ${{ steps.resolve.outputs.version }}
+          TARGET_ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${DOKPLOY_URL:-}" || -z "${DOKPLOY_API_KEY:-}" || -z "${DOKPLOY_APPLICATIONS:-}" ]]; then
+            echo "GitHub Environment '${TARGET_ENVIRONMENT}' is missing Dokploy settings."
+            echo "Add secrets DOKPLOY_URL, DOKPLOY_API_KEY, and DOKPLOY_APPLICATIONS."
+            echo "See apps/documentation/src/content/docs/references/1_release_and_versionning.mdx"
+            exit 1
+          fi
+
+          prefix="$(printf 'ghcr.io/%s' "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
+          map_file="$(mktemp)"
+          IMAGE_PREFIX="${prefix}" python3 - "${map_file}" <<'PY'
+          import os
+          import re
+          import sys
+
+          dest = sys.argv[1]
+          raw = os.environ["DOKPLOY_APPLICATIONS"]
+          prefix = os.environ["IMAGE_PREFIX"]
+          version = os.environ["VERSION"]
+          rows = []
+
+          for part in re.split(r"[\n,]+", raw):
+              part = part.strip()
+              if not part or part.startswith("#"):
+                  continue
+              if ":" not in part:
+                  sys.exit(f"Expected 'service:applicationId', got {part!r}")
+              service, app_id = part.split(":", 1)
+              service, app_id = service.strip(), app_id.strip()
+              if not re.fullmatch(r"[A-Za-z0-9._-]+", service):
+                  sys.exit(f"Invalid service name {service!r}")
+              if not app_id:
+                  sys.exit(f"Empty application id for service {service!r}")
+              image = f"{prefix}-{service}:{version}"
+              rows.append(f"{app_id} {image}\n")
+
+          if not rows:
+              sys.exit("DOKPLOY_APPLICATIONS is empty")
+
+          open(dest, "w", encoding="utf-8").writelines(rows)
+          PY
+
+          base="${DOKPLOY_URL%/}"
+          base="${base%/api}"
+
+          dokploy_post() {
+            local path="$1"
+            local body="$2"
+            local tmp code
+            tmp="$(mktemp)"
+            code="$(curl -sS -o "${tmp}" -w '%{http_code}' -X POST "${base}/api/${path}" \
+              -H 'accept: application/json' \
+              -H 'Content-Type: application/json' \
+              -H "x-api-key: ${DOKPLOY_API_KEY}" \
+              -d "${body}")"
+            if [[ "${code}" != 2* ]]; then
+              echo "Dokploy ${path} failed (HTTP ${code}):"
+              cat "${tmp}"
+              echo
+              exit 1
+            fi
+            rm -f "${tmp}"
+          }
+
+          while read -r id image; do
+            update_body="$(python3 -c 'import json,sys; print(json.dumps({"applicationId": sys.argv[1], "dockerImage": sys.argv[2], "sourceType": "docker"}))' "${id}" "${image}")"
+            deploy_body="$(python3 -c 'import json,sys; print(json.dumps({"applicationId": sys.argv[1], "title": sys.argv[2]}))' "${id}" "Promote ${VERSION} from GitHub")"
+
+            echo "Updating ${id} to ${image}"
+            dokploy_post 'application.update' "${update_body}"
+            echo "Deploying ${id}"
+            dokploy_post 'application.deploy' "${deploy_body}"
+          done < "${map_file}"
+
+          echo "Promoted version ${VERSION} to ${TARGET_ENVIRONMENT}."

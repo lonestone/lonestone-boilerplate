@@ -1,0 +1,45 @@
+---
+title: Boilerplate upgrades
+description: How a generated project stays in sync with the Lonestone boilerplate over time
+---
+
+A project created from this boilerplate diverges from day one. Your routes, models, and business logic are yours — so when the boilerplate later improves a lint rule, an auth pattern, or a CI step, you can't merge that improvement as a plain git diff. The diff would land on top of code that has moved on.
+
+**Boilerstone** (the `.boilerstone/` directory) is how we solve that. Each boilerplate release publishes **migration intentions**: short markdown files that say what changed, why, and how to tell whether it concerns your project. You — or an AI agent you supervise — replay the smallest equivalent change in your own code. Nothing is applied automatically.
+
+## What you need to know as a consumer
+
+1. **Onboard once** — if the project isn't tracked yet:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh \
+     | sh -s -- onboard
+   ```
+
+2. **Stage an upgrade** — this creates a dedicated branch and a disposable workspace. It does not edit your app code:
+
+   ```bash
+   pnpm boilerplate upgrade status
+   pnpm boilerplate upgrade
+   ```
+
+3. **Apply intentions** — one at a time, with a human confirming apply/skip. Follow the [upgrade runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/upgrade-runbook.md). The Claude Code / Cursor `boilerstone-upgrade` skills follow that same runbook.
+
+4. **Finish** — when every staged intention is applied or skipped:
+
+   ```bash
+   pnpm boilerplate upgrade finish --to <version>
+   ```
+
+For the why behind the system and what each command does, read [how it works](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/how-it-works.md).
+
+:::note[Working on the boilerplate itself?]
+Read the [`.boilerstone/` overview](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/README.md). Publishing a release is a different procedure: the [release maintainer runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md).
+:::
+
+## Design choices in one breath
+
+- Ship **meaning**, not diffs — the consumer's code has moved on.
+- Everything is **markdown and JSON** — same artifacts for a human or any agent.
+- The CLI **stages** work; it never edits application code.
+- Leaving is cheap: `rm -rf .boilerstone` and drop the `boilerplate` script.
