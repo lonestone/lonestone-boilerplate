@@ -44,6 +44,10 @@ export default defineConfig({
           label: 'References',
           items: [{ autogenerate: { directory: 'references' } }],
         },
+        {
+          label: 'Releases',
+          items: [{ autogenerate: { directory: 'releases' } }],
+        },
       ],
     }),
   ],

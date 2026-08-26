@@ -1,0 +1,47 @@
+name: Release note
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  release-note:
+    name: Release note
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect a Release PR
+        id: gate
+        env:
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          if [[ ",${LABELS}," == *",autorelease: pending,"* ]]; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "required=false" >> "$GITHUB_OUTPUT"
+            echo "Not a Release PR (no autorelease: pending label). Skipping."
+          fi
+
+      - name: Checkout repository
+        if: steps.gate.outputs.required == 'true'
+        uses: actions/checkout@v4
+
+      - name: Require the release note MDX
+        if: steps.gate.outputs.required == 'true'
+        run: |
+          set -euo pipefail
+          if [[ ! -f .release-please-manifest.json ]]; then
+            echo "Could not read .release-please-manifest.json on the PR HEAD."
+            echo "add apps/documentation/src/content/docs/releases/vX.Y.Z.mdx before merging"
+            exit 1
+          fi
+          VERSION="$(python3 -c "import json; print(json.load(open('.release-please-manifest.json'))['.'])")"
+          NOTE="apps/documentation/src/content/docs/releases/v${VERSION}.mdx"
+          if [[ ! -f "$NOTE" ]]; then
+            echo "add ${NOTE} before merging"
+            exit 1
+          fi
+          echo "Found ${NOTE}"
