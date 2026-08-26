@@ -51,9 +51,9 @@ Work through each gap independently; skip any that is already closed. Skip this 
    Adapt the staged reference workflow: add the `v*` trigger and the semver / `latest`-on-tag patterns. Keep the project's image matrix, Dockerfiles, and registry name. Include each remaining runnable app (API and frontends). Do not keep a frontend on branch build-on-deploy while the API uses versioned images.
    Done when: a push to the default branch still builds a SHA tag per existing Dockerfile, and a `v*` tag would produce `{{version}}`, `{{major}}.{{minor}}`, and `latest` for those images.
 
-5. **Promote workflow** — signal: no `.github/workflows/promote.yml`.
-   Copy the staged reference workflow. Do not invent extra git tags such as `env/prod`. Do not hook production to the `latest` image tag. Creating GitHub Environments `staging` and `production`, and storing Dokploy secrets, is a human step (`scripts/configure-github-repo.sh` and `scripts/github-repo-settings.md`).
-   Done when: `promote.yml` exists with `workflow_dispatch` inputs `environment` and `version`, and jobs use GitHub Environments of those names.
+5. **Promote workflow** — signal: no `.github/workflows/promote.yml` or no `.github/workflows/promote-on-release.yml`.
+   Copy the staged reference workflows. Do not invent extra git tags such as `env/prod`. Do not hook production to the `latest` image tag. Creating GitHub Environments `staging` and `production`, and storing Dokploy secrets, is a human step (`scripts/configure-github-repo.sh` and `scripts/github-repo-settings.md`). `promote-on-release.yml` is inert until a human sets the `PROMOTE_ON_RELEASE` repository variable; do not set it during this adaptation.
+   Done when: `promote.yml` exists with `workflow_dispatch` inputs `environment` and `version`, jobs use GitHub Environments of those names, and `promote-on-release.yml` exists.
 
 ## Out of Scope
 
@@ -72,6 +72,7 @@ Work through each gap independently; skip any that is already closed. Skip this 
 - `apps/documentation/src/content/docs/releases/` — **adapt**
 - `.github/workflows/push-to-ghcr.yml` — **adapt**
 - `.github/workflows/promote.yml` — **copy**
+- `.github/workflows/promote-on-release.yml` — **copy**
 - `apps/documentation/src/content/docs/references/1_release_and_versionning.mdx` — **copy**
 - `.claude/skills/project-release/SKILL.md` — **copy**
 - `.cursor/skills/project-release/SKILL.md` — **copy**
@@ -83,6 +84,7 @@ Work through each gap independently; skip any that is already closed. Skip this 
 - `.github/workflows/release-note.yml` exists.
 - `.github/workflows/push-to-ghcr.yml` lists a `v*` tag trigger and semver image tags.
 - `.github/workflows/promote.yml` exists and is triggered by `workflow_dispatch`.
+- `.github/workflows/promote-on-release.yml` exists and only dispatches when `PROMOTE_ON_RELEASE` is set.
 - No new `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx` was invented during this adaptation.
 
 ## Record Result

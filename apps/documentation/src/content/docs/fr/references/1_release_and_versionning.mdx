@@ -94,6 +94,18 @@ Deux prérequis :
 Le workflow Promote est livré avec le support de Dokploy. Si vous déployez sur un autre PaaS, gardez la même idée — un run de workflow met à jour un environnement — et adaptez les appels d'API à votre hébergeur.
 :::
 
+### Promouvoir automatiquement à la release
+
+Lancer Promote à la main après chaque release est le défaut assumé, mais on peut l'automatiser sans renoncer à la porte humaine. Mettez la variable de dépôt `PROMOTE_ON_RELEASE` au nom d'un environnement :
+
+```bash
+gh variable set PROMOTE_ON_RELEASE --body production
+```
+
+Une fois les images du tag construites, `promote-on-release.yml` déclenche Promote pour cet environnement avec la version publiée. Merger la Release PR devient de fait le bouton de mise en prod — un humain la merge toujours ; seul ce qui se passe *après* est automatisé.
+
+Si votre équipe veut garder la release et le déploiement comme deux consentements séparés, ajoutez des **required reviewers** sur le GitHub Environment : le run Promote déclenché se met alors en pause sur un bouton « Approve and deploy » dans GitHub au lieu de déployer immédiatement, avec la trace de qui a approuvé.
+
 ### Configurer Promote pour Dokploy
 
 Créez des GitHub Environments nommés `staging` et `production`. `./scripts/configure-github-repo.sh --apply` les crée vides s'ils manquent. Il ne stocke pas de secrets — ajoutez-les dans l'interface GitHub, sur chaque environnement :

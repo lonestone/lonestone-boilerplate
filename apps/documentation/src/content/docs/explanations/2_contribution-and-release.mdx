@@ -140,6 +140,8 @@ A changelog line cannot say "these five PRs together deliver X" — that context
 
 We considered auto-merging the Release PR when its checks are green, and rejected it. Green checks mean the PR is *allowed* to merge, not that the team wants this bundle released. A project that wants every merge in production should simply stay in the "without versions" mode rather than automate away the one human gate that versioning exists to provide.
 
+What *can* be automated is everything after that click: with [`PROMOTE_ON_RELEASE`](/lonestone-boilerplate/references/1_release_and_versionning#promote-automatically-on-release), merging the Release PR chains straight into the deploy — optionally pausing on a GitHub "Approve and deploy" button when the environment has required reviewers. The gate moves to a better place; it does not disappear.
+
 ### Why deployment environments don't own branches
 
 We used git-flow-style environment branches for a long time: merging into `staging` deployed staging, merging into `main` deployed production. It works, but the branches slowly become workspaces — a hotfix lands on one branch and not the other, and the history stops telling the truth.

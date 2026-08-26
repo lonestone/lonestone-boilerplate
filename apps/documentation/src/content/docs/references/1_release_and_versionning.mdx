@@ -94,6 +94,18 @@ Two prerequisites:
 The Promote workflow ships with Dokploy support. If you deploy on another PaaS, keep the same idea — one workflow run updates one environment — and adapt the API calls to your host.
 :::
 
+### Promote automatically on release
+
+Running Promote by hand after every release is a deliberate default, but it can be automated without giving up the human gate. Set the repository variable `PROMOTE_ON_RELEASE` to an environment name:
+
+```bash
+gh variable set PROMOTE_ON_RELEASE --body production
+```
+
+Once the tag images are built, `promote-on-release.yml` dispatches Promote for that environment with the released version. Merging the Release PR effectively becomes the deploy button — a human still merges it; only what happens *after* is automated.
+
+If your team wants release and deploy to stay two separate consents, add **required reviewers** on the GitHub Environment: the dispatched Promote run then pauses on an "Approve and deploy" button in GitHub instead of deploying immediately, with an audit trail of who approved.
+
 ### Configure Promote for Dokploy
 
 Create GitHub Environments named `staging` and `production`. `./scripts/configure-github-repo.sh --apply` creates them empty if they are missing. It does not store secrets — add these in the GitHub UI, on each environment:

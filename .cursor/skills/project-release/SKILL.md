@@ -22,7 +22,7 @@ This skill is a thin adapter. The canon lives at `apps/documentation/src/content
 
 ## After the human merges
 
-Merging the Release PR publishes the tag and images. It does not update production. Point the user at Actions → **Promote** (or the link on the GitHub Release). Do not run Promote unless they ask.
+Merging the Release PR publishes the tag and images. It does not update production — unless the repository variable `PROMOTE_ON_RELEASE` is set, in which case Promote is dispatched automatically once the images are built (and may wait on an environment approval). Otherwise, point the user at Actions → **Promote** (or the link on the GitHub Release). Do not run Promote unless they ask.
 
 ## Guardrails
 

@@ -77,6 +77,7 @@ sequenceDiagram
 - Staging and production are two separate GitHub Environments: they move independently.
 - We never change the version by hand in Dokploy anymore: the workflow run is the record of who promoted what, and when.
 - The workflow is written for Dokploy; for another host, keep the same principle (one run = one environment updated) and adapt the API calls.
+- Optional: set the repository variable `PROMOTE_ON_RELEASE` and Promote is dispatched automatically once the tag images are built — merging the Release PR becomes the deploy button. Add required reviewers on the environment to get an "Approve and deploy" pause instead of an immediate deploy.
 
 ### 5. The two modes: not every project has to version
 

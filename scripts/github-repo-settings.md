@@ -50,9 +50,11 @@ Require pull requests, and require these status checks to pass:
 ### Repository variables
 
 - [ ] `REQUIRE_RELEASE_NOTE` — optional. Release notes are not enforced by default; set this variable to `true` to make the **Release note** check block a Release PR until `releases/vX.Y.Z.mdx` exists. The boilerplate repository sets it.
+- [ ] `PROMOTE_ON_RELEASE` — optional. When set to `staging` or `production`, `promote-on-release.yml` dispatches Promote for that environment as soon as the tag images are built. Combine it with required reviewers on the environment to get an "Approve and deploy" button instead of an immediate deploy.
 
 ```bash
 gh variable set REQUIRE_RELEASE_NOTE --body true
+gh variable set PROMOTE_ON_RELEASE --body production
 ```
 
 Do not apply branch protection blindly with the API on a repo that already has rules. Set it in the GitHub UI (Settings → Branches, or Rulesets) so you do not wipe existing rules.

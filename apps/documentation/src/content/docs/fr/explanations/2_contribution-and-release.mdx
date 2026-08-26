@@ -140,6 +140,8 @@ Une ligne de changelog ne peut pas dire « ces cinq PR ensemble livrent X » —
 
 Nous avons envisagé de merger automatiquement la Release PR quand ses checks sont verts, et nous avons rejeté l'idée. Des checks verts signifient que la PR a le *droit* de merger, pas que l'équipe veut publier ce lot. Un projet qui veut chaque merge en production devrait simplement rester en mode « sans versions » plutôt que d'automatiser la seule porte humaine que le versionnement existe à fournir.
 
+Ce qui *peut* être automatisé, c'est tout ce qui suit ce clic : avec [`PROMOTE_ON_RELEASE`](/lonestone-boilerplate/fr/references/1_release_and_versionning#promouvoir-automatiquement-à-la-release), merger la Release PR enchaîne directement sur le déploiement — avec, en option, une pause sur un bouton GitHub « Approve and deploy » quand l'environnement a des required reviewers. La porte se déplace au bon endroit ; elle ne disparaît pas.
+
 ### Pourquoi les environnements de déploiement ne possèdent pas de branche
 
 Nous avons longtemps utilisé des branches d'environnement à la git-flow : merger dans `staging` déployait staging, merger dans `main` déployait la production. Ça fonctionne, mais les branches deviennent lentement des espaces de travail — un hotfix atterrit sur une branche et pas l'autre, et l'historique cesse de dire la vérité.
