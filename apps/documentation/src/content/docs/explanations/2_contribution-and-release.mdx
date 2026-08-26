@@ -1,6 +1,6 @@
 ---
 title: Contribution and release
-description: Why commits, files, and artifacts are the durable record — not GitHub surfaces or environment branches
+description: Why commits, files, and artifacts are the durable record — the story, the decisions, and their rationale
 ---
 
 This page explains the reasoning behind our contribution and release system. The rules themselves live in [`CONTRIBUTING.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CONTRIBUTING.md), and the mechanics (versions, releases, deployments) are described in [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning).
@@ -10,6 +10,76 @@ This page explains the reasoning behind our contribution and release system. The
 Development has always fallen short on one thing: recording **why** a change was made. Commit messages stay short to be readable, so the rationale ends up in a pull request comment, a ticket, or a chat thread — if anywhere. A year later, someone reverts a change that was made for a good reason, simply because the reason is nowhere to be found.
 
 AI agents change the economics here. Writing a clear commit message with a proper body used to be friction; now it is cheap. So we designed the system around one idea: **capture the "why" once, in the repository, at the moment the work is merged.**
+
+## A week with the system
+
+Before the rules, here is a normal week on a versioned project. Two developers, Pierrick and Nicolas. The project is at version `1.2.0`.
+
+### Monday — Pierrick works
+
+Pierrick builds session revocation on a branch. He commits as he goes, through his agent. The commits are honest working notes — one is literally a typo fix. Each one passes commitlint (lefthook checks the format locally), but nobody polishes them. They will never reach `main` as commits.
+
+```mermaid
+gitGraph
+  commit id: "chore: release 1.2.0" tag: "v1.2.0"
+  branch feat/session-revocation
+  checkout feat/session-revocation
+  commit id: "feat(auth): wip revocation endpoint"
+  commit id: "fix(auth): typo in guard"
+  commit id: "feat(auth): wire into session service"
+  commit id: "test(auth): revocation e2e"
+```
+
+### Tuesday — Pierrick merges
+
+The PR title is `feat(auth): add session revocation endpoint` — CI checked that it is a valid conventional header, because this title is about to become permanent. When the PR is ready, Pierrick tells his agent "finalize this PR". The agent — following the `finalize-pr` skill, on Pierrick's machine — reads the full diff and writes the **PR description** as the future commit body: a short paragraph on *why* revocation uses tombstone checks instead of session deletes. Nothing else — no screenshots, no checklist; review chatter lives in comments. A CI check lints the description and goes green.
+
+Then anyone can merge, from anywhere. The repository is configured so the squash commit message is *always* "PR title + PR description" — the GitHub merge button, `gh`, and auto-merge all produce the same curated commit. There is no message to compose at merge time, so there is no way to fumble it. Pierrick clicks the button. The branch dies. The four WIP subjects do **not** ride along — "wip endpoint" and "typo in guard" tell a future reader nothing the diff and the rationale don't.
+
+`main` now has **one** new commit:
+
+```mermaid
+gitGraph
+  commit id: "chore: release 1.2.0" tag: "v1.2.0"
+  commit id: "feat(auth): add session revocation endpoint (#142)"
+```
+
+Minutes later, a bot PR appears (or updates itself): the **Release PR**, maintained by release-please. It reads the new commit, proposes version `1.3.0` (a `feat` means a minor bump), and regenerates `CHANGELOG.md` with one line — "add session revocation endpoint", linked to commit `#142`. Nobody merges it. It just sits there, staying current.
+
+### Wednesday — Nicolas merges
+
+Nicolas ships thumbnail generation. While testing, he also fixed a real pagination bug — a second, unrelated, consumer-visible change in the same PR. This is the curation call at the heart of the system: out of his five working commits, exactly **two** deserve to exist afterwards. At finalization his agent writes the PR title for the first and puts one conventional paragraph for the second in the description, dropping the rest.
+
+The squash commit message looks like this (abbreviated):
+
+```
+feat(storage): add image thumbnail generation (#147)
+
+Thumbnails are generated at upload time rather than on-the-fly because
+the S3 bucket is not fronted by a CDN yet; …
+
+fix(api): correct off-by-one in list endpoint pagination
+```
+
+The Release PR updates itself again: still `1.3.0` (two feats and a fix is still a minor), but the changelog now shows **three** lines — revocation, thumbnails, and the pagination fix. Two of them link to the same commit `#147`; that's fine, the fix was declared as its own change.
+
+Meanwhile, staging has been redeployed on every merge. Production hasn't moved — it runs a pinned image, and there is no new version to promote yet.
+
+### Friday — Pierrick releases
+
+The client validated the features on staging; Pierrick decides to ship. He opens the Release PR — the version bump and the changelog are already there. His remaining work is the human part: he writes the release note (`releases/v1.3.0.mdx` in the docs app) — a few sentences on why this release exists and what it changes for users. A CI check can make this note mandatory; the boilerplate repository enforces it. He merges.
+
+Release-please tags `v1.3.0`, creates the GitHub Release (its body mirrored from the MDX), and the tag triggers the Docker build: images `1.3.0`, `1.3`, `latest` land in GHCR. Production still hasn't moved. Pierrick runs the **Promote** workflow from GitHub, picks `production` and `1.3.0`, and Dokploy pulls that image.
+
+```mermaid
+gitGraph
+  commit id: "chore: release 1.2.0" tag: "v1.2.0"
+  commit id: "feat(auth): session revocation (#142)"
+  commit id: "feat(storage): thumbnails (#147)"
+  commit id: "chore: release 1.3.0" tag: "v1.3.0"
+```
+
+Total hand-written material for the whole cycle: two squash bodies and one release note. Everything else — version number, changelog, tag, GitHub Release, images, deploys — was derived. And every "why" is one `git show` away, forever.
 
 ## Everything durable lives in the repository
 
@@ -29,14 +99,127 @@ We squash-merge every pull request, so the squash commit message is the one hand
 
 The rationale is written **once**, in the commit body. The changelog does not copy it — it links to the commit, and `git show` is one hop away. A second copy would drift.
 
-### Why squash merges?
+### What the release tooling reads
 
-A linear history makes it much easier to pinpoint the commit that introduced an issue, and it is what [release-please](https://github.com/googleapis/release-please) recommends to parse changes reliably. It also turns the pull request into a natural unit of work: however messy the WIP commits were, what lands on `main` is a single, well-written commit.
+release-please parses the squash commit message with precise rules. Knowing them explains several of our conventions:
 
-## Deployment environments consume artifacts
+- The **subject line** is parsed as a conventional commit: one changelog entry, counted in the version math.
+- A body **paragraph that starts unbulleted, after a blank line, with a standard type** (`fix(api): …`) is parsed as an *additional* change: its own changelog line, counted in the version. That is how one PR declares two changes.
+- **Bulleted lines (`* fix: typo`) never match.** If GitHub's auto-generated commit list ever slips into a merge, it is invisible to the parser — a hygiene problem, not a versioning incident.
+- The token `BREAKING-CHANGE:` matches **anywhere** in the body, even mid-sentence, and forces a major release. That is why our always-on agent rules warn about it: it is valid syntax that no linter can distinguish from prose.
+
+## The decisions and why
+
+### Why squash merges, and no `develop` branch
+
+A linear history makes it much easier to pinpoint the commit that introduced an issue, and it is what [release-please](https://github.com/googleapis/release-please) recommends to parse changes reliably. It also turns the pull request into a natural unit of work: however messy the WIP commits were, what lands on `main` is a single, well-written commit — which also makes cherry-picking trivial when it is ever needed.
+
+We used git-flow for a long time, so dropping `develop` was deliberate: the "stable line" that `develop`/`main` pairs try to model already exists — it is the tag list. Consumers never install from a branch, release tooling assumes a single trunk, and git-flow solves parallel release trains we don't have at our team size.
+
+### Why the WIP-to-squash transformation happens before the merge click
+
+The naive design — compose the squash message at merge time — fails in practice: most people merge from the GitHub UI, and a message typed in a text box at click time is unreviewed and easy to fumble. So finalization is moved **off the merge click** entirely. The repository setting "default squash message = PR title and description" means GitHub materializes the curated text into the commit no matter who merges or how. CI lints the title and description before merge, which makes the future `git log` entry **reviewable**: reviewers can request changes on the wording of the rationale like on code.
+
+This is also why no merge bot is needed — correctness comes from the repo setting plus the CI gate, not from who clicks.
+
+### Why standard commit types only
+
+We use the standard Conventional Commits types (`feat`, `fix`, `docs`, `refactor`, …) and nothing custom. Fewer rules to teach — and release-please's parser only recognizes the standard list, so a custom type in an extra body paragraph would silently not count as a change.
+
+Commit **scopes** are the project's domains, defined once in `commitlint.config.ts`. Everything else (docs, skills, workflows) points to that file and never restates the list, because two copies drift. A consumer project personalizes its scopes by editing that one array.
+
+### Why we let a tool write the changelog
+
+We used to forbid generated changelogs. That rule predates agent-written commits: back then, generation meant compiling messy WIP subjects into noise. With curated squash messages, the generated changelog *is* the curated inventory — the granularity is decided by the author (one paragraph per change) and the reasons live in commit bodies, one link away. The two arguments for hand-curation disappeared, so the rule did too.
+
+### Why release notes live in the docs app
+
+A changelog line cannot say "these five PRs together deliver X" — that context spans commits and partly lives outside the repo. So each release gets a human-written note in `apps/documentation/src/content/docs/releases/`, and the GitHub Release body is a **mirror** of it, not the other way around. The docs app publishes to GitHub Pages, so release notes double as public product communication. Notes are optional by default and enforced per repository — see [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning#changelog-and-release-notes).
+
+### Why a human merges the Release PR
+
+We considered auto-merging the Release PR when its checks are green, and rejected it. Green checks mean the PR is *allowed* to merge, not that the team wants this bundle released. A project that wants every merge in production should simply stay in the "without versions" mode rather than automate away the one human gate that versioning exists to provide.
+
+### Why deployment environments don't own branches
 
 We used git-flow-style environment branches for a long time: merging into `staging` deployed staging, merging into `main` deployed production. It works, but the branches slowly become workspaces — a hotfix lands on one branch and not the other, and the history stops telling the truth.
 
-In this system, no environment owns a branch. `main` produces artifacts: builds, images, tags. Each deployment environment points at an artifact stream, and which stream is a choice per environment — see [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning).
+In this system, no environment owns a branch. `main` produces artifacts (builds, images, tags) and each environment points at an artifact stream — which stream is a per-environment choice, described in [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning). If a host really requires a branch to watch, a `deploy/<env>` branch can exist as a **fast-forwarded pointer** to a tag — never a workspace, never committed to directly. That is an escape hatch, not the default.
 
-If a host requires a deploy branch, it is a fast-forwarded pointer, never a workspace. Sending a released version to production is one workflow run (Actions → **Promote**): it tells the host to pull that version for one environment. No commit, no environment branch.
+### Why lefthook rather than husky
+
+Single binary, one `lefthook.yml`, parallel hooks, no `prepare`-script coupling. Functionally equivalent for our need — a taste call, but a deliberate one.
+
+### Why feature flags before cherry-picks
+
+The recurring "client wants B without A" problem (both merged, A must not ship) is solved by a feature flag first: A merges but ships dark. See [Feature flags](/lonestone-boilerplate/guides/feature-flags). The escape hatch — branch from the last tag, cherry-pick B's squash commit, cut a patch release — is easy precisely because squash merge gives one commit per PR. And the release gate itself removes most other cherry-picking: merging no longer means deploying.
+
+## The full flow
+
+```mermaid
+flowchart TD
+    subgraph LOCAL["1 · Committing (local)"]
+        A["Work on a feat/… branch<br/>Conventional WIP commits<br/>(lefthook + commitlint assist)"]
+    end
+
+    subgraph PR["2 · The Pull Request"]
+        B["PR title = future squash subject (CI lint)<br/>PR description = future commit body (CI lint)"]
+        B2["Boilerplate only:<br/>add intention in unreleased/<br/>OR label no-intention (CI gate)"]
+        B --> B2
+    end
+
+    subgraph MERGE["3 · The merge (squash)"]
+        C["Any merge path (UI / gh):<br/>GitHub materializes title + description<br/>into the squash commit (#123)"]
+    end
+
+    subgraph MAIN["main"]
+        D["Linear history, one commit per PR<br/>staging may follow main"]
+    end
+
+    subgraph RELPR["4 · The Release PR (release-please)"]
+        E["Auto-maintained:<br/>next version + generated CHANGELOG.md"]
+        E2["Human adds:<br/>release note MDX<br/>boilerplate: order intentions into vX.Y.Z/"]
+        E --> E2
+    end
+
+    subgraph REL["5 · The release (tag vX.Y.Z)"]
+        F["Tag + GitHub Release<br/>(body mirrored from MDX)"]
+        F2["Versioned Docker images (GHCR)"]
+        F3["Promote workflow<br/>updates one environment"]
+        F4["Boilerstone consumers:<br/>upgrade prepare --to X.Y.Z"]
+        F --> F2 --> F3
+        F --> F4
+    end
+
+    LOCAL --> PR --> MERGE --> MAIN --> RELPR
+    RELPR -->|"merge Release PR (human)"| REL
+```
+
+## Boilerplate vs consumer
+
+The same system runs in both places, with a few producer-only pieces:
+
+| Piece | Boilerplate repo | Consumer project |
+| --- | --- | --- |
+| Conventional commits, commitlint, lefthook | ✔ | ✔ (edits the scopes array) |
+| PR title + description lint | ✔ | ✔ |
+| Intention gate (`unreleased/` or `no-intention` label) | ✔ | ✘ (no intention machinery) |
+| release-please | ✔, versioned | Optional: off (without versions) or on |
+| Generated `CHANGELOG.md` | ✔ | ✔ when versioned |
+| Release notes in the docs app | ✔ (enforced) | ✔ when versioned (opt-in enforcement) |
+| Release-time intention plumbing on the Release PR | ✔ | ✘ |
+| Tag-triggered GHCR images | ✔ | Recommended when versioned |
+| Promote workflow | optional | Recommended when versioned and Dokploy pulls images |
+| `CONTRIBUTING.md` | ✔ | ✔ shipped; personalize scopes via `commitlint.config.ts` |
+| GitHub settings script | ✔ | ✔ (run once at project setup) |
+
+On the boilerplate repository, a PR that changes something consumers must adapt to also carries its **migration intention** — written in the same PR, by the author who has the context, not reconstructed at release time by the maintainer. The maintainer's job on the Release PR is plumbing: ordering the staged intentions, checking staleness, writing the note. See the [release maintainer runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md).
+
+## Built for agents
+
+The team commits mostly through agents, so the system makes agents correct **by construction** rather than by hoping they read the docs. Four layers, ordered by reliability:
+
+1. **Guardrails**: commitlint locally, PR lint / intention gate / release-note check in CI. Every rejection message states the fix — error messages are prompts.
+2. **One canon per stage, never restated**: `CONTRIBUTING.md` for commits and PRs, the runbook for boilerplate releases, the [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning) page for versioning and deploys. Skills and rules point to these documents; duplicating them would drift.
+3. **Two always-on rule lines, no more** (always-on context is a budget): read `CONTRIBUTING.md` before committing, and never write `BREAKING-CHANGE:` unless you mean it.
+4. **Skills for ceremonies only** (`finalize-pr`, `project-release`, `boilerstone-intention`, `boilerstone-release`): multi-step, occasional procedures. There is deliberately no `commit` skill — committing happens dozens of times a day, and commitlint's corrective errors teach faster than prose.

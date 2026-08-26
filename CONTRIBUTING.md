@@ -56,6 +56,12 @@ When the work is ready, finalize the pull request (the `finalize-pr` skill does 
 
 Do not merge as part of finalization. Once review and the PR lint check are green, anyone can merge from anywhere. GitHub appends `(#123)` to the subject: that is the durable link back to the pull request.
 
+### Fixing a bad merged message
+
+If a badly written message reaches `main` anyway, there is a correction tool that needs no git surgery: release-please honors a `BEGIN_COMMIT_OVERRIDE … END_COMMIT_OVERRIDE` block in the PR description, and it reads the description at parse time — so it works even **after** the merge. Edit the merged PR's description, put the corrected conventional message inside the block, and the Release PR recomputes.
+
+This splits the git record from the parsed record, so it is an escape hatch, not a normal-flow tool. In normal flow, fix the description *before* merging.
+
 ## Repository settings
 
 A new GitHub repository needs squash-only merges and the default squash message **pull request title and description**. That setting is load-bearing: without it, the title and description never become the commit.

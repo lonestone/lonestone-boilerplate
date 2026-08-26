@@ -55,7 +55,7 @@ Work through each gap independently; skip any that is already closed.
 ## Out of Scope
 
 - release-please, a generated `CHANGELOG.md`, release notes in the docs app, and tag-triggered GHCR images — those are `unreleased/adopt-release-please`.
-- The intention-gate workflow, `.boilerstone/migration-intentions/unreleased/`, the `boilerstone-intention` and `boilerstone-release` skills, and `SPEC.md` — producer only.
+- The intention-gate workflow, `.boilerstone/migration-intentions/unreleased/`, and the `boilerstone-intention` and `boilerstone-release` skills — producer only.
 - Rewriting unrelated root scripts or dependencies.
 - Lockfiles (`pnpm-lock.yaml`) and generated artifacts.
 

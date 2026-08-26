@@ -31,6 +31,8 @@ In versioned mode, [release-please](https://github.com/googleapis/release-please
 
 :::caution[Never auto-merge the Release PR]
 Green checks mean "this PR is allowed to merge", not "send this to production". A human decides when a release happens. And even then, merging the Release PR only publishes the tag and the images — deploying is a separate step, described in [Promoting a version](#promoting-a-version).
+
+There is also a technical reason: a merge done with the default `GITHUB_TOKEN` never triggers the follow-up workflow run that creates the tag. Merge it as yourself, from the GitHub UI.
 :::
 
 ## What the pipeline produces
@@ -117,7 +119,9 @@ You can add required reviewers on `production` if a second person must approve t
 Two artifacts, two jobs:
 
 - [`CHANGELOG.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CHANGELOG.md) is the generated inventory: one line per change, each linking to its commit. Never edit it by hand.
-- [`releases/`](/lonestone-boilerplate/releases) holds the human-written notes: why this version exists. A note is required on the Release PR before it can be merged.
+- [`releases/`](/lonestone-boilerplate/releases) holds the human-written notes: why this version exists.
+
+Release notes are **optional by default**: the CI check on the Release PR passes without one. When your team wants the note to be mandatory, set the repository variable `REQUIRE_RELEASE_NOTE` to `true` (`gh variable set REQUIRE_RELEASE_NOTE --body true`) and the check will block the Release PR until `releases/vX.Y.Z.mdx` exists. The boilerplate repository enforces it.
 
 ## Feature flags
 
