@@ -1,7 +1,6 @@
 packages:
   - packages/*
   - apps/*
-  # Upgrade tooling; safe to delete the directory to detach from the boilerplate
   - .boilerstone
 strictPeerDependencies: true
 # tsconfck (via vite-tsconfig-paths) still declares typescript@^5; TS 6 is compatible here
@@ -48,6 +47,7 @@ onlyBuiltDependencies:
   - '@tailwindcss/oxide'
   - cpu-features
   - esbuild
+  - lefthook
   - nestjs-pino
   - protobufjs
   - sharp

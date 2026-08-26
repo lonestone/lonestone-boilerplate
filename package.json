@@ -25,15 +25,22 @@
     "schematics:module": "pnpm --filter=@boilerstone/schematics run schematics:module",
     "docs-only": "pnpm --filter=@boilerstone/documentation run dev",
     "knip": "knip --no-exit-code",
-    "prepare": "husky"
+    "lint:pr": "tsx ./scripts/lint-pr.ts",
+    "prepare": "lefthook install --reset-hooks-path"
   },
   "dependencies": {
     "typescript": "^6.0.3"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@commitlint/lint": "^21.2.2",
+    "@commitlint/load": "^21.2.2",
+    "@commitlint/types": "^21.2.0",
+    "@types/node": "catalog:build",
     "enquirer": "^2.4.1",
-    "husky": "^9.1.7",
     "knip": "^6.31.0",
+    "lefthook": "^2.1.10",
     "oxfmt": "^0.57.0",
     "oxlint": "^1.77.0",
     "tsx": "^4.23.5"

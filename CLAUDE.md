@@ -19,3 +19,6 @@ Read all the documentation cited in the README.md file that could be useful to u
 - Read backend guidelines when working on backend code
 
 You must always follow these guidelines.
+
+Before committing or opening a PR, read `CONTRIBUTING.md` and follow it.
+Never write the token `BREAKING-CHANGE:` in a commit message unless you intend to force a major release.

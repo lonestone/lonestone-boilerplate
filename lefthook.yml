@@ -1,0 +1,22 @@
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: pnpm exec commitlint --edit {1}
+
+pre-push:
+  jobs:
+    - name: quality
+      use_stdin: true
+      run: |
+        STDIN=$(cat)
+        if echo "$STDIN" | grep -q "^(delete)"; then
+          echo "(delete) found at start of push refs, skipping pre-push hook"
+          exit 0
+        fi
+        echo "Running linter..."
+        pnpm lint || exit 1
+        echo "Running type check..."
+        pnpm typecheck || exit 1
+        echo "Running tests..."
+        pnpm test || exit 1
+        echo "All pre-push checks passed!"
