@@ -27,7 +27,7 @@ A commented example lives in `apps/api/.env.example`. Do not commit real `FEATUR
 
 ## Ship dark
 
-The preferred path is: merge, deploy, leave the flag off. Production already follows release tags, so an unfinished set can sit on `main` without shipping. The flag covers the case where the unfinished work is *inside* a release you otherwise want.
+The preferred path is: merge, deploy, leave the flag off. Production runs a pinned version until someone runs Promote, so unfinished work on `main` does not ship by itself. The flag covers the case where the unfinished work is *inside* a release you otherwise want.
 
 ## Cherry-pick escape hatch
 

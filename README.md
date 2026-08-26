@@ -241,7 +241,7 @@ The CD workflow (`push-to-ghcr.yml`) builds an image per runnable app (API, web-
 - A push to `main` produces a SHA-tagged image for each app.
 - A `v*` tag produces versioned images (`1.2.3`, `1.2`, and `latest`) for each app.
 
-How a project versions, and how each environment consumes those artifacts, is documented in [Release and versioning](apps/documentation/src/content/docs/references/1_release_and_versionning.mdx). The **Promote** workflow updates a Dokploy environment from GitHub: the same version for every mapped app.
+Whether a project versions, and what each environment runs, is documented in [Release and versioning](apps/documentation/src/content/docs/references/1_release_and_versionning.mdx). That page also covers the **Promote** workflow, which deploys one released version to one Dokploy environment — the same version for every mapped app.
 
 ### AI Agents good practice
 When working with an AI Agent (such as Copilot, Cursor or Claude), please follow these guidelines:

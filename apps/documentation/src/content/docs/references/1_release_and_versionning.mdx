@@ -1,89 +1,108 @@
 ---
 title: Release and versioning
-description: Two versioning modes, and how environments consume artifacts
+description: How a project versions itself, and how environments consume what the pipeline builds
 ---
 
-This page is the canon for how a project versions and releases.
+This page describes how a project built on the boilerplate handles versions, releases, and deployments.
 
-How we write commits and squash them lives in [`CONTRIBUTING.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CONTRIBUTING.md). Do not copy the type or scope lists here.
+The rules for writing commits and pull requests live in [`CONTRIBUTING.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CONTRIBUTING.md). If you want to understand why we designed the system this way, read [Contribution and release](/lonestone-boilerplate/explanations/2_contribution-and-release).
 
-The why behind these choices is on [Contribution and release](/lonestone-boilerplate/explanations/2_contribution-and-release).
+## How it works
 
-Two separate questions:
+The fundamental idea is to keep two questions separate:
 
-1. **Does this repository version?** That is the mode below.
-2. **What does each deployment environment consume?** That is a recipe, not a rule. You choose it per environment.
+1. **Does this repository use versions?** This is a repository-wide choice between two modes, described below.
+2. **What does each environment run?** This is a per-environment choice. We propose recipes below, but nothing is enforced.
 
-## Two modes
+Mixing these two questions is the classic mistake: a team adopts a versioning ceremony, then hooks production to a branch and ignores the versions entirely.
 
-| Mode | Versioning | What a merge to `main` does | What a release does |
-| --- | --- | --- | --- |
-| **Without versions** | commitlint only | publishes the latest-main artifact (the host may also deploy it) | nothing — there is no Release PR |
-| **Versioned** | full semver | publishes the latest-main artifact | a human merges the Release PR; a `v*` tag and versioned images appear |
+## The two modes
 
-The pipeline is the same in both modes. A push to `main` builds a SHA-tagged image per runnable app. A `v*` tag builds `1.2.3`, `1.2`, and `latest` for each of those apps. Modes are configuration, not different CD paths.
+| Mode                 | Versioning      | A merge to `main`                                  | A release                                                             |
+| -------------------- | --------------- | -------------------------------------------------- | --------------------------------------------------------------------- |
+| **Without versions** | commitlint only | publishes a fresh artifact; the host may deploy it | does not exist — there is no Release PR                               |
+| **Versioned**        | full semver     | publishes a fresh artifact                         | a human merges the Release PR; a `v*` tag and versioned images appear |
 
-New consumer projects start without versions. This boilerplate repository is versioned. The Release PR is where the changelog is generated and the release note is written. A human merges it. Green checks mean "this PR is allowed to merge", not "send this to production".
+New projects usually start **without versions**: during early development, every merge going straight to a staging environment is exactly what you want. The boilerplate repository itself is versioned.
 
-We do **not** auto-merge the Release PR. A green Release PR is not consent to ship.
+Both modes share the same build pipeline — a mode is configuration, not a different CD path. The release-please config and workflow already ship with the template, so moving from "without versions" to "versioned" is just a matter of turning those files on.
 
-## How to graduate
+In versioned mode, [release-please](https://github.com/googleapis/release-please) maintains a Release PR: it accumulates the changes merged on `main`, generates the changelog, and is where the release note is written. Merging it creates the `v*` tag and the versioned images.
 
-The release-please config and workflow already ship in the template. Moving from "without versions" to "versioned" means using those files. The Release PR stays a human merge.
+:::caution[Never auto-merge the Release PR]
+Green checks mean "this PR is allowed to merge", not "send this to production". A human decides when a release happens. And even then, merging the Release PR only publishes the tag and the images — deploying is a separate step, described in [Promoting a version](#promoting-a-version).
+:::
 
 ## What the pipeline produces
 
-The workflow `.github/workflows/push-to-ghcr.yml` builds an image per runnable app: API, web-spa, and web-ssr. A missing Dockerfile is skipped, so a project that removed an app does not have to edit the workflow.
+The workflow `.github/workflows/push-to-ghcr.yml` builds a Docker image on GHCR for each runnable app: API, web-spa, and web-ssr. If a Dockerfile is missing (for example because you removed an app), the workflow simply skips it — no need to edit the workflow.
 
 - A push to `main` produces a SHA-tagged image for each app.
 - A `v*` tag produces `{{version}}`, `{{major}}.{{minor}}`, and `latest` for each app.
 
-`latest` is the last **release**, not the last merge to `main`. Production should not mix models: do not pin the API to a versioned image while the frontends still build from a branch. Promote sends the same version to every app in that environment. Per-environment config (API URL, secrets) stays in Dokploy, not in the image.
+Note that `latest` points to the last **release**, not the last merge to `main`.
 
-## How environments consume that
+Per-environment configuration (API URL, secrets, etc.) stays in Dokploy, not in the image.
 
-An environment points at an artifact. It does not own a branch to commit to. Nothing below is mandatory: name the environment, pick an artifact, say so in your host.
+## Deploy recipes
+
+An environment points at an artifact: a branch to build, or an image to pull. It never owns a branch to commit to. The recipes below are recommendations — name your environments as you like, and pick the artifact that fits each one.
 
 ### Without versions
 
-Hook the environment you care about to `main` and let the host build. That is merge-to-deploy. Fine while there is no production gate.
+Hook the environment you care about (usually staging) to `main` and let the host build. Every merge deploys. This is perfect while there is no production to protect.
 
 ### Versioned
 
-Merging to `main` still publishes an artifact. It should not be what production runs.
+Our recommended wiring:
 
-You *can* still hook production to `main`. Do not: you would keep the Release PR ceremony and ignore it at deploy time.
+- **Staging** follows `main` (branch build or SHA image), so unreleased work can be validated before you cut a release.
+- **Production** runs a pinned version tag (`1.2.3`) for **every** app — not `latest`, and not a branch.
 
-Recommended wiring:
+A few setups look tempting but defeat the point of versioning:
 
-- **Staging** follows `main` (branch build or SHA image) when the client should see work before you cut a release.
-- **Production** runs a specific versioned tag (`1.2.3`) for every app, not `latest` and not the branch.
+- **Production hooked to `main`**: you keep the Release PR ceremony but ignore it at deploy time.
+- **Staging and production both on `latest`**: they move together, which is the opposite of a production gate.
+- **A versioned API next to frontends built from a branch**: the apps drift apart. Pin the same version for all of them.
 
-`latest` on both staging and production would move them together. That is the opposite of a production gate.
+Even if you don't use versions to gate deployments, the versioned mode can still be worth enabling for other tools, like Sentry release tracking.
 
-Do not edit the version by hand in Dokploy each time. After the Release PR merge, run the **Promote** workflow from GitHub. It tells Dokploy to pull that version and deploy. Staging and production are different GitHub Environments, so they move independently.
+The full cycle looks like this:
 
-Typical sequence once you are versioned:
+1. Merge to `main` — a SHA image exists, and staging can follow `main`.
+2. Merge the Release PR — `v1.3.0` and the images `1.3.0` / `1.3` / `latest` exist. Nothing deploys yet.
+3. Run Promote — production pulls `1.3.0` for every mapped app.
 
-1. Merge to `main` — SHA image exists; staging can follow `main`.
-2. Merge the Release PR — `v1.3.0` and images `1.3.0` / `1.3` / `latest` exist. Nothing has to deploy yet.
-3. Actions → **Promote** → `production` → `1.3.0` — production pulls that version for every mapped app (API and frontends).
+You are free to promote staging as well, when that environment should run a released image instead of `main` (typical in a multi-environment setup like dev + staging + production).
 
-Promote staging as well when that environment should run a released image instead of `main`.
+## Promoting a version
 
-Wait until **Build Docker to GHCR** has finished for the tag before you promote. Every Dokploy app in the map must use the Docker provider (not Git), with credentials that can pull from GHCR.
+Promote is the workflow that sends a published version to one environment. From GitHub: Actions → **Promote** → pick the environment (`staging` or `production`) → pick the version. Each GitHub Release also links to it.
 
-### Configure Promote
+Promote tells Dokploy to pull that version for every app mapped in the chosen GitHub Environment. Staging and production are separate environments, so they move independently.
 
-Create GitHub Environments named `staging` and `production` (the configure script can create the empty environments). On each one, set:
+Do not edit the version by hand in Dokploy: the workflow run is the record of what was promoted, when, and by whom.
 
-| Kind | Name | Example |
-| --- | --- | --- |
-| Secret | `DOKPLOY_URL` | `https://dokploy.example.com` |
-| Secret | `DOKPLOY_API_KEY` | from Dokploy profile settings |
-| Secret | `DOKPLOY_APPLICATIONS` | `service:dokployApplicationId` map, comma or newline separated |
+Two prerequisites:
 
-`DOKPLOY_APPLICATIONS` maps each GHCR image suffix to the Dokploy app that should run it. Only list the apps this environment uses:
+- Wait until **Build Docker to GHCR** has finished for the tag.
+- Every Dokploy app in the map must use the Docker provider (not Git), with credentials that can pull from GHCR.
+
+:::note[Other hosts]
+The Promote workflow ships with Dokploy support. If you deploy on another PaaS, keep the same idea — one workflow run updates one environment — and adapt the API calls to your host.
+:::
+
+### Configure Promote for Dokploy
+
+Create GitHub Environments named `staging` and `production`. `./scripts/configure-github-repo.sh --apply` creates them empty if they are missing. It does not store secrets — add these in the GitHub UI, on each environment:
+
+| Secret                 | Value                                                          |
+| ---------------------- | -------------------------------------------------------------- |
+| `DOKPLOY_URL`          | `https://dokploy.example.com`                                  |
+| `DOKPLOY_API_KEY`      | from Dokploy profile settings                                  |
+| `DOKPLOY_APPLICATIONS` | `service:dokployApplicationId` map, comma or newline separated |
+
+`DOKPLOY_APPLICATIONS` maps each GHCR image suffix to the Dokploy app that runs it. Only list the apps this environment uses:
 
 ```
 api:dokploy-api-id,web-spa:dokploy-spa-id,web-ssr:dokploy-ssr-id
@@ -91,15 +110,15 @@ api:dokploy-api-id,web-spa:dokploy-spa-id,web-ssr:dokploy-ssr-id
 
 The image for `api` is `ghcr.io/<owner>/<repo>-api:<version>`. Same pattern for `web-spa` and `web-ssr`.
 
-`./scripts/configure-github-repo.sh --apply` creates the two environments if they are missing. It does not store Dokploy secrets. Add those in the GitHub UI. You can add required reviewers on `production` if a second person must approve the job.
+You can add required reviewers on `production` if a second person must approve the job.
 
-Each GitHub Release also links to the Promote workflow.
+## Changelog and release notes
 
-## Notes versus changelog
+Two artifacts, two jobs:
 
-- [`CHANGELOG.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CHANGELOG.md) is the generated inventory. One line per change, each linking to its commit. Do not edit it by hand.
-- [`releases/`](/lonestone-boilerplate/releases) holds the human notes: why this version exists. Required on the Release PR before a human merges it.
+- [`CHANGELOG.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CHANGELOG.md) is the generated inventory: one line per change, each linking to its commit. Never edit it by hand.
+- [`releases/`](/lonestone-boilerplate/releases) holds the human-written notes: why this version exists. A note is required on the Release PR before it can be merged.
 
 ## Feature flags
 
-Prefer a flag when two merged changes must not ship together. See [Feature flags](/lonestone-boilerplate/guides/feature-flags). The cherry-pick escape hatch is in the [release maintainer runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md#selective-shipping-d12).
+Sometimes two merged changes must not ship together. Prefer a feature flag over holding back a merge — see [Feature flags](/lonestone-boilerplate/guides/feature-flags). For the rare cases where cherry-picking is the only option, the escape hatch is documented in the [release maintainer runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md#selective-shipping-d12).

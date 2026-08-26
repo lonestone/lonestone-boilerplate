@@ -53,7 +53,7 @@ Do not add a workflow that auto-merges the Release PR. Green checks are not cons
 
 ### GitHub Environments (Promote)
 
-Used by `.github/workflows/promote.yml` once the project is versioned and Dokploy pulls GHCR images.
+Used by `.github/workflows/promote.yml` once the project is versioned and Dokploy pulls GHCR images. The full walkthrough is on the [Release and versioning](../apps/documentation/src/content/docs/references/1_release_and_versionning.mdx) page.
 
 - [ ] Environment `staging`
 - [ ] Environment `production`

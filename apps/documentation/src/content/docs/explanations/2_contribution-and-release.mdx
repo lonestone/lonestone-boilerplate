@@ -3,32 +3,40 @@ title: Contribution and release
 description: Why commits, files, and artifacts are the durable record — not GitHub surfaces or environment branches
 ---
 
-Durable knowledge belongs in the repository, and commits are the source of truth.
+This page explains the reasoning behind our contribution and release system. The rules themselves live in [`CONTRIBUTING.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CONTRIBUTING.md), and the mechanics (versions, releases, deployments) are described in [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning).
 
-How we write those commits is in [`CONTRIBUTING.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CONTRIBUTING.md). 
+## The problem we are solving
 
-How we version, release, and deploy is on [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning).
+Development has always fallen short on one thing: recording **why** a change was made. Commit messages stay short to be readable, so the rationale ends up in a pull request comment, a ticket, or a chat thread — if anywhere. A year later, someone reverts a change that was made for a good reason, simply because the reason is nowhere to be found.
 
-## Everything durable lives in the repo
+AI agents change the economics here. Writing a clear commit message with a proper body used to be friction; now it is cheap. So we designed the system around one idea: **capture the "why" once, in the repository, at the moment the work is merged.**
 
-What should still be true in a year must live in files and git history: not in GitHub pull requests, GitHub Releases, or any other platform surface. Files and git are easily reachable for humans and agents, while platform data needs an API and dies if we move.
+## Everything durable lives in the repository
 
-GitHub is allowed as an **editing venue** and a **mirror**, it is never the source of truth. A pull request description is a pencil. The squash commit is the paper.
+What should still be true in a year must live in files and git history — not in pull requests, GitHub Releases, or any other platform surface. Files and git are easily reachable for both humans and agents, while platform data needs an API and dies if we ever move away from the platform.
+
+GitHub is welcome as an **editing venue** and a **mirror**, but it is never the source of truth. A pull request description is a pencil; the squash commit is the paper.
 
 ## Commits are the source of truth
 
-The squash commit message is the one hand-written artifact per pull request. Everything else derives from it.
+We squash-merge every pull request, so the squash commit message is the one hand-written artifact per pull request. Everything else derives from it:
 
 | Zoom | Artifact | Who writes it | What it holds |
 | --- | --- | --- | --- |
 | Implementation | Squash commit message | Human-guided, at pull request finalization | What changed and **why** |
 | Inventory | `CHANGELOG.md` | Generated | One line per change, links to commits |
-| Release | Note in the docs app | Human (often agent-drafted) | Why this release exists |
+| Release | Note in `apps/documentation/src/content/docs/releases/` | Human (often agent-drafted) | Why this release exists |
 
-The rationale is written **once**, in the commit body. The changelog does not copy it. It links to the commit. `git show` is one hop away. A second copy would drift.
+The rationale is written **once**, in the commit body. The changelog does not copy it — it links to the commit, and `git show` is one hop away. A second copy would drift.
+
+### Why squash merges?
+
+A linear history makes it much easier to pinpoint the commit that introduced an issue, and it is what [release-please](https://github.com/googleapis/release-please) recommends to parse changes reliably. It also turns the pull request into a natural unit of work: however messy the WIP commits were, what lands on `main` is a single, well-written commit.
 
 ## Deployment environments consume artifacts
 
-No deployment environment has "its" branch to commit to. `main` produces artifacts: builds, images, tags. Each deployment environment points at an artifact stream. Which stream is a choice per environment — see [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning).
+We used git-flow-style environment branches for a long time: merging into `staging` deployed staging, merging into `main` deployed production. It works, but the branches slowly become workspaces — a hotfix lands on one branch and not the other, and the history stops telling the truth.
 
-Deploy branches, if a host requires one, are fast-forwarded pointers. They are never workspaces. Promoting a versioned image to production is a GitHub Action (Promote), not a commit on an environment branch.
+In this system, no environment owns a branch. `main` produces artifacts: builds, images, tags. Each deployment environment points at an artifact stream, and which stream is a choice per environment — see [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning).
+
+If a host requires a deploy branch, it is a fast-forwarded pointer, never a workspace. Sending a released version to production is one workflow run (Actions → **Promote**): it tells the host to pull that version for one environment. No commit, no environment branch.

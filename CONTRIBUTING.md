@@ -20,7 +20,7 @@ Name branches loosely after the work, for example `feat/session-revocation` or `
 
 ## Pull requests
 
-This repository squash-merges every pull request. GitHub is configured so the squash commit is always **the pull request title plus the pull request description**. The GitHub button, `gh`, and auto-merge all produce the same commit. There is nothing to compose at merge time. `CHANGELOG.md` is generated from those squash commits. Do not edit it by hand.
+This repository squash-merges every pull request. GitHub is configured so the squash commit is always **the pull request title plus the pull request description**. The GitHub button, `gh`, and auto-merge all produce that same commit, so there is nothing to compose at merge time. `CHANGELOG.md` is generated from those squash commits. Do not edit it by hand.
 
 That makes the title and description the future history. Reviewers: read them as the `git log` entry that will land, and request wording changes the same way you request code changes.
 
@@ -33,7 +33,7 @@ The title becomes the squash subject. Write it as `type(scope): description`, wi
 The description becomes the commit body, copied verbatim. When the pull request is ready to merge it must contain only:
 
 1. **Rationale prose** — why this approach, what you rejected, what constraint drove it. Distill this from WIP commit bodies; do not concatenate them.
-2. **One unbulleted conventional paragraph per additional consumer-visible change**, after a blank line, for example `fix(api): correct off-by-one in list pagination`. Each of these becomes its own changelog line and counts in the version. Use a valid type and scope from `commitlint.config.ts`.
+2. **One paragraph per additional consumer-visible change.** After a blank line, no bullet, written as a conventional header, for example `fix(api): correct off-by-one in list pagination`. Each one becomes its own changelog line and counts in the version. Use a valid type and scope from `commitlint.config.ts`.
 
 Drop the rest of the WIP history. Subjects like "wip endpoint" or "fmt" describe the journey. The journey is over. The diff and the rationale describe the result.
 
