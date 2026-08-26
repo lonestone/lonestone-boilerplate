@@ -151,6 +151,9 @@
     "description": "Browse your blog posts",
     "searchPlaceholder": "Search posts...",
     "noPosts": "No posts found",
+    "noResults": "No results found",
+    "noResultsDescription": "No posts match \"{{search}}\". Try a different search.",
+    "emptyDescription": "Create your first post to get started.",
     "createNew": "Create a new post",
     "showing": "Showing",
     "to": "to",
@@ -164,6 +167,28 @@
       "creating": "Creating...",
       "created": "Created!",
       "error": "An error occurred while creating the post"
+    },
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "Enter a captivating title...",
+      "titleRequired": "Title is required",
+      "titleMinLength": "Title must be at least 3 characters",
+      "coverImage": "Cover image URL",
+      "coverImagePlaceholder": "https://images.example.com/cover.jpg",
+      "tags": "Tags",
+      "tagsPlaceholder": "Comma-separated, e.g. TypeScript, React",
+      "content": "Content",
+      "addContent": "Add {{type}}",
+      "contentEmpty": "No content added yet. Use the buttons above to add content.",
+      "contentLabel": "{{type}} content",
+      "contentRequired": "{{type}} content is required",
+      "textPlaceholder": "Enter your text content here...",
+      "imagePlaceholder": "Enter image URL or upload...",
+      "videoPlaceholder": "Enter video URL (YouTube, Vimeo, etc.)",
+      "videoUrl": "Video URL:",
+      "imagePreviewAlt": "Preview",
+      "save": "Save post",
+      "saving": "Saving post..."
     }
   },
   "profile": {
@@ -176,5 +201,13 @@
     "verified": "Verified",
     "unverified": "Unverified",
     "userId": "User ID"
+  },
+  "errorCodes": {
+    "PASSWORDS_DO_NOT_MATCH": "Passwords do not match"
+  },
+  "common": {
+    "user": "User",
+    "active": "Active",
+    "error": "Error"
   }
 }

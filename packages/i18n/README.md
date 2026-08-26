@@ -1,88 +1,57 @@
 # `@boilerstone/i18n`
 
-Shared internationalization (i18n) package for the monorepo.
+Shared internationalization package for SPA and SSR consumers.
 
-It includes:
-- `i18next` initialization for React (`react-i18next`)
-- a centralized configuration for supported locales
-- helpers to load “per-namespace” translations from JSON files
-- locale selection management on the client (cookie) and on the server (cookie + `Accept-Language`)
-- a persisted/synchronized Zustand store to track the current language and drive `i18next`
-- a CLI script to check for missing translation keys across languages at the monorepo level
+## Contract
+
+- **Language identity** is always `en` | `fr` (i18next resources, Zustand store, cookie value).
+- **BCP-47 tags** (`en-GB`, `fr-FR`) live only as `htmlLang` metadata for `<html lang>` / `Intl` — never passed to `changeLanguage`.
+- **Client persistence**: Zustand + `persist-and-sync` (localStorage).
+- **SSR mirror**: `setLanguage` also writes the `locale` cookie so a future SSR loader can resolve language without flash (`cookie` → `Accept-Language` → default).
+- **Legacy migration**: BCP-47 cookie/localStorage values (`fr-FR`, `en-GB`) are normalized to `en`|`fr` on read and rewritten at bootstrap.
+
+```
+setLanguage(en|fr)
+  → i18next.changeLanguage
+  → localStorage (persistNSync)
+  → cookie locale=en|fr
+
+SSR resolveLocale(request)
+  → cookie → Accept-Language → DEFAULT_LOCALE
+```
 
 ## Public exports
 
-This package exposes multiple entrypoints (see `package.json`):
 - `@boilerstone/i18n`: re-exports the main modules
-- `@boilerstone/i18n/config`: i18n config (supported locales, default locale, initialization)
-- `@boilerstone/i18n/instance`: `i18next` instance
-- `@boilerstone/i18n/store`: Zustand store bound to the `i18next` instance
-- `@boilerstone/i18n/utils`: “modules -> resources” conversion helpers (for `import.meta.glob`)
-- `@boilerstone/i18n/cookies`: cookie helpers + locale resolution (client + server)
+- `@boilerstone/i18n/config`: supported locales, defaults, `initializeI18n`, `getHtmlLang`, `normalizeLocale`
+- `@boilerstone/i18n/instance`: shared `i18next` singleton
+- `@boilerstone/i18n/store`: `createI18nStore(i18n)` (localStorage + cookie mirror)
+- `@boilerstone/i18n/utils`: `import.meta.glob` → i18next `Resource` helpers
+- `@boilerstone/i18n/cookies`: cookie helpers + server `getLocaleFromRequestWithFallback`
 
 ## Translation file convention
 
-The code relies on a JSON file naming convention:
-
-- each “namespace” is a file
-- expected format: `<namespace>.locales.<lang>.json`
-  - ex: `common.locales.fr.json`
-  - ex: `auth.locales.en.json`
-
-Then the i18next “resources” look like:
-
-- `resources[locale][namespace] = {...keys...}`
+- Namespace = filename
+- Format: `<namespace>.locales.<lang>.json`
+  - `common.locales.fr.json`
+  - `auth.locales.en.json`
+- Directory layout: `locales/<lang>/...`
+- i18next resources: `resources[locale][namespace] = { ...keys }`
 
 ## Scripts
 
 - `pnpm --filter @boilerstone/i18n check-translations`
-  - Runs `src/i18n-sync.ts` and reports missing translation keys across all detected languages (using English as source of truth).
+  - Scans monorepo `locales` directories
+  - English is the source of truth
+  - Exits `1` on missing or orphaned keys
+  - Regenerates nearby `i18next.d.ts` type stubs
+- `pnpm --filter @boilerstone/i18n test`
 
+## Modules
 
-## Tools 
-
-- `src/i18n-config.ts`
-  - Declares supported locales (`SUPPORTED_LOCALES`) and their metadata (name, flag, default locale).
-  - Centralizes `DEFAULT_LOCALE` / `FALLBACK_LOCALE`.
-  - Provides `getLocaleConfig(locale)` to fetch a locale config (with a generic fallback).
-  - Provides `initializeI18n(i18n, resources)`: initializes `i18next` + `react-i18next` with common options (namespaces, separators, interpolation). If it fails, falls back to a minimal init.
-
-- `src/i18n-instance.ts`
-  - Exports the global `i18next` instance (default export) to share the same singleton across apps/packages.
-
-- `src/i18n-store.ts`
-  - Exposes `createI18nStore(i18nInstance)`: a Zustand store that:
-    - holds `language`
-    - exposes `setLanguage(language)` which calls `i18nInstance.changeLanguage(...)`
-    - persists/syncs state via `persist-and-sync` (key `name: 'i18n'`)
-
-- `src/i18n-utils.ts`
-  - Helpers to convert dynamic imports (e.g. `import.meta.glob`) into an i18next `Resource`:
-    - extracts the `namespace` from the path
-    - extracts the locale from the `.locales.<lang>.json` suffix
-    - groups by locale and converts to `resources`
-  - Main functions:
-    - `extractAvailableLocales(modules)`
-    - `groupModulesByLocale(modules)`
-    - `modulesToResources(groupedModules)`
-    - `loadDynamicLocales(allModules)`
-
-- `src/i18n-cookies.ts`
-  - Cookie helpers and locale resolution:
-    - generic cookie header parsing (`parseCookies`)
-    - reads/validates locale from cookies (`getLocaleFromCookies`)
-    - infers locale from `Accept-Language` (`getDefaultLocaleFromAcceptLanguage`)
-  - Client-side (browser):
-    - `setCookie`, `getCookie`, `removeCookie`
-    - `setLocaleCookie`, `getLocaleCookie`, `removeLocaleCookie`
-    - `getInitialLocale()`: cookie → browser language → default
-  - Server-side:
-    - `getLocaleFromRequestWithFallback(request)`: cookie → `Accept-Language` → default
-
-- `src/i18n-sync.ts`
-  - Node (CLI) script that scans the monorepo for `locales` directories and reports missing translation keys:
-    - English (`en`) is the source of truth
-    - for each namespace, lists keys present in English but missing in other languages
-    - generates TypeScript types for i18next
-    - does not modify translation files (i18next fallback handles missing keys at runtime)
-  - Runnable via `tsx` (see `check-translations` script).
+- `i18n-config.ts` — `SUPPORTED_LOCALES`, `DEFAULT_LOCALE` / `FALLBACK_LOCALE` (`fr`), init
+- `i18n-instance.ts` — shared i18next instance
+- `i18n-store.ts` — Zustand store; `setLanguage` updates i18n + cookie + localStorage
+- `i18n-utils.ts` — glob modules → resources
+- `i18n-cookies.ts` — client/server locale cookie helpers (values = `en`|`fr`)
+- `i18n-sync.ts` — CLI translation completeness check

@@ -57,18 +57,20 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "check-translations": "tsx ./src/i18n-sync.ts"
+    "check-translations": "tsx ./src/i18n-sync.ts",
+    "test": "vitest run --config=vitest.config.ts"
   },
   "dependencies": {
-    "glob": "^13.0.6",
     "i18next": "catalog:frontend",
     "persist-and-sync": "^1.2.3",
-    "react-i18next": "catalog:frontend"
+    "react-i18next": "catalog:frontend",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@types/node": "catalog:build",
     "@types/react": "catalog:frontend",
     "tsx": "^4.23.5",
-    "typescript": "catalog:build"
+    "typescript": "catalog:build",
+    "vitest": "^4.1.5"
   }
 }

@@ -18,7 +18,7 @@ export default function ProfilePage() {
   const { data: sessionData } = authClient.useSession()
   const user = sessionData?.user
 
-  const name = user?.name ?? user?.email ?? 'User'
+  const name = user?.name ?? user?.email ?? t('common.user')
   const initials = name
     .split(' ')
     .map((part) => part[0])

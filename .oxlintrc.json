@@ -20,6 +20,7 @@
     "packages/openapi-generator/client/**",
     "**/.astro/**",
     "node_modules/**",
+    "**/.worktrees/**",
     "CLAUDE.md",
     "AGENTS.md",
     "**/README.md",

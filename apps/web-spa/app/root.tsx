@@ -1,8 +1,11 @@
 import type { Route } from './+types/root'
+import { getHtmlLang, normalizeLocale } from '@boilerstone/i18n/config'
 import { client } from '@boilerstone/openapi-generator'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router'
+import { useI18nStore } from '@/lib/i18n/i18n-client'
 import { queryClient } from '@/lib/query-client'
 import useTheme from './hooks/useTheme'
 import '@/lib/i18n/i18n-client'
@@ -29,13 +32,21 @@ export const links: Route.LinksFunction = () => [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [theme] = useTheme()
+  const language = useI18nStore((state) => state.language)
+  const { i18n } = useTranslation()
+  const activeLocale = normalizeLocale(i18n.language || language)
+  const htmlLang = getHtmlLang(activeLocale)
 
   useEffect(() => {
     document.body.classList.toggle('dark', theme === 'dark')
   }, [theme])
 
+  useEffect(() => {
+    document.documentElement.lang = htmlLang
+  }, [htmlLang])
+
   return (
-    <html lang="en">
+    <html lang={htmlLang}>
       <head>
         <title>Dashboard</title>
         <meta charSet="utf-8" />
@@ -68,14 +79,15 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = 'Oops!'
-  let details = 'An unexpected error occurred.'
+  const { t } = useTranslation()
+  let message: string = t('error.oops')
+  let details: string = t('error.default')
   let stack: string | undefined
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? '404' : 'Error'
+    message = error.status === 404 ? '404' : t('common.error')
     details =
-      error.status === 404 ? 'The requested page could not be found.' : error.statusText || details
+      error.status === 404 ? t('error.pageNotFoundDescription') : error.statusText || details
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message
     stack = error.stack

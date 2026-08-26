@@ -164,10 +164,9 @@ can_read_tty() {
 # so prompts work even when this script itself is being piped from `curl | sh`.
 run_tty() {
   if can_read_tty; then
-    "$@" </dev/tty
-  else
-    "$@"
+    "$@" </dev/tty && return 0
   fi
+  "$@"
 }
 
 usage() {
