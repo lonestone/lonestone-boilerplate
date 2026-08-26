@@ -1,6 +1,105 @@
 ---
-title: Release and versionning
-description: How to release and version your project
+title: Release and versioning
+description: Two versioning modes, and how environments consume artifacts
 ---
 
-🚧 TODO: Write this guide
+This page is the canon for how a project versions and releases.
+
+How we write commits and squash them lives in [`CONTRIBUTING.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CONTRIBUTING.md). Do not copy the type or scope lists here.
+
+The why behind these choices is on [Contribution and release](/lonestone-boilerplate/explanations/2_contribution-and-release).
+
+Two separate questions:
+
+1. **Does this repository version?** That is the mode below.
+2. **What does each deployment environment consume?** That is a recipe, not a rule. You choose it per environment.
+
+## Two modes
+
+| Mode | Versioning | What a merge to `main` does | What a release does |
+| --- | --- | --- | --- |
+| **Without versions** | commitlint only | publishes the latest-main artifact (the host may also deploy it) | nothing — there is no Release PR |
+| **Versioned** | full semver | publishes the latest-main artifact | a human merges the Release PR; a `v*` tag and versioned images appear |
+
+The pipeline is the same in both modes. A push to `main` builds a SHA-tagged image per runnable app. A `v*` tag builds `1.2.3`, `1.2`, and `latest` for each of those apps. Modes are configuration, not different CD paths.
+
+New consumer projects start without versions. This boilerplate repository is versioned. The Release PR is where the changelog is generated and the release note is written. A human merges it. Green checks mean "this PR is allowed to merge", not "send this to production".
+
+We do **not** auto-merge the Release PR. A green Release PR is not consent to ship.
+
+## How to graduate
+
+The release-please config and workflow already ship in the template. Moving from "without versions" to "versioned" means using those files. The Release PR stays a human merge.
+
+## What the pipeline produces
+
+The workflow `.github/workflows/push-to-ghcr.yml` builds an image per runnable app: API, web-spa, and web-ssr. A missing Dockerfile is skipped, so a project that removed an app does not have to edit the workflow.
+
+- A push to `main` produces a SHA-tagged image for each app.
+- A `v*` tag produces `{{version}}`, `{{major}}.{{minor}}`, and `latest` for each app.
+
+`latest` is the last **release**, not the last merge to `main`. Production should not mix models: do not pin the API to a versioned image while the frontends still build from a branch. Promote sends the same version to every app in that environment. Per-environment config (API URL, secrets) stays in Dokploy, not in the image.
+
+## How environments consume that
+
+An environment points at an artifact. It does not own a branch to commit to. Nothing below is mandatory: name the environment, pick an artifact, say so in your host.
+
+### Without versions
+
+Hook the environment you care about to `main` and let the host build. That is merge-to-deploy. Fine while there is no production gate.
+
+### Versioned
+
+Merging to `main` still publishes an artifact. It should not be what production runs.
+
+You *can* still hook production to `main`. Do not: you would keep the Release PR ceremony and ignore it at deploy time.
+
+Recommended wiring:
+
+- **Staging** follows `main` (branch build or SHA image) when the client should see work before you cut a release.
+- **Production** runs a specific versioned tag (`1.2.3`) for every app, not `latest` and not the branch.
+
+`latest` on both staging and production would move them together. That is the opposite of a production gate.
+
+Do not edit the version by hand in Dokploy each time. After the Release PR merge, run the **Promote** workflow from GitHub. It tells Dokploy to pull that version and deploy. Staging and production are different GitHub Environments, so they move independently.
+
+Typical sequence once you are versioned:
+
+1. Merge to `main` — SHA image exists; staging can follow `main`.
+2. Merge the Release PR — `v1.3.0` and images `1.3.0` / `1.3` / `latest` exist. Nothing has to deploy yet.
+3. Actions → **Promote** → `production` → `1.3.0` — production pulls that version for every mapped app (API and frontends).
+
+Promote staging as well when that environment should run a released image instead of `main`.
+
+Wait until **Build Docker to GHCR** has finished for the tag before you promote. Every Dokploy app in the map must use the Docker provider (not Git), with credentials that can pull from GHCR.
+
+### Configure Promote
+
+Create GitHub Environments named `staging` and `production` (the configure script can create the empty environments). On each one, set:
+
+| Kind | Name | Example |
+| --- | --- | --- |
+| Secret | `DOKPLOY_URL` | `https://dokploy.example.com` |
+| Secret | `DOKPLOY_API_KEY` | from Dokploy profile settings |
+| Secret | `DOKPLOY_APPLICATIONS` | `service:dokployApplicationId` map, comma or newline separated |
+
+`DOKPLOY_APPLICATIONS` maps each GHCR image suffix to the Dokploy app that should run it. Only list the apps this environment uses:
+
+```
+api:dokploy-api-id,web-spa:dokploy-spa-id,web-ssr:dokploy-ssr-id
+```
+
+The image for `api` is `ghcr.io/<owner>/<repo>-api:<version>`. Same pattern for `web-spa` and `web-ssr`.
+
+`./scripts/configure-github-repo.sh --apply` creates the two environments if they are missing. It does not store Dokploy secrets. Add those in the GitHub UI. You can add required reviewers on `production` if a second person must approve the job.
+
+Each GitHub Release also links to the Promote workflow.
+
+## Notes versus changelog
+
+- [`CHANGELOG.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CHANGELOG.md) is the generated inventory. One line per change, each linking to its commit. Do not edit it by hand.
+- [`releases/`](/lonestone-boilerplate/releases) holds the human notes: why this version exists. Required on the Release PR before a human merges it.
+
+## Feature flags
+
+Prefer a flag when two merged changes must not ship together. See [Feature flags](/lonestone-boilerplate/guides/feature-flags). The cherry-pick escape hatch is in the [release maintainer runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md#selective-shipping-d12).
