@@ -1,0 +1,34 @@
+---
+title: Contribution and release
+description: Why commits, files, and artifacts are the durable record — not GitHub surfaces or environment branches
+---
+
+Durable knowledge belongs in the repository, and commits are the source of truth.
+
+How we write those commits is in [`CONTRIBUTING.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CONTRIBUTING.md). 
+
+How we version, release, and deploy is on [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning).
+
+## Everything durable lives in the repo
+
+What should still be true in a year must live in files and git history: not in GitHub pull requests, GitHub Releases, or any other platform surface. Files and git are easily reachable for humans and agents, while platform data needs an API and dies if we move.
+
+GitHub is allowed as an **editing venue** and a **mirror**, it is never the source of truth. A pull request description is a pencil. The squash commit is the paper.
+
+## Commits are the source of truth
+
+The squash commit message is the one hand-written artifact per pull request. Everything else derives from it.
+
+| Zoom | Artifact | Who writes it | What it holds |
+| --- | --- | --- | --- |
+| Implementation | Squash commit message | Human-guided, at pull request finalization | What changed and **why** |
+| Inventory | `CHANGELOG.md` | Generated | One line per change, links to commits |
+| Release | Note in the docs app | Human (often agent-drafted) | Why this release exists |
+
+The rationale is written **once**, in the commit body. The changelog does not copy it. It links to the commit. `git show` is one hop away. A second copy would drift.
+
+## Deployment environments consume artifacts
+
+No deployment environment has "its" branch to commit to. `main` produces artifacts: builds, images, tags. Each deployment environment points at an artifact stream. Which stream is a choice per environment — see [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning).
+
+Deploy branches, if a host requires one, are fast-forwarded pointers. They are never workspaces. Promoting a versioned image to production is a GitHub Action (Promote), not a commit on an environment branch.

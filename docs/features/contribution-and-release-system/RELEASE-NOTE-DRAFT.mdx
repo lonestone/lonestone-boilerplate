@@ -1,0 +1,12 @@
+---
+title: (set on the Release PR)
+description: Draft — paste onto the Release PR as releases/vX.Y.Z.mdx after the version is chosen
+---
+
+This release exists so the reason for a change survives the merge.
+
+Until now, commit messages were local habit, and the changelog was a hand-edited list that drifted from the work. We now write conventional commits, squash each pull request into one curated message, and let release-please derive the version and the changelog from that history. The rationale stays in the commit body. `git show` is one hop away.
+
+A short note in the docs app explains why a given version exists — the story of the bundle, not a second inventory. Early projects can keep the commit rules and skip versioning until two environments need different artifacts, or until production should move only when a human says so.
+
+The generated inventory is in `CHANGELOG.md`.

@@ -2,7 +2,7 @@
 
 > Une version française existe : [SPEC.fr.md](./SPEC.fr.md). This file is the reference; keep both in sync when editing.
 
-Status: **agreed design, not yet built**. This document records every decision, its rationale, and how the pieces fit together. It exists so we never re-litigate a choice without new information.
+Status: **implemented on this branch** (slices 1–7). This document records every decision, its rationale, and how the pieces fit together. It exists so we never re-litigate a choice without new information.
 
 The system applies to **the boilerplate repository** and to **consumer projects** generated from it. Differences between the two are marked throughout and summarized in [Boilerplate vs consumer](#boilerplate-vs-consumer).
 
@@ -10,7 +10,7 @@ The system applies to **the boilerplate repository** and to **consumer projects*
 
 ## 0. The story first
 
-Before the rules, here is a normal week on a project using this system. Two developers, Pierrick and Nicolas. The project is at version `1.2.0` and runs at release level 3 (a human decides when to release — see D11). Every rule the story relies on is specified in the decisions below.
+Before the rules, here is a normal week on a project using this system. Two developers, Pierrick and Nicolas. The project is at version `1.2.0` and is versioned (a human decides when to release — see D11). Every rule the story relies on is specified in the decisions below.
 
 ### Monday — Pierrick works
 
@@ -69,13 +69,13 @@ gitGraph
 
 The Release PR updates itself again: still `1.3.0` (two feats and a fix is still a minor), but the changelog now shows **three** lines — revocation, thumbnails, and the pagination fix. Two of them link to the same commit `#147`; that's fine, the fix was declared as its own change.
 
-Meanwhile, staging has been redeployed on every merge. Production hasn't moved — it follows release tags, and there is no new tag yet.
+Meanwhile, staging has been redeployed on every merge. Production hasn't moved — it runs a pinned image, and there is no new version to promote yet.
 
 ### Friday — Pierrick releases
 
 The client validated the features on staging; Pierrick decides to ship. He opens the Release PR — the version bump and the changelog are already there. His remaining work is the human part: he writes the release note (`releases/v1.3.0.mdx` in the docs app) — a few sentences on why this release exists and what it changes for users — and adjusts wording where the generated text is dry. A CI check on this PR refuses to merge without the release note. He merges.
 
-Release-please tags `v1.3.0`, creates the GitHub Release (its body mirrored from the MDX), and the tag triggers the Docker build: images `1.3.0`, `1.3`, `latest` land in GHCR. Production, which follows tags, deploys.
+Release-please tags `v1.3.0`, creates the GitHub Release (its body mirrored from the MDX), and the tag triggers the Docker build: images `1.3.0`, `1.3`, `latest` land in GHCR. Production still hasn't moved. Pierrick runs the **Promote** workflow from GitHub, picks `production` and `1.3.0`, and Dokploy pulls that image.
 
 ```mermaid
 gitGraph
@@ -289,29 +289,34 @@ Release-please honors a `BEGIN_COMMIT_OVERRIDE … END_COMMIT_OVERRIDE` block in
 - Intentions keep their existing format and tag-based distribution. **No hash-based releases**: tags remain the only public anchor; the `unreleased/` staging captures intent at PR time without breaking semver ordering or `upgrade prepare`.
 - The release-time inventory is now `git log vPREVIOUS..HEAD` + staged intentions (the changelog used to play this role; the generated one serves it equally well).
 
-### D11. Three CD levels, deployment decorrelated from release
+### D11. Two CD modes, deployment decorrelated from release
 
 Deployment and release are independent triggers on the same pipeline:
 
 - Every merge to `main` → build/deploy the "latest main" artifact (SHA-tagged image, or Dokploy builds from the branch).
-- Every release tag → version-tagged Docker images via `docker/metadata-action` semver rules (`1.2.3`, `1.2`, `latest`).
+- Every release tag → version-tagged Docker images for each runnable app (API and frontends) via `docker/metadata-action` semver rules (`1.2.3`, `1.2`, `latest`).
 
-The three levels are configuration, not different pipelines:
+Two modes. Configuration, not different pipelines:
 
-| Level | Versioning | Release trigger | Typical stage |
+| Mode | Versioning | Release trigger | Typical stage |
 |---|---|---|---|
-| **1** | commitlint only, no versions | none (no release-please) | early project; often only staging exists; Dokploy watches `main` and builds |
-| **2** | full semver | **automatic**: release-please Release PR auto-merges when checks pass | project wants version numbers and versioned images, still ships continuously |
-| **3** | full semver | **manual**: a human merges the Release PR | production gate; merging to `main` only moves staging |
+| **Without versions** | commitlint only, no versions | none (no release-please) | early project; often only staging exists; hook the host to `main` and let it build |
+| **Versioned** | full semver | **manual**: a human merges the Release PR | production gate; merging to `main` publishes an artifact, it does not update production |
 
-- Level 2 is level 3 plus one auto-merge flag — graduating between them is removing/adding a flag, not adopting a tool.
-- **Environment mapping** (supports the usual dev/staging/demo/prod spread):
-  - `dev.mysite.com`, `staging.mysite.com` → follow `main` (every merge).
-  - `demo.mysite.com` → pinned to a chosen version tag, moved on demand. No branch needed.
-  - `mysite.com` → follows release tags.
-  - If a PaaS needs a branch to watch, `deploy/<env>` exists as a **fast-forwarded pointer** to the tag — never committed to directly (principle 2.3).
-- **Dokploy modes**: level 1 = Dokploy watches the branch and builds. Levels 2–3 = GitHub builds GHCR images (the existing `push-to-ghcr.yml`, switched to trigger on `v*` tags), Dokploy pulls them. The moment a project needs environments on *different* versions is the moment it should switch to images.
-- **Defaults**: new consumer projects start at level 1. The boilerplate repo itself runs at level 3 (its Release PR is where intentions are ordered and the release note written).
+**Rejected: auto-merge of the Release PR** (the old "level 2"). A green Release PR is not consent to ship. Checks mean the PR is *allowed* to merge, not that the team wants this bundle in production. We will not add a workflow, PAT, or `RELEASE_LEVEL` flag that squash-merges it. If a project still deploys every merge to production, it stays **without versions** until it is ready for the human gate.
+
+**Rejected: both staging and production follow `latest`.** That image tag is the last *release*, and both environments would move together. Promotion is a separate signal per environment.
+
+**Rejected: versioned API images while frontends still build from a branch.** Production would then pin the backend and float the frontend. Every runnable app is an image; Promote sends the same version to all of them.
+
+How an environment consumes artifacts is a **recipe**, not a rule:
+
+- **Without versions**: hook the environment to `main` and let the host build.
+- **Versioned, recommended**: staging may follow `main` (so unreleased work can be validated). Production runs a specific versioned tag for every app (API and frontends). After the Release PR merge, the **Promote** workflow (`.github/workflows/promote.yml`) tells Dokploy to pull that version. Staging and production are different GitHub Environments, so they move independently. Do not edit the version by hand in Dokploy each time.
+- If a PaaS still needs a branch to watch, `deploy/<env>` can exist as a **fast-forwarded pointer** to the tag — never committed to directly (principle 2.3). That is an escape hatch, not the default.
+
+- **Dokploy modes**: without versions = Dokploy watches the branch and builds. Versioned = GitHub builds GHCR images (the existing `push-to-ghcr.yml`, switched to trigger on `v*` tags), Dokploy pulls them, Promote updates the image tag through the Dokploy API. The moment a project needs environments on *different* versions is the moment it should switch to images.
+- **Defaults**: new consumer projects start without versions. The boilerplate repo itself is versioned (its Release PR is where intentions are ordered and the release note written).
 
 ### D12. Selective shipping: feature flags first, release-branch cherry-pick as escape hatch
 
@@ -321,7 +326,7 @@ The client-wants-B-without-A problem (both merged, A must not ship):
 2. **Escape hatch: release branch.** Branch from the last release tag, cherry-pick B's squash commit (trivial — one commit per PR), cut a patch release from that branch. Release-please supports releasing from a non-`main` branch. `main`'s next normal release includes both A and B and the branch dies.
 3. Delaying the merge is acceptable occasionally, bad as a habit.
 
-The level 3 release gate removes most *other* cherry-picking: merging no longer means deploying to production, so unfinished sets can merge freely.
+The versioned release gate removes most *other* cherry-picking: merging no longer means deploying to production, so unfinished sets can merge freely.
 
 ### D13. GitHub repository settings (the part that can't live in code)
 
@@ -331,6 +336,7 @@ A documented setup checklist, optionally scripted once with `gh api` so configur
 - Default squash message: **"pull request title and description"** — the load-bearing setting (D6): it makes every merge path (UI, CLI, auto-merge) materialize the curated title + description into the commit, with nothing to compose at click time.
 - Labels: `no-intention` (boilerplate), plus any release-please labels.
 - Branch protection on `main`: required checks (CI, PR title lint, intention gate where applicable).
+- GitHub Environments `staging` and `production` for the Promote workflow, with Dokploy secrets added in the UI. Optional required reviewers on `production`.
 
 ---
 
@@ -356,27 +362,27 @@ flowchart TD
 
     subgraph MAIN["main"]
         D["Linear history<br/>one commit per PR"]
-        D2["Continuous deploy:<br/>dev/staging follow main"]
+        D2["Continuous deploy is optional:<br/>staging may follow main"]
         D --> D2
     end
 
     subgraph RELPR["4 · The Release PR (release-please)"]
         E["Auto-maintained:<br/>next version from commits<br/>+ generated CHANGELOG.md"]
-        E2["Human adds (level 3):<br/>release note MDX (CI-required)<br/>boilerplate: order intentions into vX.Y.Z/,<br/>staleness check, intentions lint"]
+        E2["Human adds:<br/>release note MDX (CI-required)<br/>boilerplate: order intentions into vX.Y.Z/,<br/>staleness check, intentions lint"]
         E --> E2
     end
 
     subgraph REL["5 · The release (tag vX.Y.Z)"]
         F["Tag + GitHub Release<br/>(body mirrored from MDX)"]
         F2["Versioned Docker images<br/>(GHCR, semver tags)"]
-        F3["prod follows tags<br/>demo pinned to a tag"]
+        F3["Promote workflow<br/>updates one Dokploy env"]
         F4["Boilerstone consumers:<br/>upgrade prepare --to X.Y.Z<br/>reads intentions from the tag"]
         F --> F2 --> F3
         F --> F4
     end
 
     LOCAL --> PR --> MERGE --> MAIN --> RELPR
-    RELPR -->|"merge Release PR<br/>(auto at level 2, human at level 3)"| REL
+    RELPR -->|"merge Release PR (human)"| REL
 ```
 
 Stage-by-stage summary:
@@ -384,8 +390,8 @@ Stage-by-stage summary:
 1. **Committing**: conventional WIP commits with rationale in bodies. Tools: commitlint + lefthook locally; an agent skill for writing commit messages (subject conventions, body rules, the `BREAKING-CHANGE:` trap).
 2. **Creating your PR**: title is the future squash subject — write it as the conventional header it will become. Keep PRs small and single-purpose. The description is held to commit-body standards (screenshots and checklists go in comments). Boilerplate repo: include the migration intention or the `no-intention` label. Don't: bundle unrelated changes, write a vague title and plan to "fix it at merge".
 3. **Finalization, then the merge**: the editorial moment (D6) happens *before* merge, on the author's machine — the agent reads the diff, decides the consumer-visible changes (title + one unbulleted conventional paragraph each), distills the WIP bodies into rationale prose in the PR description, drops the rest. Once the description lint is green, any merge path (UI, `gh`, auto-merge) produces the same curated commit.
-4. **The Release PR**: release-please keeps it current (version + changelog). Level 3 humans use it as the release workspace: release note, intention ordering, validations. Level 2 lets it auto-merge.
-5. **The release**: tag, mirrored GitHub Release, versioned images, environments that follow tags move. For the boilerplate, the tag is also what Boilerstone consumers upgrade against.
+4. **The Release PR**: release-please keeps it current (version + changelog). Humans use it as the release workspace: release note, intention ordering, validations. A human merges it. Green checks are not auto-ship.
+5. **The release**: tag, mirrored GitHub Release, versioned images. Production does not move until someone runs Promote. For the boilerplate, the tag is also what Boilerstone consumers upgrade against.
 
 ---
 
@@ -396,11 +402,12 @@ Stage-by-stage summary:
 | Conventional commits, commitlint, lefthook | ✔ | ✔ (edits the scopes array) |
 | PR title + description lint | ✔ | ✔ |
 | Intention gate (`unreleased/` or `no-intention`) | ✔ | ✘ (no intentions machinery — stripped at generation) |
-| release-please | ✔, level 3 | Optional: level 1 (off), 2 (auto), or 3 (manual) |
-| Generated `CHANGELOG.md` | ✔ | ✔ at levels 2–3 |
-| Release notes in docs app | ✔ (`apps/documentation/…/releases/`) | ✔ at level 3 (their own product story); optional at level 2 |
+| release-please | ✔, versioned (human merge) | Optional: off (without versions) or on (human merge) |
+| Generated `CHANGELOG.md` | ✔ | ✔ when versioned |
+| Release notes in docs app | ✔ (`apps/documentation/…/releases/`) | ✔ when versioned (their own product story) |
 | Release-time intention plumbing on the Release PR | ✔ | ✘ |
-| Tag-triggered GHCR images | ✔ (dogfood) | Recommended at levels 2–3 |
+| Tag-triggered GHCR images | ✔ (dogfood) | Recommended when versioned |
+| Promote workflow (Dokploy image update) | optional | Recommended when versioned and Dokploy pulls images |
 | `CONTRIBUTING.md` | ✔ | ✔ shipped; personalize scopes/domains via config, not prose |
 | GitHub settings checklist / script | ✔ | ✔ (run once at project setup) |
 
@@ -458,7 +465,7 @@ Committed in both `.claude/skills/` and `.cursor/skills/`, following the existin
 | `finalize-pr` (new) | boilerplate + consumers | "finalize / merge this PR", "prepare for merge" | Run the D6 transformation: read the **full diff** (not the WIP subjects) to identify consumer-visible changes; set the PR title (valid conventional header, valid scope) and write the PR description as the future commit body — rationale prose distilled from the WIP commit bodies, one **unbulleted** conventional paragraph per additional change, everything else from the WIP history dropped; scan for accidental `BREAKING-CHANGE:`. Applies both via `gh pr edit`. Boilerplate: verify intention-or-label. Merging afterwards is safe from any path (UI, `gh`, auto-merge). |
 | `boilerstone-intention` (new) | boilerplate only | "write the migration intention (for this PR)" | Write one bounded intention from `TEMPLATE.md` into `unreleased/` **within the current PR**, no `NN-` prefix. Points to the runbook's intention-authoring section. |
 | `boilerstone-release` (rewritten) | boilerplate only | "prepare the release", "work the Release PR" | Operate on the release-please Release PR: move `unreleased/*.md` into `vX.Y.Z/` with `NN-` order and `requires:`; staleness-check intentions against `git diff vPREVIOUS..HEAD`; draft the release note MDX from changelog + commit bodies; run validations. **Never tags, never merges the Release PR** — human's final act. |
-| `project-release` (new) | consumers, levels 2–3 | "prepare the release" | Consumer flavor of the above minus intentions: draft the release note, verify Release PR checks. |
+| `project-release` (new) | consumers, versioned | "prepare the release" | Consumer flavor of the above minus intentions: draft the release note, verify Release PR checks. **Never merge.** |
 | `boilerstone-init`, `boilerstone-upgrade` | unchanged | — | — |
 
 Deliberately **no `commit` skill**: committing happens dozens of times a day, and skills trigger unreliably at that frequency. The always-on pointer (6.3), `CONTRIBUTING.md`, and commitlint's corrective errors cover it.
@@ -477,7 +484,7 @@ The README's AI-practice section ("do not add rules to the repo") extends its co
 
 **Added**
 - `CONTRIBUTING.md`, `commitlint.config.ts`, `lefthook.yml`.
-- Workflows: PR title lint, intention gate, release-please, release-note check on the Release PR, GitHub-Release mirror step.
+- Workflows: PR title lint, intention gate, release-please, release-note check on the Release PR, GitHub-Release mirror step, Promote.
 - `apps/documentation/src/content/docs/releases/` collection.
 - `.boilerstone/migration-intentions/unreleased/` staging directory.
 - Skills: `finalize-pr`, `boilerstone-intention`, `project-release` (in `.claude/skills/` and `.cursor/skills/`, per section 6.4).
@@ -489,7 +496,7 @@ The README's AI-practice section ("do not add rules to the repo") extends its co
 - `.boilerstone/docs/release-maintainer-runbook.md` — much shorter. The Release PR does the plumbing (version, changelog, tag). Remaining human steps: order and staleness-check intentions, write the release note, smoke test. The "changelog discipline" section and version-picking section disappear (automated); the release-branch escape hatch (D12) gets a page. Gains an intention-authoring section (the canon `boilerstone-intention` points to).
 - `.claude/skills/boilerstone-release/` and its `.cursor` twin — re-pointed at the new runbook flow (section 6.4).
 - README AI-practice section — shim exception extended to the new skills (section 6.5).
-- `apps/documentation/src/content/docs/references/1_release_and_versionning.mdx` (currently a TODO stub) — the three levels, semver, release flow, environment mapping, Dokploy patterns.
+- `apps/documentation/src/content/docs/references/1_release_and_versionning.mdx` — two modes, recipes for environments, Promote workflow, Dokploy.
 - A new explanation page alongside `0_designphilosophy.mdx` — the durable rationale (this document's section 2 and 3, consumer-facing).
 - `push-to-ghcr.yml` — trigger on `v*` tags with semver image tagging.
 
@@ -504,12 +511,71 @@ Ordered so each slice works without the ones after it. Each slice ships its own 
 3. **release-please for real**: config files, workflow, root `package.json` as version carrier. Delete the changelog CLI commands and workflow. Convert `CHANGELOG.md` to generated. Retire the changelog references from the old `boilerstone-release` skill.
 4. **Release notes flow**: `releases/` docs collection, CI check on the Release PR, GitHub-Release mirror step. Agent surface: `project-release` skill.
 5. **Intentions staging**: `unreleased/` directory, intention gate workflow, release-time move/ordering step (CLI helper if useful), runbook rewrite. Agent surface: `boilerstone-intention` skill, `boilerstone-release` skill rewrite, `finalize-pr` intention preflight.
-6. **CD levels**: tag-triggered GHCR images, level documentation, auto-merge flag for level 2, `1_release_and_versionning.mdx`, feature-flag convention.
+6. **CD modes**: tag-triggered GHCR images, two-mode documentation (without versions vs versioned human merge), Promote workflow for Dokploy, `1_release_and_versionning.mdx`, feature-flag convention. No auto-merge of the Release PR.
 7. **Ship it**: release the whole feature as a boilerplate version with its `ci` intention.
 
 ## 9. Open items
 
-- **Prototype validation** (step 2): can release-please's generated changelog, with our section mapping, fully replace the curated one? Fallback if not: keep release-please for version math and tagging only, restore a curated changelog. The rest of the design is identical in both branches.
-- Exact `changelog-sections` mapping (which types are visible, section titles).
+### Prototype validation (step 2) — done 2026-08-26
+
+Throwaway repo: `RDeluxe/release-please-prototype-ae7a6d` (private). Deletion failed — the `gh` token lacks the `delete_repo` scope. A human should delete https://github.com/RDeluxe/release-please-prototype-ae7a6d (`gh auth refresh -s delete_repo` then `gh repo delete RDeluxe/release-please-prototype-ae7a6d --yes`). Seeded at `1.0.0` with tag `v1.0.0`. Three squash-style commits on `main`. `googleapis/release-please-action@v4` on `push` to `main` with `contents: write` and `pull-requests: write`. The Action created Release PR #1 and, after a human squash-merge, created the GitHub Release.
+
+**Can the generated changelog replace a curated Keep-a-Changelog file?** Yes, as the inventory. With the mapping below it is readable: one line per parsed change, grouped under Added / Fixed / Documentation, each line linked to its commit. It does not replace the human release note (D9). Fallback (release-please for version math only) is not needed.
+
+**Version bump observed:** `1.0.0` → `1.1.0` (the `feat` subject). Changelog excerpt from the Release PR / `CHANGELOG.md`:
+
+```
+## [1.1.0] (...) (2026-08-26)
+
+### Added
+* **auth:** add session revocation endpoint (6c60084)
+
+### Fixed
+* **api:** correct off-by-one in list endpoint pagination (6c60084)
+
+### Documentation
+* **api:** clarify pagination notes (a087474)
+```
+
+**Squash-convention parse results (matches D6):**
+
+| Input | Result |
+|---|---|
+| Subject `feat(auth): add session revocation endpoint` | One Added line; counts in version math |
+| Rationale prose ("Sessions could only expire naturally…") | Ignored by the parser |
+| Extra unbulleted `fix(api): correct off-by-one…` | Own Fixed line; same SHA as the feat |
+| `chore(ci): tweak workflow timeouts` | Hidden (not in the changelog) |
+| Bulleted `* fix: typo in the example` | Not a changelog line |
+
+**Tag / GitHub Release:** merging the Release PR (squash) produced commit `chore(main): release rp-proto 1.1.0 (#1)`. The next Action run created tag `rp-proto-v1.1.0` and GitHub Release `rp-proto: v1.1.0`. The compare URL pointed at `rp-proto-v1.0.0`, which does not exist (baseline was `v1.0.0`). **Slice 3 must set `"include-component-in-tag": false`** so tags are `vX.Y.Z` (what `install.sh` and Boilerstone already expect). Squash-merging the Release PR is fine: release-please still tagged and published.
+
+**Final `changelog-sections` mapping** (keep this; output was clean):
+
+```json
+"changelog-sections": [
+  { "type": "feat", "section": "Added" },
+  { "type": "fix", "section": "Fixed" },
+  { "type": "perf", "section": "Performance" },
+  { "type": "revert", "section": "Reverted" },
+  { "type": "docs", "section": "Documentation" },
+  { "type": "refactor", "section": "Changed" },
+  { "type": "ci", "section": "CI", "hidden": true },
+  { "type": "chore", "section": "Chore", "hidden": true },
+  { "type": "test", "section": "Tests", "hidden": true },
+  { "type": "style", "section": "Style", "hidden": true },
+  { "type": "build", "section": "Build", "hidden": true }
+]
+```
+
+Visible: feat, fix, perf, revert, docs, refactor. Hidden: ci, chore, test, style, build.
+
+**Auto-merge of the Release PR (old level 2) — rejected.** A green PR is allowed to merge, not requested to ship. No `allow_auto_merge`, no PAT merge workflow, no `RELEASE_LEVEL` variable. A human merges the Release PR. The prototype still showed that a `GITHUB_TOKEN` merge would skip the tag job — that remains a reason never to let a bot merge it with the default token.
+
+**Leftover notes from the prototype (still true):**
+
+1. Set `include-component-in-tag: false` or tags will be `<package-name>-vX.Y.Z` and compare links will be wrong.
+2. `BREAKING-CHANGE:` was not re-tested in the throwaway repo (already verified in source, D3/D6).
+
+### Still open
+
 - Whether the release-time intention move (unreleased → `vX.Y.Z/` with `NN-` prefixes) deserves a small CLI command or stays manual.
-- Level 2 auto-merge mechanics (GitHub auto-merge on the Release PR) — confirm during the prototype.

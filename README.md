@@ -24,6 +24,7 @@ For more details, see the [documentation](https://lonestone.github.io/lonestone-
 - [Useful Commands](#️-useful-commands)
 - [Development](#-development)
 - [Continuous Integration (CI)](#-continuous-integration-ci)
+- [Contributing](#-contributing)
 - [Documentation](#-documentation)
 - [Deployment](#-deployment)
 
@@ -235,19 +236,23 @@ For more information, see the [GitHub Actions documentation](.github/ACTIONS.md)
 
 ### CD Workflow
 
-This workflow generates a Docker image into the Github Registry (GHCR) for the api
-web-spa and web-ssr should not use this pattern and prefer a build-on-deploy instead
+The CD workflow (`push-to-ghcr.yml`) builds an image per runnable app (API, web-spa, web-ssr) and pushes them to GHCR.
 
-This is a recommended workflow for production apps instead of building directly from your deployment server (Dokploy, Render) as it allows you to tag each release, deploy staging and prod on the same artifact, and decrease load on your deployment server
+- A push to `main` produces a SHA-tagged image for each app.
+- A `v*` tag produces versioned images (`1.2.3`, `1.2`, and `latest`) for each app.
 
-To enable the CD workflow go to `.github/workflows/push-to-ghcr.yml` and uncomment the top block
+How a project versions, and how each environment consumes those artifacts, is documented in [Release and versioning](apps/documentation/src/content/docs/references/1_release_and_versionning.mdx). The **Promote** workflow updates a Dokploy environment from GitHub: the same version for every mapped app.
 
 ### AI Agents good practice
 When working with an AI Agent (such as Copilot, Cursor or Claude), please follow these guidelines:
 
 - Do not add rules to the repo. You are encouraged to create your own so that it benefits several projects.
-- Exception: the `.claude/skills/boilerstone-*/` and `.cursor/skills/boilerstone-*/` directories are committed product shims for the boilerplate upgrade system; they must stay thin and point to the runbooks in `.boilerstone/docs/`.
+- Exception: the committed product shims are `boilerstone-*`, `finalize-pr`, and `project-release` under `.claude/skills/` and `.cursor/skills/`. They must stay thin and point to their canon (`CONTRIBUTING.md` or `.boilerstone/docs/`).
 - If the agent needs markdown documents (like specifications or TODO task), write them in a dedicated folder in docs/features
+
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for how we write commits and pull requests.
 
 ## 📚 Documentation
 
