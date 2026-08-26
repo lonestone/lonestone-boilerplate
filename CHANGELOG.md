@@ -16,7 +16,6 @@ the inventory for that release's migration intentions.
 ### Added
 
 - SPA sign-in French locale now includes the missing `loggedInSuccess` string.
-- Producer-only daily hygiene prompt at `.boilerstone/docs/daily-hygiene-agent.md` (removed from consumer projects by `pnpm rock`).
 
 ### Changed
 

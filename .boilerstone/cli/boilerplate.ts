@@ -188,15 +188,8 @@ function resolveTargetReference(
     if (!gitFileExists('HEAD', releaseReadme, producerPath)) {
       throw new Error(`Draft release ${release.tag} must exist in producer HEAD before preparation`)
     }
-    // Scoped to .boilerstone/: that is the tree a draft serves (intentions and
-    // reference archives read from HEAD). Build artifacts elsewhere in the
-    // checkout must not block preparation; app-code reference paths are
-    // covered by the runbook's commit-first rule.
-    if (runGitCommand(['status', '--porcelain', '--', '.boilerstone'], producerPath)) {
-      throw new Error(
-        'Producer .boilerstone/ has uncommitted changes. Commit or discard them before preparation.',
-      )
-    }
+    // Dirty `.boilerstone/` is enforced in prepareUpgrade, not here: `upgrade path`
+    // is a read-only query and must not depend on the producer worktree being clean.
     return {
       ref: 'HEAD',
       cwd: producerPath,
@@ -1761,6 +1754,19 @@ async function prepareUpgrade(options: PrepareUpgradeRequest): Promise<PreparedU
     targetVersion: requestedVersion,
     publicationPolicy: options.fetch ? 'refresh-required' : 'refresh-if-needed',
   })
+  if (resolution.targetReference.provenance === 'producer-draft') {
+    // Scoped to .boilerstone/: that is the tree a draft serves (intentions and
+    // reference archives read from HEAD). Build artifacts elsewhere in the
+    // checkout must not block preparation; app-code reference paths are
+    // covered by the runbook's commit-first rule.
+    if (
+      runGitCommand(['status', '--porcelain', '--', '.boilerstone'], resolution.targetReference.cwd)
+    ) {
+      throw new Error(
+        'Producer .boilerstone/ has uncommitted changes. Commit or discard them before preparation.',
+      )
+    }
+  }
   const resolvedPath = resolution.path
   const warnings = [...resolution.warnings]
 
