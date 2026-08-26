@@ -22,9 +22,9 @@ catalogs:
     vite-tsconfig-paths: ^6.1.1
   frontend:
     '@hookform/resolvers': ^5.7.1
-    '@react-router/dev': ^7.18.2
-    '@react-router/node': ^7.18.2
-    '@react-router/serve': ^7.18.2
+    '@react-router/dev': ^8.3.0
+    '@react-router/node': ^8.3.0
+    '@react-router/serve': ^8.3.0
     '@tailwindcss/vite': ^4.3.3
     '@tanstack/react-query': ^5.101.4
     '@types/react': ^19.2.18
@@ -34,7 +34,7 @@ catalogs:
     react-dom: ^19.2.8
     react-hook-form: ^7.84.0
     react-i18next: ^16.6.6
-    react-router: ^7.18.2
+    react-router: ^8.3.0
     tailwind-merge: ^3.6.0
     tailwindcss: ^4.3.3
     tailwindcss-animate: ^1.0.7
