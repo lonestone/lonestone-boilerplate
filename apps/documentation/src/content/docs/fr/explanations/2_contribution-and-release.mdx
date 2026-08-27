@@ -132,6 +132,14 @@ Les **scopes** des commits sont les domaines du projet, définis une seule fois 
 
 Nous interdisions les changelogs générés. Cette règle date d'avant les commits écrits par agents : à l'époque, générer voulait dire compiler des sujets WIP brouillons en bruit. Avec des messages de squash soignés, le changelog généré *est* l'inventaire soigné — la granularité est décidée par l'auteur (un paragraphe par changement) et les raisons vivent dans les corps de commits, à un lien de distance. Les deux arguments pour la curation manuelle ont disparu, la règle aussi.
 
+### Pourquoi la Release PR se rebase à chaque push
+
+Par défaut, release-please ne met à jour la Release PR que si le changelog généré changerait. Les types masqués (`ci`, `chore`, `test`, `style`, `build`) ne changent jamais ce changelog : un check CI mergé sur `main` laisserait donc la Release PR sur un instantané périmé — les nouveaux checks ne s'y exécuteraient même pas.
+
+Ce défaut est correct pour une PR qui n'est qu'un bump de version généré. La nôtre est aussi une branche de travail (promouvoir les intentions, mettre à jour la version d'exemple). Elle doit rester au-dessus de `main`. `always-update` est l'option officielle pour ça : chaque push rebase la PR. Le coût est un force-push, donc les commits extra sur la Release PR disparaissent quand `main` avance. Promouvoir en dernier ; merger avant le push suivant. Voir le [runbook du mainteneur de release](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md#working-the-release-pr).
+
+La même config fixe le titre de la Release PR à `chore(ci): release X.Y.Z`. Le titre par défaut utilise le nom de branche comme scope (`chore(main): …`), qui n'est pas un domaine dans `commitlint.config.ts`, donc le lint de PR bloquerait le merge.
+
 ### Pourquoi les notes de release vivent dans l'app de documentation
 
 Une ligne de changelog ne peut pas dire « ces cinq PR ensemble livrent X » — ce contexte traverse les commits et vit en partie hors du dépôt. Chaque release reçoit donc une note humaine dans `apps/documentation/src/content/docs/releases/`, et le corps de la GitHub Release en est un **miroir**, pas l'inverse. L'app de documentation est publiée sur GitHub Pages, donc les notes de release servent aussi de communication produit publique. Les notes sont optionnelles par défaut et imposées par dépôt — voir [Release et versionnement](/lonestone-boilerplate/fr/references/1_release_and_versionning#changelog-et-notes-de-release).

@@ -39,4 +39,5 @@ Then smoke-test as a consumer (see the runbook) and stop.
 - Never an unbounded "update dependencies" step.
 - Keep Reference Paths small and specific, and label every path `copy` or `adapt`.
 - Do not edit `CHANGELOG.md` by hand. Do not `git tag`. Do not merge.
+- Promote last: release-please force-pushes the Release PR on every push to `main`. If the branch was rewritten after you promoted, re-run promote.
 - Domain / scope values live in `commitlint.config.ts` — do not restate the list.

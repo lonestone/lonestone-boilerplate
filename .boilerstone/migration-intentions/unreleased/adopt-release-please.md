@@ -36,7 +36,7 @@ Do not turn this on while the project still ships without versions. Do not force
 Work through each gap independently; skip any that is already closed. Skip this whole intention when the project stays without versions.
 
 1. **release-please config and workflow** — signal: no `release-please-config.json`, no `.release-please-manifest.json`, or no `.github/workflows/release-please.yml`.
-   Adapt the staged reference `release-please-config.json` (`include-component-in-tag` must stay `false` so tags are `vX.Y.Z`). Adapt `.release-please-manifest.json` so `"."` is this project's current version, not a guessed bump. Adapt `.github/workflows/release-please.yml` for the default branch if it is not `main`. Do not merge the Release PR with `GITHUB_TOKEN` — that merge never starts the follow-up run that creates the tag.
+   Adapt the staged reference `release-please-config.json` (`include-component-in-tag` must stay `false` so tags are `vX.Y.Z`; keep `always-update` true so the Release PR rebases when hidden commit types land on the default branch; keep `pull-request-title-pattern` as `chore(ci): release ${version}` so the title passes commitlint). Adapt `.release-please-manifest.json` so `"."` is this project's current version, not a guessed bump. Adapt `.github/workflows/release-please.yml` for the default branch if it is not `main`. Do not merge the Release PR with `GITHUB_TOKEN` — that merge never starts the follow-up run that creates the tag.
    Done when: the three files exist, the manifest version matches the project today, and the workflow opens or updates a Release PR on push to the default branch.
 
 2. **Generated changelog** — signal: `CHANGELOG.md` is missing, or it is still a hand-edited Keep-a-Changelog file with an `[Unreleased]` section the team maintains by hand.
@@ -79,7 +79,7 @@ Work through each gap independently; skip any that is already closed. Skip this 
 
 ## Validation
 
-- The three release-please files exist and `include-component-in-tag` is `false`.
+- The three release-please files exist, `include-component-in-tag` is `false`, and `always-update` is `true`.
 - `CHANGELOG.md` still contains the project's older version sections.
 - `.github/workflows/release-note.yml` exists.
 - `.github/workflows/push-to-ghcr.yml` lists a `v*` tag trigger and semver image tags.
