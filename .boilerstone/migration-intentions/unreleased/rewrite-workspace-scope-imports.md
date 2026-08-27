@@ -2,6 +2,7 @@
 id: unreleased/rewrite-workspace-scope-imports
 domain: tooling
 classification: migration
+pr: 146
 ---
 
 # Rewrite leftover @boilerstone imports
