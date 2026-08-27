@@ -27,7 +27,7 @@ New projects usually start **without versions**: during early development, every
 
 Both modes share the same build pipeline — a mode is configuration, not a different CD path. The release-please config and workflow already ship with the template, so moving from "without versions" to "versioned" is just a matter of turning those files on.
 
-In versioned mode, [release-please](https://github.com/googleapis/release-please) maintains a Release PR: it accumulates the changes merged on `main`, generates the changelog, and is where the release note is written. Merging it creates the `v*` tag and the versioned images.
+In versioned mode, [release-please](https://github.com/googleapis/release-please) maintains a Release PR: it accumulates the changes merged on `main`, generates the changelog, and is where the release note is written. Merging it creates the `v*` tag and the versioned images. The PR rebases onto `main` on every push (`always-update`). That update force-pushes, so work done on the Release PR itself (promoted intentions) must happen last — see the [release maintainer runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md#working-the-release-pr).
 
 :::caution[Never auto-merge the Release PR]
 Green checks mean "this PR is allowed to merge", not "send this to production". A human decides when a release happens. And even then, merging the Release PR only publishes the tag and the images — deploying is a separate step, described in [Promoting a version](#promoting-a-version).

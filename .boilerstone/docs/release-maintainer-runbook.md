@@ -59,6 +59,8 @@ A few sentences on why this release exists and what the bundle means for consume
 
 The version number is already chosen. `CHANGELOG.md` is already generated. Do not pick a version by hand. Do not edit the changelog. Do not tag. Do not merge — that is the human's final act; release-please creates the tag after merge.
 
+release-please **force-pushes** this branch on every push to `main` (`always-update` in `release-please-config.json`). Extra commits you add here — promoted intentions, the example version bump — disappear if `main` moves afterwards. Do this work when the bundle is ready to ship, then merge before the next push to `main`. If the branch was rewritten, re-run promote.
+
 1. Check out the Release PR (`autorelease: pending`). Read the next version from `.release-please-manifest.json`.
 2. Review the generated `CHANGELOG.md`. It is the inventory. Do not stamp or rename it.
 3. Promote staged intentions:

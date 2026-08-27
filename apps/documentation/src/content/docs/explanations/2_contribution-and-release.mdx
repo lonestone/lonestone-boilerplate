@@ -132,6 +132,14 @@ Commit **scopes** are the project's domains, defined once in `commitlint.config.
 
 We used to forbid generated changelogs. That rule predates agent-written commits: back then, generation meant compiling messy WIP subjects into noise. With curated squash messages, the generated changelog *is* the curated inventory — the granularity is decided by the author (one paragraph per change) and the reasons live in commit bodies, one link away. The two arguments for hand-curation disappeared, so the rule did too.
 
+### Why the Release PR rebases on every push
+
+release-please's default is to update the Release PR only when the generated changelog would change. Hidden types (`ci`, `chore`, `test`, `style`, `build`) never change that changelog, so a CI gate merged to `main` would leave the Release PR on a stale snapshot — new checks would not even run on it.
+
+That default is correct for a PR that is only a generated version bump. Ours is also a working branch (promote intentions, bump the example version). It has to stay on top of `main`. `always-update` is the first-party switch for that: every push rebases the PR. The cost is a force-push, so extra commits on the Release PR are dropped when `main` moves. Promote last; merge before the next push. See the [release maintainer runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md#working-the-release-pr).
+
+The same config sets the Release PR title to `chore(ci): release X.Y.Z`. The default title uses the branch name as scope (`chore(main): …`), which is not a domain in `commitlint.config.ts`, so PR lint would block the merge.
+
 ### Why release notes live in the docs app
 
 A changelog line cannot say "these five PRs together deliver X" — that context spans commits and partly lives outside the repo. So each release gets a human-written note in `apps/documentation/src/content/docs/releases/`, and the GitHub Release body is a **mirror** of it, not the other way around. The docs app publishes to GitHub Pages, so release notes double as public product communication. Notes are optional by default and enforced per repository — see [Release and versioning](/lonestone-boilerplate/references/1_release_and_versionning#changelog-and-release-notes).

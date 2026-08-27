@@ -27,7 +27,7 @@ Un nouveau projet démarre généralement **sans versions** : en début de déve
 
 Les deux modes partagent le même pipeline de build — un mode est de la configuration, pas un chemin de CD différent. La config release-please et son workflow sont déjà livrés avec le template : passer de « sans versions » à « versionné » revient à activer ces fichiers.
 
-En mode versionné, [release-please](https://github.com/googleapis/release-please) maintient une Release PR : elle accumule les changements mergés sur `main`, génère le changelog, et c'est là que la note de release s'écrit. La merger crée le tag `v*` et les images versionnées.
+En mode versionné, [release-please](https://github.com/googleapis/release-please) maintient une Release PR : elle accumule les changements mergés sur `main`, génère le changelog, et c'est là que la note de release s'écrit. La merger crée le tag `v*` et les images versionnées. La PR se rebase sur `main` à chaque push (`always-update`). Cette mise à jour est un force-push : le travail fait sur la Release PR elle-même (intentions promues) doit donc se faire en dernier — voir le [runbook du mainteneur de release](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md#working-the-release-pr).
 
 :::caution[Ne jamais auto-merger la Release PR]
 Des checks verts signifient « cette PR a le droit de merger », pas « envoyez ça en production ». Un humain décide quand une release a lieu. Et même alors, merger la Release PR ne fait que publier le tag et les images — déployer est une étape séparée, décrite dans [Promouvoir une version](#promouvoir-une-version).

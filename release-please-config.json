@@ -3,6 +3,8 @@
   "release-type": "node",
   "include-v-in-tag": true,
   "include-component-in-tag": false,
+  "always-update": true,
+  "pull-request-title-pattern": "chore(ci): release ${version}",
   "changelog-sections": [
     { "type": "feat", "section": "Added" },
     { "type": "fix", "section": "Fixed" },
