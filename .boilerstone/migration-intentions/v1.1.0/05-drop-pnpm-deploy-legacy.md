@@ -1,5 +1,5 @@
 ---
-id: unreleased/drop-pnpm-deploy-legacy
+id: v1.1.0/drop-pnpm-deploy-legacy
 domain: ci
 classification: migration
 pr: 140

@@ -1,5 +1,5 @@
 ---
-id: unreleased/adopt-feature-flag-helper
+id: v1.1.0/adopt-feature-flag-helper
 domain: api
 classification: migration
 ---

@@ -1,5 +1,5 @@
 ---
-id: unreleased/point-knip-at-auth-cli-mts
+id: v1.1.0/point-knip-at-auth-cli-mts
 domain: tooling
 classification: migration
 ---

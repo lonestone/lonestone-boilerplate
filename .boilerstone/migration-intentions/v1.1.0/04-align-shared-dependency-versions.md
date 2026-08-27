@@ -1,9 +1,9 @@
 ---
-id: unreleased/align-shared-dependency-versions
+id: v1.1.0/align-shared-dependency-versions
 domain: tooling
 classification: migration
 requires:
-  - unreleased/adopt-typescript-6
+  - v1.1.0/adopt-typescript-6
 ---
 
 # Align Shared Dependency Versions

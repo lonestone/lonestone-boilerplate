@@ -1,5 +1,5 @@
 ---
-id: unreleased/pin-cookie-override-for-hoist
+id: v1.1.0/pin-cookie-override-for-hoist
 domain: tooling
 classification: migration
 ---

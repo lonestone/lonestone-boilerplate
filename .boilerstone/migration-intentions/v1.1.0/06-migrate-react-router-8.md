@@ -1,5 +1,5 @@
 ---
-id: unreleased/migrate-react-router-8
+id: v1.1.0/migrate-react-router-8
 domain: frontend
 classification: migration
 ---
