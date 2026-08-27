@@ -2,6 +2,7 @@
 id: unreleased/drop-pnpm-deploy-legacy
 domain: ci
 classification: migration
+pr: 140
 ---
 
 # Drop pnpm deploy --legacy
