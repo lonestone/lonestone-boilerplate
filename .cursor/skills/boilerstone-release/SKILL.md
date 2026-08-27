@@ -25,6 +25,7 @@ git tag --list 'v*' --sort=-v:refname                          # previous versio
 pnpm boilerplate intentions promote --to X.Y.Z                 # unreleased/ → vX.Y.Z/NN-slug.md, ids rewritten
 git diff --name-status vPREVIOUS..HEAD                         # staleness-check intentions against the diff
 # draft apps/documentation/src/content/docs/releases/vX.Y.Z.mdx
+# Intention promote CI fails until unreleased/ has been promoted (error is the command)
 pnpm boilerplate intentions sync                                # regenerate the release README intentions block
 pnpm boilerplate intentions lint                                # validate published intention metadata
 pnpm boilerplate upgrade path --from <prev> --to <next> --json  # dry-run the resulting path
