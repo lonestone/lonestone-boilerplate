@@ -1,52 +1,58 @@
 # GitHub Workflows
 
-Ce dossier contient les workflows GitHub Actions pour le projet Lonestone.
+This folder contains the GitHub Actions workflows for the Lonestone project.
 
-## Workflows disponibles
+## Available workflows
 
 ### CI (Continuous Integration)
 
-Le workflow CI (`workflows/ci.yml`) est exécuté à chaque push sur les branches `main` et `master`, ainsi que sur les pull requests vers ces branches.
+The CI workflow (`workflows/ci.yml`) runs on every push to `main`, and on pull requests targeting `main`.
 
-Il comprend les jobs suivants:
+It includes the following jobs:
 
 #### Lint
 
-- Vérifie le code avec ESLint pour s'assurer qu'il respecte les conventions de codage.
-- Commande: `pnpm lint`
+- Checks the code with Oxlint.
+- Command: `pnpm lint`
 
-#### Type Check
+#### Knip
 
-- Vérifie les types TypeScript pour tous les packages et applications.
-- Génère d'abord les clients OpenAPI avec `pnpm generate`.
-- Exécute ensuite la vérification des types pour chaque package et application.
+- Detects unused files and dependencies.
+- Command: `pnpm knip`
 
 #### Build
 
-- Construit tous les packages et applications.
-- Génère d'abord les clients OpenAPI avec `pnpm generate`.
-- Exécute ensuite `pnpm build` pour construire tous les packages et applications.
-- Archive les artefacts de build pour une utilisation ultérieure.
+- Builds all packages and applications with `pnpm -r build`.
+- Does not regenerate OpenAPI clients (that needs a running API).
+
+#### Type Check
+
+- Checks TypeScript types for all packages and applications with `pnpm -r run typecheck`.
+- Runs after the build job; it does not run `pnpm generate` first.
+
+#### Test
+
+- Runs the workspace test suite with `pnpm test`.
 
 ## Configuration
 
-Le workflow utilise:
+The workflow uses:
 
-- Node.js 18
-- pnpm 8
-- Cache pour les dépendances pnpm
-- Actions officielles pour le checkout, setup Node.js, setup pnpm, etc.
+- Node.js 24.13.0
+- pnpm 10.28.2
+- Cache for pnpm dependencies
+- Official actions for checkout, plus the local `setup-node-pnpm` composite action
 
-## Ajout d'un nouveau workflow
+## Adding a new workflow
 
-Pour ajouter un nouveau workflow:
+To add a new workflow:
 
-1. Créez un nouveau fichier `.yml` dans le dossier `workflows/`.
-2. Définissez les événements qui déclenchent le workflow (push, pull_request, etc.).
-3. Définissez les jobs et les étapes du workflow.
-4. Commitez et pushez le fichier.
+1. Create a new `.yml` file in the `workflows/` folder.
+2. Define the events that trigger the workflow (push, pull_request, and so on).
+3. Define the jobs and steps.
+4. Commit and push the file.
 
-## Ressources
+## Resources
 
-- [Documentation GitHub Actions](https://docs.github.com/en/actions)
-- [Marketplace GitHub Actions](https://github.com/marketplace?type=actions)
+- [GitHub Actions documentation](https://docs.github.com/en/actions)
+- [GitHub Actions Marketplace](https://github.com/marketplace?type=actions)

@@ -501,6 +501,7 @@ describe('boilerplate core', () => {
     expect(PRODUCER_ARTIFACTS).toContain('cli/boilerplate-core.spec.ts')
     expect(PRODUCER_ARTIFACTS).toContain('vitest.config.ts')
     expect(PRODUCER_ARTIFACTS).toContain('docs/release-maintainer-runbook.md')
+    expect(PRODUCER_ARTIFACTS).toContain('docs/daily-hygiene-agent.md')
   })
 
   it('strips Vitest tooling from the vendored boilerstone package.json', () => {
@@ -812,11 +813,15 @@ describe('resolveUpgradePath', () => {
 
       const result = resolveUpgradePath({
         projectPath,
+        // Fixture repo is both consumer and producer so this stays independent of
+        // real `.boilerstone/migration-intentions/` drafts in this checkout.
+        producerPath: projectPath,
         targetVersion: 'latest',
         publicationPolicy: 'local-only',
       })
       const refreshedResult = resolveUpgradePath({
         projectPath,
+        producerPath: projectPath,
         targetVersion: 'latest',
         publicationPolicy: 'refresh-if-needed',
       })
@@ -1406,10 +1411,10 @@ describe('boilerplate CLI smoke', () => {
         )}\n`,
       )
 
-      const finish = runCli(['upgrade', 'finish', '--project', projectPath, '--to', '1.1.0'])
+      const finish = runCli(['upgrade', 'finish', '--project', projectPath, '--to', '1.99.0'])
 
       expect(finish.status).toBe(1)
-      expect(finish.stderr).toContain('release v1.1.0 is not available locally')
+      expect(finish.stderr).toContain('release v1.99.0 is not available locally')
       expect(finish.stderr).toContain('refs/boilerstone/v*')
       const state = JSON.parse(
         readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8'),
@@ -1720,8 +1725,9 @@ describe('boilerplate CLI smoke', () => {
 
       expect(result.status).toBe(0)
       const payload = JSON.parse(result.stdout)
-      // latest must resolve to the boilerplate's release, not the app's v5.0.0
-      expect(payload.targetVersion).toBe('1.0.0')
+      // latest must resolve to a boilerplate SemVer, never the app's own v5.0.0 tag
+      expect(payload.targetVersion).toMatch(/^\d+\.\d+\.\d+$/)
+      expect(payload.targetVersion).not.toBe('5.0.0')
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }

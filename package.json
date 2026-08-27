@@ -22,7 +22,6 @@
     "fmt:check": "oxfmt --check",
     "generate": "pnpm --filter=@boilerstone/openapi-generator run generate",
     "test": "pnpm -r test",
-    "schematics:module": "pnpm --filter=@boilerstone/schematics run schematics:module",
     "docs-only": "pnpm --filter=@boilerstone/documentation run dev",
     "knip": "knip --no-exit-code",
     "lint:pr": "tsx ./scripts/lint-pr.ts",
