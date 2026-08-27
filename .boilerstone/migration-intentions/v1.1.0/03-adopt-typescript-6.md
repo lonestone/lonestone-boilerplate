@@ -1,5 +1,5 @@
 ---
-id: unreleased/adopt-typescript-6
+id: v1.1.0/adopt-typescript-6
 domain: tooling
 classification: migration
 ---

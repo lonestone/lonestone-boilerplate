@@ -1,5 +1,5 @@
 ---
-id: unreleased/adopt-conventional-commits
+id: v1.1.0/adopt-conventional-commits
 domain: ci
 classification: migration
 ---

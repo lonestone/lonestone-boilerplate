@@ -1,9 +1,9 @@
 ---
-id: unreleased/adopt-release-please
+id: v1.1.0/adopt-release-please
 domain: ci
 classification: migration
 requires:
-  - unreleased/adopt-conventional-commits
+  - v1.1.0/adopt-conventional-commits
 ---
 
 # Adopt Release Please
