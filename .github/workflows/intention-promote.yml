@@ -1,0 +1,134 @@
+name: Intention promote
+
+# On a Release PR, staged unreleased/*.md files must have moved into
+# vX.Y.Z/NN-slug.md with rewritten ids. GitHub has no in-between check
+# conclusion that both nags and blocks merge (skip is silent, fail is
+# red, "neutral" does not block). This job fails with a command in the
+# error, like the other gates. Non-Release PRs skip.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  intention-promote:
+    name: Intention promote
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect a Release PR
+        id: gate
+        env:
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          if [[ ",${LABELS}," == *",autorelease: pending,"* ]]; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "required=false" >> "$GITHUB_OUTPUT"
+            echo "Not a Release PR (no autorelease: pending label). Skipping."
+          fi
+
+      - name: Checkout repository
+        if: steps.gate.outputs.required == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require unreleased intentions to be promoted
+        if: steps.gate.outputs.required == 'true'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "${BASE_REF}"
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          skip = {"README.md", "TEMPLATE.md", "classification.md"}
+          base_ref = f"origin/{os.environ['BASE_REF']}"
+          prefix = ".boilerstone/migration-intentions"
+
+          def git_ls(ref: str, folder: str) -> list[str]:
+              result = subprocess.run(
+                  ["git", "ls-tree", "-r", "--name-only", ref, folder],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+              )
+              names = []
+              for line in result.stdout.splitlines():
+                  name = Path(line).name
+                  if name.endswith(".md") and name not in skip:
+                      names.append(name)
+              return sorted(names)
+
+          if not Path(".release-please-manifest.json").is_file():
+              print("Could not read .release-please-manifest.json on the PR HEAD.")
+              sys.exit(1)
+
+          version = json.load(open(".release-please-manifest.json"))["."]
+          dest_dir = Path(prefix) / f"v{version}"
+          staged_folder = f"{prefix}/unreleased"
+
+          leftover = git_ls("HEAD", staged_folder)
+          on_base = git_ls(base_ref, staged_folder)
+
+          if leftover:
+              print("Staged intentions are still in unreleased/. Promote them before merging:")
+              print(f"  pnpm boilerplate intentions promote --to {version}")
+              print("Still staged:")
+              for name in leftover:
+                  print(f"  - unreleased/{name}")
+              sys.exit(1)
+
+          if not on_base:
+              print("Nothing to promote: unreleased/ had no intention files on the base branch.")
+              sys.exit(0)
+
+          missing = []
+          wrong_id = []
+          for name in on_base:
+              slug = name[: -len(".md")]
+              matches = []
+              if dest_dir.is_dir():
+                  matches = [
+                      path
+                      for path in dest_dir.iterdir()
+                      if re.fullmatch(rf"\d+-{re.escape(slug)}\.md", path.name)
+                  ]
+              if not matches:
+                  missing.append(slug)
+                  continue
+              text = matches[0].read_text(encoding="utf-8")
+              if not re.search(
+                  rf"^id:\s*v{re.escape(version)}/{re.escape(slug)}\s*$",
+                  text,
+                  re.M,
+              ):
+                  wrong_id.append(f"{matches[0].name} (expected id: v{version}/{slug})")
+
+          if missing or wrong_id:
+              print(f"unreleased/ is empty, but the files did not land in {dest_dir}/.")
+              print("Promote (do not delete) with:")
+              print(f"  pnpm boilerplate intentions promote --to {version}")
+              print("  pnpm boilerplate intentions sync")
+              if missing:
+                  print("Missing:")
+                  for slug in missing:
+                      print(f"  - v{version}/NN-{slug}.md")
+              if wrong_id:
+                  print("Wrong id:")
+                  for item in wrong_id:
+                      print(f"  - {item}")
+              sys.exit(1)
+
+          print(f"Promoted {len(on_base)} intention(s) to v{version}/.")
+          PY

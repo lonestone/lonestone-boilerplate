@@ -44,6 +44,7 @@ Require pull requests, and require these status checks to pass:
 
 - [ ] `PR title and description` (workflow: **PR lint**)
 - [ ] `Intention gate` (workflow: **Intention gate**) — boilerplate producer; skips successfully when `no-intention` or `autorelease: pending` is present
+- [ ] `Intention promote` (workflow: **Intention promote**) — boilerplate producer; skips on ordinary PRs. On a Release PR it fails until staged `unreleased/` files have moved into `vX.Y.Z/`
 - [ ] `Release note` (workflow: **Release note**) — other PRs skip this check successfully
 - [ ] Existing CI jobs (`Lint`, `Type Check`, `Build`, `Test`, …)
 

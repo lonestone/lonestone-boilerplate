@@ -76,8 +76,9 @@ git diff --name-status vPREVIOUS..HEAD
 ```
 
 5. Confirm the release note exists (`apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`). It may already be on `main` from an earlier PR — that is the intended path, not a shortcut. If it is missing, write it here. See [Drafting the release note](#drafting-the-release-note-before-or-on-the-release-pr).
-6. Update `.boilerstone/boilerplate.example.json` so `source.currentVersion` is `X.Y.Z`. Only maintainers edit this example file, and only at release time.
-7. Validate:
+6. Confirm staged intentions were promoted. The **Intention promote** check fails until every `unreleased/*.md` that was on `main` has moved to `vX.Y.Z/NN-slug.md` with `id: vX.Y.Z/slug`. If it fails, the error is the command to run. A release that had nothing in `unreleased/` passes. GitHub has no yellow “needs work” check that also blocks merge, so this one fails like the other gates.
+7. Update `.boilerstone/boilerplate.example.json` so `source.currentVersion` is `X.Y.Z`. Only maintainers edit this example file, and only at release time.
+8. Validate:
 
 ```bash
 pnpm boilerplate intentions sync
@@ -92,8 +93,8 @@ pnpm test
 
 If this release changed CLI command behavior, flags, safety rules, or the meaning of a term used in the docs, update the matching `.boilerstone/docs/` pages in the same PR. The changelog line is not enough.
 
-8. Smoke test as a consumer (see below).
-9. Stop. Hand the Release PR back. **Never tag. Never merge.** The human merges from the GitHub UI as themselves. After merge, release-please creates `vX.Y.Z`.
+9. Smoke test as a consumer (see below).
+10. Stop. Hand the Release PR back. **Never tag. Never merge.** The human merges from the GitHub UI as themselves. After merge, release-please creates `vX.Y.Z`.
 
 ## Smoke test as a consumer
 
