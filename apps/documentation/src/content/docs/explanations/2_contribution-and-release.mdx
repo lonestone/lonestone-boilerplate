@@ -215,7 +215,7 @@ The same system runs in both places, with a few producer-only pieces:
 | `CONTRIBUTING.md` | ✔ | ✔ shipped; personalize scopes via `commitlint.config.ts` |
 | GitHub settings script | ✔ | ✔ (run once at project setup) |
 
-On the boilerplate repository, a PR that changes something consumers must adapt to also carries its **migration intention** — written in the same PR, by the author who has the context, not reconstructed at release time by the maintainer. The maintainer's job on the Release PR is plumbing: ordering the staged intentions, checking staleness, writing the note. See the [release maintainer runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md).
+On the boilerplate repository, a PR that changes something consumers must adapt to also carries its **migration intention** — written in the same PR, by the author who has the context, not reconstructed at release time by the maintainer. The maintainer's job on the Release PR is plumbing: ordering the staged intentions and checking staleness. The human release note can be drafted earlier, on a regular PR, so the story is written while the work is still fresh. See the [release maintainer runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md).
 
 ## Built for agents
 

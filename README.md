@@ -248,7 +248,7 @@ When working with an AI Agent (such as Copilot, Cursor or Claude), please follow
 
 - Do not add rules to the repo. You are encouraged to create your own so that it benefits several projects.
 - Exception: the committed product shims are `boilerstone-*`, `finalize-pr`, and `project-release` under `.claude/skills/` and `.cursor/skills/`. They must stay thin and point to their canon (`CONTRIBUTING.md` or `.boilerstone/docs/`).
-- If the agent needs markdown documents (like specifications or TODO task), write them in a dedicated folder in docs/features
+- If the agent needs markdown documents (like specifications or TODO tasks), write them in the documentation app (`apps/documentation`), not in a side `docs/` folder.
 
 ## 🤝 Contributing
 
@@ -258,7 +258,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for how we write commits and pull reque
 
 The stack technical documentation is available in the `apps/documentation/` folder. It contains information about architecture, coding conventions, and development guides. A index listing all the avaible documentation can be found at `apps/documentation/INDEX.md`.
 
-After cloning this repo, we advise putting your project specific documentation in the `docs/` folder and in app `README`s. This contains information about your the "business" side of the project. But you can also use `apps/documentation` as the center of all docs, it's up to you.
+After cloning this repo, we advise putting your project specific documentation in app `README`s, or in `apps/documentation` as the center of all docs. This contains information about the "business" side of the project.
 
 This documentation is also used by our custom cursor rules.
 
@@ -268,8 +268,6 @@ This documentation is also used by our custom cursor rules.
 - [API Readme](apps/api/README.md)
 - [Frontend Readme](apps/web-spa/README.md)
 - [Boilerplate upgrades](apps/documentation/src/content/docs/explanations/7_boilerplate-upgrades.mdx) — keep a project in sync with this template ([`.boilerstone/` overview](.boilerstone/README.md) for maintainers)
-
-The `docs/features` directory should contain a list of folder for each new features. In those you can write specification document and TODO tasks for a feature you are implementing. Feature specifications can can also point toward README.md files inside the packages' features, that should provide more details about the implementation within the scope of the package.
 
 ## 🔍 Tracing Architecture
 

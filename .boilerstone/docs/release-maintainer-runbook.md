@@ -42,6 +42,19 @@ This section is the canon the `boilerstone-intention` skill points to. Write the
 
 Not every PR yields an intention. Refactors and boilerplate-internal CI take the `no-intention` label instead and appear only in the generated changelog.
 
+## Drafting the release note (before or on the Release PR)
+
+The note is a file: `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`. The CI check on the Release PR only cares that this file exists on the PR HEAD. It does not care *when* it was written.
+
+Write it as soon as you know why the bundle exists — on a regular PR into `main`, or later on the Release PR. Waiting for the Release PR to exist first is a circle: that PR only appears after a push to `main`, and the story is easiest to write while the work is still fresh.
+
+How to name the file:
+
+- If the Release PR is already open, read `X.Y.Z` from `.release-please-manifest.json` on that branch. Do not pick a version by hand.
+- If it is not open yet, dry-run release-please (`npx release-please release-pr --dry-run --repo-url <owner/repo> --target-branch main`) and use the version it would open. If the filename later disagrees with the Release PR, **rename the file** — do not rewrite the story.
+
+A few sentences on why this release exists and what the bundle means for consumers. Not a second changelog. This repository sets the `REQUIRE_RELEASE_NOTE` variable, so CI refuses to merge the Release PR without that file (the check is optional by default on consumer projects).
+
 ## Working the Release PR
 
 The version number is already chosen. `CHANGELOG.md` is already generated. Do not pick a version by hand. Do not edit the changelog. Do not tag. Do not merge — that is the human's final act; release-please creates the tag after merge.
@@ -62,7 +75,7 @@ That creates `migration-intentions/vX.Y.Z/` if needed (with README markers), mov
 git diff --name-status vPREVIOUS..HEAD
 ```
 
-5. Write the release note: `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`. A few sentences on why this release exists and what the bundle means for consumers. Not a second changelog. This repository sets the `REQUIRE_RELEASE_NOTE` variable, so CI refuses to merge the Release PR without that file (the check is optional by default on consumer projects).
+5. Confirm the release note exists (`apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`). It may already be on `main` from an earlier PR — that is the intended path, not a shortcut. If it is missing, write it here. See [Drafting the release note](#drafting-the-release-note-before-or-on-the-release-pr).
 6. Update `.boilerstone/boilerplate.example.json` so `source.currentVersion` is `X.Y.Z`. Only maintainers edit this example file, and only at release time.
 7. Validate:
 
@@ -126,9 +139,10 @@ The versioned release gate removes most other cherry-picking: merging no longer 
 When the user says "prepare the release" or "work the Release PR":
 
 1. Read this runbook.
-2. Operate on the open Release PR — do not invent a version, a tag, or a merge.
-3. Promote `unreleased/` into `vX.Y.Z/`, then let the maintainer adjust `NN-` and `requires:`.
-4. Staleness-check intentions against `git diff vPREVIOUS..HEAD`.
-5. Draft the release note MDX from the changelog and commit bodies; the human finishes the tone.
-6. Run the validation commands and the smoke test.
-7. Stop. Never tag. Never merge the Release PR.
+2. If there is no Release PR yet, draft (or finish) `releases/vX.Y.Z.mdx` on a regular PR using a release-please dry-run for the version, then stop. Do not promote intentions, do not tag, do not merge.
+3. If the Release PR is open, operate on it — do not invent a version, a tag, or a merge.
+4. Promote `unreleased/` into `vX.Y.Z/`, then let the maintainer adjust `NN-` and `requires:`.
+5. Staleness-check intentions against `git diff vPREVIOUS..HEAD`.
+6. Confirm the release note exists; draft it only if it is missing. The human finishes the tone.
+7. Run the validation commands and the smoke test.
+8. Stop. Never tag. Never merge the Release PR.

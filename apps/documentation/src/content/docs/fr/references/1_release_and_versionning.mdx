@@ -135,6 +135,8 @@ Deux artefacts, deux rôles :
 
 Les notes de release sont **optionnelles par défaut** : le check CI sur la Release PR passe sans note. Quand votre équipe veut rendre la note obligatoire, mettez la variable de dépôt `REQUIRE_RELEASE_NOTE` à `true` (`gh variable set REQUIRE_RELEASE_NOTE --body true`) et le check bloquera la Release PR tant que `releases/vX.Y.Z.mdx` n'existe pas. Le dépôt du boilerplate l'impose.
 
+Vous pouvez écrire ce fichier **avant** que la Release PR n'existe — sur une PR normale vers `main`. Le check ne regarde que le HEAD de la Release PR, donc une note déjà sur `main` compte. Si la version dans le nom de fichier ne correspond plus, renommez le fichier ; ne réécrivez pas l'histoire.
+
 ## Feature flags
 
 Parfois deux changements mergés ne doivent pas partir ensemble. Préférez un feature flag plutôt que de retenir un merge — voir [Feature flags](/lonestone-boilerplate/fr/guides/feature-flags). Pour les rares cas où le cherry-pick est la seule option, l'échappatoire est documentée dans le [runbook du mainteneur de release](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md#selective-shipping-d12).
