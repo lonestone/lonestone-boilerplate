@@ -1,9 +1,24 @@
 import { LangfuseSpanProcessor } from '@langfuse/otel'
-import { NodeSDK } from '@opentelemetry/sdk-node'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import * as Sentry from '@sentry/nestjs'
 import { SentryPropagator, SentrySampler, SentrySpanProcessor } from '@sentry/opentelemetry'
 import { config } from './config/env.config'
+
+// Only spans emitted by the Vercel AI SDK (`ai`) and the Langfuse SDK (`langfuse-sdk`) are
+// LLM-related. Everything else on the global provider (Nest controllers, guards, interceptors,
+// database queries, HTTP requests) must never reach Langfuse.
+const LANGFUSE_INSTRUMENTATION_SCOPES = ['langfuse-sdk', 'ai']
+
+function createLangfuseSpanProcessor() {
+  return new LangfuseSpanProcessor({
+    publicKey: config.langfuse.publicKey,
+    secretKey: config.langfuse.secretKey,
+    baseUrl: config.langfuse.host,
+    environment: config.env,
+    shouldExportSpan: ({ otelSpan }) =>
+      LANGFUSE_INSTRUMENTATION_SCOPES.includes(otelSpan.instrumentationScope.name),
+  })
+}
 
 const sentryConfig: Sentry.NodeOptions = {
   // Uncomment this to enable debug mode (which is REALLY verbose)
@@ -41,12 +56,13 @@ function initialiazeTelemetry() {
       'Sentry DSN not configured. Base tracing, logging and error reporting will be disabled.',
     )
 
-    // Initialize Langfuse alone
-    const sdk = new NodeSDK({
-      spanProcessors: [new LangfuseSpanProcessor()],
+    // Initialize Langfuse alone. The processor still has to filter spans: OpenTelemetryModule
+    // instruments the whole Nest application on the same global provider.
+    const provider = new NodeTracerProvider({
+      spanProcessors: [createLangfuseSpanProcessor()],
     })
 
-    sdk.start()
+    provider.register()
 
     console.warn('Langfuse initialized')
   } else if (config.sentry.dsn && config.langfuse.secretKey) {
@@ -70,14 +86,7 @@ function initialiazeTelemetry() {
       sampler: sentryClient ? new SentrySampler(sentryClient) : undefined,
       spanProcessors: [
         // Langfuse processor - filters to only export LLM-related spans
-        new LangfuseSpanProcessor({
-          publicKey: config.langfuse.publicKey,
-          secretKey: config.langfuse.secretKey,
-          baseUrl: config.langfuse.host,
-          environment: config.env,
-          shouldExportSpan: ({ otelSpan }) =>
-            ['langfuse-sdk', 'ai'].includes(otelSpan.instrumentationScope.name),
-        }),
+        createLangfuseSpanProcessor(),
         // Sentry processor - receives all spans
         new SentrySpanProcessor(),
       ],
