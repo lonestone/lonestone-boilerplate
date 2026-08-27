@@ -812,11 +812,13 @@ describe('resolveUpgradePath', () => {
 
       const result = resolveUpgradePath({
         projectPath,
+        producerPath: projectPath,
         targetVersion: 'latest',
         publicationPolicy: 'local-only',
       })
       const refreshedResult = resolveUpgradePath({
         projectPath,
+        producerPath: projectPath,
         targetVersion: 'latest',
         publicationPolicy: 'refresh-if-needed',
       })
@@ -1406,10 +1408,10 @@ describe('boilerplate CLI smoke', () => {
         )}\n`,
       )
 
-      const finish = runCli(['upgrade', 'finish', '--project', projectPath, '--to', '1.1.0'])
+      const finish = runCli(['upgrade', 'finish', '--project', projectPath, '--to', '9.9.9'])
 
       expect(finish.status).toBe(1)
-      expect(finish.stderr).toContain('release v1.1.0 is not available locally')
+      expect(finish.stderr).toContain('release v9.9.9 is not available locally')
       expect(finish.stderr).toContain('refs/boilerstone/v*')
       const state = JSON.parse(
         readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8'),
@@ -1721,7 +1723,7 @@ describe('boilerplate CLI smoke', () => {
       expect(result.status).toBe(0)
       const payload = JSON.parse(result.stdout)
       // latest must resolve to the boilerplate's release, not the app's v5.0.0
-      expect(payload.targetVersion).toBe('1.0.0')
+      expect(payload.targetVersion).toBe('1.1.0')
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
