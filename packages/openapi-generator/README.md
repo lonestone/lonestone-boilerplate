@@ -11,7 +11,7 @@ L'OpenAPI Generator a plusieurs objectifs clés :
 - **Productivité** : Réduction du code boilerplate et des erreurs de typage
 - **Documentation** : Fournit une documentation implicite des endpoints disponibles
 
-Le générateur utilise l'outil `@hey-api/openapi-ts` pour transformer la spécification OpenAPI (récupérée depuis l'URL http://localhost:3000/docs-json) en un client TypeScript fortement typé avec validation Zod.
+Le générateur utilise l'outil `@hey-api/openapi-ts` pour transformer la spécification OpenAPI (récupérée depuis `${API_URL}/docs.json`, `API_URL` incluant le préfixe `/api`) en un client TypeScript fortement typé avec validation Zod.
 
 ## Usage
 
@@ -47,7 +47,7 @@ Les packages suivants dépendent d'OpenAPI Generator :
 
 La configuration se trouve dans le fichier `openapi-ts.config.ts`. Elle définit :
 
-- La source du schéma OpenAPI (endpoint `/docs-json` de l'API NestJS)
+- La source du schéma OpenAPI (endpoint `/docs.json` de l'API NestJS, sous le préfixe `/api`)
 - Les formats de sortie et les plugins utilisés
 - Les transformations appliquées aux données (ex: conversion des dates)
 
