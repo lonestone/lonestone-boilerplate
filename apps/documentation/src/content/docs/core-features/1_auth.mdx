@@ -45,6 +45,8 @@ It's good practice to prefix better-auth related entities table names with `auth
 
 :::caution
 Removing Better Auth from the project is a bit more work than removing other features. It's not recommended.
+
+Deleting the auth module is not enough. Example modules (`posts`, `comments`, `ai-example`), API tests and helpers, seeders, and the frontend auth pages also import it. Strip those references — or [remove the examples](/lonestone-boilerplate/core-features/99_examples/#-how-to-remove) first — or the project will not compile.
 :::
 
 1. Delete the `auth` module from `apps/api/src/modules/auth`
@@ -62,8 +64,10 @@ Removing Better Auth from the project is a bit more work than removing other fea
 "better-auth",
 ```
 
-5. Remove the following env variables from `apps/api/.env`:
+5. Remove the following env variables from `apps/api/.env`, `apps/api/.env.example`, and the `BETTER_AUTH_SECRET` field from `apps/api/src/config/env.config.ts`:
 
 ```
 BETTER_AUTH_SECRET=
 ```
+
+6. Remove leftover auth imports from example modules, `apps/api/src/test/helpers/`, seeders, `apps/web-spa/app/features/auth`, `apps/web-spa/app/lib/auth-client.ts`, and the matching routes in `apps/web-spa/app/routes.ts`.
