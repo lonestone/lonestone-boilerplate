@@ -7,12 +7,14 @@ description: Prepare a Lonestone boilerplate release on the release-please Relea
 
 This skill is a thin adapter. The canonical procedure lives in `.boilerstone/docs/release-maintainer-runbook.md` — read it first and follow it exactly. Do not improvise a different process.
 
-You operate on the **release-please Release PR** (label `autorelease: pending`). The version and `CHANGELOG.md` are already there. The human is a plumber; authors already wrote intentions in `unreleased/`.
+You operate on the **release-please Release PR** (label `autorelease: pending`) when it exists. The version and `CHANGELOG.md` are already there. The human is a plumber; authors already wrote intentions in `unreleased/`.
+
+If there is **no** Release PR yet, you may still draft `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx` on a regular PR (see the runbook section "Drafting the release note"). Do not promote intentions, tag, or merge in that case.
 
 ## Preflight
 
 1. Only run in the boilerplate repository itself (`.boilerstone/migration-intentions/` exists). In a consumer project this skill does not apply — point the user to `project-release` or `boilerstone-upgrade`.
-2. Find the open Release PR. Read the next version from `.release-please-manifest.json` on that branch. Do not pick a version by hand.
+2. If a Release PR is open, read the next version from `.release-please-manifest.json` on that branch. If it is not open, dry-run release-please for the version and draft the note only. Do not pick a version by gut feel.
 3. **Never tag. Never merge the Release PR.** Those are the human's final act. release-please creates the tag after merge.
 
 ## Quick map
