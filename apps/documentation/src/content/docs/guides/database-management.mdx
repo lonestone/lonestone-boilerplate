@@ -15,13 +15,13 @@ The project can be in two different states:
 This command will drop the database and re-create it based on your entity files.
 
 ```bash
-pnpm db:fresh
+pnpm --filter=api db:fresh
 ```
 
 If you want also want to seed the database with data, you can use the following command:
 
 ```bash
-pnpm db:fresh:seed
+pnpm --filter=api db:fresh:seed
 ```
 
 #### Auto-generating Better Auth entities
@@ -29,7 +29,7 @@ pnpm db:fresh:seed
 When adding Better Auth plugins, you can auto-generate the required entity code:
 
 ```bash
-pnpm auth:generate
+pnpm --filter=api auth:generate
 ```
 
 This uses the Better Auth CLI to detect missing entities/fields and scaffolds them directly into your entity files.
@@ -39,7 +39,7 @@ This uses the Better Auth CLI to detect missing entities/fields and scaffolds th
 This command will sync the changes to the database based on your entity files. Note that this can lead to some errors.
 
 ```bash
-pnpm db:sync
+pnpm --filter=api db:sync
 ```
 
 ## Migrations needed
@@ -52,11 +52,11 @@ You were happily using `sync`, but it's time to launch the project and you need 
 2. Create the initial migration file
 
 ```bash
-pnpm db:migration:init
+pnpm --filter=api db:migration:init
 ```
 
 3. Clean your production database: MikroORM will need an empty database to apply the initial migration. You may also want to do that for you pre-production environment.
-4. Set up your infrastructure to run `pnpm db:migrate:up` on startup (instead of `pnpm db:sync` or other)
+4. Set up your infrastructure to run `pnpm --filter=api db:migrate:up` on startup (instead of `pnpm --filter=api db:sync` or other)
 
 And... that's it! You can deploy this version.
 
@@ -75,13 +75,13 @@ With other ORMs, you would need to reset your database to the previous state, bu
 #### Creating a new migration
 
 ```bash
-pnpm db:migrate:create
+pnpm --filter=api db:migrate:create
 ```
 
 Then, you can run the migration to test it:
 
 ```bash
-pnpm db:migrate:up
+pnpm --filter=api db:migrate:up
 ```
 
 #### Deploying a new migration
@@ -90,6 +90,6 @@ Migrations are tricky because they order of execution matters. If another develo
 
 When several PRs are opened and are making changes to the database, it's a good practise to synchronize between developers to ensure migrations are runned in a correct order.
 
-When you are ready to deploy your changes, just push your changes and your container / launch command should run the migrations via `pnpm db:migrate:up`.
+When you are ready to deploy your changes, just push your changes and your container / launch command should run the migrations via `pnpm --filter=api db:migrate:up`.
 
 Remember to respect the production safety rules described in the [Database Migrations](/lonestone-boilerplate/explanations/6_database-migrations) page.

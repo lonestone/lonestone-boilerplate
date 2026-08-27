@@ -30,7 +30,7 @@ After years using GraphQL, we went back to REST (you can find the reasoning in t
 - [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
 - [Shadcn UI](https://ui.shadcn.com/) - Reusable components built with Radix UI and Tailwind CSS
-- [React Router v7](https://reactrouter.com/) - Declarative routing for React
+- [React Router v8](https://reactrouter.com/) - Declarative routing for React
 - [TanStack Query](https://tanstack.com/query/latest) - Powerful asynchronous state management
 - [React Hook Form](https://react-hook-form.com/) - React form management
 
@@ -56,11 +56,12 @@ lonestone/
 ├── apps/                  # Main applications
 │   ├── api/               # Backend API (NestJS)
 │   ├── web-spa/           # Web SPA application (React)
-│   └── web-ssr/           # Web SSR application (React)
+│   ├── web-ssr/           # Web SSR application (React)
+│   └── documentation/     # Starlight documentation site
 ├── packages/              # Shared packages
 │   ├── ui/                # Reusable UI components (shadcn/ui)
-│   ├── openapi-generator/ # OpenAPI client generator
-│   └── schematics/        # Schematics used to generate code in API
-├── docs/                  # Project documentation
+│   ├── i18n/              # Shared frontend i18n
+│   └── openapi-generator/ # OpenAPI client generator
+├── docs/                  # Optional project-specific documentation
 └── .github/               # GitHub Actions workflows
 ```
