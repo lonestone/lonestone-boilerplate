@@ -16,7 +16,7 @@ RUN pnpm --filter {apps/api}... build
 
 # Create a deploy folder with only the required deps
 # This respects gitignore in /apps/api, so remember to include your dist folder in the "files" section of your package.json
-RUN pnpm deploy --legacy --filter="./apps/api" --prod /app/api
+RUN pnpm deploy --filter="./apps/api" --prod /app/api --config.inject-workspace-packages=true
 
 # Stage 3: Production (Final image)
 FROM base AS runner
