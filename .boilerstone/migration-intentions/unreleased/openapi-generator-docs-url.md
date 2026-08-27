@@ -2,6 +2,7 @@
 id: unreleased/openapi-generator-docs-url
 domain: tooling
 classification: migration
+pr: 147
 ---
 
 # Point the OpenAPI generator at /api/docs.json
