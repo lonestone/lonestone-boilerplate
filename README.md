@@ -164,7 +164,6 @@ The project uses Docker Compose to provide the following services:
 
 - PostgreSQL - Database server
 - MailDev - SMTP server for development (not to be used in production!)
-- MinIO - S3 compatible storage solution (not to be used in production!)
 
 ## ⌨️ Useful Commands
 
@@ -184,10 +183,10 @@ The project uses Docker Compose to provide the following services:
 
 ### Database (API)
 
-- **Create migration**: `pnpm db:migrate:create`
-- **Run migrations**: `pnpm db:migrate:up`
-- **Rollback last migration**: `pnpm db:migrate:down`
-- **Initialize data**: `pnpm db:seed`
+- **Create migration**: `pnpm --filter=api db:migrate:create`
+- **Run migrations**: `pnpm --filter=api db:migrate:up`
+- **Rollback last migration**: `pnpm --filter=api db:migrate:down`
+- **Initialize data**: `pnpm --filter=api db:fresh:seed`
 
 ### Tests
 

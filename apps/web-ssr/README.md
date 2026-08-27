@@ -10,7 +10,7 @@ This is the web frontend application of our project, built with modern React and
 - [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
 - [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework
 - [Shadcn UI](https://ui.shadcn.com/) - Re-usable components built with Radix UI and Tailwind CSS
-- [React Router v7](https://reactrouter.com/) - Declarative routing for React
+- [React Router v8](https://reactrouter.com/) - Declarative routing for React
 - [TanStack Query](https://tanstack.com/query/latest) - Powerful asynchronous state management
 - [TanStack Table](https://tanstack.com/table/latest) - Headless UI for building powerful tables
 - [TanStack Form](https://tanstack.com/form/latest) - Powerful and type-safe form builder
@@ -19,8 +19,8 @@ This is the web frontend application of our project, built with modern React and
 ## Prerequisites
 
 Before you begin, ensure you have installed:
-- [Node.js](https://nodejs.org/) (v18 or higher)
-- [pnpm](https://pnpm.io/) (v8 or higher)
+- [Node.js](https://nodejs.org/) (version 24.13.0)
+- [pnpm](https://pnpm.io/) (version 10.28.2)
 
 ## Getting Started
 
@@ -51,11 +51,12 @@ The application will be available at `http://localhost:5173`
 ## Project Structure
 
 ```
-src/
-├── components/     # Reusable UI components
-├── features/       # Feature-specific components and logic
+app/
+├── features/      # Feature-specific components and logic
 ├── hooks/         # Custom React hooks
 ├── lib/           # Utility functions and configurations
+├── root.tsx       # Application root
+└── routes.ts      # Route table
 ```
 
 # SSR (Server-Side Rendering) Application

@@ -16,8 +16,10 @@ Package.json files:
 - ./apps/web-spa/package.json
 - ./apps/web-ssr/package.json
 - ./apps/documentation/package.json
-- ./apps/openapi-generator/package.json
-- ./apps/schematics/package.json
+- ./packages/openapi-generator/package.json
+- ./packages/ui/package.json
+- ./packages/i18n/package.json
+- ./.boilerstone/package.json
 
 Actions and workflows:
 - ./.github/actions/setup-node-pnpm/action.yml

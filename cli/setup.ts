@@ -61,6 +61,7 @@ export const PRODUCER_FILES_TO_REMOVE = [
   '.boilerstone/docs/ai-upgrades-implementation.md',
   '.boilerstone/docs/pilot-rollout.md',
   '.boilerstone/docs/release-maintainer-runbook.md',
+  '.boilerstone/docs/daily-hygiene-agent.md',
   // Producer-side upgrade artifacts published by the boilerplate, not maintained inside consumers
   '.boilerstone/migration-intentions',
   '.boilerstone/boilerplate.example.json',
@@ -73,6 +74,8 @@ export const PRODUCER_FILES_TO_REMOVE = [
   // Maintainer/onboarding-only skills; consumers keep only the boilerstone-upgrade skill
   '.claude/skills/boilerstone-release',
   '.cursor/skills/boilerstone-release',
+  '.claude/skills/boilerstone-intention',
+  '.cursor/skills/boilerstone-intention',
   '.claude/skills/boilerstone-init',
   '.cursor/skills/boilerstone-init',
 ]
@@ -151,6 +154,7 @@ function normalizeGitRemote(value: string): string {
     .trim()
     .replace(/^git@github\.com:/, 'https://github.com/')
     .replace(/^ssh:\/\/git@github\.com\//, 'https://github.com/')
+    .replace(/^(https?:\/\/)[^/]*@/i, '$1')
     .replace(/\/$/, '')
     .replace(/\.git$/, '')
     .toLowerCase()
@@ -668,7 +672,7 @@ function updateRootScripts(
     return packageJson
   }
 
-  const scriptsToRewrite = ['dev', 'generate', 'schematics:module', 'docs-only']
+  const scriptsToRewrite = ['dev', 'generate', 'docs-only']
   const nextScripts: Record<string, string> = {}
 
   for (const [key, value] of Object.entries<string>(packageJson.scripts)) {
