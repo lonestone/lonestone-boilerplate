@@ -25,8 +25,7 @@
     "schematics:module": "pnpm --filter=@boilerstone/schematics run schematics:module",
     "docs-only": "pnpm --filter=@boilerstone/documentation run dev",
     "knip": "knip --no-exit-code",
-    "lint:pr": "tsx ./scripts/lint-pr.ts",
-    "prepare": "lefthook install --reset-hooks-path"
+    "lint:pr": "tsx ./scripts/lint-pr.ts"
   },
   "dependencies": {
     "typescript": "^6.0.3"

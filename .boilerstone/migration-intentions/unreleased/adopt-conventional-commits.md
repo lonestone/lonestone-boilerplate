@@ -16,12 +16,12 @@ The squash commit is the only hand-written record that survives the merge. Every
 
 `CONTRIBUTING.md` stays the shared convention (do not fork the prose to list types or scopes). Scopes are edited in `commitlint.config.ts` only.
 
-Projects still on Husky should switch. Lefthook is one config file and a `prepare` install. Two hook systems must not run at once.
+Projects still on Husky should switch. Lefthook is one config file; its package installs hooks on a local `pnpm install`. After leaving Husky, run `pnpm exec lefthook install --reset-hooks-path` once so git drops `core.hooksPath` pointing at `.husky/_`. Two hook systems must not run at once.
 
 ## Applies When
 
 - The project tracks the `ci` domain.
-- Any of these is missing or still on the old stack: `commitlint.config.ts`, lefthook (`lefthook.yml` and a lefthook `prepare` script), `CONTRIBUTING.md`, `.github/workflows/pr-lint.yml`, `scripts/lint-pr.ts`, or the `lint:pr` root script. Still using Husky is the normal starting state this intention migrates away from.
+- Any of these is missing or still on the old stack: `commitlint.config.ts`, `lefthook.yml`, `CONTRIBUTING.md`, `.github/workflows/pr-lint.yml`, `scripts/lint-pr.ts`, or the `lint:pr` root script. Still using Husky is the normal starting state this intention migrates away from.
 
 ## Do Not Apply When
 
@@ -36,9 +36,9 @@ Work through each gap independently; skip any that is already closed.
    Align those `@commitlint/*` versions with the staged reference `package.json`. Touch no other dependency in this gap.
    Done when: `echo "feat(ci): test" | pnpm exec commitlint` exits 0, and a message with an unknown scope fails.
 
-2. **Lefthook replaces Husky** — signal: no `lefthook.yml`, root `package.json` has no lefthook `prepare` script (`lefthook install --reset-hooks-path`), `husky` is still in `devDependencies`, `.husky/` still exists, or `prepare` still runs `husky`.
-   Copy then adapt the staged reference `lefthook.yml` (keep project-specific hook jobs; keep the `commit-msg` commitlint job). Add `lefthook` and the `prepare` script from the staged reference `package.json`. Remove `husky` and delete `.husky/` so only lefthook runs.
-   Done when: `pnpm prepare` installs lefthook hooks, `.husky/` is gone, and `package.json` has no `husky` dependency.
+2. **Lefthook replaces Husky** — signal: no `lefthook.yml`, `husky` is still in `devDependencies`, `.husky/` still exists, `prepare` still runs `husky`, or `prepare` still runs `lefthook install`.
+   Copy then adapt the staged reference `lefthook.yml` (keep project-specific hook jobs; keep the `commit-msg` commitlint job). Add `lefthook` from the staged reference `package.json`. Remove `husky` and delete `.husky/` so only lefthook runs. Do not add a `prepare` script — the lefthook package installs hooks on `pnpm install`. After leaving Husky, run `pnpm exec lefthook install --reset-hooks-path` once so git drops `core.hooksPath` pointing at `.husky/_`. If `prepare` only existed to run husky or lefthook install, delete it.
+   Done when: `lefthook.yml` exists, `.husky/` is gone, root `package.json` has no `husky` dependency and no `prepare` that calls husky or lefthook, and `pnpm exec lefthook install --reset-hooks-path` exits 0.
 
 3. **Written convention and finalize skill** — signal: no `CONTRIBUTING.md` at the repo root, or `.claude/skills/finalize-pr/SKILL.md` / `.cursor/skills/finalize-pr/SKILL.md` are missing.
    Copy the staged reference `CONTRIBUTING.md` verbatim. Copy both finalize-pr skill files verbatim. Do not rewrite the convention in AGENTS.md, CLAUDE.md, or editor rules — a one-line pointer to `CONTRIBUTING.md` is enough if those files already exist.
@@ -77,7 +77,8 @@ Work through each gap independently; skip any that is already closed.
 
 - `pnpm install` completes if dependencies changed.
 - `echo "feat(ci): test" | pnpm exec commitlint` exits 0.
-- `pnpm prepare` installs lefthook hooks.
+- `pnpm exec lefthook install --reset-hooks-path` exits 0.
+- Root `package.json` has no `prepare` that calls husky or lefthook.
 - `pnpm exec tsc -p scripts/tsconfig.json` passes.
 - Husky is gone: no `.husky/` directory and no `husky` entry in root `package.json`.
 
