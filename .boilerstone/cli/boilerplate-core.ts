@@ -273,6 +273,7 @@ const PRODUCER_ARTIFACTS = [
   'docs/pilot-rollout.md',
   'docs/ai-upgrades-implementation.md',
   'docs/release-maintainer-runbook.md',
+  'docs/daily-hygiene-agent.md',
   'cli/boilerplate-core.spec.ts',
   'cli/tracking-state.spec.ts',
   'cli/install.spec.ts',

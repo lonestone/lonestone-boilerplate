@@ -44,7 +44,7 @@ Not every PR yields an intention. Refactors and boilerplate-internal CI take the
 
 ## Drafting the release note (before or on the Release PR)
 
-The note is a file: `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`. The CI check on the Release PR only cares that this file exists on the PR HEAD. It does not care *when* it was written.
+The note is a file: `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`. The CI check on the Release PR only cares that this file exists on the PR HEAD. It does not care _when_ it was written.
 
 Write it as soon as you know why the bundle exists — on a regular PR into `main`, or later on the Release PR. Waiting for the Release PR to exist first is a circle: that PR only appears after a push to `main`, and the story is easiest to write while the work is still fresh.
 
@@ -149,3 +149,7 @@ When the user says "prepare the release" or "work the Release PR":
 6. Confirm the release note exists; draft it only if it is missing. The human finishes the tone.
 7. Run the validation commands and the smoke test.
 8. Stop. Never tag. Never merge the Release PR.
+
+## Daily hygiene (separate agent)
+
+A scheduled agent may backfill holes: missing `unreleased/` files for work already on `main`, plus mechanical doc/script drift. That procedure is [daily-hygiene-agent.md](./daily-hygiene-agent.md). It never edits `CHANGELOG.md`, never creates `vX.Y.Z/`, never promotes, never tags, never merges. Do not confuse it with this runbook. If both a hygiene PR and a Release PR are open, merge the hygiene PR first, then re-run promote here (`always-update` rewrites this branch on every push to `main`).

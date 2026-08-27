@@ -11,6 +11,7 @@ Everything lives here as markdown and JSON. Tool-specific skills (Claude Code, C
 - **New here?** [docs/how-it-works.md](./docs/how-it-works.md) — why the system exists and what each command does.
 - **Running an upgrade?** [docs/upgrade-runbook.md](./docs/upgrade-runbook.md).
 - **Publishing a release?** [docs/release-maintainer-runbook.md](./docs/release-maintainer-runbook.md) (boilerplate maintainers only).
+- **Daily hole-filling (producer)?** [docs/daily-hygiene-agent.md](./docs/daily-hygiene-agent.md) — stages missing `unreleased/` files; never promotes, never edits `CHANGELOG.md`, never merges.
 
 ## Getting started
 
@@ -43,7 +44,7 @@ pnpm boilerplate upgrade finish --to <version>
 ```
 boilerplate.json          # Project state (version + applied/skipped intentions)
 cli/                      # Upgrade CLI
-docs/                     # How it works, upgrade runbook, release runbook
+docs/                     # How it works, upgrade runbook, release runbook, daily hygiene (producer)
 migration-intentions/     # Published intentions + unreleased/ staging (boilerplate repo only)
 ```
 
