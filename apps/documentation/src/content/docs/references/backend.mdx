@@ -22,16 +22,17 @@ Each feature should be organized as a NestJS module with the following structure
 
 ```
 modules/feature-name/
-├── feature-name.module.ts     # Module definition
-├── feature-name.controller.ts # HTTP endpoints
-├── feature-name.service.ts    # Business logic
-├── feature-name.entity.ts     # If there is a single entity, a single entity file is fine
-├── feature-name.contract.ts   # If there is a single entity, a single contract is fine
-├── feature-name.mapper.ts    # Mapper for the entity (transform entity to contract, used in the controller)
-└── contracts/                 # DTOs and validation schemas
-    └── feature-name.contract.ts # If multiple contracts are needed, create a subfolder to store them together
-└── entities/                 # Database entities
-    └── feature-name.entity.ts    # If multiple entities are needed, create a subfolder to store them together
+├── feature-name.module.ts       # Module definition
+├── feature-name.controller.ts   # HTTP endpoints
+├── feature-name.service.ts      # Business logic
+├── feature-name.entity.ts       # Single entity can live at the module root
+├── feature-name.mapper.ts       # Maps the entity to the contract in the controller
+├── contracts/                   # Zod schemas and inferred types
+│   └── feature-name.contract.ts
+├── entities/                    # Use this folder when the module has several entities
+│   └── feature-name.entity.ts
+└── tests/
+    └── feature-name.controller.e2e-spec.ts
 ```
 
 ### Naming Conventions
@@ -46,31 +47,20 @@ modules/feature-name/
 
 ## API Design
 
-To create a new module, you can use the following command:
+There is no module generator. Copy `apps/api/src/modules/example/posts/` and adapt it. That folder is the reference for entity, contract, mapper, service, controller, module, and e2e test.
 
-```bash
-pnpm generate:module --name=module-name
-```
+Then follow these steps (adapt as needed):
 
-It's generated with the following files:
-
-- `__name__.controller.ts`
-- `__name__.service.ts`
-- `__name__.entity.ts`
-- `__name__.module.ts`
-- `contracts/__name__.contract.ts`
-- `tests/__name__.controller.spec.ts`
-
-If you want to create a new module from scratch without the generator, you should follow the following steps (posts module is provided as an example because it's present in the boilerplate, adapt as needed)
-
-1. Create an entity, using posts.entity.ts (or another existing entity file if not found) as reference;
-2. Create a contract, using posts.contract.ts (or another existing contract file if not found) as reference.
+1. Create an entity, using `posts.entity.ts` as reference;
+2. Create a contract, using `posts.contract.ts` as reference.
    a. The contract file should contain the schema for all CRUD actions (GET/POST/PUT/DELETE);
    b. If related contracts are needed (relations), create the related contract files first;
-   c. When creating a contract, always start from the GET contract (nameOfEntitySchema) and then create the create and update contracts by extending the initial schema (you can use zod pick);
-3. Create a service, using posts.service.ts (or another existing service file if not found) as reference;
-4. Create a controller, using posts.controller.ts (or another existing controller file if not found) as reference;
-5. Create a module, using posts.module.ts (or another existing module file if not found) as reference;
+   c. When creating a contract, always start from the GET contract (`nameOfEntitySchema`) and then create the create and update contracts by extending the initial schema (you can use Zod `pick`);
+3. Create a mapper, using `posts.mapper.ts` as reference;
+4. Create a service, using `posts.service.ts` as reference;
+5. Create a controller, using `posts.controller.ts` as reference;
+6. Create a module, using `posts.module.ts` as reference;
+7. Add an e2e test under `tests/`, using `posts.controller.e2e-spec.ts` as reference. See [API testing](/lonestone-boilerplate/guides/api-testing) for how those tests run.
 
 ### Controllers
 
