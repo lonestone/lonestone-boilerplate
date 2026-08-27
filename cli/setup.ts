@@ -8,7 +8,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, extname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
@@ -68,6 +68,7 @@ export const PRODUCER_FILES_TO_REMOVE = [
   '.boilerstone/cli/boilerplate-core.spec.ts',
   '.boilerstone/cli/tracking-state.spec.ts',
   '.boilerstone/cli/install.spec.ts',
+  '.boilerstone/cli/setup-rename.spec.ts',
   '.boilerstone/cli/vitest.setup.ts',
   '.boilerstone/vitest.config.ts',
   // Maintainer/onboarding-only skills; consumers keep only the boilerstone-upgrade skill
@@ -618,6 +619,93 @@ function updatePackageJsonDependencies(
   writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
 }
 
+const WORKSPACE_SCOPE_SKIP_DIRS = new Set([
+  '.astro',
+  '.boilerstone',
+  '.git',
+  '.output',
+  '.react-router',
+  '.turbo',
+  'build',
+  'coverage',
+  'dist',
+  'node_modules',
+])
+
+const WORKSPACE_SCOPE_SKIP_FILES = new Set(['CHANGELOG.md', 'package-lock.json', 'pnpm-lock.yaml'])
+
+const WORKSPACE_SCOPE_TEXT_EXTENSIONS = new Set([
+  '.cjs',
+  '.css',
+  '.html',
+  '.js',
+  '.json',
+  '.jsx',
+  '.md',
+  '.mdc',
+  '.mdx',
+  '.mjs',
+  '.ts',
+  '.tsx',
+  '.yaml',
+  '.yml',
+])
+
+/**
+ * Replace `@old-scope/` with `@new-scope/` in project text files.
+ * Skips `.boilerstone/`, lockfiles, and the changelog so the upgrade CLI and
+ * historical records keep their own names.
+ */
+export function rewriteWorkspaceScope(
+  rootPath: string,
+  oldPrefix: string,
+  newPrefix: string,
+): number {
+  if (oldPrefix === newPrefix) {
+    return 0
+  }
+
+  const oldScoped = `${oldPrefix}/`
+  const newScoped = `${newPrefix}/`
+  let filesUpdated = 0
+
+  function walk(dirPath: string): void {
+    for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
+      if (entry.isSymbolicLink()) {
+        continue
+      }
+
+      if (entry.isDirectory()) {
+        if (WORKSPACE_SCOPE_SKIP_DIRS.has(entry.name)) {
+          continue
+        }
+        walk(join(dirPath, entry.name))
+        continue
+      }
+
+      if (!entry.isFile() || WORKSPACE_SCOPE_SKIP_FILES.has(entry.name)) {
+        continue
+      }
+
+      if (!WORKSPACE_SCOPE_TEXT_EXTENSIONS.has(extname(entry.name))) {
+        continue
+      }
+
+      const filePath = join(dirPath, entry.name)
+      const content = readFileSync(filePath, 'utf-8')
+      if (!content.includes(oldScoped)) {
+        continue
+      }
+
+      writeFileSync(filePath, content.replaceAll(oldScoped, newScoped), 'utf-8')
+      filesUpdated += 1
+    }
+  }
+
+  walk(rootPath)
+  return filesUpdated
+}
+
 function updateDockerCompose(projectName: string): void {
   const dockerComposePath = join(projectRoot, 'docker-compose.yml')
   if (!existsSync(dockerComposePath)) {
@@ -816,6 +904,13 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
     updatePackageJsonName(packagePath, `${newPrefix}/${name}`)
     updatePackageJsonDependencies(packagePath, oldPrefix, newPrefix)
     console.log(`  ${colorize('✓', 'green')} Updated ${colorize(path, 'dim')}`)
+  }
+
+  const rewrittenCount = rewriteWorkspaceScope(projectRoot, oldPrefix, newPrefix)
+  if (rewrittenCount > 0) {
+    console.log(
+      `  ${colorize('✓', 'green')} Rewrote ${colorize(String(rewrittenCount), 'bright')} files still referencing ${colorize(`${oldPrefix}/`, 'dim')}`,
+    )
   }
 
   console.log(
@@ -1044,7 +1139,7 @@ async function main(): Promise<void> {
     // Prompt for project name
     const projectName = await prompt('Project name', 'my-project')
 
-    // Update package.json files for detected applications with the project name
+    // Rename workspace packages and rewrite leftover @boilerstone/ imports
     await renameProjects(projectName, availableApps)
 
     // Prompt for configuration BEFORE copying files

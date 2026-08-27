@@ -46,7 +46,7 @@ curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/mai
 
 `--ref latest` is the default; pin with `--ref vX.Y.Z`. Branch refs like `main` are rejected so a project never starts from unreleased code. For a fork or private mirror, set `BOILERPLATE_REPO=<url>` — that repository must publish compatible `vX.Y.Z` tags.
 
-`bootstrap` adds the `boilerplate` script and a `tsx` devDependency, gitignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It's idempotent and never overwrites what's already there. It deliberately does **not** run `pnpm rock` — that script renames packages and rewrites env/docker files, which is fine on a fresh template and destructive on a real project.
+`bootstrap` adds the `boilerplate` script and a `tsx` devDependency, gitignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It's idempotent and never overwrites what's already there. It deliberately does **not** run `pnpm rock` — that script renames packages, rewrites leftover `@boilerstone/` imports, and rewrites env/docker files, which is fine on a fresh template and destructive on a real project.
 
 > **Heads-up on v1.0.0:** its intentions are baseline catch-ups ("align with the v1.0.0 …"), broader than the narrow deltas later releases ship. When onboarding an older project, budget roughly one working session per intention.
 

@@ -123,7 +123,7 @@ pnpm rock
 
 The script will guide you through the configuration process interactively. It will:
 - Ask for your project name
-- Update package.json files for detected applications with the project name
+- Rename workspace packages to `@your-project/*` and rewrite remaining `@boilerstone/` imports in apps, packages, docs, tsconfig, and CI
 - Check for existing `.env` files and only prompt for missing variables
 - Automatically update all `.env` files with your configuration
 - Set up proper API URLs and trusted origins across all applications
