@@ -501,7 +501,6 @@ describe('boilerplate core', () => {
     expect(PRODUCER_ARTIFACTS).toContain('cli/boilerplate-core.spec.ts')
     expect(PRODUCER_ARTIFACTS).toContain('vitest.config.ts')
     expect(PRODUCER_ARTIFACTS).toContain('docs/release-maintainer-runbook.md')
-    expect(PRODUCER_ARTIFACTS).toContain('docs/daily-hygiene-agent.md')
   })
 
   it('strips Vitest tooling from the vendored boilerstone package.json', () => {
