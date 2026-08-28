@@ -5,6 +5,8 @@ description: How the authentication system works, how to use it. Better Auth exp
 
 The authentication system is handled by the [Better Auth](https://www.better-auth.com/) library, which provides most features you will ever need, plus some more.
 
+NestJS wiring uses the community package [`@thallesp/nestjs-better-auth`](https://github.com/ThallesP/nestjs-better-auth) (see the [official NestJS integration docs](https://better-auth.com/docs/integrations/nestjs)). Lonestone keeps a thin [`AuthModule`](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/src/modules/auth/auth.module.ts) that configures `AuthModule.forRootAsync` with MikroORM `RequestContext`, email callbacks, and entities.
+
 Better-auth is heavily plugin-based, we propose a few guides on how to add some specific features like [organizations](/lonestone-boilerplate/addons/better-auth-orgs), [admin](/lonestone-boilerplate/addons/better-auth-admin), etc.
 
 # ❓ How it works
@@ -35,6 +37,8 @@ It's a good practise to keep all entities related to better-auth in the auth mod
 
 Better-auth provides server and client methods, see the [Better Auth documentation](https://www.better-auth.com/docs) for more details.
 
+`@thallesp/nestjs-better-auth` registers a **global** `AuthGuard`. All Nest routes require a session unless marked with `@AllowAnonymous()` or `@OptionalAuth()`. Use `@Session()` to read the session in controllers. For admin / org plugins, prefer library decorators such as `@Roles()`, `@OrgRoles()`, and `@RequireActiveOrg()`.
+
 Better-auth provides a OpenAPI schema and a live documentation of your API endpoints. You can find it at [http://localhost:3000/api/auth/reference](http://localhost:3000/api/auth/reference) by default.
 
 :::note
@@ -55,6 +59,7 @@ Deleting the auth module is not enough. Example modules (`posts`, `comments`, `a
 
 ```json
 "better-auth",
+"@thallesp/nestjs-better-auth",
 "auth"
 ```
 
