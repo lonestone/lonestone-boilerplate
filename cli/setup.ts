@@ -12,7 +12,7 @@ import { dirname, extname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
-import { buildOpenApiGeneratorApiUrl, colorize, isolatedGitEnv, normalizeApiPrefix } from './utils'
+import { colorize, isolatedGitEnv, normalizeApiPrefix } from './utils'
 
 interface InputPromptOptions {
   message: string
@@ -1064,9 +1064,9 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   // OpenAPI Generator .env
   if (availableApps.openapiGenerator && config.ports.api) {
     const openapiEnvPath = join(projectRoot, 'packages/openapi-generator/.env')
-    // Includes the API global prefix from API_PREFIX: preprocess fetches `${API_URL}/docs.json`.
-    const apiUrl = buildOpenApiGeneratorApiUrl(config.ports.api, config.apiPrefix)
-    updateEnvFile(openapiEnvPath, { API_URL: apiUrl }, false)
+    // Origin only. Preprocess joins API_URL + API_PREFIX when fetching docs.json.
+    const apiUrl = `http://localhost:${config.ports.api}`
+    updateEnvFile(openapiEnvPath, { API_URL: apiUrl, API_PREFIX: config.apiPrefix }, false)
   }
 
   console.log(`  ${colorize('✓', 'green')} Configuration values have been updated in .env files`)

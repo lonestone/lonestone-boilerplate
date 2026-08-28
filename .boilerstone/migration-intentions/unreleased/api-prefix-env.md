@@ -11,22 +11,22 @@ requires:
 
 ## Goal
 
-The Nest global prefix lives in `API_PREFIX` on the API env. Nest reads it at boot, and `pnpm rock` appends it when writing the OpenAPI generator `API_URL`.
+The Nest global prefix lives in `API_PREFIX`. Nest reads it at boot. The OpenAPI generator keeps `API_URL` as a host origin and joins `${API_URL}${API_PREFIX}/docs.json` when it fetches the spec.
 
 ## Why
 
-Pull request 147 stopped rock from wiping `/api` off the generator URL by hardcoding the string in `cli/setup.ts`. Nest still had its own `const PREFIX = '/api'` in `main.ts`. Changing the prefix meant editing two places that rock could not keep in sync, which is the hole issue 105 asked to close. One env var is the shared source. Frontend `VITE_API_URL` stays at the host origin because generated client paths already include the prefix.
+Pull request 147 put `/api` inside the generator's `API_URL` so `${API_URL}/docs.json` hit the right path. That left the generator as the only env whose "API URL" was not an origin. Concatenating the prefix again at `pnpm rock` time repeats that shape and does not make the prefix easier to change. `API_PREFIX` is the shared value. The generator composes the docs URL when it runs. Rock only copies the two keys.
 
 ## Applies When
 
 - The project tracks the `api` domain, or `apps/api/` exists.
-- `apps/api/src/main.ts` still has `const PREFIX = '/api'`, or `apps/api/.env` / `.env.example` has no `API_PREFIX`, or `cli/setup.ts` writes OpenAPI `API_URL` with a hardcoded `/api`. Still having any of those is the starting state this intention migrates away from, not a skip reason.
+- `apps/api/src/main.ts` still has `const PREFIX = '/api'`, or `API_PREFIX` is missing, or `packages/openapi-generator/.env` `API_URL` still ends with `/api`. Still having any of those is the starting state this intention migrates away from, not a skip reason.
 
 ## Do Not Apply When
 
 - The project has no `apps/api/` app — record as skipped.
 - The API already uses a custom prefix mechanism that is not Nest `setGlobalPrefix` — stop and ask rather than rewriting env keys.
-- A human has explicitly decided to keep a hardcoded prefix after reviewing this intention — record as skipped with that reason.
+- A human has explicitly decided to keep the prefix baked into the generator `API_URL` after reviewing this intention — record as skipped with that reason.
 
 ## Observable Gaps
 
@@ -42,13 +42,17 @@ Pull request 147 stopped rock from wiping `/api` off the generator URL by hardco
    Read `config.api.prefix` instead. Leave Scalar, CORS, and the json-parser middleware as they are besides the prefix source.
    Done when: `rg "const PREFIX = '/api'" apps/api/src/main.ts` returns nothing.
 
-4. **rock overwrite** — signal: `cli/setup.ts` writes OpenAPI `API_URL` as `` `http://localhost:${config.ports.api}/api` ``, or it does not write `API_PREFIX` into `apps/api/.env`.
-   Read `API_PREFIX` from the API env (or `.env.example`), write it back, and build the generator URL from port plus prefix, matching the staged reference. Leave web-spa and web-ssr `VITE_API_URL` at the host origin.
-   Done when: `cli/setup.ts` contains `API_PREFIX` and `buildOpenApiGeneratorApiUrl`, and does not concatenate a hardcoded `/api` onto the generator URL.
+4. **Generator env** — signal: `packages/openapi-generator/.env.example` has `API_URL=http://localhost:<port>/api`, or it has no `API_PREFIX`.
+   Set `API_URL` to the host origin and add `API_PREFIX=/api`, matching the staged reference. Do not change frontend `VITE_API_URL`.
+   Done when: generator `API_URL` has no trailing `/api` and `API_PREFIX` is present.
 
-5. **Generator docs** — signal: `apps/documentation/src/content/docs/guides/generating-types.mdx` does not mention `API_PREFIX`.
+5. **Generator fetch** — signal: `packages/openapi-generator/preprocess/index.js` fetches `${process.env.API_URL}/docs.json`, or `package.json` `dev` waits on `${API_URL}/docs.json`.
+   Fetch and wait on `${API_URL}${API_PREFIX}/docs.json` via `buildOpenApiDocsUrl`, matching the staged references. Do not concatenate the prefix in `cli/setup.ts`.
+   Done when: preprocess calls `buildOpenApiDocsUrl`, and `cli/setup.ts` writes generator `API_URL` as the origin plus a separate `API_PREFIX`.
+
+6. **Generator docs** — signal: `apps/documentation/src/content/docs/guides/generating-types.mdx` still says generator `API_URL` includes `/api`.
    Adapt the short URL note from the staged reference. Do not rewrite the rest of that page.
-   Done when: generating-types states that the generator `API_URL` includes `API_PREFIX`.
+   Done when: generating-types states that the generator fetches `${API_URL}${API_PREFIX}/docs.json`.
 
 ## Out of Scope
 
@@ -62,6 +66,10 @@ Pull request 147 stopped rock from wiping `/api` off the generator URL by hardco
 - `apps/api/.env.example` — **copy**
 - `apps/api/src/config/env.config.ts` — **adapt**
 - `apps/api/src/main.ts` — **adapt**
+- `packages/openapi-generator/.env.example` — **copy**
+- `packages/openapi-generator/preprocess/docs-url.js` — **copy**
+- `packages/openapi-generator/preprocess/index.js` — **adapt**
+- `packages/openapi-generator/package.json` — **adapt**
 - `cli/setup.ts` — **adapt**
 - `cli/utils.ts` — **adapt**
 - `apps/documentation/src/content/docs/guides/generating-types.mdx` — **adapt**
@@ -69,8 +77,9 @@ Pull request 147 stopped rock from wiping `/api` off the generator URL by hardco
 ## Validation
 
 - `apps/api/.env.example` contains `API_PREFIX=/api`.
+- `packages/openapi-generator/.env.example` `API_URL` is the host origin and `API_PREFIX=/api`.
 - `pnpm --filter=api typecheck` passes.
-- After `pnpm rock`, `packages/openapi-generator/.env` `API_URL` equals `http://localhost:<API_PORT><API_PREFIX>`.
+- With the API running, `pnpm generate` fetches `${API_URL}${API_PREFIX}/docs.json`.
 
 ## Record Result
 

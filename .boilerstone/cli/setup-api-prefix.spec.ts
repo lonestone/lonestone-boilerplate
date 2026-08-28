@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildOpenApiGeneratorApiUrl, normalizeApiPrefix } from '../../cli/utils'
+import { normalizeApiPrefix } from '../../cli/utils'
+import { buildOpenApiDocsUrl } from '../../packages/openapi-generator/preprocess/docs-url.js'
 
 describe('normalizeApiPrefix', () => {
   it('defaults empty values to /api', () => {
@@ -15,16 +16,16 @@ describe('normalizeApiPrefix', () => {
   })
 })
 
-describe('buildOpenApiGeneratorApiUrl', () => {
-  it('joins the API origin with the Nest prefix', () => {
-    const actualUrl = buildOpenApiGeneratorApiUrl(3000, '/api')
-    const expectedUrl = 'http://localhost:3000/api'
+describe('buildOpenApiDocsUrl', () => {
+  it('joins origin and prefix at fetch time', () => {
+    const actualUrl = buildOpenApiDocsUrl('http://localhost:3000', '/api')
+    const expectedUrl = 'http://localhost:3000/api/docs.json'
     expect(actualUrl).toBe(expectedUrl)
   })
 
-  it('normalizes a custom prefix before joining', () => {
-    const actualUrl = buildOpenApiGeneratorApiUrl(4000, 'v1/')
-    const expectedUrl = 'http://localhost:4000/v1'
+  it('does not bake the prefix into the origin', () => {
+    const actualUrl = buildOpenApiDocsUrl('http://localhost:4000/', 'v1/')
+    const expectedUrl = 'http://localhost:4000/v1/docs.json'
     expect(actualUrl).toBe(expectedUrl)
   })
 })

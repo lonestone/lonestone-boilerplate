@@ -37,7 +37,7 @@ export function isolatedGitEnv(): NodeJS.ProcessEnv {
 }
 
 /**
- * Nest global prefix used in `API_PREFIX` and the OpenAPI generator URL.
+ * Nest global prefix used in `API_PREFIX`.
  * Always starts with `/` and never ends with one. Empty or `/` falls back to `/api`.
  */
 export function normalizeApiPrefix(prefix: string | undefined): string {
@@ -47,8 +47,4 @@ export function normalizeApiPrefix(prefix: string | undefined): string {
   }
   const withLeading = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
   return withLeading.replace(/\/+$/, '')
-}
-
-export function buildOpenApiGeneratorApiUrl(port: number, prefix: string): string {
-  return `http://localhost:${port}${normalizeApiPrefix(prefix)}`
 }
