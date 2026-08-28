@@ -39,6 +39,7 @@ pnpm install
 | `DATABASE_PASSWORD` | Database connection password | Yes | - |
 | `DATABASE_NAME` | Database name | Yes | - |
 | `API_PORT` | Port on which the API listens | Yes | - |
+| `API_PREFIX` | Nest global prefix. `pnpm rock` appends this to the OpenAPI generator `API_URL`. | No | `/api` |
 | `BETTER_AUTH_SECRET` | Secret key for JWTs | Yes | - |
 | `NODE_ENV` | Environment (development, production) | No | `development` |
 | `TRUSTED_ORIGINS` | List of trusted origins. ⚠️ If you change the port of your frontends, you need to update this variable. | Yes | - |

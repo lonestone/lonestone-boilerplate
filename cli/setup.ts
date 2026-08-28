@@ -12,7 +12,7 @@ import { dirname, extname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
-import { colorize, isolatedGitEnv } from './utils'
+import { buildOpenApiGeneratorApiUrl, colorize, isolatedGitEnv, normalizeApiPrefix } from './utils'
 
 interface InputPromptOptions {
   message: string
@@ -69,6 +69,7 @@ export const PRODUCER_FILES_TO_REMOVE = [
   '.boilerstone/cli/tracking-state.spec.ts',
   '.boilerstone/cli/install.spec.ts',
   '.boilerstone/cli/setup-rename.spec.ts',
+  '.boilerstone/cli/setup-api-prefix.spec.ts',
   '.boilerstone/cli/vitest.setup.ts',
   '.boilerstone/vitest.config.ts',
   // Maintainer/onboarding-only skills; consumers keep only the boilerstone-upgrade skill
@@ -104,6 +105,7 @@ interface EnvConfig {
     port: number
     portWeb: number
   }
+  apiPrefix: string
 }
 
 async function prompt(message: string, initial: string): Promise<string> {
@@ -419,6 +421,14 @@ async function promptPortsConfig(availableApps: AvailableApps): Promise<EnvConfi
   }
 
   return ports
+}
+
+function readApiPrefix(): string {
+  const apiEnvPath = join(projectRoot, 'apps/api/.env')
+  const apiExamplePath = join(projectRoot, 'apps/api/.env.example')
+  const existingVars = existsSync(apiEnvPath) ? parseEnvFile(apiEnvPath) : {}
+  const exampleVars = existsSync(apiExamplePath) ? parseEnvFile(apiExamplePath) : {}
+  return normalizeApiPrefix(existingVars.API_PREFIX || exampleVars.API_PREFIX)
 }
 
 async function promptSmtpConfig(): Promise<EnvConfig['smtp']> {
@@ -1017,6 +1027,7 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
     const updates: Record<string, string> = {}
 
     updates.API_PORT = config.ports.api.toString()
+    updates.API_PREFIX = config.apiPrefix
     updates.DATABASE_USER = config.database.user
     updates.DATABASE_PASSWORD = config.database.password
     updates.DATABASE_NAME = config.database.name
@@ -1053,8 +1064,8 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   // OpenAPI Generator .env
   if (availableApps.openapiGenerator && config.ports.api) {
     const openapiEnvPath = join(projectRoot, 'packages/openapi-generator/.env')
-    // Includes the API global prefix: preprocess fetches `${API_URL}/docs.json`.
-    const apiUrl = `http://localhost:${config.ports.api}/api`
+    // Includes the API global prefix from API_PREFIX: preprocess fetches `${API_URL}/docs.json`.
+    const apiUrl = buildOpenApiGeneratorApiUrl(config.ports.api, config.apiPrefix)
     updateEnvFile(openapiEnvPath, { API_URL: apiUrl }, false)
   }
 
@@ -1152,6 +1163,7 @@ async function main(): Promise<void> {
       database: databaseConfig,
       ports: portsConfig,
       smtp: smtpConfig,
+      apiPrefix: readApiPrefix(),
     }
 
     // Now copy .env files (only if they don't exist)
