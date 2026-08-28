@@ -68,6 +68,7 @@ Pull request 147 put `/api` inside the generator's `API_URL` so `${API_URL}/docs
 - `apps/api/src/main.ts` — **adapt**
 - `packages/openapi-generator/.env.example` — **copy**
 - `packages/openapi-generator/preprocess/docs-url.js` — **copy**
+- `packages/openapi-generator/preprocess/docs-url.d.ts` — **copy**
 - `packages/openapi-generator/preprocess/index.js` — **adapt**
 - `packages/openapi-generator/package.json` — **adapt**
 - `cli/setup.ts` — **adapt**
