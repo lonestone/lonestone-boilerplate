@@ -10,9 +10,9 @@
     "./client/core/*": "./client/core/*.ts"
   },
   "scripts": {
-    "dev": "node ./preprocess/wait-for-docs.js && pnpm generate --watch",
+    "dev": "dotenvx run -- wait-on ${API_URL}${API_PREFIX}/docs.json && pnpm generate --watch",
     "preprocess": "node ./preprocess/index.js",
-    "generate": "node ./preprocess/index.js && openapi-ts -f ./openapi-ts.config.ts"
+    "generate": "cross-env dotenvx run -- pnpm preprocess && dotenvx run -- openapi-ts -f ./openapi-ts.config.ts"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.75.1",
