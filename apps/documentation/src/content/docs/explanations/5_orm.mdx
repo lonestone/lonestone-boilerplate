@@ -63,6 +63,29 @@ Some important concepts to know:
 - MikroORM NestJS module automatically creates a new Context for each request, you don't need to do anything special to get it. But if you want to use some functions outside of a request — for example in a CRON job — you will need to create a new Context manually (or use the `EnsureRequestContext` decorator).
 - Deprecated methods removed in v7: use `em.persist(entity)` + `await em.flush()` instead of `em.persistAndFlush(entity)`, `em.remove(entity)` + `await em.flush()` instead of `em.removeAndFlush(entity)`, and `orm.schema.refresh()` instead of `orm.schema.refreshDatabase()`. Decorators are now imported from `@mikro-orm/decorators/legacy` instead of `@mikro-orm/core`.
 
+### Updating an entity
+
+`wrap(entity).assign(data)` is the usual way to copy fields onto a loaded entity. It respects the entity graph (scalars, foreign keys, nested relations) instead of assigning properties by hand. See MikroORM's [entity helper](https://mikro-orm.io/docs/entity-helper).
+
+The copy-paste example is `CommentsService.updateComment` in `apps/api/src/modules/example/comments/comments.service.ts`:
+
+```typescript
+wrap(comment).assign(data)
+await this.em.flush()
+```
+
+In most cases, you will pass the entire update DTO to `assign`.
+
+Pass `{ em }` when the payload contains relations as ids (or nested creates). Without the entity manager, MikroORM cannot turn those ids into references:
+
+```typescript
+wrap(event).assign({ title: data.title, venue: { id: data.venueId } }, { em: this.em })
+```
+
+Use `mergeObjectProperties: true` when you want nested object fields merged instead of replaced.
+
+Do not assign a whole DTO onto an entity whose fields live elsewhere. The posts example is versioned on purpose: `title` and `content` live on `PostVersion`, and tags arrive as names that must be resolved. `wrap(post).assign(updateDto)` would silently skip those fields. Assign only what belongs on that entity; keep versioning and collection rebuilds as explicit steps.
+
 :::note [About migrations]
 Migrations are an important part of database management, you can read more about them in the [Database Migrations](/lonestone-boilerplate/explanations/6_database-migrations) page.
 :::
