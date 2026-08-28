@@ -26,6 +26,8 @@ import {
   commentsSchema,
   CreateCommentInput,
   createCommentSchema,
+  UpdateCommentInput,
+  updateCommentSchema,
 } from './contracts/comments.contract'
 
 @TypedController(
@@ -48,6 +50,23 @@ export class CommentsController {
   ): Promise<CommentResponse> {
     const userId = session?.user?.id
     const comment = await this.commentsService.createComment(postSlug, body, userId)
+    return this.commentsMapper.toComment(comment)
+  }
+
+  @TypedRoute.Patch(':commentId', commentSchema)
+  @UseGuards(AuthGuard)
+  async updateComment(
+    @TypedParam('postSlug', z.string()) postSlug: string,
+    @TypedParam('commentId', z.string()) commentId: string,
+    @TypedBody(updateCommentSchema) body: UpdateCommentInput,
+    @Session() session: { user: { id: string } },
+  ): Promise<CommentResponse> {
+    const comment = await this.commentsService.updateComment(
+      postSlug,
+      commentId,
+      session.user.id,
+      body,
+    )
     return this.commentsMapper.toComment(comment)
   }
 

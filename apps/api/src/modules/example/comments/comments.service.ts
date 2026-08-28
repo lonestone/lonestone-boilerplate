@@ -1,4 +1,4 @@
-import { EntityManager, FilterQuery, QueryOrderMap } from '@mikro-orm/core'
+import { EntityManager, FilterQuery, QueryOrderMap, wrap } from '@mikro-orm/core'
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { User } from '../../auth/auth.entity'
 import { buildOrderBy } from '../../db/query-order.util'
@@ -9,6 +9,7 @@ import {
   CommentPagination,
   CommentSorting,
   CreateCommentInput,
+  UpdateCommentInput,
 } from './contracts/comments.contract'
 
 export interface CommentsResult {
@@ -55,6 +56,27 @@ export class CommentsService {
     this.em.persist(comment)
     await this.em.flush()
 
+    return comment
+  }
+
+  async updateComment(
+    postSlug: string,
+    commentId: string,
+    userId: string,
+    data: UpdateCommentInput,
+  ): Promise<Comment> {
+    const comment = await this.em.findOne(
+      Comment,
+      { id: commentId, post: { slug: postSlug } },
+      { populate: ['user'] },
+    )
+    if (!comment) throw new NotFoundException('Comment not found')
+    if (!comment.user || comment.user.id !== userId) {
+      throw new ForbiddenException('Only the comment author can update this comment')
+    }
+
+    wrap(comment).assign(data)
+    await this.em.flush()
     return comment
   }
 

@@ -19,6 +19,17 @@ export const createCommentSchema = z
 
 export type CreateCommentInput = z.infer<typeof createCommentSchema>
 
+export const updateCommentSchema = z
+  .object({
+    content: z.string().min(1).max(1000),
+  })
+  .meta({
+    title: 'UpdateCommentSchema',
+    description: 'Schema for updating a comment',
+  })
+
+export type UpdateCommentInput = z.infer<typeof updateCommentSchema>
+
 // Schema for comment response
 // Using a simpler approach to avoid recursive type issues
 export const commentSchema = z
