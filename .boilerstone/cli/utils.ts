@@ -35,16 +35,3 @@ export function isolatedGitEnv(): NodeJS.ProcessEnv {
   delete env.GIT_WORK_TREE
   return env
 }
-
-/**
- * Nest global prefix used in `API_PREFIX`.
- * Always starts with `/` and never ends with one. Empty or `/` falls back to `/api`.
- */
-export function normalizeApiPrefix(prefix: string | undefined): string {
-  const trimmed = prefix?.trim() ?? ''
-  if (!trimmed || trimmed === '/') {
-    return '/api'
-  }
-  const withLeading = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
-  return withLeading.replace(/\/+$/, '')
-}

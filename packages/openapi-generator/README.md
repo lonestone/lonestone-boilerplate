@@ -11,7 +11,7 @@ L'OpenAPI Generator a plusieurs objectifs clés :
 - **Productivité** : Réduction du code boilerplate et des erreurs de typage
 - **Documentation** : Fournit une documentation implicite des endpoints disponibles
 
-Le générateur utilise l'outil `@hey-api/openapi-ts` pour transformer la spécification OpenAPI (récupérée depuis `${API_URL}${API_PREFIX}/docs.json`) en un client TypeScript fortement typé avec validation Zod. `API_URL` est l'origine du host ; `API_PREFIX` est le préfixe global Nest (défaut `/api`).
+Le générateur utilise l'outil `@hey-api/openapi-ts` pour transformer la spécification OpenAPI (récupérée depuis `${API_URL}${API_PREFIX}/docs.json`) en un client TypeScript fortement typé avec validation Zod. `API_URL` est l'origine du host (dans `packages/openapi-generator/.env`). `API_PREFIX` est lu depuis `apps/api/.env` au moment de la génération.
 
 ## Usage
 

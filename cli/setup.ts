@@ -12,7 +12,7 @@ import { dirname, extname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
-import { colorize, isolatedGitEnv, normalizeApiPrefix } from './utils'
+import { colorize, isolatedGitEnv } from './utils'
 
 interface InputPromptOptions {
   message: string
@@ -428,7 +428,7 @@ function readApiPrefix(): string {
   const apiExamplePath = join(projectRoot, 'apps/api/.env.example')
   const existingVars = existsSync(apiEnvPath) ? parseEnvFile(apiEnvPath) : {}
   const exampleVars = existsSync(apiExamplePath) ? parseEnvFile(apiExamplePath) : {}
-  return normalizeApiPrefix(existingVars.API_PREFIX || exampleVars.API_PREFIX)
+  return existingVars.API_PREFIX || exampleVars.API_PREFIX || '/api'
 }
 
 async function promptSmtpConfig(): Promise<EnvConfig['smtp']> {
@@ -1064,9 +1064,9 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   // OpenAPI Generator .env
   if (availableApps.openapiGenerator && config.ports.api) {
     const openapiEnvPath = join(projectRoot, 'packages/openapi-generator/.env')
-    // Origin only. Preprocess joins API_URL + API_PREFIX when fetching docs.json.
+    // Origin only. Generate reads API_PREFIX from apps/api/.env.
     const apiUrl = `http://localhost:${config.ports.api}`
-    updateEnvFile(openapiEnvPath, { API_URL: apiUrl, API_PREFIX: config.apiPrefix }, false)
+    updateEnvFile(openapiEnvPath, { API_URL: apiUrl }, false)
   }
 
   console.log(`  ${colorize('✓', 'green')} Configuration values have been updated in .env files`)

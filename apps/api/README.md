@@ -39,7 +39,7 @@ pnpm install
 | `DATABASE_PASSWORD` | Database connection password | Yes | - |
 | `DATABASE_NAME` | Database name | Yes | - |
 | `API_PORT` | Port on which the API listens | Yes | - |
-| `API_PREFIX` | Nest global prefix. The OpenAPI generator reads the same key and joins it with `API_URL` when fetching the spec. | No | `/api` |
+| `API_PREFIX` | Nest global prefix. The OpenAPI generator reads this key from this file when fetching the spec. | No | `/api` |
 | `BETTER_AUTH_SECRET` | Secret key for JWTs | Yes | - |
 | `NODE_ENV` | Environment (development, production) | No | `development` |
 | `TRUSTED_ORIGINS` | List of trusted origins. ⚠️ If you change the port of your frontends, you need to update this variable. | Yes | - |
