@@ -1053,7 +1053,8 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   // OpenAPI Generator .env
   if (availableApps.openapiGenerator && config.ports.api) {
     const openapiEnvPath = join(projectRoot, 'packages/openapi-generator/.env')
-    const apiUrl = `http://localhost:${config.ports.api}`
+    // Includes the API global prefix: preprocess fetches `${API_URL}/docs.json`.
+    const apiUrl = `http://localhost:${config.ports.api}/api`
     updateEnvFile(openapiEnvPath, { API_URL: apiUrl }, false)
   }
 

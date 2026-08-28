@@ -13,6 +13,9 @@ async function main() {
   const url = `${process.env.API_URL}/docs.json`
   const tmp = path.resolve('tmp', 'openapi.json')
   const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch OpenAPI spec from ${url}: ${res.status} ${res.statusText}`)
+  }
   const spec = await res.json()
 
   spec.components = spec.components || {}
