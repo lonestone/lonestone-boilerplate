@@ -1,5 +1,6 @@
 import type {
   EntityData,
+  EntityManager,
   EntityMetadata,
   EntityName,
   EntityProperty,
@@ -11,7 +12,7 @@ import type { BetterAuthOptions } from 'better-auth'
 import type { CleanedWhere, DBAdapterDebugLogOption } from 'better-auth/adapters'
 import type { DBFieldAttribute } from 'better-auth/db'
 import { writeFileSync } from 'node:fs'
-import { ReferenceKind, serialize } from '@mikro-orm/core'
+import { ReferenceKind, RequestContext, serialize } from '@mikro-orm/core'
 import { BetterAuthError } from 'better-auth'
 import { createAdapterFactory } from 'better-auth/adapters'
 import { getAuthTables } from 'better-auth/db'
@@ -109,6 +110,16 @@ function throwAdapterError(message: string): never {
   throw new BetterAuthError(`[MikroORM Adapter] ${message}`)
 }
 
+// Better Auth is not only called from HTTP handlers. A WebSocket gateway, a
+// scheduled task or a queue worker has no ambient MikroORM context, and
+// `orm.em` refuses context-specific work when it is the global instance. Take
+// the contextual entity manager when there is one, a dedicated fork otherwise.
+// One call per adapter operation, so persist and flush stay on the same
+// instance.
+function resolveEntityManager(orm: MikroORM): EntityManager {
+  return RequestContext.getEntityManager() ?? orm.em.fork()
+}
+
 const OWN_REFERENCES: ReadonlySet<ReferenceKind> = new Set([
   ReferenceKind.SCALAR,
   ReferenceKind.ONE_TO_MANY,
@@ -122,7 +133,11 @@ interface AdapterUtils {
     fieldName: string,
     throwOnShadowProps?: boolean,
   ) => string[]
-  normalizeInput: (metadata: AuthEntityMetadata, input: AuthRecord) => AuthEntityData
+  normalizeInput: (
+    em: EntityManager,
+    metadata: AuthEntityMetadata,
+    input: AuthRecord,
+  ) => AuthEntityData
   normalizeOutput: (
     metadata: AuthEntityMetadata,
     output: AuthModelEntity,
@@ -235,14 +250,14 @@ export function createAdapterUtils(
     )
   }
 
-  const normalizeInput: AdapterUtils['normalizeInput'] = (metadata, input) => {
+  const normalizeInput: AdapterUtils['normalizeInput'] = (em, metadata, input) => {
     const fields: PathRecord = {}
 
     for (const [key, value] of Object.entries(input)) {
       const prop = getPropertyMetadata(metadata, key)
       const normalizedValue =
         prop.targetMeta && !OWN_REFERENCES.has(prop.kind)
-          ? orm.em.getReference(prop.targetMeta.class as EntityName<AuthModelEntity>, value)
+          ? em.getReference(prop.targetMeta.class as EntityName<AuthModelEntity>, value)
           : value
 
       setPath(fields, [prop.name], normalizedValue)
@@ -440,18 +455,20 @@ export function mikroOrmAdapter(
 
       return {
         async count({ model, where }: AdapterQueryParams): Promise<number> {
+          const em = resolveEntityManager(orm)
           const metadata = getEntityMetadata(model)
 
-          return orm.em.count(metadata.class, normalizeWhereClauses(metadata, where))
+          return em.count(metadata.class, normalizeWhereClauses(metadata, where))
         },
 
         async create<T>({ data, model, select }: AdapterCreateParams<T>): Promise<T> {
+          const em = resolveEntityManager(orm)
           const metadata = getEntityMetadata(model)
-          const input = normalizeInput(metadata, toAuthRecord(data))
-          const entity = orm.em.create(metadata.class, input, { partial: true })
+          const input = normalizeInput(em, metadata, toAuthRecord(data))
+          const entity = em.create(metadata.class, input, { partial: true })
 
-          orm.em.persist(entity)
-          await orm.em.flush()
+          em.persist(entity)
+          await em.flush()
 
           return normalizeOutput(metadata, entity, normalizeSelect(model, select)) as T
         },
@@ -491,24 +508,23 @@ export function mikroOrmAdapter(
         },
 
         async delete({ model, where }: AdapterQueryParams): Promise<void> {
+          const em = resolveEntityManager(orm)
           const metadata = getEntityMetadata(model)
-          const entity = await orm.em.findOne(
-            metadata.class,
-            normalizeWhereClauses(metadata, where),
-          )
+          const entity = await em.findOne(metadata.class, normalizeWhereClauses(metadata, where))
 
           if (!entity) {
             return
           }
 
-          orm.em.remove(entity)
-          await orm.em.flush()
+          em.remove(entity)
+          await em.flush()
         },
 
         async deleteMany({ model, where }: AdapterQueryParams): Promise<number> {
+          const em = resolveEntityManager(orm)
           const metadata = getEntityMetadata(model)
 
-          return orm.em.nativeDelete(metadata.class, normalizeWhereClauses(metadata, where))
+          return em.nativeDelete(metadata.class, normalizeWhereClauses(metadata, where))
         },
 
         async findMany<T>({
@@ -519,6 +535,7 @@ export function mikroOrmAdapter(
           sortBy,
           where,
         }: AdapterFindManyParams): Promise<T[]> {
+          const em = resolveEntityManager(orm)
           const metadata = getEntityMetadata(model)
           const options: PathRecord = {}
 
@@ -530,7 +547,7 @@ export function mikroOrmAdapter(
             setPath(options, ['orderBy', ...path], sortBy.direction)
           }
 
-          const rows = await orm.em.find(
+          const rows = await em.find(
             metadata.class,
             normalizeWhereClauses(metadata, where),
             options as AuthFindOptions,
@@ -541,11 +558,9 @@ export function mikroOrmAdapter(
         },
 
         async findOne<T>({ model, select, where }: AdapterFindOneParams): Promise<T | null> {
+          const em = resolveEntityManager(orm)
           const metadata = getEntityMetadata(model)
-          const entity = await orm.em.findOne(
-            metadata.class,
-            normalizeWhereClauses(metadata, where),
-          )
+          const entity = await em.findOne(metadata.class, normalizeWhereClauses(metadata, where))
 
           if (!entity) {
             return null
@@ -555,29 +570,28 @@ export function mikroOrmAdapter(
         },
 
         async update<T>({ model, update, where }: AdapterUpdateParams<T>): Promise<T | null> {
+          const em = resolveEntityManager(orm)
           const metadata = getEntityMetadata(model)
-          const entity = await orm.em.findOne(
-            metadata.class,
-            normalizeWhereClauses(metadata, where),
-          )
+          const entity = await em.findOne(metadata.class, normalizeWhereClauses(metadata, where))
 
           if (!entity) {
             return null
           }
 
-          orm.em.assign(entity, normalizeInput(metadata, toAuthRecord(update)))
-          await orm.em.flush()
+          em.assign(entity, normalizeInput(em, metadata, toAuthRecord(update)))
+          await em.flush()
 
           return normalizeOutput(metadata, entity) as T
         },
 
         async updateMany<T>({ model, update, where }: AdapterUpdateParams<T>): Promise<number> {
+          const em = resolveEntityManager(orm)
           const metadata = getEntityMetadata(model)
 
-          return orm.em.nativeUpdate(
+          return em.nativeUpdate(
             metadata.class,
             normalizeWhereClauses(metadata, where),
-            normalizeInput(metadata, toAuthRecord(update)),
+            normalizeInput(em, metadata, toAuthRecord(update)),
           )
         },
       }
