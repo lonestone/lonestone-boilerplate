@@ -15,6 +15,8 @@ catalogs:
   auth:
     better-auth: ^1.6.25
   build:
+    # tsgo, the native TypeScript compiler, used by every typecheck / build script
+    '@typescript/native-preview': ^7.0.0-dev.20260707.2
     '@types/node': ^25.9.5
     typescript: ^6.0.3
     vite: ^7.3.6

@@ -7,9 +7,10 @@
   "scripts": {
     "lint:intentions": "tsx ./cli/boilerplate.ts intentions lint",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsgo --noEmit"
   },
   "devDependencies": {
+    "@typescript/native-preview": "catalog:build",
     "vitest": "^4.1.10"
   }
 }
