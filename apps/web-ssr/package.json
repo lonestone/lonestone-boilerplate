@@ -9,7 +9,7 @@
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "react-router typegen && tsgo"
   },
   "dependencies": {
     "@boilerstone/openapi-generator": "workspace:*",
@@ -34,6 +34,7 @@
     "@types/node": "catalog:build",
     "@types/react": "catalog:frontend",
     "@types/react-dom": "catalog:frontend",
+    "@typescript/native-preview": "catalog:build",
     "tailwindcss": "catalog:frontend",
     "typescript": "catalog:build",
     "vite": "catalog:build",
