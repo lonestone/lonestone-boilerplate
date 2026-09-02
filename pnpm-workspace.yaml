@@ -3,10 +3,10 @@ packages:
   - apps/*
   - .boilerstone
 strictPeerDependencies: true
-# tsconfck (via vite-tsconfig-paths) still declares typescript@^5; TS 6 is compatible here
+# tsconfck (via vite-tsconfig-paths) still declares typescript@^5; TS 7 is compatible here
 peerDependencyRules:
   allowedVersions:
-    typescript: '6'
+    typescript: '7'
 # cookie@1 keeps Express (parse/serialize) and Astro <=7.1.1 (parseCookie) compatible under shamefully-hoist
 overrides:
   cookie: 1.1.1
@@ -15,10 +15,9 @@ catalogs:
   auth:
     better-auth: ^1.6.25
   build:
-    # tsgo, the native TypeScript compiler, used by every typecheck / build script
-    '@typescript/native-preview': ^7.0.0-dev.20260707.2
     '@types/node': ^25.9.5
-    typescript: ^6.0.3
+    # TypeScript 7 is the native compiler; its `tsc` runs every typecheck / build script
+    typescript: ^7.0.2
     vite: ^7.3.6
     vite-tsconfig-paths: ^6.1.1
   frontend:
