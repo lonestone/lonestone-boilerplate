@@ -29,6 +29,15 @@ function getVersion() {
   }
 }
 
+function normalizeApiPrefix(prefix: string): string {
+  const trimmed = prefix.trim()
+  if (!trimmed || trimmed === '/') {
+    return '/api'
+  }
+  const withLeading = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+  return withLeading.replace(/\/+$/, '')
+}
+
 export const configValidationSchema = z.object({
   // Environment
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -36,6 +45,7 @@ export const configValidationSchema = z.object({
   // API
   API_BASE_URL: z.url(),
   API_PORT: z.coerce.number(),
+  API_PREFIX: z.string().default('/api').transform(normalizeApiPrefix),
 
   // Database
   DATABASE_PASSWORD: z.string(),
@@ -90,6 +100,7 @@ export const config = {
   api: {
     baseUrl: configParsed.data.API_BASE_URL,
     port: configParsed.data.API_PORT,
+    prefix: configParsed.data.API_PREFIX,
   },
   version: getVersion(),
   betterAuth: {
