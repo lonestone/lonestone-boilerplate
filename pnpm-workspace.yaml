@@ -3,13 +3,14 @@ packages:
   - apps/*
   - .boilerstone
 strictPeerDependencies: true
-# tsconfck (via vite-tsconfig-paths) still declares typescript@^5; TS 6 is compatible here
+# Several packages still declare typescript@^5; TS 6 is compatible here
 peerDependencyRules:
   allowedVersions:
     typescript: '6'
 # cookie@1 keeps Express (parse/serialize) and Astro <=7.1.1 (parseCookie) compatible under shamefully-hoist
 overrides:
   cookie: 1.1.1
+  vite: ^8.2.2
 # We override dependencies here to ensure that the correct version of the dependency is used for each package
 catalogs:
   auth:
@@ -17,8 +18,7 @@ catalogs:
   build:
     '@types/node': ^25.9.5
     typescript: ^6.0.3
-    vite: ^7.3.6
-    vite-tsconfig-paths: ^6.1.1
+    vite: ^8.2.2
   frontend:
     '@hookform/resolvers': ^5.7.1
     '@react-router/dev': ^8.3.0
