@@ -12,6 +12,7 @@ import type { CleanedWhere, DBAdapterDebugLogOption } from 'better-auth/adapters
 import type { DBFieldAttribute } from 'better-auth/db'
 import { writeFileSync } from 'node:fs'
 import { ReferenceKind, serialize } from '@mikro-orm/core'
+import { EnsureRequestContext } from '@mikro-orm/decorators/legacy'
 import { BetterAuthError } from 'better-auth'
 import { createAdapterFactory } from 'better-auth/adapters'
 import { getAuthTables } from 'better-auth/db'
@@ -423,165 +424,194 @@ export function validateAuthSchema(orm: MikroORM, options: BetterAuthOptions): s
   return diffAuthSchema(orm, options).flatMap((diff) => diff.problems)
 }
 
+// Better Auth is not only called from HTTP handlers. A WebSocket gateway, a
+// scheduled task or a queue worker has no ambient MikroORM context, so
+// `orm.em` stays the global instance and MikroORM refuses context-specific
+// work. Every operation that touches the database is wrapped in
+// `@EnsureRequestContext`, which reuses the request fork when there is one,
+// joins the surrounding transaction when there is one, and opens a context for
+// the operation otherwise. `orm.em` then resolves to the same fork for the
+// whole method, so persist and flush stay on the same instance. The methods
+// live on a class because the decorator only applies to class members.
+class MikroOrmAuthAdapter {
+  private readonly utils: AdapterUtils
+
+  constructor(
+    private readonly orm: MikroORM,
+    config: Pick<AdapterFactoryCreatorConfig, 'getFieldName'>,
+  ) {
+    this.utils = createAdapterUtils(orm, config)
+  }
+
+  @EnsureRequestContext()
+  async count({ model, where }: AdapterQueryParams): Promise<number> {
+    const { em } = this.orm
+    const metadata = this.utils.getEntityMetadata(model)
+
+    return em.count(metadata.class, this.utils.normalizeWhereClauses(metadata, where))
+  }
+
+  @EnsureRequestContext()
+  async create<T>({ data, model, select }: AdapterCreateParams<T>): Promise<T> {
+    const { em } = this.orm
+    const metadata = this.utils.getEntityMetadata(model)
+    const input = this.utils.normalizeInput(metadata, toAuthRecord(data))
+    const entity = em.create(metadata.class, input, { partial: true })
+
+    em.persist(entity)
+    await em.flush()
+
+    const normalizedSelect = this.utils.normalizeSelect(model, select)
+
+    return this.utils.normalizeOutput(metadata, entity, normalizedSelect) as T
+  }
+
+  async createSchema({
+    file,
+    tables,
+  }: {
+    file?: string
+    tables: ReturnType<typeof getAuthTables>
+  }) {
+    const defaultPath = file ?? 'src/modules/auth/auth.entity.ts'
+    const diffs = diffAuthTables(this.orm, tables)
+
+    if (diffs.length === 0) {
+      return { code: '', path: defaultPath }
+    }
+
+    const patchedFiles = applyEntityPatches(diffs, this.orm, defaultPath)
+
+    if (patchedFiles.size > 0) {
+      const entries = [...patchedFiles.entries()].toSorted(([left], [right]) =>
+        left.localeCompare(right),
+      )
+      const [schemaPath, schemaContent] = entries.at(-1)!
+
+      for (const [path, content] of entries.slice(0, -1)) {
+        writeFileSync(path, content)
+      }
+
+      return { code: schemaContent, path: schemaPath, overwrite: true }
+    }
+
+    throwAdapterError(
+      `Cannot determine which MikroORM entity file should receive Better Auth schema changes. Check createMikroOrmOptions() entities discovery.`,
+    )
+  }
+
+  @EnsureRequestContext()
+  async delete({ model, where }: AdapterQueryParams): Promise<void> {
+    const { em } = this.orm
+    const metadata = this.utils.getEntityMetadata(model)
+    const entity = await em.findOne(
+      metadata.class,
+      this.utils.normalizeWhereClauses(metadata, where),
+    )
+
+    if (!entity) {
+      return
+    }
+
+    em.remove(entity)
+    await em.flush()
+  }
+
+  @EnsureRequestContext()
+  async deleteMany({ model, where }: AdapterQueryParams): Promise<number> {
+    const { em } = this.orm
+    const metadata = this.utils.getEntityMetadata(model)
+
+    return em.nativeDelete(metadata.class, this.utils.normalizeWhereClauses(metadata, where))
+  }
+
+  @EnsureRequestContext()
+  async findMany<T>({
+    limit,
+    model,
+    offset,
+    select,
+    sortBy,
+    where,
+  }: AdapterFindManyParams): Promise<T[]> {
+    const { em } = this.orm
+    const metadata = this.utils.getEntityMetadata(model)
+    const options: PathRecord = {}
+
+    if (limit !== undefined) options.limit = limit
+    if (offset !== undefined) options.offset = offset
+
+    if (sortBy) {
+      const path = this.utils.getFieldPath(metadata, sortBy.field)
+      setPath(options, ['orderBy', ...path], sortBy.direction)
+    }
+
+    const rows = await em.find(
+      metadata.class,
+      this.utils.normalizeWhereClauses(metadata, where),
+      options as AuthFindOptions,
+    )
+    const normalizedSelect = this.utils.normalizeSelect(model, select)
+
+    return rows.map((row) => this.utils.normalizeOutput(metadata, row, normalizedSelect)) as T[]
+  }
+
+  @EnsureRequestContext()
+  async findOne<T>({ model, select, where }: AdapterFindOneParams): Promise<T | null> {
+    const { em } = this.orm
+    const metadata = this.utils.getEntityMetadata(model)
+    const entity = await em.findOne(
+      metadata.class,
+      this.utils.normalizeWhereClauses(metadata, where),
+    )
+
+    if (!entity) {
+      return null
+    }
+
+    const normalizedSelect = this.utils.normalizeSelect(model, select)
+
+    return this.utils.normalizeOutput(metadata, entity, normalizedSelect) as T
+  }
+
+  @EnsureRequestContext()
+  async update<T>({ model, update, where }: AdapterUpdateParams<T>): Promise<T | null> {
+    const { em } = this.orm
+    const metadata = this.utils.getEntityMetadata(model)
+    const entity = await em.findOne(
+      metadata.class,
+      this.utils.normalizeWhereClauses(metadata, where),
+    )
+
+    if (!entity) {
+      return null
+    }
+
+    em.assign(entity, this.utils.normalizeInput(metadata, toAuthRecord(update)))
+    await em.flush()
+
+    return this.utils.normalizeOutput(metadata, entity) as T
+  }
+
+  @EnsureRequestContext()
+  async updateMany<T>({ model, update, where }: AdapterUpdateParams<T>): Promise<number> {
+    const { em } = this.orm
+    const metadata = this.utils.getEntityMetadata(model)
+
+    return em.nativeUpdate(
+      metadata.class,
+      this.utils.normalizeWhereClauses(metadata, where),
+      this.utils.normalizeInput(metadata, toAuthRecord(update)),
+    )
+  }
+}
+
 export function mikroOrmAdapter(
   orm: MikroORM,
   { debugLogs, supportsJSON = true }: MikroOrmAdapterConfig = {},
 ) {
   return createAdapterFactory({
-    adapter(config) {
-      const {
-        getEntityMetadata,
-        getFieldPath,
-        normalizeInput,
-        normalizeOutput,
-        normalizeSelect,
-        normalizeWhereClauses,
-      } = createAdapterUtils(orm, config)
-
-      return {
-        async count({ model, where }: AdapterQueryParams): Promise<number> {
-          const metadata = getEntityMetadata(model)
-
-          return orm.em.count(metadata.class, normalizeWhereClauses(metadata, where))
-        },
-
-        async create<T>({ data, model, select }: AdapterCreateParams<T>): Promise<T> {
-          const metadata = getEntityMetadata(model)
-          const input = normalizeInput(metadata, toAuthRecord(data))
-          const entity = orm.em.create(metadata.class, input, { partial: true })
-
-          orm.em.persist(entity)
-          await orm.em.flush()
-
-          return normalizeOutput(metadata, entity, normalizeSelect(model, select)) as T
-        },
-
-        async createSchema({
-          file,
-          tables,
-        }: {
-          file?: string
-          tables: ReturnType<typeof getAuthTables>
-        }) {
-          const defaultPath = file ?? 'src/modules/auth/auth.entity.ts'
-          const diffs = diffAuthTables(orm, tables)
-
-          if (diffs.length === 0) {
-            return { code: '', path: defaultPath }
-          }
-
-          const patchedFiles = applyEntityPatches(diffs, orm, defaultPath)
-
-          if (patchedFiles.size > 0) {
-            const entries = [...patchedFiles.entries()].toSorted(([left], [right]) =>
-              left.localeCompare(right),
-            )
-            const [schemaPath, schemaContent] = entries.at(-1)!
-
-            for (const [path, content] of entries.slice(0, -1)) {
-              writeFileSync(path, content)
-            }
-
-            return { code: schemaContent, path: schemaPath, overwrite: true }
-          }
-
-          throwAdapterError(
-            `Cannot determine which MikroORM entity file should receive Better Auth schema changes. Check createMikroOrmOptions() entities discovery.`,
-          )
-        },
-
-        async delete({ model, where }: AdapterQueryParams): Promise<void> {
-          const metadata = getEntityMetadata(model)
-          const entity = await orm.em.findOne(
-            metadata.class,
-            normalizeWhereClauses(metadata, where),
-          )
-
-          if (!entity) {
-            return
-          }
-
-          orm.em.remove(entity)
-          await orm.em.flush()
-        },
-
-        async deleteMany({ model, where }: AdapterQueryParams): Promise<number> {
-          const metadata = getEntityMetadata(model)
-
-          return orm.em.nativeDelete(metadata.class, normalizeWhereClauses(metadata, where))
-        },
-
-        async findMany<T>({
-          limit,
-          model,
-          offset,
-          select,
-          sortBy,
-          where,
-        }: AdapterFindManyParams): Promise<T[]> {
-          const metadata = getEntityMetadata(model)
-          const options: PathRecord = {}
-
-          if (limit !== undefined) options.limit = limit
-          if (offset !== undefined) options.offset = offset
-
-          if (sortBy) {
-            const path = getFieldPath(metadata, sortBy.field)
-            setPath(options, ['orderBy', ...path], sortBy.direction)
-          }
-
-          const rows = await orm.em.find(
-            metadata.class,
-            normalizeWhereClauses(metadata, where),
-            options as AuthFindOptions,
-          )
-          const normalizedSelect = normalizeSelect(model, select)
-
-          return rows.map((row) => normalizeOutput(metadata, row, normalizedSelect)) as T[]
-        },
-
-        async findOne<T>({ model, select, where }: AdapterFindOneParams): Promise<T | null> {
-          const metadata = getEntityMetadata(model)
-          const entity = await orm.em.findOne(
-            metadata.class,
-            normalizeWhereClauses(metadata, where),
-          )
-
-          if (!entity) {
-            return null
-          }
-
-          return normalizeOutput(metadata, entity, normalizeSelect(model, select)) as T
-        },
-
-        async update<T>({ model, update, where }: AdapterUpdateParams<T>): Promise<T | null> {
-          const metadata = getEntityMetadata(model)
-          const entity = await orm.em.findOne(
-            metadata.class,
-            normalizeWhereClauses(metadata, where),
-          )
-
-          if (!entity) {
-            return null
-          }
-
-          orm.em.assign(entity, normalizeInput(metadata, toAuthRecord(update)))
-          await orm.em.flush()
-
-          return normalizeOutput(metadata, entity) as T
-        },
-
-        async updateMany<T>({ model, update, where }: AdapterUpdateParams<T>): Promise<number> {
-          const metadata = getEntityMetadata(model)
-
-          return orm.em.nativeUpdate(
-            metadata.class,
-            normalizeWhereClauses(metadata, where),
-            normalizeInput(metadata, toAuthRecord(update)),
-          )
-        },
-      }
-    },
+    adapter: (config) => new MikroOrmAuthAdapter(orm, config),
     config: {
       adapterId: 'mikro-orm-adapter',
       adapterName: 'MikroORM Adapter',
