@@ -55,9 +55,8 @@ Sentry.init({
   environment: config.env,
   release: config.version,
 
-  // Capture 100% of traces - reduce in production!
-  // Setting this above 0 automatically enables OpenTelemetry tracing.
-  tracesSampleRate: 1.0,
+  // 0 disables traces (the default). Set TRACES_SAMPLE_RATE to opt in.
+  tracesSampleRate: config.sentry.tracesSampleRate,
 
   // Send default PII data (e.g., IP addresses)
   sendDefaultPii: true,
@@ -71,13 +70,14 @@ Sentry.init({
 })
 ```
 
-<Aside type="caution" title="Performance in Production">
-The `tracesSampleRate: 1.0` setting captures 100% of traces, which is useful during development but can be expensive in production with high traffic.
+<Aside type="caution" title="Traces are off by default">
+Sentry error reporting and logs still work with only `SENTRY_DSN`. Distributed traces stay off while `TRACES_SAMPLE_RATE` is `0` (the default).
 
-**Recommended production settings:**
+Traces can be expensive on high-traffic production traffic. Typical values:
 
-- `tracesSampleRate: 0.1` (10% of traces) for high-traffic applications
-- `tracesSampleRate: 0.25` (25% of traces) for medium-traffic applications
+- `0` — no traces (default)
+- `1.0` — capture every trace (useful in development)
+- `0.1` — 10% of traces (a typical production rate)
 
 For error tracking, you can also use [dynamic sampling](https://docs.sentry.io/platforms/javascript/configuration/sampling/) for more granular control.
 
@@ -97,10 +97,12 @@ Since Sentry is already configured in the boilerplate, you only need to:
 
    ```env
    SENTRY_DSN=https://<your-dsn>@sentry.io/<your-project>
+   # Optional. Defaults to 0: errors and logs only, no traces.
+   TRACES_SAMPLE_RATE=0
    ```
 
 3. ### Start monitoring
-   That's it! Errors, traces, and logs are automatically captured.
+   That's it! Errors and logs are captured automatically. Set `TRACES_SAMPLE_RATE` above `0` if you also want distributed traces.
 
 </Steps>
 
@@ -115,7 +117,7 @@ Unhandled exceptions are automatically captured and sent to Sentry with:
 
 ## Viewing Traces
 
-Traces show the full request flow through your application:
+Traces stay off while `TRACES_SAMPLE_RATE` is `0`. They show the full request flow through your application:
 
 ![Sentry traces](../../../assets/sentry_traces.png)
 
@@ -214,6 +216,7 @@ Structured logs from Pino are automatically sent to Sentry:
 
    ```env
    SENTRY_DSN=
+   TRACES_SAMPLE_RATE=
    ```
 
 6. ### Update env.config.ts
@@ -223,10 +226,12 @@ Structured logs from Pino are automatically sent to Sentry:
    ```typescript
    // Remove from configValidationSchema:
    SENTRY_DSN: z.string().optional(),
+   TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
 
    // Remove from config object:
    sentry: {
      dsn: configParsed.data.SENTRY_DSN,
+     tracesSampleRate: configParsed.data.TRACES_SAMPLE_RATE,
    },
    ```
 
