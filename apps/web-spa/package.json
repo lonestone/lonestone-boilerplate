@@ -1,5 +1,5 @@
 {
-  "name": "@boilerstone/web-spa",
+  "name": "@pitchkit/web-spa",
   "private": true,
   "files": [
     "build"
@@ -8,12 +8,18 @@
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "react-router typegen && tsc",
+    "test": "vitest run --config=vitest.config.ts",
+    "cap:sync": "cap sync",
+    "cap:ios": "cap open ios",
+    "cap:android": "cap open android",
+    "cap:add:ios": "cap add ios",
+    "cap:add:android": "cap add android"
   },
   "dependencies": {
-    "@boilerstone/i18n": "workspace:*",
-    "@boilerstone/openapi-generator": "workspace:*",
-    "@boilerstone/ui": "workspace:*",
+    "@capacitor/app": "^7.0.1",
+    "@capacitor/core": "^7.2.0",
+    "@capacitor/push-notifications": "^7.0.1",
     "@fontsource/source-sans-pro": "^5.3.0",
     "@hookform/resolvers": "catalog:frontend",
     "@lonestone/nzoth": "^1.2.0",
@@ -31,9 +37,13 @@
     "react-hook-form": "catalog:frontend",
     "react-i18next": "catalog:frontend",
     "react-router": "catalog:frontend",
-    "zod": "catalog:validation"
+    "zod": "catalog:validation",
+    "@pitchkit/i18n": "workspace:*",
+    "@pitchkit/openapi-generator": "workspace:*",
+    "@pitchkit/ui": "workspace:*"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.2.0",
     "@react-router/dev": "catalog:frontend",
     "@tailwindcss/vite": "catalog:frontend",
     "@types/node": "catalog:build",
@@ -43,6 +53,7 @@
     "typescript": "catalog:build",
     "vite": "catalog:build",
     "vite-plugin-devtools-json": "^1.1.0",
-    "vite-tsconfig-paths": "catalog:build"
+    "vite-tsconfig-paths": "catalog:build",
+    "vitest": "^4.1.10"
   }
 }

@@ -1,4 +1,4 @@
-import type { PostContentSchema } from '@boilerstone/openapi-generator'
+import type { PostContentSchema } from '@pitchkit/openapi-generator'
 
 export default function PostContent({ content }: { content: Array<PostContentSchema> }) {
   return (

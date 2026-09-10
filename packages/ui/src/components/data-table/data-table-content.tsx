@@ -7,7 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@boilerstone/ui/components/primitives/table'
+} from '@pitchkit/ui/components/primitives/table'
 
 interface DataTableContentProps<TData> {
   table: TanstackTable<TData>

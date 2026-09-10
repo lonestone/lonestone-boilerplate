@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { cn } from '@boilerstone/ui/lib/utils'
+import { cn } from '@pitchkit/ui/lib/utils'
 
 function Table({ className, ...props }: React.ComponentProps<'table'>) {
   return (

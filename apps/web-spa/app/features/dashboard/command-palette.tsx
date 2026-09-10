@@ -7,7 +7,7 @@ import {
   CommandItem,
   CommandSeparator,
   CommandShortcut,
-} from '@boilerstone/ui/components/primitives/command'
+} from '@pitchkit/ui/components/primitives/command'
 import { Brain, Component, LayoutDashboard, Moon, PlusCircle, Sun, User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'

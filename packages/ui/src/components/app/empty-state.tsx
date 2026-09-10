@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { cn } from '@boilerstone/ui/lib/utils'
-import { Button } from '@boilerstone/ui/components/primitives/button'
+import { cn } from '@pitchkit/ui/lib/utils'
+import { Button } from '@pitchkit/ui/components/primitives/button'
 
 interface EmptyStateAction {
   label: string

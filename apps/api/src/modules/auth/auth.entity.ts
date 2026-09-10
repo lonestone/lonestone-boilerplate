@@ -1,4 +1,8 @@
 export { Account } from './entities/account.entity'
+export { Invitation } from './entities/invitation.entity'
+export { Member } from './entities/member.entity'
+export { Organization, SportType } from './entities/organization.entity'
 export { Session } from './entities/session.entity'
 export { User } from './entities/user.entity'
 export { Verification } from './entities/verification.entity'
+export type { ClubRole } from './entities/member.entity'

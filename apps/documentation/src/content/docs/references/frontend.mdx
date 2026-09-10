@@ -30,8 +30,8 @@ If not specified otherwise, follow the following guidelines:
       - utils/ for utils scoped to this feature
 - Use app folder to had global components that are used in multiple features.
 - Use utils folder to had utility functions.
-- Use components from @boilerstone/ui in ./packages/ui.
-- Check types, schemas and sdk from @boilerstone/openapi-generator in ./packages/openapi-generator.
+- Use components from @pitchkit/ui in ./packages/ui.
+- Check types, schemas and sdk from @pitchkit/openapi-generator in ./packages/openapi-generator.
   - ./packages/openapi-generator/client/sdk.gen.ts
   - ./packages/openapi-generator/client/zod.gen.ts
   - ./packages/openapi-generator/client/types.gen.ts
@@ -40,7 +40,7 @@ If not specified otherwise, follow the following guidelines:
   - routes are usually defined in a `routes.ts` file
 - Use react-hook-form for form handling.
 - Use zod for form validation.
-- Use @boilerstone/i18n for internationalization, no hardcoded strings.
+- Use @pitchkit/i18n for internationalization, no hardcoded strings.
 - Use tanstack-query for data fetching
   - structure queries by features, put the queries options in /features/featureName/utils/featureName-queries.ts
 

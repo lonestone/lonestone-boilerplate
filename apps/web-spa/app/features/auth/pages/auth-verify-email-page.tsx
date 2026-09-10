@@ -3,13 +3,21 @@ import { Loader2 } from 'lucide-react'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
+import { getStoredPendingInvitationId } from '@/features/auth/utils/pending-invitation'
 import { authClient } from '@/lib/auth-client'
 import { AuthPageHeader } from '../components/auth-page-header'
+
+function getLoginPath(): string {
+  const invitationId = getStoredPendingInvitationId()
+  if (!invitationId) return '/login'
+  return `/login?invitationId=${encodeURIComponent(invitationId)}`
+}
 
 export default function AuthVerifyEmailPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const loginPath = getLoginPath()
   const {
     mutate: verifyEmailMutation,
     isPending,
@@ -30,7 +38,7 @@ export default function AuthVerifyEmailPage() {
     },
     onSuccess: () => {
       setTimeout(() => {
-        navigate('/login')
+        navigate(getLoginPath())
       }, 3000)
     },
   })
@@ -68,7 +76,7 @@ export default function AuthVerifyEmailPage() {
           <Loader2 className="w-10 h-10 animate-spin" />
         </div>
         <div className="text-sm text-center mt-4">
-          <Link to="/login" className="font-medium transition-colors">
+          <Link to={loginPath} className="font-medium transition-colors">
             {t('auth.verifyEmail.redirectNow')}
           </Link>
         </div>
@@ -76,5 +84,5 @@ export default function AuthVerifyEmailPage() {
     )
   }
 
-  return <Navigate to="/login" />
+  return <Navigate to={loginPath} />
 }

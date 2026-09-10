@@ -1,6 +1,6 @@
 import type { Route } from './+types/root'
 import process from 'node:process'
-import { client } from '@boilerstone/openapi-generator'
+import { client } from '@pitchkit/openapi-generator'
 import { HydrationBoundary, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import {
@@ -15,7 +15,7 @@ import {
 import { useDehydratedState } from '@/hooks/use-dehydrated-state'
 import { useTheme } from '@/hooks/use-theme'
 import { queryClient } from '@/lib/query-client'
-import '@boilerstone/ui/globals.css'
+import '@pitchkit/ui/globals.css'
 
 client.setConfig({
   baseUrl: import.meta.env.VITE_API_URL as string,
@@ -23,6 +23,9 @@ client.setConfig({
 })
 
 export const links: Route.LinksFunction = () => [
+  { rel: 'icon', href: '/favicon.ico', sizes: 'any' },
+  { rel: 'icon', href: '/favicon.png', type: 'image/png' },
+  { rel: 'apple-touch-icon', href: '/favicon.png' },
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
     rel: 'preconnect',

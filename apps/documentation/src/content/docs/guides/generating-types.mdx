@@ -26,7 +26,7 @@ The `dev` command will watch for changes in the OpenAPI schema and regenerate th
 To use the generated API client in a frontend app:
 
 ```typescript
-import { client } from '@boilerstone/openapi-generator'
+import { client } from '@pitchkit/openapi-generator'
 
 client.setConfig({
   baseURL: 'http://localhost:3000',
@@ -36,7 +36,7 @@ client.setConfig({
 
 ```typescript
 // Usage example
-import { postControllerCreatePost } from '@boilerstone/openapi-generator'
+import { postControllerCreatePost } from '@pitchkit/openapi-generator'
 
 const posts = await postControllerCreatePost()
 ```

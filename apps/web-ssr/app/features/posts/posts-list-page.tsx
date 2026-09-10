@@ -1,9 +1,9 @@
 import type { Route } from './+types/posts-list-page'
-import { publicPostControllerGetPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
-import { EmptyState } from '@boilerstone/ui/components/app'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { Button } from '@boilerstone/ui/components/primitives/button'
-import { Input } from '@boilerstone/ui/components/primitives/input'
+import { publicPostControllerGetPosts } from '@pitchkit/openapi-generator/client/sdk.gen'
+import { EmptyState } from '@pitchkit/ui/components/app'
+import { Badge } from '@pitchkit/ui/components/primitives/badge'
+import { Button } from '@pitchkit/ui/components/primitives/button'
+import { Input } from '@pitchkit/ui/components/primitives/input'
 import { ChevronLeft, ChevronRight, FileText, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
@@ -196,11 +196,11 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
 
 export function meta() {
   return [
-    { title: 'Journal — Lonestone' },
-    { property: 'og:title', content: 'Journal — Lonestone' },
+    { title: 'Journal — Rösti' },
+    { property: 'og:title', content: 'Journal — Rösti' },
     {
       name: 'description',
-      content: 'Engineering insights and product thinking from the Lonestone team.',
+      content: 'Actualités et idées produit Rösti.',
     },
   ]
 }

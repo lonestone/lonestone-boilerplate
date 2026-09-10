@@ -2,17 +2,17 @@ import type {
   CommentSchema,
   CommentsControllerGetCommentRepliesResponse,
   CreateCommentSchema,
-} from '@boilerstone/openapi-generator'
-import { commentsControllerGetCommentReplies } from '@boilerstone/openapi-generator/client/sdk.gen'
-import { Button } from '@boilerstone/ui/components/primitives/button'
+} from '@pitchkit/openapi-generator'
+import { commentsControllerGetCommentReplies } from '@pitchkit/openapi-generator/client/sdk.gen'
+import { Button } from '@pitchkit/ui/components/primitives/button'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from '@boilerstone/ui/components/primitives/card'
-import { Separator } from '@boilerstone/ui/components/primitives/separator'
-import { cn } from '@boilerstone/ui/lib/utils'
+} from '@pitchkit/ui/components/primitives/card'
+import { Separator } from '@pitchkit/ui/components/primitives/separator'
+import { cn } from '@pitchkit/ui/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronUp, Loader2, Reply, Trash2, User } from 'lucide-react'
 import { useMemo, useState } from 'react'

@@ -1,11 +1,11 @@
-import type { Product } from '@boilerstone/openapi-generator'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
+import type { Product } from '@pitchkit/openapi-generator'
+import { Badge } from '@pitchkit/ui/components/primitives/badge'
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@boilerstone/ui/components/primitives/card'
+} from '@pitchkit/ui/components/primitives/card'
 
 interface ProductDisplayProps {
   product: Product

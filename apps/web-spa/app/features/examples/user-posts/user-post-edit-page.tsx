@@ -1,13 +1,13 @@
-import type { UpdatePostSchema } from '@boilerstone/openapi-generator'
+import type { UpdatePostSchema } from '@pitchkit/openapi-generator'
 import {
   postControllerGetUserPost,
   postControllerPublishPost,
   postControllerUnpublishPost,
   postControllerUpdatePost,
-} from '@boilerstone/openapi-generator/client/sdk.gen'
-import { Button } from '@boilerstone/ui/components/primitives/button'
-import { toast } from '@boilerstone/ui/components/primitives/sonner'
-import { SendIcon } from '@boilerstone/ui/icons'
+} from '@pitchkit/openapi-generator/client/sdk.gen'
+import { Button } from '@pitchkit/ui/components/primitives/button'
+import { toast } from '@pitchkit/ui/components/primitives/sonner'
+import { SendIcon } from '@pitchkit/ui/icons'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'

@@ -1,0 +1,26 @@
+---
+title: Rösti product overview
+description: Domain model and feature map for the Rösti club manager
+---
+
+# Rösti
+
+SaaS multi-club session manager.
+
+## Core concepts
+
+- **Club** = Better Auth Organization (`owner` immutable, `admin`, `member`)
+- **Season** — stats window
+- **Match / MatchSeries** — single or recurring sessions with capacity
+- **Attendance** — present / absent / pending
+- **Lineup** — blue / red
+- **Stats** — goals & assists per match, aggregated per season
+- **Chat** — per-match messages with `@uuid` mentions
+- **Notifications** — email + push preferences + scheduled RSVP reminders
+- **Session fees** — split pitch + extras; mark paid; personal payment link
+
+## Clients
+
+- Desktop: `web-spa`
+- Mobile: Capacitor wrapper of `web-spa` (`apps/web-spa/capacitor.config.json`)
+- Public: `web-ssr` landing + `/invite/:invitationId`

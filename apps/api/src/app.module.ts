@@ -3,14 +3,22 @@ import { OpenTelemetryModule } from '@amplication/opentelemetry-nestjs'
 import { Module } from '@nestjs/common'
 import { ConfigModule as NestConfigModule } from '@nestjs/config'
 import { APP_FILTER } from '@nestjs/core'
+import { ScheduleModule } from '@nestjs/schedule'
 import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup'
 import { LoggerModule } from 'nestjs-pino'
 import { AppController } from './app.controller'
 import { AiModule } from './modules/ai/ai.module'
 import { AuthModule } from './modules/auth/auth.module'
+import { ChatModule } from './modules/chat/chat.module'
+import { ClubModule } from './modules/clubs/club.module'
 import { DbModule } from './modules/db/db.module'
 import { EmailModule } from './modules/email/email.module'
 import { ExampleModule } from './modules/example/example.module'
+import { MatchModule } from './modules/matches/match.module'
+import { NotificationModule } from './modules/notifications/notification.module'
+import { PaymentModule } from './modules/payments/payment.module'
+import { SeasonModule } from './modules/seasons/season.module'
+import { StatsModule } from './modules/stats/stats.module'
 
 // Extended interface for Express requests
 interface ExpressRequest extends IncomingMessage {
@@ -89,12 +97,20 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
         },
       },
     }),
+    ScheduleModule.forRoot(),
     DbModule,
     AuthModule,
     EmailModule,
     AiModule,
     NestConfigModule,
     ExampleModule,
+    ClubModule,
+    SeasonModule,
+    MatchModule,
+    StatsModule,
+    ChatModule,
+    NotificationModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [

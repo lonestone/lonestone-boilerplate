@@ -1,5 +1,5 @@
-import type { UserPostSchema } from '@boilerstone/openapi-generator'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
+import type { UserPostSchema } from '@pitchkit/openapi-generator'
+import { Badge } from '@pitchkit/ui/components/primitives/badge'
 import { ArrowRight, CalendarDays, Clock } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'

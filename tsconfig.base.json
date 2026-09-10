@@ -5,7 +5,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@boilerstone/*": ["packages/*/src"]
+      "@pitchkit/*": ["packages/*/src"]
     },
     "ignoreDeprecations": "6.0"
   }

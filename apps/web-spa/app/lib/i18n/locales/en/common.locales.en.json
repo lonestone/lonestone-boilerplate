@@ -25,6 +25,12 @@
     "register": {
       "title": "Register",
       "description": "Create an account to get started.",
+      "createClubTitle": "Create your club",
+      "createClubDescription": "Create your account, then set up your club in a few steps.",
+      "joinClub": "Join {{club}} on Rösti",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "phone": "Phone",
       "name": "Name",
       "email": "Email",
       "password": "Password",
@@ -68,7 +74,8 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "brand": "Lonestone - Dashboard",
+    "subtitle": "Club manager",
+    "brand": "Rösti - Dashboard",
     "newPost": "New post",
     "ai": "AI",
     "userMenu": "User menu",
@@ -81,6 +88,257 @@
     "actions": "Quick actions",
     "profile": "Profile",
     "components": "Components"
+  },
+  "nav": {
+    "home": "Home",
+    "matches": "Matches",
+    "notifications": "Notifications",
+    "clubSettings": "Club settings"
+  },
+  "home": {
+    "eyebrow": "Your club",
+    "fallbackClub": "Club",
+    "nextMatch": "Next occurrence",
+    "capacity": "{{present}} / {{max}} players",
+    "viewMatch": "View match",
+    "noUpcoming": "No upcoming matches yet.",
+    "goToMatches": "Go to matches",
+    "allMatches": "All matches"
+  },
+  "matches": {
+    "title": "Matches",
+    "create": "Create a match",
+    "loading": "Loading matches…",
+    "emptyTitle": "No upcoming matches",
+    "emptyDescription": "Create your next match so the team can get organized.",
+    "selectClub": "Select or create a club first.",
+    "capacity": "{{present}} / {{max}} players",
+    "menuOpen": "Match actions",
+    "cancel": "Cancel match",
+    "postpone": "Postpone match",
+    "cancelSuccess": "Match cancelled",
+    "postponeSuccess": "Match postponed",
+    "postponeTitle": "Postpone match",
+    "postponeDescription": "Pick the new date and time.",
+    "postponeConfirm": "Confirm postpone",
+    "postponeCancel": "Cancel",
+    "date": "Date",
+    "time": "Time",
+    "datePlaceholder": "Pick a date",
+    "detail": {
+      "loading": "Loading match…",
+      "noLocation": "No location set",
+      "tabs": {
+        "summary": "Summary",
+        "attendance": "Attendance",
+        "chat": "Chat",
+        "stats": "Stats"
+      },
+      "status": {
+        "scheduled": "Scheduled",
+        "cancelled": "Cancelled",
+        "played": "Played"
+      },
+      "rsvp": {
+        "present": "I'm in",
+        "absent": "Unavailable",
+        "question": "Are you coming?"
+      },
+      "summary": {
+        "date": "Date",
+        "time": "Time",
+        "location": "Location",
+        "presentPlayers": "Present players",
+        "lineup": "Lineup",
+        "teamBlue": "Blue",
+        "teamRed": "Red",
+        "noPresent": "Nobody has confirmed yet.",
+        "noLineup": "No lineup yet."
+      },
+      "lineupEditor": {
+        "title": "Manage lineups",
+        "description": "Assign present players to the blue or red team.",
+        "close": "Close",
+        "save": "Save",
+        "saved": "Lineup saved",
+        "teamBlue": "Blue team",
+        "teamRed": "Red team",
+        "available": "Available players",
+        "empty": "No players to assign.",
+        "otherTeam": "On the other team",
+        "create": "Create lineup",
+        "edit": "Edit lineup"
+      },
+      "attendance": {
+        "present": "Present",
+        "pending": "Pending",
+        "absent": "Unavailable",
+        "empty": "No players in this group.",
+        "manageHint": "Set each player's attendance, before or after the match.",
+        "markPresent": "Present",
+        "markAbsent": "Absent",
+        "markPending": "Pending"
+      },
+      "chat": {
+        "placeholder": "Write a message…",
+        "send": "Send",
+        "empty": "No messages yet. Start the conversation!"
+      },
+      "stats": {
+        "score": "Score",
+        "teamBlue": "Blue",
+        "teamRed": "Red",
+        "goals": "Goals",
+        "assists": "Assists",
+        "player": "Player",
+        "save": "Save stats",
+        "saved": "Stats saved",
+        "noPlayers": "No present players to enter stats for.",
+        "hint": "Enter goals and assists. The score is computed from each team's goals."
+      }
+    }
+  },
+  "createMatch": {
+    "title": "Create a match",
+    "subtitle": "Schedule the next slot for {{club}}.",
+    "back": "Back",
+    "submit": "Create match",
+    "submitting": "Creating…",
+    "success": "Match created",
+    "matchTitle": "Title",
+    "matchTitlePlaceholder": "e.g. Wednesday match",
+    "location": "Location",
+    "locationPlaceholder": "e.g. Municipal pitch",
+    "maxPlayers": "Max players",
+    "date": "Date",
+    "datePlaceholder": "Pick a date",
+    "time": "Time",
+    "recurrence": "Recurrence",
+    "once": "One-time only",
+    "everyWeek": "Every week — every {{day}}",
+    "everyNthWeekday": "Every {{ordinal}} {{day}} of the month",
+    "everyMonthDate": "Every month on the {{day}}",
+    "monthlyNthFallback": "First weekday of the month",
+    "recurrenceHint": "The next 12 occurrences will be created.",
+    "seasonName": "Season {{year}}",
+    "defaultTitle": "Match — {{club}}",
+    "errors": {
+      "requiredFields": "Please fill in all fields.",
+      "maxPlayers": "You need at least 2 players.",
+      "missingClub": "Club not found."
+    }
+  },
+  "join": {
+    "title": "Join your club",
+    "description": "Paste the invitation link from your email, or the invitation id.",
+    "inviteLabel": "Invitation link or code",
+    "invitePlaceholder": "https://…/invite/… or UUID",
+    "continue": "Continue",
+    "invalidInvite": "Invalid invitation link or code.",
+    "createInstead": "Don't have a club yet?",
+    "createClub": "Create your club",
+    "signIn": "Already have an account? Sign in"
+  },
+  "invite": {
+    "title": "You're invited to {{club}}",
+    "fallbackClub": "a Rösti club",
+    "description": "Install the mobile app or continue on desktop to create your account.",
+    "descriptionWithEmail": "You were invited as {{email}}. Install the app or continue on desktop.",
+    "appStore": "Download on the App Store",
+    "playStore": "Get it on Google Play",
+    "openApp": "Open Rösti app",
+    "continueDesktop": "Continue on desktop"
+  },
+  "clubSettings": {
+    "title": "Club settings",
+    "noClub": "No club selected.",
+    "invite": {
+      "title": "Invite players",
+      "hint": "Enter emails separated by commas. Each email becomes a pill.",
+      "placeholder": "friend@email.com, …",
+      "send": "Send invitations",
+      "success": "Invitations sent"
+    },
+    "players": {
+      "title": "Players",
+      "hint": "Members of the club and pending invitations.",
+      "empty": "No players yet.",
+      "statusInvited": "Invitation sent",
+      "resend": "Resend",
+      "resent": "Invitation resent",
+      "remove": "Remove",
+      "removed": "Player removed",
+      "makeAdmin": "Make admin",
+      "removeAdmin": "Remove admin",
+      "promoted": "Player is now an admin",
+      "demoted": "Admin rights removed",
+      "roles": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "member": "Member"
+      }
+    },
+    "paymentLink": {
+      "title": "Personal payment link",
+      "hint": "Peer-to-peer only (Lydia, PayPal.me, Revolut…). No commercial PSP yet.",
+      "save": "Save",
+      "saved": "Payment link saved"
+    }
+  },
+  "onboarding": {
+    "title": "Set up your club",
+    "stepOf": "Step {{current}} of {{total}}",
+    "next": "Continue",
+    "back": "Back",
+    "done": "Your club is ready!",
+    "errors": {
+      "requiredFields": "Please fill in all fields.",
+      "createClub": "Could not create the club.",
+      "missingClub": "Club not found. Start again.",
+      "maxPlayers": "You need at least 2 players."
+    },
+    "sports": {
+      "football": "Football",
+      "futsal": "Futsal",
+      "basketball": "Basketball",
+      "volleyball": "Volleyball",
+      "tennis": "Tennis",
+      "padel": "Padel",
+      "badminton": "Badminton",
+      "other": "Other"
+    },
+    "step1": {
+      "clubName": "Club name",
+      "clubNamePlaceholder": "e.g. Wednesday Friends",
+      "venue": "Match venue",
+      "venuePlaceholder": "e.g. Municipal pitch"
+    },
+    "step2": {
+      "sport": "Sport type",
+      "maxPlayers": "Max players per match"
+    },
+    "step3": {
+      "date": "Next match date",
+      "datePlaceholder": "Pick a date",
+      "time": "Time",
+      "recurrence": "Recurrence",
+      "everyWeek": "Every week — every {{day}}",
+      "everyNthWeekday": "Every {{ordinal}} {{day}} of the month",
+      "everyMonthDate": "Every month on the {{day}}",
+      "monthlyNthFallback": "First weekday of the month",
+      "recurrenceHint": "The next 12 occurrences will be created.",
+      "seasonName": "Season {{year}}",
+      "matchTitle": "Match — {{club}}"
+    },
+    "step4": {
+      "emails": "Invite players",
+      "emailsHint": "Enter emails separated by commas. Each email becomes a pill.",
+      "emailsPlaceholder": "friend@email.com, …",
+      "sendInvites": "Send invitations",
+      "skip": "Skip this step",
+      "invalidEmail": "Invalid email",
+      "removeEmail": "Remove {{email}}"
+    }
   },
   "commandPalette": {
     "placeholder": "Search commands…",
@@ -123,7 +381,7 @@
   },
   "components": {
     "title": "Components",
-    "description": "Explore the full @boilerstone/ui component library — everything included in this boilerplate.",
+    "description": "Explore the full @pitchkit/ui component library — everything included in this boilerplate.",
     "subtitle": "Kitchen-sink gallery",
     "sections": {
       "buttons": "Buttons",
@@ -139,7 +397,7 @@
   "ai": {
     "title": "AI Playground",
     "subtitle": "Interactive demos",
-    "description": "Explore real AI capabilities powered by the Lonestone boilerplate. Each demo connects to the live API.",
+    "description": "Explore real AI capabilities. Each demo connects to the live API.",
     "sections": {
       "textGeneration": "Text generation",
       "structuredOutput": "Structured output",
@@ -208,6 +466,7 @@
   "common": {
     "user": "User",
     "active": "Active",
-    "error": "Error"
+    "error": "Error",
+    "loading": "Loading…"
   }
 }

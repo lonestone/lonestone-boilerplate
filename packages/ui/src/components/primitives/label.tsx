@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { cn } from '@boilerstone/ui/lib/utils'
+import { cn } from '@pitchkit/ui/lib/utils'
 
 function Label({ className, ...props }: React.ComponentProps<'label'>) {
   return (

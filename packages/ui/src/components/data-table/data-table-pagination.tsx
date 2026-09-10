@@ -1,13 +1,13 @@
 import type { Table as TanstackTable } from '@tanstack/react-table'
 import { ArrowLeftIcon, ArrowRightIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
-import { Button } from '@boilerstone/ui/components/primitives/button'
+import { Button } from '@pitchkit/ui/components/primitives/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@boilerstone/ui/components/primitives/select'
+} from '@pitchkit/ui/components/primitives/select'
 
 interface DataTablePaginationProps<TData> {
   table: TanstackTable<TData>

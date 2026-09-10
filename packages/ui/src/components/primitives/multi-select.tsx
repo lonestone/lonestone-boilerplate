@@ -5,7 +5,7 @@ import { Badge } from './badge'
 import { Button } from './button'
 import { Command, CommandGroup, CommandItem, CommandList } from './command'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
-import { cn } from '@boilerstone/ui/lib/utils'
+import { cn } from '@pitchkit/ui/lib/utils'
 
 interface MultiSelectOption {
   label: string

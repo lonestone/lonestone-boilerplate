@@ -1,0 +1,15 @@
+{
+  "appId": "com.rosti.app",
+  "appName": "Rösti",
+  "webDir": "build/client",
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "https",
+    "hostname": "app.rosti.local"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

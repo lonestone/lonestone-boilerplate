@@ -1,8 +1,8 @@
 import * as React from 'react'
 import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog'
 
-import { cn } from '@boilerstone/ui/lib/utils'
-import { Button } from '@boilerstone/ui/components/primitives/button'
+import { cn } from '@pitchkit/ui/lib/utils'
+import { Button } from '@pitchkit/ui/components/primitives/button'
 
 function AlertDialog({ ...props }: AlertDialogPrimitive.Root.Props) {
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />

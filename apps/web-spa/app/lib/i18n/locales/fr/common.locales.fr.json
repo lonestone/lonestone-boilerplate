@@ -25,6 +25,12 @@
     "register": {
       "title": "Inscription",
       "description": "Créez un compte pour commencer.",
+      "createClubTitle": "Créé ton club",
+      "createClubDescription": "Crée ton compte, puis configure ton club en quelques étapes.",
+      "joinClub": "Rejoins {{club}} sur Rösti",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "phone": "Téléphone",
       "name": "Nom",
       "email": "Email",
       "password": "Mot de passe",
@@ -68,7 +74,8 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
-    "brand": "Lonestone - Tableau de bord",
+    "subtitle": "Gestion de club",
+    "brand": "Rösti - Tableau de bord",
     "newPost": "Nouveau post",
     "ai": "IA",
     "userMenu": "Menu utilisateur",
@@ -81,6 +88,257 @@
     "actions": "Actions rapides",
     "profile": "Profil",
     "components": "Composants"
+  },
+  "nav": {
+    "home": "Accueil",
+    "matches": "Matchs",
+    "notifications": "Notifications",
+    "clubSettings": "Paramètres du club"
+  },
+  "home": {
+    "eyebrow": "Ton club",
+    "fallbackClub": "Club",
+    "nextMatch": "Prochaine occurrence",
+    "capacity": "{{present}} / {{max}} joueurs",
+    "viewMatch": "Voir le match",
+    "noUpcoming": "Aucun match à venir pour le moment.",
+    "goToMatches": "Aller aux matchs",
+    "allMatches": "Tous les matchs"
+  },
+  "matches": {
+    "title": "Matchs",
+    "create": "Créer un match",
+    "loading": "Chargement des matchs…",
+    "emptyTitle": "Aucun match à venir",
+    "emptyDescription": "Crée ton prochain match pour que l’équipe puisse s’organiser.",
+    "selectClub": "Sélectionne ou crée un club d’abord.",
+    "capacity": "{{present}} / {{max}} joueurs",
+    "menuOpen": "Actions du match",
+    "cancel": "Annuler le match",
+    "postpone": "Reporter le match",
+    "cancelSuccess": "Match annulé",
+    "postponeSuccess": "Match reporté",
+    "postponeTitle": "Reporter le match",
+    "postponeDescription": "Choisis la nouvelle date et l’heure.",
+    "postponeConfirm": "Confirmer le report",
+    "postponeCancel": "Annuler",
+    "date": "Date",
+    "time": "Heure",
+    "datePlaceholder": "Choisir une date",
+    "detail": {
+      "loading": "Chargement du match…",
+      "noLocation": "Lieu non défini",
+      "tabs": {
+        "summary": "Résumé",
+        "attendance": "Présences",
+        "chat": "Chat",
+        "stats": "Stats"
+      },
+      "status": {
+        "scheduled": "Planifié",
+        "cancelled": "Annulé",
+        "played": "Terminé"
+      },
+      "rsvp": {
+        "present": "Je suis présent",
+        "absent": "Indisponible",
+        "question": "Tu seras là ?"
+      },
+      "summary": {
+        "date": "Date",
+        "time": "Heure",
+        "location": "Lieu",
+        "presentPlayers": "Joueurs présents",
+        "lineup": "Composition",
+        "teamBlue": "Bleu",
+        "teamRed": "Rouge",
+        "noPresent": "Personne n’a encore répondu présent.",
+        "noLineup": "Pas encore de composition."
+      },
+      "lineupEditor": {
+        "title": "Gérer les compos",
+        "description": "Assigne les joueurs présents à l’équipe bleue ou rouge.",
+        "close": "Fermer",
+        "save": "Enregistrer",
+        "saved": "Composition enregistrée",
+        "teamBlue": "Équipe bleue",
+        "teamRed": "Équipe rouge",
+        "available": "Joueurs disponibles",
+        "empty": "Aucun joueur à assigner.",
+        "otherTeam": "Dans l’autre équipe",
+        "create": "Créer la composition",
+        "edit": "Modifier la composition"
+      },
+      "attendance": {
+        "present": "Présents",
+        "pending": "En attente",
+        "absent": "Indisponibles",
+        "empty": "Aucun joueur dans cette catégorie.",
+        "manageHint": "Définis la présence de chaque joueur, avant ou après le match.",
+        "markPresent": "Présent",
+        "markAbsent": "Absent",
+        "markPending": "En attente"
+      },
+      "chat": {
+        "placeholder": "Écrire un message…",
+        "send": "Envoyer",
+        "empty": "Aucun message pour l’instant. Lance la conversation !"
+      },
+      "stats": {
+        "score": "Score",
+        "teamBlue": "Bleu",
+        "teamRed": "Rouge",
+        "goals": "Buts",
+        "assists": "Passes décisives",
+        "player": "Joueur",
+        "save": "Enregistrer les stats",
+        "saved": "Stats enregistrées",
+        "noPlayers": "Aucun joueur présent pour saisir les stats.",
+        "hint": "Saisis les buts et passes décisives. Le score se calcule à partir des buts de chaque équipe."
+      }
+    }
+  },
+  "createMatch": {
+    "title": "Créer un match",
+    "subtitle": "Planifie le prochain créneau pour {{club}}.",
+    "back": "Retour",
+    "submit": "Créer le match",
+    "submitting": "Création…",
+    "success": "Match créé",
+    "matchTitle": "Titre",
+    "matchTitlePlaceholder": "Ex. Match du mercredi",
+    "location": "Lieu",
+    "locationPlaceholder": "Ex. Terrain municipal",
+    "maxPlayers": "Nombre max de joueurs",
+    "date": "Date",
+    "datePlaceholder": "Choisir une date",
+    "time": "Heure",
+    "recurrence": "Récurrence",
+    "once": "Une seule fois",
+    "everyWeek": "Chaque semaine — tous les {{day}}s",
+    "everyNthWeekday": "Tous les {{ordinal}} {{day}}s du mois",
+    "everyMonthDate": "Tous les {{day}} du mois",
+    "monthlyNthFallback": "1er jour du mois",
+    "recurrenceHint": "12 prochaines occurrences seront créées.",
+    "seasonName": "Saison {{year}}",
+    "defaultTitle": "Match — {{club}}",
+    "errors": {
+      "requiredFields": "Merci de remplir tous les champs.",
+      "maxPlayers": "Il faut au moins 2 joueurs.",
+      "missingClub": "Club introuvable."
+    }
+  },
+  "join": {
+    "title": "Rejoins ton club",
+    "description": "Colle le lien d'invitation reçu par email, ou l'identifiant de l'invitation.",
+    "inviteLabel": "Lien ou code d'invitation",
+    "invitePlaceholder": "https://…/invite/… ou UUID",
+    "continue": "Continuer",
+    "invalidInvite": "Lien ou code d'invitation invalide.",
+    "createInstead": "Pas encore de club ?",
+    "createClub": "Créé ton club",
+    "signIn": "Déjà un compte ? Se connecter"
+  },
+  "invite": {
+    "title": "Tu es invité·e à {{club}}",
+    "fallbackClub": "un club Rösti",
+    "description": "Installe l'app mobile ou continue sur ordinateur pour créer ton compte.",
+    "descriptionWithEmail": "Tu as été invité·e avec {{email}}. Installe l'app ou continue sur ordinateur.",
+    "appStore": "Télécharger sur l'App Store",
+    "playStore": "Disponible sur Google Play",
+    "openApp": "Ouvrir l'app Rösti",
+    "continueDesktop": "Continuer sur ordinateur"
+  },
+  "clubSettings": {
+    "title": "Paramètres du club",
+    "noClub": "Aucun club sélectionné.",
+    "invite": {
+      "title": "Inviter des joueurs",
+      "hint": "Saisis des emails séparés par une virgule. Chaque email devient une pastille.",
+      "placeholder": "ami@email.com, …",
+      "send": "Envoyer les invitations",
+      "success": "Invitations envoyées"
+    },
+    "players": {
+      "title": "Joueurs",
+      "hint": "Membres du club et invitations en attente.",
+      "empty": "Aucun joueur pour le moment.",
+      "statusInvited": "Invitation envoyée",
+      "resend": "Renvoyer",
+      "resent": "Invitation renvoyée",
+      "remove": "Supprimer",
+      "removed": "Joueur supprimé",
+      "makeAdmin": "Passer admin",
+      "removeAdmin": "Retirer admin",
+      "promoted": "Le joueur est maintenant admin",
+      "demoted": "Droits admin retirés",
+      "roles": {
+        "owner": "Propriétaire",
+        "admin": "Admin",
+        "member": "Membre"
+      }
+    },
+    "paymentLink": {
+      "title": "Lien de paiement personnel",
+      "hint": "Peer-to-peer uniquement (Lydia, PayPal.me, Revolut…). Pas de PSP commercial pour l’instant.",
+      "save": "Enregistrer",
+      "saved": "Lien de paiement enregistré"
+    }
+  },
+  "onboarding": {
+    "title": "Configure ton club",
+    "stepOf": "Étape {{current}} sur {{total}}",
+    "next": "Continuer",
+    "back": "Retour",
+    "done": "Ton club est prêt !",
+    "errors": {
+      "requiredFields": "Merci de remplir tous les champs.",
+      "createClub": "Impossible de créer le club.",
+      "missingClub": "Club introuvable. Reprends depuis le début.",
+      "maxPlayers": "Il faut au moins 2 joueurs."
+    },
+    "sports": {
+      "football": "Foot",
+      "futsal": "Futsal",
+      "basketball": "Basket",
+      "volleyball": "Volley",
+      "tennis": "Tennis",
+      "padel": "Padel",
+      "badminton": "Badminton",
+      "other": "Autre"
+    },
+    "step1": {
+      "clubName": "Nom du club",
+      "clubNamePlaceholder": "Ex. Les Copains du Mercredi",
+      "venue": "Lieu des matchs",
+      "venuePlaceholder": "Ex. Terrain municipal, Paris 12e"
+    },
+    "step2": {
+      "sport": "Type de match",
+      "maxPlayers": "Nombre max de joueurs par match"
+    },
+    "step3": {
+      "date": "Date du prochain match",
+      "datePlaceholder": "Choisir une date",
+      "time": "Heure",
+      "recurrence": "Récurrence",
+      "everyWeek": "Chaque semaine — tous les {{day}}s",
+      "everyNthWeekday": "Tous les {{ordinal}} {{day}}s du mois",
+      "everyMonthDate": "Tous les {{day}} du mois",
+      "monthlyNthFallback": "1er jour du mois",
+      "recurrenceHint": "12 prochaines occurrences seront créées.",
+      "seasonName": "Saison {{year}}",
+      "matchTitle": "Match — {{club}}"
+    },
+    "step4": {
+      "emails": "Invite des joueurs",
+      "emailsHint": "Saisis des emails séparés par une virgule. Chaque email devient une pastille.",
+      "emailsPlaceholder": "ami@email.com, …",
+      "sendInvites": "Envoyer les invitations",
+      "skip": "Passer cette étape",
+      "invalidEmail": "Email invalide",
+      "removeEmail": "Retirer {{email}}"
+    }
   },
   "commandPalette": {
     "placeholder": "Rechercher des commandes…",
@@ -123,7 +381,7 @@
   },
   "components": {
     "title": "Composants",
-    "description": "Explorez la bibliothèque de composants @boilerstone/ui — tout ce qui est inclus dans ce boilerplate.",
+    "description": "Explorez la bibliothèque de composants @pitchkit/ui — tout ce qui est inclus dans ce boilerplate.",
     "subtitle": "Galerie complète",
     "sections": {
       "buttons": "Boutons",
@@ -139,7 +397,7 @@
   "ai": {
     "title": "Terrain de jeu IA",
     "subtitle": "Démos interactives",
-    "description": "Explorez les vraies capacités IA propulsées par le boilerplate Lonestone. Chaque démo se connecte à l'API en direct.",
+    "description": "Explorez les vraies capacités IA. Chaque démo se connecte à l'API en direct.",
     "sections": {
       "textGeneration": "Génération de texte",
       "structuredOutput": "Sortie structurée",
@@ -208,6 +466,7 @@
   "common": {
     "user": "Utilisateur",
     "active": "Actif",
-    "error": "Erreur"
+    "error": "Erreur",
+    "loading": "Chargement…"
   }
 }

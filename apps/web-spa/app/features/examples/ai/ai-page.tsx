@@ -1,4 +1,4 @@
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
+import { Badge } from '@pitchkit/ui/components/primitives/badge'
 import { Bot, MessageSquare, Sparkles, Zap } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { AiChatStream } from './ai-chat-stream'

@@ -17,7 +17,7 @@ services:
       retries: 5
 
   maildev:
-    container_name: lonestone-maildev
+    container_name: pitchkit-maildev
     image: netoun/mail-server-dev
     ports:
       - '${SMTP_PORT_WEB}:1080'

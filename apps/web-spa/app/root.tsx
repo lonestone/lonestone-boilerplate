@@ -1,6 +1,6 @@
 import type { Route } from './+types/root'
-import { getHtmlLang, normalizeLocale } from '@boilerstone/i18n/config'
-import { client } from '@boilerstone/openapi-generator'
+import { getHtmlLang, normalizeLocale } from '@pitchkit/i18n/config'
+import { client } from '@pitchkit/openapi-generator'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -10,7 +10,7 @@ import { queryClient } from '@/lib/query-client'
 import useTheme from './hooks/useTheme'
 import '@/lib/i18n/i18n-client'
 import '@fontsource/source-sans-pro'
-import '@boilerstone/ui/globals.css'
+import '@pitchkit/ui/globals.css'
 
 client.setConfig({
   baseUrl: import.meta.env.VITE_API_URL,
@@ -18,6 +18,9 @@ client.setConfig({
 })
 
 export const links: Route.LinksFunction = () => [
+  { rel: 'icon', href: '/favicon.ico', sizes: 'any' },
+  { rel: 'icon', href: '/favicon.png', type: 'image/png' },
+  { rel: 'apple-touch-icon', href: '/favicon.png' },
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
     rel: 'preconnect',
@@ -48,15 +51,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang={htmlLang}>
       <head>
-        <title>Dashboard</title>
+        <title>Rösti</title>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="author" content="Lonestone" />
-        <meta name="keywords" content="Lonestone, platform, create, share, ideas" />
+        <meta name="author" content="Rösti" />
+        <meta name="keywords" content="Rösti, club, match, RSVP, sport" />
 
         <meta
           name="description"
-          content="Lonestone is a platform for creating and sharing your ideas."
+          content="Rösti aide les clubs à planifier les matchs, collecter les RSVP et suivre la saison."
         />
         <Meta />
         <Links />
@@ -71,6 +74,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    void import('@/lib/capacitor').then((m) => m.initCapacitorNative())
+  }, [])
+
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />

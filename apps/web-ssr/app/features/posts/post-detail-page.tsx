@@ -3,10 +3,10 @@ import {
   publicPostControllerGetPost,
   publicPostControllerGetPosts,
   publicPostControllerLikePost,
-} from '@boilerstone/openapi-generator/client/sdk.gen'
-import PostContent from '@boilerstone/ui/components/posts/PostContent'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { Button } from '@boilerstone/ui/components/primitives/button'
+} from '@pitchkit/openapi-generator/client/sdk.gen'
+import PostContent from '@pitchkit/ui/components/posts/PostContent'
+import { Badge } from '@pitchkit/ui/components/primitives/badge'
+import { Button } from '@pitchkit/ui/components/primitives/button'
 import { motion, useReducedMotion, useScroll, useSpring } from 'motion/react'
 import { ArrowLeft, ArrowRight, Calendar, Clock, Heart, User } from 'lucide-react'
 import { useState } from 'react'
@@ -364,8 +364,8 @@ export function meta({ loaderData }: Route.MetaArgs) {
   return [
     {
       title: loaderData.post?.title
-        ? `${loaderData.post.title} — Lonestone`
-        : 'Article — Lonestone',
+        ? `${loaderData.post.title} — Rösti`
+        : 'Article — Rösti',
     },
     { property: 'og:title', content: loaderData.post?.title },
     { name: 'description', content: loaderData.post?.title },

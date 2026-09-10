@@ -1,5 +1,5 @@
-import type { ChatSchemaType, Product, Recipe } from '@boilerstone/openapi-generator'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
+import type { ChatSchemaType, Product, Recipe } from '@pitchkit/openapi-generator'
+import { Badge } from '@pitchkit/ui/components/primitives/badge'
 import * as React from 'react'
 import { ProductDisplay } from './product-display'
 import { RecipeDisplay } from './recipe-display'

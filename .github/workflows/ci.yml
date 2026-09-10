@@ -75,7 +75,7 @@ jobs:
         run: pnpm lint
 
       - name: 🌐 Check translations
-        run: pnpm --filter @boilerstone/i18n check-translations
+        run: pnpm --filter @pitchkit/i18n check-translations
 
   knip:
     name: ✂️ Knip

@@ -12,16 +12,34 @@ import { EmailService } from '../email/email.service'
 import { BetterAuthType, createBetterAuth } from './auth.config'
 import { AFTER_HOOK_KEY, BEFORE_HOOK_KEY, HOOK_KEY } from './auth.decorator'
 import { AuthModuleOptions, ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } from './auth.definition'
-import { Account, Session, User, Verification } from './auth.entity'
+import {
+  Account,
+  Invitation,
+  Member,
+  Organization,
+  Session,
+  User,
+  Verification,
+} from './auth.entity'
 import { AuthGuard } from './auth.guard'
 import { AuthService } from './auth.service'
+import { ClubRoleGuard } from './club-role.guard'
+import { OrganizationService } from './organization.service'
 
 @Global()
 @Module({
   imports: [
     DiscoveryModule,
     EmailModule,
-    MikroOrmModule.forFeature([User, Session, Account, Verification]),
+    MikroOrmModule.forFeature([
+      User,
+      Session,
+      Account,
+      Verification,
+      Organization,
+      Member,
+      Invitation,
+    ]),
   ],
   providers: [
     {
@@ -51,6 +69,15 @@ import { AuthService } from './auth.service'
               content: `Hello ${data.user.name}, please verify your email by clicking on the link below: <a href="${url}">${url}</a>`,
             })
           },
+          sendInvitationEmail: async (data) => {
+            const inviteUrl = `${config.clients.webApp.url}/invite/${data.invitation.id}?email=${encodeURIComponent(data.email)}&club=${encodeURIComponent(data.organization.name)}`
+            const landingUrl = `${config.clients.webSsr.url}/invite/${data.invitation.id}?email=${encodeURIComponent(data.email)}&club=${encodeURIComponent(data.organization.name)}`
+            return emailService.sendEmail({
+              to: data.email,
+              subject: `Tu es invité·e à rejoindre ${data.organization.name} sur Rösti`,
+              content: `Bonjour,<br/>${data.inviter.user.name} t'invite à rejoindre <strong>${data.organization.name}</strong> sur Rösti.<br/><br/>Ordinateur : <a href="${inviteUrl}">${inviteUrl}</a><br/>Mobile : <a href="${landingUrl}">${landingUrl}</a>`,
+            })
+          },
         })
         return {
           auth: betterAuth,
@@ -60,8 +87,10 @@ import { AuthService } from './auth.service'
     },
     AuthService,
     AuthGuard,
+    ClubRoleGuard,
+    OrganizationService,
   ],
-  exports: [AuthService, AuthGuard],
+  exports: [AuthService, AuthGuard, ClubRoleGuard, OrganizationService],
 })
 export class AuthModule extends ConfigurableModuleClass implements NestModule {
   constructor(

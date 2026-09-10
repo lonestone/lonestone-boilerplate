@@ -1,4 +1,4 @@
-import { Button } from '@boilerstone/ui/components/primitives/button'
+import { Button } from '@pitchkit/ui/components/primitives/button'
 import {
   Form,
   FormControl,
@@ -6,8 +6,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@boilerstone/ui/components/primitives/form'
-import { Input } from '@boilerstone/ui/components/primitives/input'
+} from '@pitchkit/ui/components/primitives/form'
+import { Input } from '@pitchkit/ui/components/primitives/input'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
@@ -16,7 +16,9 @@ import { z } from 'zod'
 
 const baseRegisterSchema = z.object({
   email: z.string().email(),
-  name: z.string().min(1),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  phone: z.string().min(6),
   password: z.string().min(6),
   confirmPassword: z.string(),
 })
@@ -33,27 +35,68 @@ export type AuthRegisterFormData = z.infer<typeof baseRegisterSchema>
 interface AuthRegisterFormProps {
   onSubmit: (data: AuthRegisterFormData) => void
   isPending: boolean
+  defaultEmail?: string
 }
 
-export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({ onSubmit, isPending }) => {
+export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({
+  onSubmit,
+  isPending,
+  defaultEmail,
+}) => {
   const { t } = useTranslation()
   const registerSchema = getRegisterSchema(t)
   const form = useForm<AuthRegisterFormData>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      email: defaultEmail ?? '',
+      firstName: '',
+      lastName: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+    },
   })
 
   return (
     <Form {...form}>
       <form className="mt-8 space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
         <FormMessage />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="firstName">{t('auth.register.firstName')}</FormLabel>
+                <FormControl>
+                  <Input id="firstName" {...field} autoComplete="given-name" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="lastName">{t('auth.register.lastName')}</FormLabel>
+                <FormControl>
+                  <Input id="lastName" {...field} autoComplete="family-name" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
           control={form.control}
-          name="name"
+          name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="name">{t('auth.register.name')}</FormLabel>
+              <FormLabel htmlFor="phone">{t('auth.register.phone')}</FormLabel>
               <FormControl>
-                <Input id="name" {...field} type="text" autoComplete="name" placeholder="John" />
+                <Input id="phone" {...field} type="tel" autoComplete="tel" />
               </FormControl>
               <FormMessage />
             </FormItem>

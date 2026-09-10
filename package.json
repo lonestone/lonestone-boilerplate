@@ -1,5 +1,5 @@
 {
-  "name": "boilerstone",
+  "name": "pitchkit",
   "version": "1.1.0",
   "private": true,
   "description": "Monorepo for Lonestone project",
@@ -20,9 +20,9 @@
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "generate": "pnpm --filter=@boilerstone/openapi-generator run generate",
+    "generate": "pnpm --filter=@pitchkit/openapi-generator run generate",
     "test": "pnpm -r test",
-    "docs-only": "pnpm --filter=@boilerstone/documentation run dev",
+    "docs-only": "pnpm --filter=@pitchkit/documentation run dev",
     "knip": "knip --no-exit-code",
     "lint:pr": "tsx ./scripts/lint-pr.ts"
   },

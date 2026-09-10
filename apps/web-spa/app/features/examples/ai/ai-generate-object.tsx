@@ -1,24 +1,24 @@
-import type { AiStreamEvent, GenerateObjectResponse, Recipe } from '@boilerstone/openapi-generator'
-import { aiExampleControllerGenerateObject, createSseClient } from '@boilerstone/openapi-generator'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { Button } from '@boilerstone/ui/components/primitives/button'
+import type { AiStreamEvent, GenerateObjectResponse, Recipe } from '@pitchkit/openapi-generator'
+import { aiExampleControllerGenerateObject, createSseClient } from '@pitchkit/openapi-generator'
+import { Badge } from '@pitchkit/ui/components/primitives/badge'
+import { Button } from '@pitchkit/ui/components/primitives/button'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@boilerstone/ui/components/primitives/card'
-import { Input } from '@boilerstone/ui/components/primitives/input'
-import { Label } from '@boilerstone/ui/components/primitives/label'
+} from '@pitchkit/ui/components/primitives/card'
+import { Input } from '@pitchkit/ui/components/primitives/input'
+import { Label } from '@pitchkit/ui/components/primitives/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@boilerstone/ui/components/primitives/select'
-import { Switch } from '@boilerstone/ui/components/primitives/switch'
+} from '@pitchkit/ui/components/primitives/select'
+import { Switch } from '@pitchkit/ui/components/primitives/switch'
 import * as React from 'react'
 
 interface StreamingState {

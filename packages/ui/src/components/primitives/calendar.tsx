@@ -3,8 +3,8 @@
 import * as React from 'react'
 import { DayPicker, getDefaultClassNames, type DayButton, type Locale } from 'react-day-picker'
 
-import { cn } from '@boilerstone/ui/lib/utils'
-import { Button, buttonVariants } from '@boilerstone/ui/components/primitives/button'
+import { cn } from '@pitchkit/ui/lib/utils'
+import { Button, buttonVariants } from '@pitchkit/ui/components/primitives/button'
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from 'lucide-react'
 
 function Calendar({

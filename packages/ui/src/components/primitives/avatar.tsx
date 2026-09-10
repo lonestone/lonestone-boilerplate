@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Avatar as AvatarPrimitive } from '@base-ui/react/avatar'
 
-import { cn } from '@boilerstone/ui/lib/utils'
+import { cn } from '@pitchkit/ui/lib/utils'
 
 function Avatar({
   className,

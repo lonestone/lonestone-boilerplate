@@ -85,6 +85,13 @@ Reset + seed
 pnpm db:fresh:seed # Same but run seeders afterwards
 ```
 
+Development seed credentials (after `db:fresh:seed` or `db:migrate:seed`):
+
+| Account | Email | Password |
+|---------|-------|----------|
+| Club owner | `admin@admin.fr` | `password123!` |
+| Players | `player01@rosti.dev` … `player15@rosti.dev` | `password123!` |
+
 Drop the DB and perform all database migrations without seeding:
 
 ```bash

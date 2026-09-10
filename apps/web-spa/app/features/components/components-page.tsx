@@ -1,48 +1,48 @@
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
-import { AppLoader } from '@boilerstone/ui/components/app'
-import { EmptyState } from '@boilerstone/ui/components/app'
+import { AppLoader } from '@pitchkit/ui/components/app'
+import { EmptyState } from '@pitchkit/ui/components/app'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@boilerstone/ui/components/primitives/accordion'
+} from '@pitchkit/ui/components/primitives/accordion'
 import {
   Avatar,
   AvatarFallback,
   AvatarGroup,
   AvatarGroupCount,
   AvatarImage,
-} from '@boilerstone/ui/components/primitives/avatar'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { Button } from '@boilerstone/ui/components/primitives/button'
-import { DatePicker } from '@boilerstone/ui/components/primitives/date-picker'
-import { Checkbox } from '@boilerstone/ui/components/primitives/checkbox'
-import { Input } from '@boilerstone/ui/components/primitives/input'
+} from '@pitchkit/ui/components/primitives/avatar'
+import { Badge } from '@pitchkit/ui/components/primitives/badge'
+import { Button } from '@pitchkit/ui/components/primitives/button'
+import { DatePicker } from '@pitchkit/ui/components/primitives/date-picker'
+import { Checkbox } from '@pitchkit/ui/components/primitives/checkbox'
+import { Input } from '@pitchkit/ui/components/primitives/input'
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
   InputGroupText,
-} from '@boilerstone/ui/components/primitives/input-group'
-import { Label } from '@boilerstone/ui/components/primitives/label'
-import { MultiSelect } from '@boilerstone/ui/components/primitives/multi-select'
+} from '@pitchkit/ui/components/primitives/input-group'
+import { Label } from '@pitchkit/ui/components/primitives/label'
+import { MultiSelect } from '@pitchkit/ui/components/primitives/multi-select'
 import {
   Popover,
   PopoverContent,
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
-} from '@boilerstone/ui/components/primitives/popover'
+} from '@pitchkit/ui/components/primitives/popover'
 import {
   Progress,
   ProgressLabel,
   ProgressValue,
-} from '@boilerstone/ui/components/primitives/progress'
-import { RadioGroup, RadioGroupItem } from '@boilerstone/ui/components/primitives/radio-group'
-import { Separator } from '@boilerstone/ui/components/primitives/separator'
-import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import { Switch } from '@boilerstone/ui/components/primitives/switch'
+} from '@pitchkit/ui/components/primitives/progress'
+import { RadioGroup, RadioGroupItem } from '@pitchkit/ui/components/primitives/radio-group'
+import { Separator } from '@pitchkit/ui/components/primitives/separator'
+import { Skeleton } from '@pitchkit/ui/components/primitives/skeleton'
+import { Switch } from '@pitchkit/ui/components/primitives/switch'
 import {
   Table,
   TableBody,
@@ -50,20 +50,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@boilerstone/ui/components/primitives/table'
+} from '@pitchkit/ui/components/primitives/table'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@boilerstone/ui/components/primitives/tabs'
+} from '@pitchkit/ui/components/primitives/tabs'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@boilerstone/ui/components/primitives/tooltip'
-import { cn } from '@boilerstone/ui/lib/utils'
+} from '@pitchkit/ui/components/primitives/tooltip'
+import { cn } from '@pitchkit/ui/lib/utils'
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -591,7 +591,7 @@ export default function ComponentsPage() {
                 {[
                   {
                     value: 'q1',
-                    trigger: 'What is the Lonestone boilerplate?',
+                    trigger: 'What is Rösti?',
                     content:
                       'A production-ready monorepo template with NestJS, React, and a curated component library.',
                   },

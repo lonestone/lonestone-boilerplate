@@ -406,16 +406,16 @@ async function promptPortsConfig(availableApps: AvailableApps): Promise<EnvConfi
 
   if (availableApps.webSpa) {
     const viteConfigPath = join(projectRoot, 'apps/web-spa/vite.config.ts')
-    const initialPort = (getViteConfigPort(viteConfigPath) ?? 5173).toString()
+    const initialPort = (getViteConfigPort(viteConfigPath) ?? 5174).toString()
     const webSpaPortStr = await prompt('Web SPA port', initialPort)
-    ports.webSpa = Number.parseInt(webSpaPortStr, 10) || 5173
+    ports.webSpa = Number.parseInt(webSpaPortStr, 10) || 5174
   }
 
   if (availableApps.webSsr) {
     const viteConfigPath = join(projectRoot, 'apps/web-ssr/vite.config.ts')
-    const initialPort = (getViteConfigPort(viteConfigPath) ?? 5174).toString()
+    const initialPort = (getViteConfigPort(viteConfigPath) ?? 5173).toString()
     const webSsrPortStr = await prompt('Web SSR port', initialPort)
-    ports.webSsr = Number.parseInt(webSsrPortStr, 10) || 5174
+    ports.webSsr = Number.parseInt(webSsrPortStr, 10) || 5173
   }
 
   return ports
@@ -1140,7 +1140,7 @@ async function main(): Promise<void> {
     // Prompt for project name
     const projectName = await prompt('Project name', 'my-project')
 
-    // Rename workspace packages and rewrite leftover @boilerstone/ imports
+    // Rename workspace packages and rewrite leftover @pitchkit/ imports
     await renameProjects(projectName, availableApps)
 
     // Prompt for configuration BEFORE copying files

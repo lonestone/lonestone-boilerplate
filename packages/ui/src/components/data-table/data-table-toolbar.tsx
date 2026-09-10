@@ -5,7 +5,7 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from '@boilerstone/ui/components/primitives/input-group'
+} from '@pitchkit/ui/components/primitives/input-group'
 
 interface SearchConfig {
   value: string

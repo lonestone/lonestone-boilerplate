@@ -8,6 +8,15 @@ export class User {
   @Property()
   name!: string
 
+  @Property({ nullable: true })
+  firstName?: string
+
+  @Property({ nullable: true })
+  lastName?: string
+
+  @Property({ nullable: true })
+  phone?: string
+
   @Property()
   @Unique()
   email!: string

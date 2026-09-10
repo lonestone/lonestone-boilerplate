@@ -1,6 +1,6 @@
-import type { SupportedLocale } from '@boilerstone/i18n/config'
-import { SUPPORTED_LOCALES } from '@boilerstone/i18n/config'
-import { AppLayout, AppLayoutHeader, AppLoader } from '@boilerstone/ui/components/app'
+import type { SupportedLocale } from '@pitchkit/i18n/config'
+import { SUPPORTED_LOCALES } from '@pitchkit/i18n/config'
+import { AppLayout, AppLayoutHeader, AppLoader } from '@pitchkit/ui/components/app'
 import {
   Sidebar,
   SidebarContent,
@@ -13,7 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from '@boilerstone/ui/components/primitives/sidebar'
+} from '@pitchkit/ui/components/primitives/sidebar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,35 +23,37 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from '@boilerstone/ui/components/primitives/dropdown-menu'
-import { Avatar, AvatarFallback } from '@boilerstone/ui/components/primitives/avatar'
-import { Toaster } from '@boilerstone/ui/components/primitives/sonner'
+} from '@pitchkit/ui/components/primitives/dropdown-menu'
+import { Avatar, AvatarFallback } from '@pitchkit/ui/components/primitives/avatar'
+import { Toaster } from '@pitchkit/ui/components/primitives/sonner'
 import {
-  Brain,
+  Bell,
+  CalendarDays,
   ChevronUp,
   Command,
-  Component,
   Globe,
   LayoutDashboard,
   LogOut,
   Moon,
-  Pen,
-  PlusCircle,
+  Settings,
   Sun,
   User,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
+import { ClubProvider, useClub } from '@/features/clubs/club-context'
 import useTheme from '@/hooks/useTheme'
 import { authClient } from '@/lib/auth-client'
 import { useI18nStore } from '@/lib/i18n/i18n-client'
+import RostiLogo from '@/assets/images/rosti-logo.svg'
 import { CommandPalette } from './command-palette'
 import { DashboardBreadcrumbs } from './dashboard-breadcrumbs'
 
 function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void }) {
   const { t, i18n } = useTranslation()
   const { data: sessionData } = authClient.useSession()
+  const { isClubAdmin } = useClub()
   const navigate = useNavigate()
   const location = useLocation()
   const { setLanguage } = useI18nStore()
@@ -80,20 +82,29 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
 
   const navItems = [
     {
-      label: t('dashboard.title'),
+      label: t('nav.home'),
       to: '/dashboard',
       icon: LayoutDashboard,
     },
     {
-      label: t('dashboard.ai'),
-      to: '/ai',
-      icon: Brain,
+      label: t('nav.matches'),
+      to: '/matches',
+      icon: CalendarDays,
     },
     {
-      label: t('dashboard.components'),
-      to: '/components',
-      icon: Component,
+      label: t('nav.notifications'),
+      to: '/notifications',
+      icon: Bell,
     },
+    ...(isClubAdmin
+      ? [
+          {
+            label: t('nav.clubSettings'),
+            to: '/club-settings',
+            icon: Settings,
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -102,15 +113,17 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link to="/dashboard" />}>
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary">
-                <Pen className="h-3.5 w-3.5 text-primary-foreground" />
-              </div>
+              <img
+                src={RostiLogo}
+                alt=""
+                className="h-7 w-7 shrink-0 rounded-md object-contain"
+              />
               <div className="flex flex-col leading-none">
-                <span className="font-black tracking-tight text-foreground uppercase text-sm">
-                  Lonestone
+                <span className="font-black tracking-tight text-foreground text-sm">
+                  Rösti
                 </span>
                 <span className="text-[10px] font-medium text-muted-foreground tracking-widest uppercase">
-                  Dashboard
+                  {t('dashboard.subtitle')}
                 </span>
               </div>
             </SidebarMenuButton>
@@ -160,13 +173,6 @@ function AppSidebar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton render={<Link to="/dashboard/posts/new" />}>
-                  <PlusCircle className="h-4 w-4" />
-                  <span>{t('dashboard.newPost')}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {/* Command palette trigger */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onOpenCommandPalette}>
                   <Command className="h-4 w-4" />
@@ -292,21 +298,19 @@ export default function DashboardPage() {
   }
 
   return (
-    <>
+    <ClubProvider>
       <AppLayout sidebar={<AppSidebar onOpenCommandPalette={() => setCommandOpen(true)} />}>
         <AppLayoutHeader>
           <DashboardBreadcrumbs />
         </AppLayoutHeader>
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex min-h-0 flex-1 flex-col overflow-auto p-6">
           <Outlet />
         </main>
       </AppLayout>
 
-      {/* Command palette — global overlay */}
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
 
-      {/* Single Toaster mount for the entire dashboard */}
       <Toaster position="bottom-right" richColors />
-    </>
+    </ClubProvider>
   )
 }

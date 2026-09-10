@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from '@boilerstone/ui/components/primitives/avatar'
+import { Avatar, AvatarFallback } from '@pitchkit/ui/components/primitives/avatar'
 import { useTranslation } from 'react-i18next'
 import { authClient } from '@/lib/auth-client'
 

@@ -1,7 +1,7 @@
 import type { Route } from './+types/author-posts-page'
-import { publicAuthorControllerGetAuthorPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
-import { EmptyState } from '@boilerstone/ui/components/app'
-import { Button } from '@boilerstone/ui/components/primitives/button'
+import { publicAuthorControllerGetAuthorPosts } from '@pitchkit/openapi-generator/client/sdk.gen'
+import { EmptyState } from '@pitchkit/ui/components/app'
+import { Button } from '@pitchkit/ui/components/primitives/button'
 import { ArrowLeft, ChevronLeft, ChevronRight, PenLine, User } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
@@ -145,7 +145,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
   const authorName =
     loaderData.authorPosts?.data[0]?.author.name ?? loaderData.authorSlug
   return [
-    { title: `${authorName} — Lonestone Journal` },
+    { title: `${authorName} — Rösti` },
     { property: 'og:title', content: `Articles by ${authorName}` },
     { name: 'description', content: `Browse articles written by ${authorName}.` },
   ]

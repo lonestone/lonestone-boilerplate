@@ -10,11 +10,11 @@
     "prefix": ""
   },
   "aliases": {
-    "components": "@boilerstone/ui/components",
-    "utils": "@boilerstone/ui/lib/utils",
-    "ui": "@boilerstone/ui/components/primitives",
-    "lib": "@boilerstone/ui/lib",
-    "hooks": "@boilerstone/ui/hooks"
+    "components": "@pitchkit/ui/components",
+    "utils": "@pitchkit/ui/lib/utils",
+    "ui": "@pitchkit/ui/components/primitives",
+    "lib": "@pitchkit/ui/lib",
+    "hooks": "@pitchkit/ui/hooks"
   },
   "iconLibrary": "lucide"
 }

@@ -1,6 +1,6 @@
-import type { ChatMessageWithSchemaType } from '@boilerstone/openapi-generator'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { Button } from '@boilerstone/ui/components/primitives/button'
+import type { ChatMessageWithSchemaType } from '@pitchkit/openapi-generator'
+import { Badge } from '@pitchkit/ui/components/primitives/badge'
+import { Button } from '@pitchkit/ui/components/primitives/button'
 import * as React from 'react'
 import { StructuredOutputDisplay } from './structured-output-display'
 

@@ -4,7 +4,7 @@
     "baseUrl": ".",
     "rootDir": "./src",
     "paths": {
-      "@boilerstone/ui/*": ["./src/*"]
+      "@pitchkit/ui/*": ["./src/*"]
     },
     "outDir": "./dist"
   },

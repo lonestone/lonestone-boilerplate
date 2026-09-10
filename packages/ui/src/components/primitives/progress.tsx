@@ -1,6 +1,6 @@
 import { Progress as ProgressPrimitive } from '@base-ui/react/progress'
 
-import { cn } from '@boilerstone/ui/lib/utils'
+import { cn } from '@pitchkit/ui/lib/utils'
 
 function Progress({ className, children, value, ...props }: ProgressPrimitive.Root.Props) {
   return (

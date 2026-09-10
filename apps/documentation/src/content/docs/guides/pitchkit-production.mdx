@@ -1,0 +1,59 @@
+---
+title: Rösti production runbook
+description: How to deploy Rösti (API, SPA, SSR, mobile) to staging and production
+---
+
+# Rösti production
+
+## Architecture
+
+| Service | Image / artifact | Role |
+|---------|------------------|------|
+| `api` | GHCR `@pitchkit/api` | NestJS API + Better Auth + jobs |
+| `web-spa` | GHCR `@pitchkit/web-spa` | Authenticated app (desktop + Capacitor web asset) |
+| `web-ssr` | GHCR `@pitchkit/web-ssr` | Marketing + invite landing |
+| PostgreSQL | Dokploy / managed | Primary data store |
+| SMTP | Brevo or Resend | Transactional email |
+| Redis (optional) | Dokploy | Future BullMQ; current jobs use `@nestjs/schedule` + `scheduled_job` table |
+
+Pipeline: push → CI → `push-to-ghcr.yml` → Dokploy **Promote** (see release/versioning docs).
+
+## Environments
+
+1. **Staging** — follow `main` (SHA images). Validate invites, RSVP, push tokens.
+2. **Production** — pin the same released version for `api`, `web-spa`, and `web-ssr`.
+
+## Required secrets / env
+
+API:
+
+- `DATABASE_*`, `BETTER_AUTH_SECRET`, `TRUSTED_ORIGINS`
+- `CLIENTS_WEB_APP_URL`, `CLIENTS_WEB_SSR_URL`, `API_BASE_URL`
+- `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASSWORD`, `EMAIL_FROM`
+- `SENTRY_DSN` (recommended)
+
+SPA / SSR:
+
+- `VITE_API_URL`
+- `VITE_SPA_URL` (SSR)
+- `VITE_APP_STORE_URL`, `VITE_PLAY_STORE_URL` (invite deep links)
+
+Mobile (Capacitor):
+
+- Apple Developer + Google Play accounts
+- APNs key / FCM server key (wire into push delivery later; tokens already stored in `device_token`)
+- Deep link scheme `pitchkit://` + Universal / App Links to `https://www…/invite/:id`
+
+## First deploy checklist
+
+1. Provision Postgres + SMTP on Dokploy
+2. Deploy `api`, run migrations (`pnpm --filter=@pitchkit/api db:migrate:up` or schema sync in first bring-up)
+3. Deploy `web-spa` and `web-ssr` with correct `VITE_*` URLs
+4. Point DNS: `api.`, `app.`, `www.`
+5. Create first owner account, create a club, send a test invite
+6. Build Capacitor (`pnpm --filter=@pitchkit/web-spa build && pnpm --filter=@pitchkit/web-spa cap:sync`) and ship TestFlight / internal Play track
+7. Soft launch with one real club
+
+## Payments note
+
+Session fees are tracked in-app (`session_fee`, `match_cost`, club `paymentLink`). No commercial PSP is wired. Prefer personal Lydia / PayPal.me / Revolut links until a P2P provider is chosen.

@@ -3,26 +3,26 @@ import type {
   aiExampleControllerChat,
   AiStreamEvent,
   ChatSchemaType,
-} from '@boilerstone/openapi-generator'
+} from '@pitchkit/openapi-generator'
 import type { ChatMessage } from './components/chat-bubble'
-import { createSseClient } from '@boilerstone/openapi-generator'
-import { Button } from '@boilerstone/ui/components/primitives/button'
+import { createSseClient } from '@pitchkit/openapi-generator'
+import { Button } from '@pitchkit/ui/components/primitives/button'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@boilerstone/ui/components/primitives/card'
-import { Input } from '@boilerstone/ui/components/primitives/input'
-import { Label } from '@boilerstone/ui/components/primitives/label'
+} from '@pitchkit/ui/components/primitives/card'
+import { Input } from '@pitchkit/ui/components/primitives/input'
+import { Label } from '@pitchkit/ui/components/primitives/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@boilerstone/ui/components/primitives/select'
+} from '@pitchkit/ui/components/primitives/select'
 import * as React from 'react'
 import { ChatBubble } from './components/chat-bubble'
 

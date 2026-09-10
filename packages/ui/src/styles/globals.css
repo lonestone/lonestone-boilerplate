@@ -8,7 +8,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ─── Lonestone gray scale (hex → oklch) ──────────────────────────────────
+/* ─── Rösti gray scale (hex → oklch) ──────────────────────────────────
    #f9f9f9 → oklch(0.979 0 0)   [ --gray-50  ]
    #f6f6f6 → oklch(0.969 0 0)   [ --gray-100 ]
    #e7e7e7 → oklch(0.924 0 0)   [ --gray-200 ]
@@ -27,12 +27,14 @@
   --header-height: 3rem;
   --radius: 0.625rem;
 
-  /* Lonestone yellow — primary fill token (NEVER use as text color on white) */
+  /* Rösti yellow — primary fill token (NEVER use as text color on white) */
   /* #fff056 = oklch(0.95 0.18 105) */
 
   /* ── Light mode ─────────────────────────────────────────────────────── */
-  --background: oklch(1 0 0); /* pure white          */
-  --foreground: oklch(0.097 0 0); /* #0a0a0a near-black  */
+  --background: oklch(1 0 0);
+  /* pure white          */
+  --foreground: oklch(0.097 0 0);
+  /* #0a0a0a near-black  */
 
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.097 0 0);
@@ -40,21 +42,29 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.097 0 0);
 
-  /* Primary = Lonestone yellow; foreground always black */
-  --primary: oklch(0.95 0.18 105); /* #fff056             */
-  --primary-foreground: oklch(0.097 0 0); /* black on yellow     */
+  /* Primary = Rösti yellow; foreground always black */
+  --primary: oklch(0.95 0.18 105);
+  /* #fff056             */
+  --primary-foreground: oklch(0.097 0 0);
+  /* black on yellow     */
 
   /* Secondary = visible light gray — distinct from muted/accent */
-  --secondary: oklch(0.924 0 0); /* #e7e7e7 gray-200    */
-  --secondary-foreground: oklch(0.155 0 0); /* #1b1b1b gray-950    */
+  --secondary: oklch(0.924 0 0);
+  /* #e7e7e7 gray-200    */
+  --secondary-foreground: oklch(0.155 0 0);
+  /* #1b1b1b gray-950    */
 
   /* Muted = subtler wash */
-  --muted: oklch(0.969 0 0); /* #f6f6f6 gray-100    */
-  --muted-foreground: oklch(0.509 0 0); /* #6d6d6d gray-600    */
+  --muted: oklch(0.969 0 0);
+  /* #f6f6f6 gray-100    */
+  --muted-foreground: oklch(0.509 0 0);
+  /* #6d6d6d gray-600    */
 
   /* Accent = interactive hover surface — warmer than muted */
-  --accent: oklch(0.979 0 0); /* #f9f9f9 gray-50     */
-  --accent-foreground: oklch(0.155 0 0); /* #1b1b1b             */
+  --accent: oklch(0.979 0 0);
+  /* #f9f9f9 gray-50     */
+  --accent-foreground: oklch(0.155 0 0);
+  /* #1b1b1b             */
 
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
@@ -68,9 +78,11 @@
   --info-foreground: oklch(0.985 0 0);
 
   /* Borders / inputs — distinct from accent */
-  --border: oklch(0.924 0 0); /* #e7e7e7 gray-200    */
+  --border: oklch(0.924 0 0);
+  /* #e7e7e7 gray-200    */
   --input: oklch(0.924 0 0);
-  --ring: oklch(0.741 0 0); /* #b0b0b0 gray-400    */
+  --ring: oklch(0.741 0 0);
+  /* #b0b0b0 gray-400    */
 
   /* Charts */
   --chart-1: oklch(0.646 0.222 41.116);
@@ -80,7 +92,8 @@
   --chart-5: oklch(0.769 0.188 70.08);
 
   /* Sidebar */
-  --sidebar: oklch(0.979 0 0); /* #f9f9f9             */
+  --sidebar: oklch(0.979 0 0);
+  /* #f9f9f9             */
   --sidebar-foreground: oklch(0.097 0 0);
   --sidebar-primary: oklch(0.155 0 0);
   --sidebar-primary-foreground: oklch(0.979 0 0);
@@ -92,29 +105,38 @@
 
 .dark {
   /* ── Dark mode ──────────────────────────────────────────────────────── */
-  --background: oklch(0.097 0 0); /* #0a0a0a             */
-  --foreground: oklch(0.979 0 0); /* #f9f9f9             */
+  --background: oklch(0.097 0 0);
+  /* #0a0a0a             */
+  --foreground: oklch(0.979 0 0);
+  /* #f9f9f9             */
 
-  --card: oklch(0.155 0 0); /* #1b1b1b gray-950    */
+  --card: oklch(0.155 0 0);
+  /* #1b1b1b gray-950    */
   --card-foreground: oklch(0.979 0 0);
 
   --popover: oklch(0.155 0 0);
   --popover-foreground: oklch(0.979 0 0);
 
-  /* Primary = same Lonestone yellow; foreground still black */
-  --primary: oklch(0.95 0.18 105); /* #fff056             */
-  --primary-foreground: oklch(0.097 0 0); /* black on yellow     */
+  /* Primary = same Rösti yellow; foreground still black */
+  --primary: oklch(0.95 0.18 105);
+  /* #fff056             */
+  --primary-foreground: oklch(0.097 0 0);
+  /* black on yellow     */
 
   /* Secondary = mid dark — clearly different from muted/accent */
-  --secondary: oklch(0.293 0 0); /* #3b3b3b gray-900    */
+  --secondary: oklch(0.293 0 0);
+  /* #3b3b3b gray-900    */
   --secondary-foreground: oklch(0.969 0 0);
 
   /* Muted = lighter than secondary */
-  --muted: oklch(0.238 0 0); /* between 950 & 900   */
-  --muted-foreground: oklch(0.608 0 0); /* #888 gray-500       */
+  --muted: oklch(0.238 0 0);
+  /* between 950 & 900   */
+  --muted-foreground: oklch(0.608 0 0);
+  /* #888 gray-500       */
 
   /* Accent = hover surface slightly lighter than card */
-  --accent: oklch(0.2 0 0); /* between bg & card   */
+  --accent: oklch(0.2 0 0);
+  /* between bg & card   */
   --accent-foreground: oklch(0.969 0 0);
 
   --destructive: oklch(0.436 0.301 5.723);
@@ -129,9 +151,11 @@
   --info-foreground: oklch(0.969 0 0);
 
   /* Borders / inputs */
-  --border: oklch(0.293 0 0); /* #3b3b3b gray-900    */
+  --border: oklch(0.293 0 0);
+  /* #3b3b3b gray-900    */
   --input: oklch(0.293 0 0);
-  --ring: oklch(0.441 0 0); /* #5d5d5d gray-700    */
+  --ring: oklch(0.441 0 0);
+  /* #5d5d5d gray-700    */
 
   /* Charts */
   --chart-1: oklch(0.488 0.243 264.376);
@@ -141,9 +165,11 @@
   --chart-5: oklch(0.645 0.246 16.439);
 
   /* Sidebar */
-  --sidebar: oklch(0.155 0 0); /* #1b1b1b             */
+  --sidebar: oklch(0.155 0 0);
+  /* #1b1b1b             */
   --sidebar-foreground: oklch(0.979 0 0);
-  --sidebar-primary: oklch(0.95 0.18 105); /* yellow              */
+  --sidebar-primary: oklch(0.95 0.18 105);
+  /* yellow              */
   --sidebar-primary-foreground: oklch(0.097 0 0);
   --sidebar-accent: oklch(0.2 0 0);
   --sidebar-accent-foreground: oklch(0.979 0 0);
@@ -219,6 +245,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply font-sans min-h-screen bg-background text-foreground;
   }
@@ -246,19 +273,23 @@
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
   }
+
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
     background-color: var(--border);
     border-radius: 9999px;
     border: 2px solid transparent;
     background-clip: content-box;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background-color: var(--muted-foreground);
   }

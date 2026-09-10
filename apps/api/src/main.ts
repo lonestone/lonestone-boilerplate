@@ -55,8 +55,8 @@ async function bootstrap() {
   if (config.env === 'development') {
     const swaggerConfig = new DocumentBuilder()
       .setOpenAPIVersion('3.1.0')
-      .setTitle('Lonestone API')
-      .setDescription('The Lonestone API description')
+      .setTitle('Rösti API')
+      .setDescription('API Rösti')
       .setVersion('1.0')
       .addTag('@lonestone')
       .build()
