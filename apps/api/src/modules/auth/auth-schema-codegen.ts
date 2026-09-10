@@ -77,7 +77,7 @@ export function createEntityResolver(
   }
 }
 
-interface RenderedProperty {
+export interface RenderedProperty {
   code: string
   decorators: Set<string>
   entityImports: Map<string, string>
@@ -101,7 +101,10 @@ function renderLiteral(value: AuthSchemaField['attribute']['defaultValue']): str
   return undefined
 }
 
-function renderProperty(field: AuthSchemaField, resolveEntity: EntityResolver): RenderedProperty {
+export function renderProperty(
+  field: AuthSchemaField,
+  resolveEntity: EntityResolver,
+): RenderedProperty {
   const { attribute } = field
   const decorators = new Set<string>(['Property'])
   const entityImports = new Map<string, string>()
@@ -144,6 +147,9 @@ function renderProperty(field: AuthSchemaField, resolveEntity: EntityResolver): 
   // EntityCaseNamingStrategy, so no explicit `fieldName` is needed.
   if (stringType === 'json') options.push("type: 'json'")
   if (stringType === 'string[]' || stringType === 'number[]') options.push("type: 'array'")
+  // Better Auth string fields have no length. MikroORM's default string is
+  // varchar(255), which truncates JWKS keys, tokens, and passkey material.
+  if (stringType === 'string') options.push("type: 'text'")
 
   if (stringType === 'date' && (field.field === 'createdAt' || field.field === 'updatedAt')) {
     typeImports.add('Opt')
