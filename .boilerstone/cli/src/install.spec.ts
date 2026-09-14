@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
-const cliBin = join(projectRoot, 'packages/cli/bin/lonestone.mjs')
+const cliBin = join(projectRoot, '.boilerstone/cli/bin/lonestone.mjs')
 
 function runInstaller(args: string[]): {
   status: number | null

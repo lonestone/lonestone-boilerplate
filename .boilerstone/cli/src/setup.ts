@@ -52,7 +52,8 @@ function getConfiguredBoilerplateRemote(): string {
 
 // Producer-only paths removed from generated projects. The `.boilerstone/`
 // subset is derived from PRODUCER_ARTIFACTS so the two lists cannot drift.
-// `install.sh` is no longer shipped; keep stripping it from older checkouts.
+// Keep stripping `install.sh`, `packages/cli`, and root `cli/` from older
+// checkouts that still vendored those layouts.
 export const PRODUCER_FILES_TO_REMOVE = [
   'install.sh',
   'packages/cli',
@@ -1072,9 +1073,43 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
   }
 
   stripPnpmWorkspaceEntry(rootPath, '.boilerstone')
+  stripPnpmWorkspaceEntry(rootPath, '.boilerstone/cli')
+  stripReleasePleaseCliExtraFile(rootPath)
   wirePublishedCli(rootPath)
 
   console.log(`\n  ${colorize('✓', 'green')} Boilerplate cleanup completed`)
+}
+
+function stripReleasePleaseCliExtraFile(rootPath: string): void {
+  const configPath = join(rootPath, 'release-please-config.json')
+  if (!existsSync(configPath)) {
+    return
+  }
+  const config = JSON.parse(readFileSync(configPath, 'utf-8')) as {
+    packages?: Record<string, { 'extra-files'?: Array<string | { path?: string }> }>
+  }
+  const rootPackage = config.packages?.['.']
+  const extraFiles = rootPackage?.['extra-files']
+  if (!rootPackage || !Array.isArray(extraFiles)) {
+    return
+  }
+  const next = extraFiles.filter((file) =>
+    typeof file === 'string'
+      ? file !== '.boilerstone/cli/package.json'
+      : file.path !== '.boilerstone/cli/package.json',
+  )
+  if (next.length === extraFiles.length) {
+    return
+  }
+  if (next.length === 0) {
+    delete rootPackage['extra-files']
+  } else {
+    rootPackage['extra-files'] = next
+  }
+  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, 'utf-8')
+  console.log(
+    `  ${colorize('✓', 'green')} Removed CLI extra-files from ${colorize('release-please-config.json', 'dim')}`,
+  )
 }
 
 function stripPnpmWorkspaceEntry(rootPath: string, entry: string): void {
@@ -1083,7 +1118,8 @@ function stripPnpmWorkspaceEntry(rootPath: string, entry: string): void {
     return
   }
   const content = readFileSync(workspacePath, 'utf-8')
-  const next = content.replace(new RegExp(`^\\s*-\\s+${entry.replace('.', '\\.')}\\s*$`, 'm'), '')
+  const escaped = entry.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const next = content.replace(new RegExp(`^\\s*-\\s+${escaped}\\s*$`, 'm'), '')
   if (next !== content) {
     writeFileSync(workspacePath, next, 'utf-8')
     console.log(

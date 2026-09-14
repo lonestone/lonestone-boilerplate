@@ -5,6 +5,11 @@
   "keywords": ["lonestone", "boilerplate", "boilerstone"],
   "license": "ISC",
   "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lonestone/lonestone-boilerplate.git",
+    "directory": ".boilerstone/cli"
+  },
   "type": "module",
   "bin": {
     "lonestone": "./bin/lonestone.mjs"

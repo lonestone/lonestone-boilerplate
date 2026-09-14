@@ -12,7 +12,7 @@ The project runs `pnpm boilerplate` and `pnpm rock` through the published `@lone
 
 ## Why
 
-Vendoring the upgrade CLI copied hundreds of lines of TypeScript (plus Vitest wiring the consumer never runs) into every generated project. Those sources go stale the moment the boilerplate ships a CLI fix. Publishing `@lonestone/cli` lets consumers take CLI fixes with a dependency bump. Init, onboard, rock, and upgrade all live in that package. `.boilerstone/` stays state and docs only. There is no `install.sh`.
+Vendoring the upgrade CLI copied hundreds of lines of TypeScript (plus Vitest wiring the consumer never runs) into every generated project. Those sources go stale the moment the boilerplate ships a CLI fix. Publishing `@lonestone/cli` lets consumers take CLI fixes with a dependency bump. Init, onboard, rock, and upgrade all live in that package. In generated projects, `.boilerstone/` stays state and docs only. There is no `install.sh`. The CLI sources live in the boilerplate repo under `.boilerstone/cli/` and are stripped on generate.
 
 ## Applies When
 
@@ -22,6 +22,7 @@ Vendoring the upgrade CLI copied hundreds of lines of TypeScript (plus Vitest wi
 ## Do Not Apply When
 
 - `@lonestone/cli` is already a dependency and `.boilerstone/cli/` is absent.
+- This is the Lonestone boilerplate repository itself. `.boilerstone/cli/` is the published package source there; do not delete it.
 - The project has detached from Boilerstone (`rm -rf .boilerstone`) — record as skipped.
 - A human has explicitly decided to keep a vendored CLI after reviewing this intention — record as skipped with that reason.
 
@@ -39,9 +40,9 @@ Vendoring the upgrade CLI copied hundreds of lines of TypeScript (plus Vitest wi
    Delete `.boilerstone/cli/`, `cli/setup.ts`, `cli/utils.ts`, and `.boilerstone/package.json` / `tsconfig.json` / `vitest.config.ts` if present. Do not delete `.boilerstone/boilerplate.json`, the schema, or consumer docs.
    Done when: `test ! -e .boilerstone/cli && test ! -e cli/setup.ts`.
 
-4. **Workspace membership** — signal: `pnpm-workspace.yaml` lists `.boilerstone`.
-   Remove that entry. Leave `packages/*` and `apps/*`.
-   Done when: `rg -n '^\s*-\s+\.boilerstone\s*$' pnpm-workspace.yaml` returns nothing.
+4. **Workspace membership** — signal: `pnpm-workspace.yaml` lists `.boilerstone` or `.boilerstone/cli`.
+   Remove those entries. Leave `packages/*` and `apps/*`. Do not add `.boilerstone/cli` in a consumer.
+   Done when: `rg -n '^\s*-\s+\.boilerstone(/cli)?\s*$' pnpm-workspace.yaml` returns nothing.
 
 5. **Lockfile** — signal: `pnpm-lock.yaml` has no `@lonestone/cli`.
    Run `pnpm install`. Touch no other dependency ranges.
@@ -60,7 +61,6 @@ Vendoring the upgrade CLI copied hundreds of lines of TypeScript (plus Vitest wi
 
 ## Reference Paths
 
-- `packages/cli/package.json` — **adapt**
 - `package.json` — **adapt**
 - `pnpm-workspace.yaml` — **adapt**
 

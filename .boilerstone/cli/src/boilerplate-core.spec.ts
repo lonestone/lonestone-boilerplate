@@ -49,7 +49,7 @@ import {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = resolve(__dirname, '../../..')
-const cliPath = join(projectRoot, 'packages/cli/src/bin.ts')
+const cliPath = join(projectRoot, '.boilerstone/cli/src/bin.ts')
 
 function createIntentionContent(options: {
   id?: string
@@ -2292,6 +2292,7 @@ describe('bootstrap command', () => {
       )
       writeProjectFile(projectPath, '.boilerstone/boilerplate.example.json', '{}')
       writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
+      writeProjectFile(projectPath, '.boilerstone/cli/src/bin.ts', 'export {}')
       writeProjectFile(projectPath, '.boilerstone/docs/upgrade-runbook.md', '# Runbook')
 
       // boilerplate.json already exists, so init returns early (no interactive prompt)
@@ -2310,6 +2311,7 @@ describe('bootstrap command', () => {
       // Producer-only artifacts dropped, consumer files preserved
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(false)
+      expect(existsSync(join(projectPath, '.boilerstone/cli'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/docs/upgrade-runbook.md'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.json'))).toBe(true)
     } finally {
@@ -2383,6 +2385,32 @@ describe('setup cleanup', () => {
       writeProjectFile(projectPath, '.boilerstone/boilerplate.schema.json', '{}')
       writeProjectFile(projectPath, '.boilerstone/README.md', '# Upgrade system')
       writeProjectFile(projectPath, '.boilerstone/cli/boilerplate.ts', 'export {}')
+      writeProjectFile(
+        projectPath,
+        'pnpm-workspace.yaml',
+        'packages:\n  - packages/*\n  - apps/*\n  - .boilerstone/cli\n',
+      )
+      writeProjectFile(
+        projectPath,
+        'release-please-config.json',
+        `${JSON.stringify(
+          {
+            packages: {
+              '.': {
+                'extra-files': [
+                  {
+                    type: 'json',
+                    path: '.boilerstone/cli/package.json',
+                    jsonpath: '$.version',
+                  },
+                ],
+              },
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      )
       writeProjectFile(projectPath, '.boilerstone/docs/upgrade-runbook.md', '# Runbook')
       writeProjectFile(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md', '# Internal')
       writeProjectFile(projectPath, '.boilerstone/docs/pilot-rollout.md', '# Pilot')
@@ -2407,6 +2435,14 @@ describe('setup cleanup', () => {
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.schema.json'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/cli/boilerplate.ts'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/docs/upgrade-runbook.md'))).toBe(true)
+      expect(readFileSync(join(projectPath, 'pnpm-workspace.yaml'), 'utf-8')).not.toContain(
+        '.boilerstone/cli',
+      )
+      expect(
+        JSON.parse(readFileSync(join(projectPath, 'release-please-config.json'), 'utf-8')).packages[
+          '.'
+        ]['extra-files'],
+      ).toBeUndefined()
 
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)

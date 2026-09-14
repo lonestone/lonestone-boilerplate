@@ -96,7 +96,7 @@ pnpm test
 If this release changed CLI command behavior, flags, safety rules, or the meaning of a term used in the docs, update the matching `.boilerstone/docs/` pages in the same PR. The changelog line is not enough.
 
 9. Smoke test as a consumer (see below).
-10. Stop. Hand the Release PR back. **Never tag. Never merge.** The human merges from the GitHub UI as themselves. After merge, release-please creates `vX.Y.Z`.
+10. Stop. Hand the Release PR back. **Never tag. Never merge.** The human merges from the GitHub UI as themselves. After merge, release-please creates `vX.Y.Z` and CI publishes `@lonestone/cli` at the same version.
 
 ## Smoke test as a consumer
 
@@ -118,22 +118,18 @@ pnpm dlx @lonestone/cli onboard
 pnpm boilerplate upgrade status
 ```
 
-After the human has merged and the tag exists, verify with a remote install:
+After the human has merged and the tag exists, the **Publish @lonestone/cli** job on the Release Please workflow publishes the package. Confirm `npm view @lonestone/cli version` matches `X.Y.Z`, then verify with a remote install:
 
 ```bash
 pnpm dlx @lonestone/cli init test-boilerstone --ref vX.Y.Z
 pnpm boilerplate upgrade prepare --to X.Y.Z --fetch
 ```
 
-Never move a published tag. If a pushed tag turns out to be wrong, publish a new patch version instead.
+Never move a published tag. If a pushed tag turns out to be wrong, publish a new patch version instead. Do not publish the CLI by hand as part of a normal release.
 
-After the tag exists, publish the CLI so `pnpm dlx @lonestone/cli` and consumer `devDependencies` resolve:
+One-time npm setup (before the first automated publish): on [npmjs.com](https://www.npmjs.com/) for `@lonestone/cli`, add a GitHub Actions trusted publisher. Organization `lonestone`, repository `lonestone-boilerplate`, workflow filename `release-please.yml` (filename only), and allow `npm publish`. No `NPM_TOKEN` secret. If that job fails, the fallback from the tagged commit is `pnpm --filter @lonestone/cli publish --access public`.
 
-```bash
-pnpm --filter @lonestone/cli publish --access public
-```
-
-The package version matches the boilerplate release (`packages/cli/package.json`).
+The package version is bumped with the boilerplate on the Release PR (`.boilerstone/cli/package.json`, via `extra-files` in `release-please-config.json`).
 
 ## Selective shipping (D12)
 

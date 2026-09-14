@@ -44,17 +44,18 @@ pnpm boilerplate upgrade finish --to <version>
 boilerplate.json          # Project state (version + applied/skipped intentions)
 docs/                     # How it works, upgrade runbook, release runbook
 migration-intentions/     # Published intentions + unreleased/ staging (boilerplate repo only)
+cli/                      # Published as @lonestone/cli (boilerplate repo only)
 ```
 
-The upgrade CLI lives in the published `@lonestone/cli` package (`pnpm boilerplate` / `lonestone`), not in this directory.
+Generated projects use the published `@lonestone/cli` package (`pnpm boilerplate` / `lonestone`). They do not keep a copy of `cli/`.
 
-In a generated project, the producer side (`migration-intentions/`, release runbook, …) is stripped — intentions then come from git tags. That's expected.
+In a generated project, the producer side (`cli/`, `migration-intentions/`, release runbook, …) is stripped — intentions then come from git tags. That's expected.
 
 ## Detaching
 
 1. `rm -rf .boilerstone`
 2. Remove the `boilerplate` script and the `@lonestone/cli` dependency from the root `package.json`
-3. Optionally remove the skill shims and the `.boilerstone` workspace / gitignore entries
+3. Optionally remove the skill shims and any leftover `.boilerstone` / `.boilerstone/cli` workspace or gitignore entries
 
 Nothing else in the repository depends on this directory.
 

@@ -60,7 +60,7 @@
       "ignoreDependencies": ["zod"]
     },
     "packages/openapi-generator": {},
-    "packages/cli": {
+    ".boilerstone/cli": {
       "entry": ["src/bin.ts!", "bin/lonestone.mjs!"]
     }
   }

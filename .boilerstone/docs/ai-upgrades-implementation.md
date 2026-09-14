@@ -35,7 +35,7 @@ Runtime validation mirrors `boilerplate.schema.json`: schema version 1, source f
 
 Producer drafts never mix working-tree intentions with committed references: resolution requires a clean producer checkout and a release folder committed in `HEAD`, then reads both intention content and reference projections from that same `HEAD`.
 
-Setup and the upgrade CLI live in `packages/cli` (`@lonestone/cli`). They share `tracking-state` and `PRODUCER_ARTIFACTS`; generated projects depend on the published package instead of vendoring TypeScript sources.
+Setup and the upgrade CLI live in `.boilerstone/cli` (`@lonestone/cli`). They share `tracking-state` and `PRODUCER_ARTIFACTS`; generated projects depend on the published package instead of vendoring TypeScript sources. That location keeps the CLI out of `packages/`, so it is not mistaken for an app workspace package.
 
 ## Two classifications drive the plan
 
@@ -43,7 +43,7 @@ Intentions carry a `classification` in their frontmatter. `no-migration` and `in
 
 ## Producer vs consumer (one directory, two modes)
 
-In the boilerplate repo, intentions and consumer docs live in `.boilerstone/`, and the CLI lives in `packages/cli`. In a generated or onboarded project, the producer side is dropped. `cleanupBoilerplateFiles()` in `packages/cli/src/setup.ts` (for `pnpm rock`) and the `bootstrap` command (for existing projects) both remove `migration-intentions/`, the example state, the release-maintainer runbook, and these internal docs — and keep the local state, the schema, and the consumer-facing docs. The CLI is the `@lonestone/cli` dependency, not a copy of sources. Future-release intentions are then read from git tags rather than from disk.
+In the boilerplate repo, intentions, consumer docs, and the CLI sources live in `.boilerstone/`. In a generated or onboarded project, the producer side is dropped. `cleanupBoilerplateFiles()` in `.boilerstone/cli/src/setup.ts` (for `pnpm rock`) and the `bootstrap` command (for existing projects) both remove `cli/`, `migration-intentions/`, the example state, the release-maintainer runbook, and these internal docs — and keep the local state, the schema, and the consumer-facing docs. The CLI is the `@lonestone/cli` dependency, not a copy of sources. Future-release intentions are then read from git tags rather than from disk.
 
 The list of producer-only paths has one home, `PRODUCER_ARTIFACTS` in `boilerplate-core.ts`. The "consumer cleanup" readiness check in `status` derives from it, and `PRODUCER_FILES_TO_REMOVE` in `setup.ts` includes that list plus installer/CLI-source paths.
 
@@ -70,11 +70,10 @@ Be honest with yourself about this when extending the system:
     ai-upgrades-implementation.md  # this file (producer-only)
     pilot-rollout.md         # pilot guide (producer-only)
   migration-intentions/      # published intentions, one dir per release (producer-only)
-
-packages/cli/                # published as @lonestone/cli
-  src/boilerplate-core.ts    # pure logic ← start here
-  src/boilerplate.ts         # commands wired to git/fs
-  src/tracking-state.ts      # the tracking-state lifecycle interface
-  src/setup.ts               # pnpm rock / lonestone rock
-  src/install.ts             # init / onboard
+  cli/                       # published as @lonestone/cli (producer-only)
+    src/boilerplate-core.ts  # pure logic ← start here
+    src/boilerplate.ts       # commands wired to git/fs
+    src/tracking-state.ts    # the tracking-state lifecycle interface
+    src/setup.ts             # pnpm rock / lonestone rock
+    src/install.ts           # init / onboard
 ```

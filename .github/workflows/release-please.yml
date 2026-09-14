@@ -17,6 +17,9 @@ jobs:
   release-please:
     name: Release Please
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - name: Open or update the Release PR
         id: release
@@ -62,3 +65,50 @@ jobs:
           } > "${NOTES_FILE}.out"
           mv "${NOTES_FILE}.out" "$NOTES_FILE"
           gh release edit "$TAG" --notes-file "$NOTES_FILE"
+
+  # Producer-only: generated projects keep this workflow but skip this job.
+  # Same workflow run as the tag (GITHUB_TOKEN tag pushes do not start a
+  # second workflow). Split from release-please so a failed publish can be
+  # retried without running release-please again.
+  publish-cli:
+    name: Publish @lonestone/cli
+    needs: release-please
+    if: ${{ always() && !cancelled() && needs.release-please.outputs.release_created == 'true' && github.repository == 'lonestone/lonestone-boilerplate' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout the tagged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.13.0
+
+      - name: Verify the CLI version matches the tag
+        env:
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          CLI_VERSION="$(node -p "require('./.boilerstone/cli/package.json').version")"
+          if [[ "$CLI_VERSION" != "$VERSION" ]]; then
+            echo "CLI version ${CLI_VERSION} does not match tag ${TAG}"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Publish @lonestone/cli
+        run: pnpm --filter @lonestone/cli publish --access public --no-git-checks
