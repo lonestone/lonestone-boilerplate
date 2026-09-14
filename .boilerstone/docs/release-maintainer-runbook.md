@@ -114,18 +114,26 @@ pnpm boilerplate upgrade status --json
 If the release affects the existing-project onboarding path, use a separate temporary project and run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- onboard
+pnpm dlx @lonestone/cli onboard
 pnpm boilerplate upgrade status
 ```
 
 After the human has merged and the tag exists, verify with a remote install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- init test-boilerstone --ref vX.Y.Z
+pnpm dlx @lonestone/cli init test-boilerstone --ref vX.Y.Z
 pnpm boilerplate upgrade prepare --to X.Y.Z --fetch
 ```
 
 Never move a published tag. If a pushed tag turns out to be wrong, publish a new patch version instead.
+
+After the tag exists, publish the CLI so `pnpm dlx @lonestone/cli` and consumer `devDependencies` resolve:
+
+```bash
+pnpm --filter @lonestone/cli publish --access public
+```
+
+The package version matches the boilerplate release (`packages/cli/package.json`).
 
 ## Selective shipping (D12)
 

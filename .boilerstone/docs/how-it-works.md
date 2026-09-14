@@ -25,20 +25,22 @@ That's also why the whole system is plain markdown and JSON. It works the same w
 
 - **`boilerplate.json`** — the only state committed to your repo. It records which boilerplate version you started from and which intentions you've applied or skipped.
 - **Migration intentions** — published per release, fetched from the boilerplate's git tags.
-- **The CLI** (`pnpm boilerplate …`) — reads your state, computes what's left to do, and stages the work. It never edits your application code itself.
+- **The CLI** (`pnpm boilerplate …`, the `@lonestone/cli` package) — reads your state, computes what's left to do, and stages the work. It never edits your application code itself.
 
-A few state-file details that occasionally matter (skip this on first read): the CLI validates the file on every read and write, stores versions without a leading `v`, and stores intention IDs as `vX.Y.Z/slug` — old IDs without the `v` are migrated automatically. Fields and domains introduced by a newer release are kept with a warning rather than rejected, so an older vendored CLI keeps working across version skew. The one hard compatibility gate is `schemaVersion`.
+A few state-file details that occasionally matter (skip this on first read): the CLI validates the file on every read and write, stores versions without a leading `v`, and stores intention IDs as `vX.Y.Z/slug` — old IDs without the `v` are migrated automatically. Fields and domains introduced by a newer release are kept with a warning rather than rejected, so an older CLI keeps working across version skew. The one hard compatibility gate is `schemaVersion`.
 
 ## Onboarding
 
-[`install.sh`](../../install.sh) is the single entry point for the whole lifecycle. It only needs `git` and `pnpm`. By default it resolves the latest published release tag and downloads that exact snapshot (a full clone for a new project, a sparse checkout of `.boilerstone/` alone for onboarding).
+`@lonestone/cli` is the entry point. It needs `git` and `pnpm`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- init my-app
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- onboard
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- upgrade
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- upgrade 1.6.0
+pnpm dlx @lonestone/cli init my-app
+pnpm dlx @lonestone/cli onboard
+pnpm dlx @lonestone/cli upgrade
+pnpm dlx @lonestone/cli upgrade 1.6.0
 ```
+
+By default the CLI resolves the latest published release tag and downloads that exact snapshot (a full clone for a new project, a sparse checkout of `.boilerstone/` for onboarding).
 
 - **`init`** clones the template and runs `pnpm rock`.
 - **`onboard`** fetches `.boilerstone/` and the `boilerstone-upgrade` skills into an existing project, runs `bootstrap` (below), then offers to commit (`[Y/n]`, default yes).
@@ -46,18 +48,9 @@ curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/mai
 
 `--ref latest` is the default; pin with `--ref vX.Y.Z`. Branch refs like `main` are rejected so a project never starts from unreleased code. For a fork or private mirror, set `BOILERPLATE_REPO=<url>` — that repository must publish compatible `vX.Y.Z` tags.
 
-`bootstrap` adds the `boilerplate` script and a `tsx` devDependency, gitignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It's idempotent and never overwrites what's already there. It deliberately does **not** run `pnpm rock` — that script renames packages, rewrites leftover `@boilerstone/` imports, and rewrites env/docker files, which is fine on a fresh template and destructive on a real project.
+`bootstrap` adds the `@lonestone/cli` dependency and the `boilerplate` / `rock` scripts, gitignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It's idempotent and never overwrites what's already there. It deliberately does **not** run `pnpm rock` — that script renames packages, rewrites leftover `@boilerstone/` imports, and rewrites env/docker files, which is fine on a fresh template and destructive on a real project.
 
 > **Heads-up on v1.0.0:** its intentions are baseline catch-ups ("align with the v1.0.0 …"), broader than the narrow deltas later releases ship. When onboarding an older project, budget roughly one working session per intention.
-
-Without the installer, `onboard` is:
-
-```bash
-git clone --depth 1 --filter=blob:none --sparse <repo> _bp && git -C _bp sparse-checkout set .boilerstone
-mv _bp/.boilerstone .boilerstone && rm -rf _bp
-rm -f .boilerstone/boilerplate.json   # drop the repo's own tracking state so init detects yours
-pnpm dlx tsx .boilerstone/cli/boilerplate.ts bootstrap && pnpm install
-```
 
 ## Where the upgrade material comes from
 
@@ -65,7 +58,7 @@ Everything travels over plain git, from a single URL: `source.remote` in your `b
 
 `upgrade prepare --fetch` pulls the boilerplate's release tags into a dedicated namespace, `refs/boilerstone/v*` — never into your own `refs/tags`. Your project stays free to tag its own releases `v1.2.3` with zero risk of collision, and plain application tags are never mistaken for boilerplate releases.
 
-From there everything is local: intentions are read from the fetched refs, and reference files are extracted with `git archive`. No API, no registry, no network beyond git. If a release is missing, `upgrade status` prints the exact fetch command to run.
+From there everything is local: intentions are read from the fetched refs, and reference files are extracted with `git archive`. The CLI itself is the published `@lonestone/cli` package; intention content does not come from npm. If a release is missing, `upgrade status` prints the exact fetch command to run.
 
 ## The commands, in the order you meet them
 

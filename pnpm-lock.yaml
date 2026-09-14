@@ -103,12 +103,12 @@ importers:
       '@commitlint/types':
         specifier: ^21.2.0
         version: 21.2.0
+      '@lonestone/cli':
+        specifier: workspace:*
+        version: link:packages/cli
       '@types/node':
         specifier: catalog:build
         version: 25.9.5
-      enquirer:
-        specifier: ^2.4.1
-        version: 2.4.1
       knip:
         specifier: ^6.31.0
         version: 6.31.0
@@ -124,12 +124,6 @@ importers:
       tsx:
         specifier: ^4.23.5
         version: 4.23.5
-
-  .boilerstone:
-    devDependencies:
-      vitest:
-        specifier: ^4.1.10
-        version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@20.0.3)(vite@8.2.2(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.1)(tsx@4.23.5)(yaml@2.9.0))
 
   apps/api:
     dependencies:
@@ -526,6 +520,25 @@ importers:
       vite-plugin-devtools-json:
         specifier: ^1.1.0
         version: 1.1.0(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.1)(tsx@4.23.5)(yaml@2.9.0))
+
+  packages/cli:
+    dependencies:
+      enquirer:
+        specifier: ^2.4.1
+        version: 2.4.1
+      tsx:
+        specifier: ^4.23.5
+        version: 4.23.5
+    devDependencies:
+      '@types/node':
+        specifier: catalog:build
+        version: 25.9.5
+      typescript:
+        specifier: catalog:build
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@25.9.5)(@vitest/coverage-v8@4.1.10)(jsdom@20.0.3)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.1)(tsx@4.23.5)(yaml@2.9.0))
 
   packages/i18n:
     dependencies:

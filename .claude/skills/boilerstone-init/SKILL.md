@@ -16,7 +16,7 @@ This skill is a thin adapter. The canonical procedure is the "Onboarding a proje
 
 ```bash
 # At the root of the project to onboard (BOILERPLATE_REPO=<url> for a fork/private mirror)
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- onboard
+pnpm dlx @lonestone/cli onboard
 ```
 
 The installer fetches `.boilerstone/` and the `boilerstone-upgrade` skills, runs `bootstrap`, then offers to commit (`[Y/n]`).

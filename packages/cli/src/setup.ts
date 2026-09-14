@@ -52,6 +52,7 @@ function getConfiguredBoilerplateRemote(): string {
 
 // Producer-only paths removed from generated projects. The `.boilerstone/`
 // subset is derived from PRODUCER_ARTIFACTS so the two lists cannot drift.
+// `install.sh` is no longer shipped; keep stripping it from older checkouts.
 export const PRODUCER_FILES_TO_REMOVE = [
   'install.sh',
   'packages/cli',

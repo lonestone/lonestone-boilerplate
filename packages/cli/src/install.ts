@@ -38,7 +38,7 @@ function die(message: string): never {
 
 function need(command: string): void {
   const result = spawnSync(command, ['--version'], { encoding: 'utf-8' })
-  if (result.status !== 0 && result.error) {
+  if (result.error || result.status !== 0) {
     die(`Required command not found: ${command}`)
   }
 }
@@ -266,7 +266,6 @@ export function printInstallerUsage(): void {
 Lonestone boilerplate installer
 
 Usage:
-  curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- <command> [args]
   pnpm dlx @lonestone/cli <command> [args]
 
 Commands:
@@ -301,13 +300,14 @@ export async function runInstaller(argv: string[]): Promise<void> {
     need('git')
     need('pnpm')
     const ref = resolveReleaseRef(repoUrl, options.ref)
-    const dir = resolve(cwd, options.positionals[0] || 'my-app')
+    const dirInput = options.positionals[0] || 'my-app'
+    const dir = resolve(cwd, dirInput)
     if (existsSync(dir)) {
-      die(`Directory '${options.positionals[0] || 'my-app'}' already exists`)
+      die(`Directory '${dirInput}' already exists`)
     }
     info(`Creating new project in ${dir} from ${repoUrl}@${ref}`)
     try {
-      runGit(['clone', '--quiet', '--depth', '1', '--branch', ref, repoUrl, dir])
+      runGit(['clone', '--quiet', '--depth', '1', '--branch', ref, repoUrl, dirInput])
     } catch {
       die(`git clone failed (ref: ${ref})`)
     }
