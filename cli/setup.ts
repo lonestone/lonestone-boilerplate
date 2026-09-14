@@ -69,6 +69,7 @@ export const PRODUCER_FILES_TO_REMOVE = [
   '.boilerstone/cli/tracking-state.spec.ts',
   '.boilerstone/cli/install.spec.ts',
   '.boilerstone/cli/setup-rename.spec.ts',
+  '.boilerstone/cli/lefthook.spec.ts',
   '.boilerstone/cli/vitest.setup.ts',
   '.boilerstone/vitest.config.ts',
   // Maintainer/onboarding-only skills; consumers keep only the boilerstone-upgrade skill
@@ -627,10 +628,13 @@ const WORKSPACE_SCOPE_SKIP_DIRS = new Set([
   '.react-router',
   '.turbo',
   'build',
+  'cli',
   'coverage',
   'dist',
   'node_modules',
 ])
+
+const TSCONFIG_ALIAS_FILES = ['tsconfig.base.json', 'packages/ui/tsconfig.json'] as const
 
 const WORKSPACE_SCOPE_SKIP_FILES = new Set(['CHANGELOG.md', 'package-lock.json', 'pnpm-lock.yaml'])
 
@@ -652,9 +656,45 @@ const WORKSPACE_SCOPE_TEXT_EXTENSIONS = new Set([
 ])
 
 /**
+ * Rename TypeScript path keys such as `@boilerstone/*` and `@boilerstone/ui/*`.
+ * Package.json names are updated separately; these maps must follow or Vite
+ * and `tsc` keep resolving the old scope.
+ */
+export function rewriteTsconfigPathAliases(
+  rootPath: string,
+  oldPrefix: string,
+  newPrefix: string,
+): string[] {
+  if (oldPrefix === newPrefix) {
+    return []
+  }
+
+  const oldScoped = `${oldPrefix}/`
+  const newScoped = `${newPrefix}/`
+  const updatedPaths: string[] = []
+
+  for (const relativePath of TSCONFIG_ALIAS_FILES) {
+    const filePath = join(rootPath, relativePath)
+    if (!existsSync(filePath)) {
+      continue
+    }
+
+    const content = readFileSync(filePath, 'utf-8')
+    if (!content.includes(oldScoped)) {
+      continue
+    }
+
+    writeFileSync(filePath, content.replaceAll(oldScoped, newScoped), 'utf-8')
+    updatedPaths.push(relativePath)
+  }
+
+  return updatedPaths
+}
+
+/**
  * Replace `@old-scope/` with `@new-scope/` in project text files.
- * Skips `.boilerstone/`, lockfiles, and the changelog so the upgrade CLI and
- * historical records keep their own names.
+ * Skips `.boilerstone/`, `cli/`, lockfiles, and the changelog so the upgrade CLI,
+ * the setup script, and historical records keep their own names.
  */
 export function rewriteWorkspaceScope(
   rootPath: string,
@@ -904,6 +944,11 @@ async function renameProjects(projectName: string, availableApps: AvailableApps)
     updatePackageJsonName(packagePath, `${newPrefix}/${name}`)
     updatePackageJsonDependencies(packagePath, oldPrefix, newPrefix)
     console.log(`  ${colorize('✓', 'green')} Updated ${colorize(path, 'dim')}`)
+  }
+
+  const tsconfigAliasFiles = rewriteTsconfigPathAliases(projectRoot, oldPrefix, newPrefix)
+  for (const path of tsconfigAliasFiles) {
+    console.log(`  ${colorize('✓', 'green')} Updated ${colorize(path, 'dim')} path aliases`)
   }
 
   const rewrittenCount = rewriteWorkspaceScope(projectRoot, oldPrefix, newPrefix)

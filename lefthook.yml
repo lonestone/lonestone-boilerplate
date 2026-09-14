@@ -4,19 +4,15 @@ commit-msg:
       run: pnpm exec commitlint --edit {1}
 
 pre-push:
+  # Stream output so lint/typecheck progress is visible instead of a stuck spinner.
+  # Do not drain git pre-push stdin: lefthook's PTY never sends EOF, so a cat
+  # waits forever ("waiting: quality"). The Testcontainers suite stays in CI.
+  follow: true
   jobs:
     - name: quality
-      use_stdin: true
       run: |
-        STDIN=$(cat)
-        if echo "$STDIN" | grep -q "^(delete)"; then
-          echo "(delete) found at start of push refs, skipping pre-push hook"
-          exit 0
-        fi
         echo "Running linter..."
         pnpm lint || exit 1
         echo "Running type check..."
         pnpm typecheck || exit 1
-        echo "Running tests..."
-        pnpm test || exit 1
         echo "All pre-push checks passed!"

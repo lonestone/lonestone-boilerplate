@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { rewriteWorkspaceScope } from '../../cli/setup'
+import { rewriteTsconfigPathAliases, rewriteWorkspaceScope } from '../../cli/setup'
 
 const fixtures: string[] = []
 
@@ -87,7 +87,11 @@ describe('rewriteWorkspaceScope', () => {
       'node_modules/@boilerstone/ui/index.js',
       "export {} from '@boilerstone/ui'\n",
     )
-    writeFile(rootPath, 'cli/setup.ts', "const oldPrefix = '@boilerstone'\n")
+    writeFile(
+      rootPath,
+      'cli/setup.ts',
+      "const oldPrefix = '@boilerstone'\nconst scoped = '@boilerstone/ui'\n",
+    )
 
     const actualCount = rewriteWorkspaceScope(rootPath, '@boilerstone', '@acme')
 
@@ -96,7 +100,7 @@ describe('rewriteWorkspaceScope', () => {
     expect(readFile(rootPath, 'CHANGELOG.md')).toContain('@boilerstone/i18n')
     expect(readFile(rootPath, 'pnpm-lock.yaml')).toContain('@boilerstone/ui')
     expect(readFile(rootPath, 'node_modules/@boilerstone/ui/index.js')).toContain('@boilerstone/ui')
-    expect(readFile(rootPath, 'cli/setup.ts')).toBe("const oldPrefix = '@boilerstone'\n")
+    expect(readFile(rootPath, 'cli/setup.ts')).toContain('@boilerstone/ui')
   })
 
   it('is a no-op when the project keeps the original scope', () => {
@@ -107,5 +111,69 @@ describe('rewriteWorkspaceScope', () => {
 
     expect(actualCount).toBe(0)
     expect(readFile(rootPath, 'apps/web-spa/app/root.tsx')).toContain('@boilerstone/ui/globals.css')
+  })
+})
+
+describe('rewriteTsconfigPathAliases', () => {
+  it('renames the workspace path maps in tsconfig.base.json and packages/ui/tsconfig.json', () => {
+    const rootPath = createFixtureRoot()
+    writeFile(
+      rootPath,
+      'tsconfig.base.json',
+      `{
+  "compilerOptions": {
+    "paths": {
+      "@boilerstone/*": ["packages/*/src"]
+    }
+  }
+}
+`,
+    )
+    writeFile(
+      rootPath,
+      'packages/ui/tsconfig.json',
+      `{
+  "compilerOptions": {
+    "paths": {
+      "@boilerstone/ui/*": ["./src/*"]
+    }
+  }
+}
+`,
+    )
+    writeFile(
+      rootPath,
+      'apps/web-spa/tsconfig.json',
+      `{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./app/*"]
+    }
+  }
+}
+`,
+    )
+
+    const actualPaths = rewriteTsconfigPathAliases(rootPath, '@boilerstone', '@acme')
+
+    expect(actualPaths).toEqual(['tsconfig.base.json', 'packages/ui/tsconfig.json'])
+    expect(readFile(rootPath, 'tsconfig.base.json')).toContain('"@acme/*"')
+    expect(readFile(rootPath, 'tsconfig.base.json')).not.toContain('@boilerstone/')
+    expect(readFile(rootPath, 'packages/ui/tsconfig.json')).toContain('"@acme/ui/*"')
+    expect(readFile(rootPath, 'apps/web-spa/tsconfig.json')).toContain('"@/*"')
+  })
+
+  it('is a no-op when the maps already use the new scope', () => {
+    const rootPath = createFixtureRoot()
+    writeFile(
+      rootPath,
+      'tsconfig.base.json',
+      '{"compilerOptions":{"paths":{"@acme/*":["packages/*/src"]}}}\n',
+    )
+
+    const actualPaths = rewriteTsconfigPathAliases(rootPath, '@boilerstone', '@acme')
+
+    expect(actualPaths).toEqual([])
+    expect(readFile(rootPath, 'tsconfig.base.json')).toContain('"@acme/*"')
   })
 })
