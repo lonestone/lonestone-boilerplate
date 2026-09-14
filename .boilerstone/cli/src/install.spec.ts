@@ -10,11 +10,12 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const installerPath = join(projectRoot, 'install.sh')
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
+const cliBin = join(projectRoot, '.boilerstone/cli/bin/lonestone.mjs')
 
 function runInstaller(args: string[]): {
   status: number | null
@@ -64,7 +65,7 @@ exit 0
   chmodSync(join(binPath, 'git'), 0o755)
   chmodSync(join(binPath, 'pnpm'), 0o755)
 
-  const result = spawnSync('sh', [installerPath, ...args], {
+  const result = spawnSync(process.execPath, [cliBin, ...args], {
     cwd: fixturePath,
     encoding: 'utf-8',
     env: {
@@ -82,7 +83,7 @@ exit 0
   }
 }
 
-describe('install.sh release references', () => {
+describe('installer release references', () => {
   it.each([
     ['default', []],
     ['explicit latest', ['--ref', 'latest']],

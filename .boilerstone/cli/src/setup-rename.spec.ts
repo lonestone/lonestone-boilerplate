@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { rewriteWorkspaceScope } from '../../cli/setup'
+import { rewriteWorkspaceScope } from './setup'
 
 const fixtures: string[] = []
 
@@ -43,6 +43,11 @@ describe('rewriteWorkspaceScope', () => {
     )
     writeFile(
       rootPath,
+      'tsconfig.base.json',
+      JSON.stringify({ compilerOptions: { paths: { '@boilerstone/*': ['packages/*/src'] } } }),
+    )
+    writeFile(
+      rootPath,
       'packages/ui/tsconfig.json',
       JSON.stringify({ compilerOptions: { paths: { '@boilerstone/ui/*': ['./src/*'] } } }),
     )
@@ -64,11 +69,12 @@ describe('rewriteWorkspaceScope', () => {
 
     const actualCount = rewriteWorkspaceScope(rootPath, '@boilerstone', '@acme')
 
-    expect(actualCount).toBe(6)
+    expect(actualCount).toBe(7)
     expect(readFile(rootPath, 'apps/web-ssr/app/root.tsx')).toContain(
       '@acme/ui/components/primitives/button',
     )
     expect(readFile(rootPath, 'packages/ui/src/lib/utils.ts')).toContain('@acme/ui/lib/utils')
+    expect(readFile(rootPath, 'tsconfig.base.json')).toContain('@acme/*')
     expect(readFile(rootPath, 'packages/ui/tsconfig.json')).toContain('@acme/ui/*')
     expect(readFile(rootPath, 'packages/ui/components.json')).toContain('@acme/ui/lib/utils')
     expect(readFile(rootPath, 'apps/documentation/src/content/docs/references/frontend.mdx')).toBe(

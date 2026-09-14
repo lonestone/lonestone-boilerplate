@@ -19,6 +19,14 @@
     { "type": "build", "section": "Build", "hidden": true }
   ],
   "packages": {
-    ".": {}
+    ".": {
+      "extra-files": [
+        {
+          "type": "json",
+          "path": ".boilerstone/cli/package.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
   }
 }

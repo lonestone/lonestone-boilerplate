@@ -35,7 +35,7 @@ Runtime validation mirrors `boilerplate.schema.json`: schema version 1, source f
 
 Producer drafts never mix working-tree intentions with committed references: resolution requires a clean producer checkout and a release folder committed in `HEAD`, then reads both intention content and reference projections from that same `HEAD`.
 
-One deliberate duplication to be aware of: the root `cli/setup.ts` re-declares the state-creation defaults instead of importing this module. That's because setup must keep working after `.boilerstone/` is deleted — removability wins over DRY here. A synchronization test compares both sides so the duplication can't silently drift.
+Setup and the upgrade CLI live in `.boilerstone/cli` (`@lonestone/cli`). They share `tracking-state` and `PRODUCER_ARTIFACTS`; generated projects depend on the published package instead of vendoring TypeScript sources. That location keeps the CLI out of `packages/`, so it is not mistaken for an app workspace package.
 
 ## Two classifications drive the plan
 
@@ -43,15 +43,15 @@ Intentions carry a `classification` in their frontmatter. `no-migration` and `in
 
 ## Producer vs consumer (one directory, two modes)
 
-In the boilerplate repo everything is present: published intentions, the CLI, tests, these maintainer docs. In a generated or onboarded project, the producer side is dropped. `cleanupBoilerplateFiles()` in [`cli/setup.ts`](../../cli/setup.ts) (for `pnpm rock`) and the `bootstrap` command (for existing projects) both remove `migration-intentions/`, the example state, the CLI test suite and Vitest config, the release-maintainer runbook, and these internal docs — and keep the local state, the CLI runtime, the schema, and the consumer-facing docs. Future-release intentions are then read from git tags rather than from disk.
+In the boilerplate repo, intentions, consumer docs, and the CLI sources live in `.boilerstone/`. In a generated or onboarded project, the producer side is dropped. `cleanupBoilerplateFiles()` in `.boilerstone/cli/src/setup.ts` (for `pnpm rock`) and the `bootstrap` command (for existing projects) both remove `cli/`, `migration-intentions/`, the example state, the release-maintainer runbook, and these internal docs — and keep the local state, the schema, and the consumer-facing docs. The CLI is the `@lonestone/cli` dependency, not a copy of sources. Future-release intentions are then read from git tags rather than from disk.
 
-The list of producer-only paths has one home, `PRODUCER_ARTIFACTS` in `boilerplate-core.ts`. The "consumer cleanup" readiness check in `status` derives from it, and `PRODUCER_FILES_TO_REMOVE` in `cli/setup.ts` mirrors its `.boilerstone/` subset — mirrors, not imports, because setup can't depend on a directory that must stay removable. A spec test enforces that the two lists stay in sync.
+The list of producer-only paths has one home, `PRODUCER_ARTIFACTS` in `boilerplate-core.ts`. The "consumer cleanup" readiness check in `status` derives from it, and `PRODUCER_FILES_TO_REMOVE` in `setup.ts` includes that list plus installer/CLI-source paths.
 
 ## Where the system actually stands
 
 Be honest with yourself about this when extending the system:
 
-- **Real and working**: the CLI (`bootstrap`, `upgrade init/status/path/prepare/record/finish`, `versions list`, `intentions lint/sync`), the committed state and schema, the curl installer, the consumer switch, and the skill shims. `v1.0.0` is tagged and published with its eight baseline intentions. Changelog generation moved to release-please; the old `changelog check` / `changelog release` commands are gone.
+- **Real and working**: the CLI (`init`, `onboard`, `bootstrap`, `upgrade init/status/path/prepare/record/finish`, `versions list`, `intentions lint/sync`), the committed state and schema, the published `@lonestone/cli` package, the consumer switch, and the skill shims. `v1.0.0` is tagged and published with its eight baseline intentions. Changelog generation moved to release-please; the old `changelog check` / `changelog release` commands are gone.
 - **Not proven yet**: no release-to-release upgrade (v1.0.0 → v1.x) has been executed against a real diverged project. Treat the first one as a pilot — see [pilot-rollout.md](./pilot-rollout.md).
 - **The disk fallback for untagged releases** is how maintainers test drafts before tagging. It looks like dead code if you only think about consumers; it isn't.
 - **The module registry** (importing optional modules on demand, shadcn-style) is a design intent, not implemented.
@@ -63,12 +63,6 @@ Be honest with yourself about this when extending the system:
   README.md                  # quick map + onboarding (kept in consumers)
   boilerplate.json           # committed state (kept)
   boilerplate.schema.json    # state schema (kept)
-  cli/
-    boilerplate-core.ts      # pure logic: version compare, metadata parse, path compute  ← start here
-    boilerplate.ts           # commands wired to git/fs
-    tracking-state.ts        # the tracking-state lifecycle interface
-    utils.ts                 # vendored colorize / isolatedGitEnv (keeps the CLI self-contained)
-    *.spec.ts                # tests: pure logic, CLI smoke, bootstrap, cleanup, install, state lifecycle
   docs/
     how-it-works.md          # philosophy + each command (kept in consumers)
     upgrade-runbook.md       # the execution procedure (kept)
@@ -76,4 +70,10 @@ Be honest with yourself about this when extending the system:
     ai-upgrades-implementation.md  # this file (producer-only)
     pilot-rollout.md         # pilot guide (producer-only)
   migration-intentions/      # published intentions, one dir per release (producer-only)
+  cli/                       # published as @lonestone/cli (producer-only)
+    src/boilerplate-core.ts  # pure logic ← start here
+    src/boilerplate.ts       # commands wired to git/fs
+    src/tracking-state.ts    # the tracking-state lifecycle interface
+    src/setup.ts             # pnpm rock / lonestone rock
+    src/install.ts           # init / onboard
 ```

@@ -8,8 +8,8 @@
   "author": "",
   "type": "module",
   "scripts": {
-    "rock": "tsx ./cli/setup.ts",
-    "boilerplate": "tsx ./.boilerstone/cli/boilerplate.ts",
+    "rock": "lonestone rock",
+    "boilerplate": "lonestone",
     "dev": "pnpm --parallel dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
@@ -35,10 +35,10 @@
     "@commitlint/lint": "^21.2.2",
     "@commitlint/load": "^21.2.2",
     "@commitlint/types": "^21.2.0",
+    "@lonestone/cli": "workspace:*",
     "@types/node": "catalog:build",
-    "enquirer": "^2.4.1",
-    "knip": "^6.31.0",
     "lefthook": "^2.1.10",
+    "knip": "^6.31.0",
     "oxfmt": "^0.57.0",
     "oxlint": "^1.77.0",
     "tsx": "^4.23.5"
