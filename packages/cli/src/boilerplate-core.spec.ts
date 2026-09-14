@@ -484,13 +484,14 @@ describe('boilerplate core', () => {
   it('never overwrites an existing boilerplate script or cli dependency', () => {
     const result = ensurePackageJsonWiring(
       {
-        scripts: { boilerplate: 'custom' },
+        scripts: { boilerplate: 'custom', rock: 'custom-rock' },
         devDependencies: { '@lonestone/cli': '^1.0.0' },
       },
       '^1.1.0',
     )
 
     expect(result.pkg.scripts?.boilerplate).toBe('custom')
+    expect(result.pkg.scripts?.rock).toBe('custom-rock')
     expect(result.pkg.devDependencies?.['@lonestone/cli']).toBe('^1.0.0')
     expect(result.changes).toEqual([])
   })
@@ -1166,7 +1167,7 @@ describe('boilerplate CLI smoke', () => {
     const result = runCli([])
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain('Boilerplate CLI')
+    expect(result.stdout).toContain('Lonestone CLI')
   })
 
   it('lists versions without writing project state', () => {
