@@ -73,6 +73,7 @@ export const configValidationSchema = z.object({
 
   // Sentry
   SENTRY_DSN: z.string().optional(),
+  TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
 })
 
 export type ConfigSchema = z.infer<typeof configValidationSchema>
@@ -143,5 +144,6 @@ export const config = {
   },
   sentry: {
     dsn: configParsed.data.SENTRY_DSN,
+    tracesSampleRate: configParsed.data.TRACES_SAMPLE_RATE,
   },
 } as const
