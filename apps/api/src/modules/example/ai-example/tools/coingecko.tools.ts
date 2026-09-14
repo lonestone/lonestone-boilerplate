@@ -23,7 +23,9 @@ export const getCryptoPriceTool = tool({
   inputSchema: cryptoPriceSchema,
   outputSchema: z.object({
     success: z.boolean(),
-    data: z.any(),
+    // Only the success branch carries data, only the failure branch carries error
+    data: z.any().optional(),
+    error: z.string().optional(),
     timestamp: z.string(),
   }),
   execute: async ({ ids, vs_currencies }: z.infer<typeof cryptoPriceSchema>) => {
