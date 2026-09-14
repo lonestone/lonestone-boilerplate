@@ -42,7 +42,6 @@
     "tailwindcss": "catalog:frontend",
     "typescript": "catalog:build",
     "vite": "catalog:build",
-    "vite-plugin-devtools-json": "^1.1.0",
-    "vite-tsconfig-paths": "catalog:build"
+    "vite-plugin-devtools-json": "^1.1.0"
   }
 }
