@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanupBoilerplateFiles } from '../../cli/setup'
+import { cleanupBoilerplateFiles } from './setup'
 import { trackingState } from './tracking-state'
 
 const temporaryProjects: string[] = []

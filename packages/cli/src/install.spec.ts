@@ -13,7 +13,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const installerPath = join(projectRoot, 'install.sh')
 
 function runInstaller(args: string[]): {

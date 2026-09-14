@@ -1,7 +1,6 @@
 packages:
   - packages/*
   - apps/*
-  - .boilerstone
 strictPeerDependencies: true
 # Several packages still declare typescript@^5; TS 6 is compatible here
 peerDependencyRules:
