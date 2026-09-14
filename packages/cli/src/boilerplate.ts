@@ -2343,7 +2343,6 @@ export {
   prepareUpgrade,
   resolveUpgradePath,
   resolveTargetReference,
-  runBoilerplateCli,
   type PrepareUpgradeRequest,
   type PreparedUpgrade,
   type ResolveUpgradePathRequest,
