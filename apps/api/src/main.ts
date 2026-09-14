@@ -12,7 +12,7 @@ import { AppModule } from './app.module'
 import { config } from './config/env.config'
 import { initialiazeTelemetry } from './instrument'
 
-const PREFIX = '/api'
+const PREFIX = config.api.prefix
 
 async function bootstrap() {
   // Initialize telemetry

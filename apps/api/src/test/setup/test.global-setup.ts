@@ -50,6 +50,7 @@ export default async function setup(project: TestProject) {
 
   // API and Auth variables
   process.env.API_PORT = '3000'
+  process.env.API_PREFIX = '/api'
   process.env.BETTER_AUTH_SECRET = 'test-secret-key-for-testing-only'
   process.env.TRUSTED_ORIGINS = 'http://localhost:3000'
 
