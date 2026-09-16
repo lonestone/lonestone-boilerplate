@@ -1,0 +1,42 @@
+{
+  "name": "@lonestone/cli",
+  "version": "1.1.0",
+  "description": "Lonestone boilerplate installer, project setup, and upgrade CLI",
+  "keywords": ["lonestone", "boilerplate", "boilerstone"],
+  "license": "ISC",
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lonestone/lonestone-boilerplate.git",
+    "directory": ".boilerstone/cli"
+  },
+  "type": "module",
+  "bin": {
+    "lonestone": "./bin/lonestone.mjs"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "pnpm run build",
+    "prepack": "pnpm run build",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.typecheck.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "enquirer": "^2.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:build",
+    "typescript": "catalog:build",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=24.13.0"
+  }
+}

@@ -15,7 +15,7 @@ If there is **no** Release PR yet, you may still draft `apps/documentation/src/c
 
 1. Only run in the boilerplate repository itself (`.boilerstone/migration-intentions/` exists). In a consumer project this skill does not apply — point the user to `project-release` or `boilerstone-upgrade`.
 2. If a Release PR is open, read the next version from `.release-please-manifest.json` on that branch. If it is not open, dry-run release-please for the version and draft the note only. Do not pick a version by gut feel.
-3. **Never tag. Never merge the Release PR.** Those are the human's final act. release-please creates the tag after merge.
+3. **Never tag. Never merge the Release PR.** Those are the human's final act. release-please creates the tag after merge, and CI publishes `@lonestone/cli`. Do not publish the CLI by hand.
 
 ## Quick map
 

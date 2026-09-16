@@ -67,6 +67,12 @@ ios/
 # Boilerplate upgrade workspace (temporary)
 .boilerstone/upgrade/
 
+# Leftover Husky internals after switching to Lefthook
+.husky/
+
+# Machine-local Lefthook overrides
+lefthook-local.yml
+
 # Local experiments / scratch notes
 .lab/
 

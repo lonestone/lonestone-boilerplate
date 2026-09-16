@@ -1,4 +1,4 @@
-import { execFileSync, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import {
   copyFileSync,
   existsSync,
@@ -12,7 +12,8 @@ import { dirname, extname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
-import { colorize, isolatedGitEnv } from './utils'
+import { CLI_PACKAGE_NAME, ensurePackageJsonWiring, PRODUCER_ARTIFACTS } from './boilerplate-core.js'
+import { colorize, isolatedGitEnv, runFileSync } from './utils.js'
 
 interface InputPromptOptions {
   message: string
@@ -42,42 +43,28 @@ const { Input, Confirm } = Enquirer as unknown as EnquirerConstructors
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const projectRoot = join(__dirname, '..')
+const projectRoot = process.cwd()
 const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
 
 function getConfiguredBoilerplateRemote(): string {
   return process.env.BOILERPLATE_REPO?.trim() || defaultBoilerplateRemote
 }
 
-// Files and directories that are only useful for maintaining or publishing the
-// boilerplate itself. Consumer projects keep the local upgrade state and CLI, but
-// fetch published intentions from the boilerplate repository.
-// The .boilerstone/ subset deliberately mirrors PRODUCER_ARTIFACTS in
-// boilerplate-core.ts (a spec test enforces the sync): this file must stay
-// importable after `rm -rf .boilerstone`, so it cannot import from there.
+// Producer-only paths removed from generated projects. The `.boilerstone/`
+// subset is derived from PRODUCER_ARTIFACTS so the two lists cannot drift.
+// Keep stripping `install.sh`, `packages/cli`, and root `cli/` from older
+// checkouts that still vendored those layouts.
 export const PRODUCER_FILES_TO_REMOVE = [
-  // The curl installer is the boilerplate's own entry point, not the app's
   'install.sh',
-  '.boilerstone/docs/ai-upgrades-implementation.md',
-  '.boilerstone/docs/pilot-rollout.md',
-  '.boilerstone/docs/release-maintainer-runbook.md',
-  // Producer-side upgrade artifacts published by the boilerplate, not maintained inside consumers
-  '.boilerstone/migration-intentions',
-  '.boilerstone/boilerplate.example.json',
-  // CLI tests stay in the boilerplate repo only — consumers vendor the runtime CLI
-  '.boilerstone/cli/boilerplate-core.spec.ts',
-  '.boilerstone/cli/tracking-state.spec.ts',
-  '.boilerstone/cli/install.spec.ts',
-  '.boilerstone/cli/setup-rename.spec.ts',
-  '.boilerstone/cli/vitest.setup.ts',
-  '.boilerstone/vitest.config.ts',
-  // Maintainer/onboarding-only skills; consumers keep only the boilerstone-upgrade skill
+  'packages/cli',
+  'cli',
   '.claude/skills/boilerstone-release',
   '.cursor/skills/boilerstone-release',
   '.claude/skills/boilerstone-intention',
   '.cursor/skills/boilerstone-intention',
   '.claude/skills/boilerstone-init',
   '.cursor/skills/boilerstone-init',
+  ...PRODUCER_ARTIFACTS.map((artifact) => `.boilerstone/${artifact}`),
 ]
 
 interface AvailableApps {
@@ -133,6 +120,7 @@ function runCommand(command: string, args: string[]): Promise<void> {
       cwd: projectRoot,
       stdio: 'inherit',
       shell: true,
+      windowsHide: true,
     })
 
     child.on('close', (code) => {
@@ -162,9 +150,8 @@ function normalizeGitRemote(value: string): string {
 
 function isBoilerplateMaintainerCheckout(rootPath: string): boolean {
   try {
-    const originUrl = execFileSync('git', ['remote', 'get-url', 'origin'], {
+    const originUrl = runFileSync('git', ['remote', 'get-url', 'origin'], {
       cwd: rootPath,
-      encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'ignore'],
       env: isolatedGitEnv(),
     })
@@ -191,6 +178,7 @@ async function waitForDatabase(maxRetries: number = 30, delayMs: number = 1000):
           cwd: projectRoot,
           stdio: 'pipe',
           shell: true,
+          windowsHide: true,
         },
       )
 
@@ -589,7 +577,7 @@ function updatePackageJsonDependencies(
 
   const content = readFileSync(packagePath, 'utf-8')
   const packageJson = JSON.parse(content)
-  const preservePackages = new Set<string>(['@lonestone/nzoth'])
+  const preservePackages = new Set<string>(['@lonestone/nzoth', CLI_PACKAGE_NAME])
 
   const updateDependenciesSection = (
     deps: Record<string, string> | undefined,
@@ -1061,16 +1049,16 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   console.log(`  ${colorize('✓', 'green')} Configuration values have been updated in .env files`)
 }
 
-function cleanupBoilerplateFiles(rootPath = projectRoot): void {
-  console.log(`\n${colorize('🧹 Cleaning up boilerplate-only files', 'cyan')}\n`)
-
-  initializeBoilerplateTracking(rootPath)
-
+/**
+ * Drop producer-only paths and wire the published CLI. Shared by `pnpm rock` and
+ * `bootstrap` so init/onboard/onboard-style flows cannot drift.
+ */
+export function applyConsumerProjectCleanup(rootPath: string): boolean {
   if (isBoilerplateMaintainerCheckout(rootPath)) {
     console.log(
       `  ${colorize('→', 'cyan')} Skipped producer-side cleanup in boilerplate maintainer checkout`,
     )
-    return
+    return false
   }
 
   for (const file of PRODUCER_FILES_TO_REMOVE) {
@@ -1085,37 +1073,89 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
     }
   }
 
-  // Consumers vendor the CLI runtime only — drop the producer's Vitest wiring.
-  const boilerstonePkgPath = join(rootPath, '.boilerstone/package.json')
-  if (existsSync(boilerstonePkgPath)) {
-    try {
-      const pkg = JSON.parse(readFileSync(boilerstonePkgPath, 'utf-8')) as {
-        scripts?: Record<string, string>
-        devDependencies?: Record<string, string>
-      }
-      let changed = false
-      if (pkg.scripts?.test) {
-        delete pkg.scripts.test
-        changed = true
-      }
-      if (pkg.devDependencies?.vitest) {
-        delete pkg.devDependencies.vitest
-        changed = true
-      }
-      if (changed) {
-        writeFileSync(boilerstonePkgPath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf-8')
-        console.log(
-          `  ${colorize('✓', 'green')} Stripped test tooling from ${colorize('.boilerstone/package.json', 'dim')}`,
-        )
-      }
-    } catch {
-      console.log(
-        `  ${colorize('⚠', 'yellow')} Failed to strip test tooling from ${colorize('.boilerstone/package.json', 'dim')}`,
-      )
-    }
-  }
+  stripPnpmWorkspaceEntry(rootPath, '.boilerstone')
+  stripPnpmWorkspaceEntry(rootPath, '.boilerstone/cli')
+  stripReleasePleaseCliExtraFile(rootPath)
+  wirePublishedCli(rootPath)
+  return true
+}
+
+function cleanupBoilerplateFiles(rootPath = projectRoot): void {
+  console.log(`\n${colorize('🧹 Cleaning up boilerplate-only files', 'cyan')}\n`)
+
+  initializeBoilerplateTracking(rootPath)
+  applyConsumerProjectCleanup(rootPath)
 
   console.log(`\n  ${colorize('✓', 'green')} Boilerplate cleanup completed`)
+}
+
+function stripReleasePleaseCliExtraFile(rootPath: string): void {
+  const configPath = join(rootPath, 'release-please-config.json')
+  if (!existsSync(configPath)) {
+    return
+  }
+  const config = JSON.parse(readFileSync(configPath, 'utf-8')) as {
+    packages?: Record<string, { 'extra-files'?: Array<string | { path?: string }> }>
+  }
+  const rootPackage = config.packages?.['.']
+  const extraFiles = rootPackage?.['extra-files']
+  if (!rootPackage || !Array.isArray(extraFiles)) {
+    return
+  }
+  const next = extraFiles.filter((file) =>
+    typeof file === 'string'
+      ? file !== '.boilerstone/cli/package.json'
+      : file.path !== '.boilerstone/cli/package.json',
+  )
+  if (next.length === extraFiles.length) {
+    return
+  }
+  if (next.length === 0) {
+    delete rootPackage['extra-files']
+  } else {
+    rootPackage['extra-files'] = next
+  }
+  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, 'utf-8')
+  console.log(
+    `  ${colorize('✓', 'green')} Removed CLI extra-files from ${colorize('release-please-config.json', 'dim')}`,
+  )
+}
+
+function stripPnpmWorkspaceEntry(rootPath: string, entry: string): void {
+  const workspacePath = join(rootPath, 'pnpm-workspace.yaml')
+  if (!existsSync(workspacePath)) {
+    return
+  }
+  const content = readFileSync(workspacePath, 'utf-8')
+  const escaped = entry.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const next = content.replace(new RegExp(`^\\s*-\\s+${escaped}\\s*$`, 'm'), '')
+  if (next !== content) {
+    writeFileSync(workspacePath, next, 'utf-8')
+    console.log(
+      `  ${colorize('✓', 'green')} Removed ${colorize(entry, 'dim')} from ${colorize('pnpm-workspace.yaml', 'dim')}`,
+    )
+  }
+}
+
+function wirePublishedCli(rootPath: string): void {
+  const pkgPath = join(rootPath, 'package.json')
+  if (!existsSync(pkgPath)) {
+    return
+  }
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as Parameters<
+    typeof ensurePackageJsonWiring
+  >[0]
+  const cliPkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')) as {
+    version: string
+  }
+  const wiring = ensurePackageJsonWiring(pkg, `^${cliPkg.version}`)
+  if (wiring.changes.length === 0) {
+    return
+  }
+  writeFileSync(pkgPath, `${JSON.stringify(wiring.pkg, null, 2)}\n`, 'utf-8')
+  for (const change of wiring.changes) {
+    console.log(`  ${colorize('✓', 'green')} package.json: ${change}`)
+  }
 }
 
 async function main(): Promise<void> {
@@ -1276,4 +1316,4 @@ if (isDirectExecution) {
   main()
 }
 
-export { cleanupBoilerplateFiles }
+export { cleanupBoilerplateFiles, main as runSetup }

@@ -55,18 +55,16 @@ See the [Project Structure](apps/documentation/src/content/docs/explanations/1_a
 
 ### Create a new project
 
-Run the installer from the directory that should contain the new project:
+Create the project from the directory that should contain it:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh \
-  | sh -s -- init my-project
+pnpm dlx @lonestone/cli init my-project
 ```
 
-The installer resolves the latest stable `vX.Y.Z` tag, creates the project, installs dependencies, and runs the interactive `pnpm rock` setup. Pin a specific release when reproducibility requires it:
+The CLI resolves the latest stable `vX.Y.Z` tag, creates the project, installs dependencies, and runs the interactive `pnpm rock` setup. Pin a specific release when reproducibility requires it:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh \
-  | sh -s -- init my-project --ref v1.0.0
+pnpm dlx @lonestone/cli init my-project --ref v1.0.0
 ```
 
 `--ref` accepts only `latest` (the default) or an explicit release tag such as `v1.0.0`. Branches such as `main` are intentionally rejected.
@@ -76,8 +74,7 @@ curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/mai
 Run this once at the root of a project originally generated from the boilerplate but not yet tracked by Boilerstone:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh \
-  | sh -s -- onboard
+pnpm dlx @lonestone/cli onboard
 ```
 
 Then inspect and prepare the latest applicable upgrade:

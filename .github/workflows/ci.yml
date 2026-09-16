@@ -183,6 +183,9 @@ jobs:
       - name: 🏷️ Ensure local v1.0.0 release tag
         run: git rev-parse --verify --quiet refs/tags/v1.0.0 || git tag v1.0.0 ${{ github.sha }}
 
+      - name: 🏗️ Build @lonestone/cli
+        run: pnpm --filter @lonestone/cli build
+
       - name: 🧪 Run test
         run: pnpm test
         env:

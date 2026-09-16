@@ -261,11 +261,16 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
   }
 }
 
+const CLI_PACKAGE_NAME = '@lonestone/cli'
 const BOILERPLATE_SCRIPT_NAME = 'boilerplate'
-const BOILERPLATE_SCRIPT_COMMAND = 'tsx ./.boilerstone/cli/boilerplate.ts'
+const BOILERPLATE_SCRIPT_COMMAND = 'lonestone'
+const ROCK_SCRIPT_NAME = 'rock'
+const ROCK_SCRIPT_COMMAND = 'lonestone rock'
+const LEGACY_BOILERPLATE_SCRIPT_COMMAND = 'tsx ./.boilerstone/cli/boilerplate.ts'
+const LEGACY_ROCK_SCRIPT_COMMAND = 'tsx ./cli/setup.ts'
 
 // Producer-only artifacts that ship inside .boilerstone/ but are not maintained
-// in a consumer project. Mirrors the .boilerstone/ subset of cli/setup.ts's
+// in a consumer project. Mirrors the .boilerstone/ subset of setup.ts's
 // cleanupBoilerplateFiles(). Paths are relative to the .boilerstone/ directory.
 const PRODUCER_ARTIFACTS = [
   'migration-intentions',
@@ -273,11 +278,9 @@ const PRODUCER_ARTIFACTS = [
   'docs/pilot-rollout.md',
   'docs/ai-upgrades-implementation.md',
   'docs/release-maintainer-runbook.md',
-  'cli/boilerplate-core.spec.ts',
-  'cli/tracking-state.spec.ts',
-  'cli/install.spec.ts',
-  'cli/setup-rename.spec.ts',
-  'cli/vitest.setup.ts',
+  'cli',
+  'package.json',
+  'tsconfig.json',
   'vitest.config.ts',
 ]
 
@@ -294,53 +297,48 @@ interface PackageJsonWiring {
 }
 
 /**
- * Returns a copy of the root package.json wired for the boilerplate CLI:
- * adds the `boilerplate` script and a `tsx` devDependency when missing.
- * Idempotent — existing entries are never overwritten.
+ * Returns a copy of the root package.json wired for the published CLI:
+ * adds `boilerplate` / `rock` scripts and an `@lonestone/cli` devDependency.
+ * Idempotent for custom scripts. Replaces the legacy vendored `tsx` commands
+ * and pins `workspace:*` to a published version range for consumers.
  */
-function ensurePackageJsonWiring(pkg: PackageJsonShape, tsxVersion: string): PackageJsonWiring {
+function ensurePackageJsonWiring(pkg: PackageJsonShape, cliRange: string): PackageJsonWiring {
   const next: PackageJsonShape = { ...pkg }
   const changes: string[] = []
 
   const scripts = { ...next.scripts }
-  if (!scripts[BOILERPLATE_SCRIPT_NAME]) {
-    scripts[BOILERPLATE_SCRIPT_NAME] = BOILERPLATE_SCRIPT_COMMAND
-    changes.push(`added "${BOILERPLATE_SCRIPT_NAME}" script`)
+  if (!scripts[BOILERPLATE_SCRIPT_NAME] || scripts[BOILERPLATE_SCRIPT_NAME] === LEGACY_BOILERPLATE_SCRIPT_COMMAND) {
+    if (scripts[BOILERPLATE_SCRIPT_NAME] !== BOILERPLATE_SCRIPT_COMMAND) {
+      scripts[BOILERPLATE_SCRIPT_NAME] = BOILERPLATE_SCRIPT_COMMAND
+      changes.push(`set "${BOILERPLATE_SCRIPT_NAME}" script to ${BOILERPLATE_SCRIPT_COMMAND}`)
+    }
+  }
+  if (!scripts[ROCK_SCRIPT_NAME] || scripts[ROCK_SCRIPT_NAME] === LEGACY_ROCK_SCRIPT_COMMAND) {
+    if (scripts[ROCK_SCRIPT_NAME] !== ROCK_SCRIPT_COMMAND) {
+      scripts[ROCK_SCRIPT_NAME] = ROCK_SCRIPT_COMMAND
+      changes.push(`set "${ROCK_SCRIPT_NAME}" script to ${ROCK_SCRIPT_COMMAND}`)
+    }
   }
   next.scripts = scripts
 
-  const hasTsx = Boolean(next.dependencies?.tsx) || Boolean(next.devDependencies?.tsx)
-  if (!hasTsx) {
-    next.devDependencies = { ...next.devDependencies, tsx: tsxVersion }
-    changes.push(`added "tsx" devDependency (${tsxVersion})`)
+  const currentRange = next.dependencies?.[CLI_PACKAGE_NAME] ?? next.devDependencies?.[CLI_PACKAGE_NAME]
+  if (!currentRange) {
+    next.devDependencies = { ...next.devDependencies, [CLI_PACKAGE_NAME]: cliRange }
+    changes.push(`added "${CLI_PACKAGE_NAME}" devDependency (${cliRange})`)
+  } else if (currentRange.startsWith('workspace:')) {
+    if (next.dependencies?.[CLI_PACKAGE_NAME]) {
+      next.dependencies = { ...next.dependencies, [CLI_PACKAGE_NAME]: cliRange }
+    } else {
+      next.devDependencies = { ...next.devDependencies, [CLI_PACKAGE_NAME]: cliRange }
+    }
+    changes.push(`pinned "${CLI_PACKAGE_NAME}" to ${cliRange}`)
   }
 
-  return { pkg: next, changes }
-}
-
-/**
- * Strips producer-only test tooling from the vendored `.boilerstone/package.json`
- * so consumer workspaces do not run or depend on the boilerplate's own Vitest suite.
- * Idempotent.
- */
-function ensureConsumerBoilerstonePackageJson(pkg: PackageJsonShape): PackageJsonWiring {
-  const next: PackageJsonShape = {
-    ...pkg,
-    scripts: { ...pkg.scripts },
-    devDependencies: { ...pkg.devDependencies },
-  }
-  const changes: string[] = []
-
-  if (next.scripts?.test) {
-    const { test: _removed, ...scripts } = next.scripts
-    next.scripts = scripts
-    changes.push('removed "test" script')
-  }
-
-  if (next.devDependencies?.vitest) {
-    const { vitest: _removed, ...devDependencies } = next.devDependencies
-    next.devDependencies = devDependencies
-    changes.push('removed "vitest" devDependency')
+  if (next.devDependencies?.enquirer) {
+    const remainingDevDependencies = { ...next.devDependencies }
+    delete remainingDevDependencies.enquirer
+    next.devDependencies = remainingDevDependencies
+    changes.push('removed enquirer devDependency (provided by @lonestone/cli)')
   }
 
   return { pkg: next, changes }
@@ -570,12 +568,12 @@ function promoteUnreleasedIntentions(
 export {
   BOILERPLATE_SCRIPT_COMMAND,
   BOILERPLATE_SCRIPT_NAME,
+  CLI_PACKAGE_NAME,
   compareVersions,
   computeUpgradePath,
   type ComputeUpgradePathOptions,
   ensureGitignoreLine,
   ensurePackageJsonWiring,
-  ensureConsumerBoilerstonePackageJson,
   getFallbackIntentionId,
   getIntentionOrderIssues,
   getUpgradeBranchName,

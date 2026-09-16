@@ -14,17 +14,17 @@ Everything lives here as markdown and JSON. Tool-specific skills (Claude Code, C
 
 ## Getting started
 
-[`install.sh`](../install.sh) is the entry point — needs only `git` and `pnpm`:
+`@lonestone/cli` is the entry point — needs `git` and `pnpm`:
 
 ```bash
 # New project
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- init my-app
+pnpm dlx @lonestone/cli init my-app
 
 # Existing project
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- onboard
+pnpm dlx @lonestone/cli onboard
 
 # Stage an upgrade (does not edit app code)
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- upgrade
+pnpm dlx @lonestone/cli upgrade
 ```
 
 Pinning a version, forks, what `bootstrap` does, and the v1.0.0 catch-up caveat: [how-it-works.md](./docs/how-it-works.md#onboarding).
@@ -42,18 +42,20 @@ pnpm boilerplate upgrade finish --to <version>
 
 ```
 boilerplate.json          # Project state (version + applied/skipped intentions)
-cli/                      # Upgrade CLI
 docs/                     # How it works, upgrade runbook, release runbook
 migration-intentions/     # Published intentions + unreleased/ staging (boilerplate repo only)
+cli/                      # Published as @lonestone/cli (boilerplate repo only)
 ```
 
-In a generated project, the producer side (`migration-intentions/`, release runbook, …) is stripped — intentions then come from git tags. That's expected.
+Generated projects use the published `@lonestone/cli` package (`pnpm boilerplate` / `lonestone`). They do not keep a copy of `cli/`.
+
+In a generated project, the producer side (`cli/`, `migration-intentions/`, release runbook, …) is stripped — intentions then come from git tags. That's expected.
 
 ## Detaching
 
 1. `rm -rf .boilerstone`
-2. Remove the `boilerplate` script from the root `package.json`
-3. Optionally remove the skill shims and the `.boilerstone` workspace / gitignore entries
+2. Remove the `boilerplate` script and the `@lonestone/cli` dependency from the root `package.json`
+3. Optionally remove the skill shims and any leftover `.boilerstone` / `.boilerstone/cli` workspace or gitignore entries
 
 Nothing else in the repository depends on this directory.
 
