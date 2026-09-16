@@ -1,8 +1,8 @@
 import process from 'node:process'
-import { runBoilerplateCli } from './boilerplate'
-import { runInstaller, printInstallerUsage } from './install'
-import { runSetup } from './setup'
-import { colorize } from './utils'
+import { runBoilerplateCli } from './boilerplate.js'
+import { runInstaller, printInstallerUsage } from './install.js'
+import { runSetup } from './setup.js'
+import { colorize } from './utils.js'
 
 function printRootUsage(): void {
   console.log(`

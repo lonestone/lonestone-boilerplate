@@ -1,4 +1,4 @@
-import { execFileSync, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import {
   copyFileSync,
   existsSync,
@@ -12,8 +12,8 @@ import { dirname, extname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
-import { CLI_PACKAGE_NAME, ensurePackageJsonWiring, PRODUCER_ARTIFACTS } from './boilerplate-core'
-import { colorize, isolatedGitEnv } from './utils'
+import { CLI_PACKAGE_NAME, ensurePackageJsonWiring, PRODUCER_ARTIFACTS } from './boilerplate-core.js'
+import { colorize, isolatedGitEnv, runFileSync } from './utils.js'
 
 interface InputPromptOptions {
   message: string
@@ -120,6 +120,7 @@ function runCommand(command: string, args: string[]): Promise<void> {
       cwd: projectRoot,
       stdio: 'inherit',
       shell: true,
+      windowsHide: true,
     })
 
     child.on('close', (code) => {
@@ -149,9 +150,8 @@ function normalizeGitRemote(value: string): string {
 
 function isBoilerplateMaintainerCheckout(rootPath: string): boolean {
   try {
-    const originUrl = execFileSync('git', ['remote', 'get-url', 'origin'], {
+    const originUrl = runFileSync('git', ['remote', 'get-url', 'origin'], {
       cwd: rootPath,
-      encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'ignore'],
       env: isolatedGitEnv(),
     })
@@ -178,6 +178,7 @@ async function waitForDatabase(maxRetries: number = 30, delayMs: number = 1000):
           cwd: projectRoot,
           stdio: 'pipe',
           shell: true,
+          windowsHide: true,
         },
       )
 
@@ -1048,16 +1049,16 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
   console.log(`  ${colorize('✓', 'green')} Configuration values have been updated in .env files`)
 }
 
-function cleanupBoilerplateFiles(rootPath = projectRoot): void {
-  console.log(`\n${colorize('🧹 Cleaning up boilerplate-only files', 'cyan')}\n`)
-
-  initializeBoilerplateTracking(rootPath)
-
+/**
+ * Drop producer-only paths and wire the published CLI. Shared by `pnpm rock` and
+ * `bootstrap` so init/onboard/onboard-style flows cannot drift.
+ */
+export function applyConsumerProjectCleanup(rootPath: string): boolean {
   if (isBoilerplateMaintainerCheckout(rootPath)) {
     console.log(
       `  ${colorize('→', 'cyan')} Skipped producer-side cleanup in boilerplate maintainer checkout`,
     )
-    return
+    return false
   }
 
   for (const file of PRODUCER_FILES_TO_REMOVE) {
@@ -1076,6 +1077,14 @@ function cleanupBoilerplateFiles(rootPath = projectRoot): void {
   stripPnpmWorkspaceEntry(rootPath, '.boilerstone/cli')
   stripReleasePleaseCliExtraFile(rootPath)
   wirePublishedCli(rootPath)
+  return true
+}
+
+function cleanupBoilerplateFiles(rootPath = projectRoot): void {
+  console.log(`\n${colorize('🧹 Cleaning up boilerplate-only files', 'cyan')}\n`)
+
+  initializeBoilerplateTracking(rootPath)
+  applyConsumerProjectCleanup(rootPath)
 
   console.log(`\n  ${colorize('✓', 'green')} Boilerplate cleanup completed`)
 }

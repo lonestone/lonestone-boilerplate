@@ -334,6 +334,13 @@ function ensurePackageJsonWiring(pkg: PackageJsonShape, cliRange: string): Packa
     changes.push(`pinned "${CLI_PACKAGE_NAME}" to ${cliRange}`)
   }
 
+  if (next.devDependencies?.enquirer) {
+    const remainingDevDependencies = { ...next.devDependencies }
+    delete remainingDevDependencies.enquirer
+    next.devDependencies = remainingDevDependencies
+    changes.push('removed enquirer devDependency (provided by @lonestone/cli)')
+  }
+
   return { pkg: next, changes }
 }
 

@@ -9,13 +9,25 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { delimiter, dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { isWindows } from './utils'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const cliBin = join(projectRoot, '.boilerstone/cli/bin/lonestone.mjs')
+
+function writeStub(binPath: string, name: string, source: string): void {
+  const scriptPath = join(binPath, `${name}.cjs`)
+  writeFileSync(scriptPath, source)
+  if (isWindows) {
+    writeFileSync(join(binPath, `${name}.cmd`), `@echo off\r\nnode "${scriptPath}" %*\r\n`)
+    return
+  }
+  writeFileSync(join(binPath, name), source)
+  chmodSync(join(binPath, name), 0o755)
+}
 
 function runInstaller(args: string[]): {
   status: number | null
@@ -28,42 +40,48 @@ function runInstaller(args: string[]): {
   const commandLogPath = join(fixturePath, 'commands.log')
   mkdirSync(binPath)
 
-  writeFileSync(
-    join(binPath, 'git'),
-    `#!/bin/sh
-printf 'git %s\n' "$*" >> "$COMMAND_LOG"
-if [ "$1" = "ls-remote" ]; then
-  printf '%s\n' \
-    'dddddddddddddddddddddddddddddddddddddddd refs/tags/v2.0.0-beta.1' \
-    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb refs/tags/v1.10.0' \
-    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa refs/tags/v1.9.0'
-  exit 0
-fi
-if [ "$1" = "clone" ]; then
-  for target do :; done
-  mkdir -p "$target"
-  exit 0
-fi
-if [ "$1" = "-C" ] && [ "$3" = "rev-parse" ]; then
-  printf '%s\n' 'cccccccccccccccccccccccccccccccccccccccc'
-  exit 0
-fi
-if [ "$1" = "-C" ] && [ "$3" = "describe" ]; then
-  printf '%s\n' 'v1.10.0'
-  exit 0
-fi
-exit 0
+  writeStub(
+    binPath,
+    'git',
+    `#!/usr/bin/env node
+const { appendFileSync, mkdirSync } = require('node:fs')
+const args = process.argv.slice(2)
+appendFileSync(process.env.COMMAND_LOG, \`git \${args.join(' ')}\\n\`)
+if (args[0] === 'ls-remote') {
+  process.stdout.write(
+    [
+      'dddddddddddddddddddddddddddddddddddddddd refs/tags/v2.0.0-beta.1',
+      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb refs/tags/v1.10.0',
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa refs/tags/v1.9.0',
+      '',
+    ].join('\\n'),
+  )
+  process.exit(0)
+}
+if (args[0] === 'clone') {
+  mkdirSync(args.at(-1), { recursive: true })
+  process.exit(0)
+}
+if (args[0] === '-C' && args[2] === 'rev-parse') {
+  process.stdout.write('cccccccccccccccccccccccccccccccccccccccc\\n')
+  process.exit(0)
+}
+if (args[0] === '-C' && args[2] === 'describe') {
+  process.stdout.write('v1.10.0\\n')
+  process.exit(0)
+}
+process.exit(0)
 `,
   )
-  writeFileSync(
-    join(binPath, 'pnpm'),
-    `#!/bin/sh
-printf 'pnpm %s\n' "$*" >> "$COMMAND_LOG"
-exit 0
+  writeStub(
+    binPath,
+    'pnpm',
+    `#!/usr/bin/env node
+const { appendFileSync } = require('node:fs')
+appendFileSync(process.env.COMMAND_LOG, \`pnpm \${process.argv.slice(2).join(' ')}\\n\`)
+process.exit(0)
 `,
   )
-  chmodSync(join(binPath, 'git'), 0o755)
-  chmodSync(join(binPath, 'pnpm'), 0o755)
 
   const result = spawnSync(process.execPath, [cliBin, ...args], {
     cwd: fixturePath,
@@ -71,7 +89,7 @@ exit 0
     env: {
       ...process.env,
       COMMAND_LOG: commandLogPath,
-      PATH: `${binPath}:${process.env.PATH}`,
+      PATH: `${binPath}${delimiter}${process.env.PATH ?? ''}`,
     },
   })
 

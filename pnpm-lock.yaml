@@ -130,9 +130,6 @@ importers:
       enquirer:
         specifier: ^2.4.1
         version: 2.4.1
-      tsx:
-        specifier: ^4.23.5
-        version: 4.23.5
     devDependencies:
       '@types/node':
         specifier: catalog:build

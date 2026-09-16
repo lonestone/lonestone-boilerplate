@@ -1,19 +1,17 @@
-import { execFileSync, spawnSync } from 'node:child_process'
-import {
-  closeSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  openSync,
-  renameSync,
-  rmSync,
-} from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
-import { bootstrapProject } from './boilerplate'
-import { colorize, isolatedGitEnv } from './utils'
+import { bootstrapProject } from './boilerplate.js'
+import {
+  canReadTty,
+  colorize,
+  isolatedGitEnv,
+  movePath,
+  runFileSync,
+  spawnProcessSync,
+} from './utils.js'
 
 const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate'
 
@@ -37,7 +35,7 @@ function die(message: string): never {
 }
 
 function need(command: string): void {
-  const result = spawnSync(command, ['--version'], { encoding: 'utf-8' })
+  const result = spawnProcessSync(command, ['--version'], { encoding: 'utf-8' })
   if (result.error || result.status !== 0) {
     die(`Required command not found: ${command}`)
   }
@@ -48,16 +46,15 @@ function gitEnv(): NodeJS.ProcessEnv {
 }
 
 function runGit(args: string[], cwd?: string): string {
-  return execFileSync('git', args, {
+  return runFileSync('git', args, {
     cwd,
-    encoding: 'utf-8',
     env: gitEnv(),
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim()
 }
 
 function runPnpm(args: string[], cwd: string, env: NodeJS.ProcessEnv = {}): void {
-  const result = spawnSync('pnpm', args, {
+  const result = spawnProcessSync('pnpm', args, {
     cwd,
     env: { ...gitEnv(), ...env },
     stdio: 'inherit',
@@ -104,7 +101,9 @@ function validateReleaseRef(ref: string): void {
     return
   }
   if (!/^v\d+\.\d+\.\d+$/.test(ref)) {
-    die("--ref accepts only 'latest' or a release tag (vX.Y.Z); branches such as main are not supported")
+    die(
+      "--ref accepts only 'latest' or a release tag (vX.Y.Z); branches such as main are not supported",
+    )
   }
 }
 
@@ -113,10 +112,10 @@ function resolveReleaseRef(repoUrl: string, ref: string): string {
     return ref
   }
 
-  const output = execFileSync(
+  const output = runFileSync(
     'git',
     ['ls-remote', '--tags', '--refs', '--sort=-version:refname', repoUrl, 'v*'],
-    { encoding: 'utf-8', env: gitEnv() },
+    { env: gitEnv() },
   )
   const tag = output
     .split('\n')
@@ -128,16 +127,6 @@ function resolveReleaseRef(repoUrl: string, ref: string): string {
   }
   info(`Resolved latest release: ${tag}`)
   return tag
-}
-
-function canReadTty(): boolean {
-  try {
-    const fd = openSync('/dev/tty', 'r')
-    closeSync(fd)
-    return true
-  } catch {
-    return false
-  }
 }
 
 async function promptYesNo(message: string, defaultYes: boolean): Promise<boolean> {
@@ -171,9 +160,18 @@ function fetchSubdirs(repoUrl: string, ref: string, subdirs: string[], cwd: stri
   const tmp = mkdtempSync(join(tmpdir(), 'lonestone-fetch-'))
   try {
     info(`Fetching ${subdirs.join(' ')} from ${repoUrl}@${ref}`)
-    runGit(
-      ['clone', '--quiet', '--depth', '1', '--filter=blob:none', '--sparse', '--branch', ref, repoUrl, tmp],
-    )
+    runGit([
+      'clone',
+      '--quiet',
+      '--depth',
+      '1',
+      '--filter=blob:none',
+      '--sparse',
+      '--branch',
+      ref,
+      repoUrl,
+      tmp,
+    ])
     runGit(['sparse-checkout', 'set', ...subdirs], tmp)
     for (const subdir of subdirs) {
       const source = join(tmp, subdir)
@@ -182,7 +180,7 @@ function fetchSubdirs(repoUrl: string, ref: string, subdirs: string[], cwd: stri
       }
       const destination = join(cwd, subdir)
       mkdirSync(dirname(destination), { recursive: true })
-      renameSync(source, destination)
+      movePath(source, destination)
       ok(`Fetched ${subdir}`)
     }
   } catch (error) {
@@ -211,7 +209,7 @@ async function offerOnboardCommit(cwd: string): Promise<void> {
     return
   }
 
-  spawnSync(
+  spawnProcessSync(
     'git',
     [
       'add',
@@ -225,13 +223,13 @@ async function offerOnboardCommit(cwd: string): Promise<void> {
     { cwd, env: gitEnv(), stdio: 'ignore' },
   )
 
-  const staged = spawnSync('git', ['diff', '--cached', '--quiet'], { cwd, env: gitEnv() })
+  const staged = spawnProcessSync('git', ['diff', '--cached', '--quiet'], { cwd, env: gitEnv() })
   if (staged.status === 0) {
     info('Nothing to commit')
     return
   }
 
-  const commit = spawnSync(
+  const commit = spawnProcessSync(
     'git',
     ['commit', '--quiet', '-m', 'chore: onboard boilerstone upgrade tracking'],
     { cwd, env: gitEnv(), stdio: 'inherit' },
@@ -250,7 +248,7 @@ async function offerOnboardCommit(cwd: string): Promise<void> {
     return
   }
 
-  const retry = spawnSync(
+  const retry = spawnProcessSync(
     'git',
     ['commit', '--quiet', '--no-verify', '-m', 'chore: onboard boilerstone upgrade tracking'],
     { cwd, env: gitEnv(), stdio: 'inherit' },
@@ -320,10 +318,7 @@ export async function runInstaller(argv: string[]): Promise<void> {
       sourceCommit = ''
     }
     try {
-      sourceVersion = runGit(
-        ['describe', '--tags', '--exact-match', '--match', 'v*'],
-        dir,
-      )
+      sourceVersion = runGit(['describe', '--tags', '--exact-match', '--match', 'v*'], dir)
     } catch {
       try {
         sourceVersion = runGit(['describe', '--tags', '--abbrev=0', '--match', 'v*'], dir)

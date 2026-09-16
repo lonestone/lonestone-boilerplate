@@ -5,18 +5,9 @@ import type {
   ReferencePathDeclaration,
   ReleaseInfo,
   UpgradePath,
-} from './boilerplate-core'
-import type { TrackingState } from './tracking-state'
-import { execFileSync } from 'node:child_process'
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+} from './boilerplate-core.js'
+import type { TrackingState } from './tracking-state.js'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
@@ -37,9 +28,10 @@ import {
   promoteUnreleasedIntentions,
   readOptionValue,
   resolveTargetVersion,
-} from './boilerplate-core'
-import { colorize, isolatedGitEnv } from './utils'
-import { trackingState } from './tracking-state'
+} from './boilerplate-core.js'
+import { applyConsumerProjectCleanup } from './setup.js'
+import { colorize, isolatedGitEnv, movePath, runFileSync } from './utils.js'
+import { trackingState } from './tracking-state.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -100,9 +92,8 @@ function normalizeSemanticVersion(version: string, label: 'source' | 'target'): 
 }
 
 function runGitCommand(args: string[], cwd = projectRoot): string {
-  return execFileSync('git', args, {
+  return runFileSync('git', args, {
     cwd,
-    encoding: 'utf-8',
     env: isolatedGitEnv(),
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim()
@@ -260,15 +251,15 @@ function fetchBoilerplateReleases(
 }
 
 function archiveGitReference(reference: string, destination: string, cwd = projectRoot): void {
-  // --output avoids buffering the archive on stdout (execFileSync caps stdout at 1MB by default)
+  // --output avoids buffering the archive on stdout (the default cap is 1MB)
   const tarFile = join(destination, '.reference.tar')
   try {
-    execFileSync(
+    runFileSync(
       'git',
       ['archive', '--format=tar', `--output=${tarFile}`, reference, '.boilerstone/'],
       { cwd, env: isolatedGitEnv() },
     )
-    execFileSync('tar', ['-xf', tarFile, '-C', destination])
+    runFileSync('tar', ['-xf', tarFile, '-C', destination])
   } finally {
     rmSync(tarFile, { force: true })
   }
@@ -300,12 +291,12 @@ function extractIntentionReferencePaths(
   }
 
   const tarFile = join(destination, '.reference.tar')
-  execFileSync(
+  runFileSync(
     'git',
     ['archive', '--format=tar', `--output=${tarFile}`, targetTag, ...existingPaths],
     { cwd, env: isolatedGitEnv() },
   )
-  execFileSync('tar', ['-xf', tarFile, '-C', destination])
+  runFileSync('tar', ['-xf', tarFile, '-C', destination])
   rmSync(tarFile, { force: true })
   return existingPaths
 }
@@ -350,9 +341,8 @@ function listGitMarkdownFiles(reference: string, directory: string, cwd = projec
 }
 
 function readGitFile(reference: string, filePath: string, cwd = projectRoot): string {
-  return execFileSync('git', ['show', `${reference}:${filePath}`], {
+  return runFileSync('git', ['show', `${reference}:${filePath}`], {
     cwd,
-    encoding: 'utf-8',
     env: isolatedGitEnv(),
   })
 }
@@ -1031,7 +1021,7 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
     process.exit(1)
   }
 
-  // 1. Wire the root package.json (boilerplate script + tsx runtime).
+  // 1. Wire the root package.json (boilerplate / rock scripts + published CLI).
   const pkgPath = join(root, 'package.json')
   if (!existsSync(pkgPath)) {
     console.error(`  ${colorize('❌', 'red')} No package.json found in ${root}`)
@@ -1059,19 +1049,9 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
     console.log(`  ${colorize('✓', 'green')} .gitignore already ignores .boilerstone/upgrade/`)
   }
 
-  // 3. Switch .boilerstone/ to consumer mode (drop producer-only artifacts).
-  let removed = 0
-  for (const artifact of PRODUCER_ARTIFACTS) {
-    const target = join(dir, artifact)
-    if (existsSync(target)) {
-      rmSync(target, { recursive: true, force: true })
-      console.log(`  ${colorize('✓', 'green')} removed producer artifact .boilerstone/${artifact}`)
-      removed += 1
-    }
-  }
-  if (removed === 0) {
-    console.log(`  ${colorize('✓', 'green')} .boilerstone/ already in consumer mode`)
-  }
+  // 3. Drop producer-only paths (same pass as `pnpm rock`).
+  console.log(`\n${colorize('🧹 Switching .boilerstone/ to consumer mode', 'cyan')}\n`)
+  applyConsumerProjectCleanup(root)
 
   // 4. Initialize tracking state (detects/confirms the source version).
   await cmdUpgradeInit(projectPath)
@@ -1949,7 +1929,7 @@ async function prepareUpgrade(options: PrepareUpgradeRequest): Promise<PreparedU
     writeFileSync(join(temporaryUpgradeDir, 'upgrade-session.md'), sessionPrompt, 'utf-8')
 
     ensureUpgradeBranch(absolutePath, branchName)
-    renameSync(temporaryUpgradeDir, upgradeDir)
+    movePath(temporaryUpgradeDir, upgradeDir)
     isPublished = true
 
     return {

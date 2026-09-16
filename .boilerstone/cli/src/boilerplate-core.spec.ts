@@ -12,10 +12,11 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { cleanupBoilerplateFiles, PRODUCER_FILES_TO_REMOVE } from './setup'
-import { isolatedGitEnv } from './utils'
+import { isolatedGitEnv, spawnProcessSync } from './utils'
 import {
   archiveGitReference,
   extractIntentionReferencePaths,
@@ -49,7 +50,7 @@ import {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = resolve(__dirname, '../../..')
-const cliPath = join(projectRoot, '.boilerstone/cli/src/bin.ts')
+const cliPath = join(projectRoot, '.boilerstone/cli/bin/lonestone.mjs')
 
 function createIntentionContent(options: {
   id?: string
@@ -76,7 +77,7 @@ function runCli(
   projectPath?: string,
   env: NodeJS.ProcessEnv = {},
 ): { status: number | null; stdout: string; stderr: string } {
-  const result = spawnSync('pnpm', ['exec', 'tsx', cliPath, ...args], {
+  const result = spawnSync(process.execPath, [cliPath, ...args], {
     cwd: projectRoot,
     encoding: 'utf-8',
     env: {
@@ -99,7 +100,7 @@ function runCli(
 }
 
 function runGit(cwd: string, args: string[]): void {
-  const result = spawnSync('git', args, { cwd, encoding: 'utf-8', env: isolatedGitEnv() })
+  const result = spawnProcessSync('git', args, { cwd, encoding: 'utf-8', env: isolatedGitEnv() })
   if (result.status !== 0) {
     throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`)
   }
@@ -471,7 +472,7 @@ describe('boilerplate core', () => {
           boilerplate: 'tsx ./.boilerstone/cli/boilerplate.ts',
           rock: 'tsx ./cli/setup.ts',
         },
-        devDependencies: { '@lonestone/cli': 'workspace:*' },
+        devDependencies: { '@lonestone/cli': 'workspace:*', enquirer: '^2.4.1' },
       },
       '^1.1.0',
     )
@@ -479,6 +480,10 @@ describe('boilerplate core', () => {
     expect(result.pkg.scripts?.boilerplate).toBe('lonestone')
     expect(result.pkg.scripts?.rock).toBe('lonestone rock')
     expect(result.pkg.devDependencies?.['@lonestone/cli']).toBe('^1.1.0')
+    expect(result.pkg.devDependencies?.enquirer).toBeUndefined()
+    expect(result.changes).toContain(
+      'removed enquirer devDependency (provided by @lonestone/cli)',
+    )
   })
 
   it('never overwrites an existing boilerplate script or cli dependency', () => {
@@ -1474,11 +1479,13 @@ describe('boilerplate CLI smoke', () => {
       expect(sessionPrompt).toContain('**adapt**: compare project, source, and target')
       expect(sessionPrompt).toContain('- [ ] 1. `v1.0.0/standardize-oxlint-oxfmt` (migration)')
 
-      const branch = spawnSync('git', ['branch', '--show-current'], {
+      const branch = spawnProcessSync('git', ['branch', '--show-current'], {
         cwd: projectPath,
         encoding: 'utf-8',
         env: isolatedGitEnv(),
-      }).stdout.trim()
+      })
+        .stdout.toString()
+        .trim()
       expect(branch).toBe('upgrade/v0.9.0-to-v1.0.0')
 
       const record = runCli([
@@ -1944,11 +1951,13 @@ describe('boilerplate CLI smoke', () => {
         'producer checkout HEAD is the temporary source of truth',
       )
       expect(
-        spawnSync('git', ['branch', '--show-current'], {
+        spawnProcessSync('git', ['branch', '--show-current'], {
           cwd: projectPath,
           encoding: 'utf-8',
           env: isolatedGitEnv(),
-        }).stdout.trim(),
+        })
+          .stdout.toString()
+          .trim(),
       ).toBe('upgrade/v0.0.0-to-v9.9.9')
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
@@ -1973,11 +1982,13 @@ describe('boilerplate CLI smoke', () => {
       )
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'consumer project'])
-      const initialBranch = spawnSync('git', ['branch', '--show-current'], {
+      const initialBranch = spawnProcessSync('git', ['branch', '--show-current'], {
         cwd: projectPath,
         encoding: 'utf-8',
         env: isolatedGitEnv(),
-      }).stdout.trim()
+      })
+        .stdout.toString()
+        .trim()
 
       writeProjectFile(
         producerPath,
@@ -2013,11 +2024,13 @@ describe('boilerplate CLI smoke', () => {
       ).rejects.toThrow('Producer .boilerstone/ has uncommitted changes')
       expect(existsSync(join(projectPath, '.boilerstone/upgrade'))).toBe(false)
       expect(
-        spawnSync('git', ['branch', '--show-current'], {
+        spawnProcessSync('git', ['branch', '--show-current'], {
           cwd: projectPath,
           encoding: 'utf-8',
           env: isolatedGitEnv(),
-        }).stdout.trim(),
+        })
+          .stdout.toString()
+          .trim(),
       ).toBe(initialBranch)
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
@@ -2120,11 +2133,13 @@ describe('boilerplate CLI smoke', () => {
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'release with missing copy source'])
       runGit(projectPath, ['tag', 'v1.1.0'])
-      const initialBranch = spawnSync('git', ['branch', '--show-current'], {
+      const initialBranch = spawnProcessSync('git', ['branch', '--show-current'], {
         cwd: projectPath,
         encoding: 'utf-8',
         env: isolatedGitEnv(),
-      }).stdout.trim()
+      })
+        .stdout.toString()
+        .trim()
 
       const result = runCli(['upgrade', 'prepare', '--project', projectPath, '--to', '1.1.0'])
 
@@ -2137,11 +2152,13 @@ describe('boilerplate CLI smoke', () => {
         ),
       ).toBe(false)
       expect(
-        spawnSync('git', ['branch', '--show-current'], {
+        spawnProcessSync('git', ['branch', '--show-current'], {
           cwd: projectPath,
           encoding: 'utf-8',
           env: isolatedGitEnv(),
-        }).stdout.trim(),
+        })
+          .stdout.toString()
+          .trim(),
       ).toBe(initialBranch)
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
@@ -2273,8 +2290,27 @@ describe('bootstrap command', () => {
       writeProjectFile(
         projectPath,
         'package.json',
-        `${JSON.stringify({ name: 'legacy-app', scripts: { dev: 'vite' } }, null, 2)}\n`,
+        `${JSON.stringify(
+          {
+            name: 'legacy-app',
+            scripts: {
+              dev: 'vite',
+              rock: 'tsx ./cli/setup.ts',
+              boilerplate: 'tsx ./.boilerstone/cli/boilerplate.ts',
+            },
+            devDependencies: { enquirer: '^2.4.1' },
+          },
+          null,
+          2,
+        )}\n`,
       )
+      writeProjectFile(
+        projectPath,
+        'pnpm-workspace.yaml',
+        'packages:\n  - apps/*\n  - .boilerstone\n  - .boilerstone/cli\n',
+      )
+      writeProjectFile(projectPath, 'install.sh', '#!/usr/bin/env sh\n')
+      writeProjectFile(projectPath, 'cli/setup.ts', "const oldPrefix = '@boilerstone'\n")
       writeProjectFile(projectPath, '.gitignore', 'node_modules\n')
       writeProjectFile(
         projectPath,
@@ -2304,11 +2340,17 @@ describe('bootstrap command', () => {
       expect(pkg.scripts.boilerplate).toBe('lonestone')
       expect(pkg.scripts.rock).toBe('lonestone rock')
       expect(pkg.devDependencies['@lonestone/cli']).toMatch(/^\^/)
+      expect(pkg.devDependencies.enquirer).toBeUndefined()
       expect(readFileSync(join(projectPath, '.gitignore'), 'utf-8')).toContain(
         '.boilerstone/upgrade/',
       )
+      expect(readFileSync(join(projectPath, 'pnpm-workspace.yaml'), 'utf-8')).not.toMatch(
+        /^\s*-\s+\.boilerstone(\/cli)?\s*$/m,
+      )
 
       // Producer-only artifacts dropped, consumer files preserved
+      expect(existsSync(join(projectPath, 'install.sh'))).toBe(false)
+      expect(existsSync(join(projectPath, 'cli'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/cli'))).toBe(false)
@@ -2416,6 +2458,12 @@ describe('setup cleanup', () => {
       writeProjectFile(projectPath, '.boilerstone/docs/pilot-rollout.md', '# Pilot')
       writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
       writeProjectFile(projectPath, 'install.sh', '#!/usr/bin/env sh\n')
+      writeProjectFile(projectPath, 'cli/setup.ts', "const oldPrefix = '@boilerstone'\n")
+      writeProjectFile(
+        projectPath,
+        'pnpm-workspace.yaml',
+        'packages:\n  - apps/*\n  - .boilerstone/cli\n',
+      )
 
       cleanupBoilerplateFiles(projectPath)
 
@@ -2451,6 +2499,10 @@ describe('setup cleanup', () => {
       )
       expect(existsSync(join(projectPath, '.boilerstone/docs/pilot-rollout.md'))).toBe(false)
       expect(existsSync(join(projectPath, 'install.sh'))).toBe(false)
+      expect(existsSync(join(projectPath, 'cli'))).toBe(false)
+      expect(readFileSync(join(projectPath, 'pnpm-workspace.yaml'), 'utf-8')).not.toContain(
+        '.boilerstone/cli',
+      )
     } finally {
       if (previousVersion === undefined) {
         delete process.env.BOILERPLATE_SOURCE_VERSION

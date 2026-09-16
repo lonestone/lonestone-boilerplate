@@ -110,5 +110,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build @lonestone/cli
+        run: pnpm --filter @lonestone/cli build
+
       - name: Publish @lonestone/cli
         run: pnpm --filter @lonestone/cli publish --access public --no-git-checks

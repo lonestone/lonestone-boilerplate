@@ -202,3 +202,33 @@ jobs:
           BETTER_AUTH_SECRET: test_secret
           TRUSTED_ORIGINS: '*'
           NODE_ENV: test
+
+  test-cli-windows:
+    name: 🧪 CLI (Windows)
+    needs: [setup]
+    runs-on: windows-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: 🔧 Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ needs.setup.outputs.node-version }}
+          pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
+
+      - name: 📚 Install the CLI workspace
+        run: pnpm install --frozen-lockfile --filter "@lonestone/cli..."
+
+      - name: 🏷️ Ensure local v1.0.0 release tag
+        shell: bash
+        run: git rev-parse --verify --quiet refs/tags/v1.0.0 || git tag v1.0.0 ${{ github.sha }}
+
+      - name: 🏗️ Build the CLI package
+        run: pnpm --filter @lonestone/cli build
+
+      - name: 🧪 Run CLI tests
+        run: pnpm --filter @lonestone/cli test
