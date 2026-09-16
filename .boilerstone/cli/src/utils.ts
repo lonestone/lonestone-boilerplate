@@ -50,6 +50,12 @@ function resolveCommand(command: string): string {
   return command
 }
 
+/** cmd.exe shims need a shell; native binaries like git.exe must not use one. */
+function needsWindowsShell(command: string): boolean {
+  const base = command.replace(/\.cmd$/i, '')
+  return isWindows && (base === 'pnpm' || base === 'npm' || base === 'npx')
+}
+
 /**
  * Run a binary and return stdout. On Windows, cmd shims (pnpm.cmd) and .exe
  * files are resolved the same way a user terminal would.
@@ -65,7 +71,7 @@ export function runFileSync(
       env: options.env as NodeJS.ProcessEnv | undefined,
       encoding: 'utf-8',
       stdio: options.stdio,
-      shell: true,
+      shell: needsWindowsShell(command),
       windowsHide: true,
     })
     if (result.error) {
@@ -89,7 +95,7 @@ export function spawnProcessSync(
 ): SpawnSyncReturns<string | Buffer> {
   return spawnSync(resolveCommand(command), args, {
     ...options,
-    shell: options.shell ?? isWindows,
+    shell: options.shell ?? needsWindowsShell(command),
     windowsHide: true,
   })
 }
