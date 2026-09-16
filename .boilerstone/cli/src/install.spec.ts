@@ -18,6 +18,13 @@ import { isWindows } from './utils'
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const cliBin = join(projectRoot, '.boilerstone/cli/bin/lonestone.mjs')
 
+function isolatedTestPath(binPath: string): string {
+  const filtered = (process.env.PATH ?? '')
+    .split(delimiter)
+    .filter((entry) => !/[\\/]git[\\/]/i.test(entry))
+  return `${binPath}${delimiter}${filtered.join(delimiter)}`
+}
+
 function writeStub(binPath: string, name: string, source: string): void {
   const scriptPath = join(binPath, `${name}.cjs`)
   writeFileSync(scriptPath, source)
@@ -89,7 +96,7 @@ process.exit(0)
     env: {
       ...process.env,
       COMMAND_LOG: commandLogPath,
-      PATH: `${binPath}${delimiter}${process.env.PATH ?? ''}`,
+      PATH: isolatedTestPath(binPath),
     },
   })
 

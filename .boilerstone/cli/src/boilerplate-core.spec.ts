@@ -112,7 +112,12 @@ function createGitRepo(prefix: string): string {
   runGit(repoDir, ['config', 'user.email', 'test@example.com'])
   runGit(repoDir, ['config', 'user.name', 'Test'])
   runGit(repoDir, ['config', 'commit.gpgsign', 'false'])
+  runGit(repoDir, ['config', 'core.autocrlf', 'false'])
   return repoDir
+}
+
+function readProjectText(projectPath: string, filePath: string): string {
+  return readFileSync(join(projectPath, filePath), 'utf-8').replace(/\r\n/g, '\n')
 }
 
 function writeProjectFile(projectPath: string, filePath: string, content: string): void {
@@ -1867,10 +1872,10 @@ describe('boilerplate CLI smoke', () => {
       expect(result.targetReference.provenance).toBe('consumer-ref')
       expect(selectableIds).toEqual(['v1.1.0/update-demo'])
       const referenceDir = join(projectPath, '.boilerstone', 'upgrade', 'reference')
-      expect(readFileSync(join(referenceDir, 'source', 'apps', 'demo.txt'), 'utf-8')).toBe(
+      expect(readProjectText(projectPath, '.boilerstone/upgrade/reference/source/apps/demo.txt')).toBe(
         'source version\n',
       )
-      expect(readFileSync(join(referenceDir, 'target', 'apps', 'demo.txt'), 'utf-8')).toBe(
+      expect(readProjectText(projectPath, '.boilerstone/upgrade/reference/target/apps/demo.txt')).toBe(
         'target version\n',
       )
       expect(readFileSync(join(referenceDir, 'README.md'), 'utf-8')).toContain(
@@ -1944,7 +1949,7 @@ describe('boilerplate CLI smoke', () => {
       expect(
         readFileSync(join(upgradeDir, 'intentions/01-v9.9.9-draft-example.md'), 'utf-8'),
       ).toContain('Committed producer HEAD intention.')
-      expect(readFileSync(join(upgradeDir, 'reference/target/apps/draft.txt'), 'utf-8')).toBe(
+      expect(readProjectText(projectPath, '.boilerstone/upgrade/reference/target/apps/draft.txt')).toBe(
         'committed producer HEAD reference\n',
       )
       expect(readFileSync(join(upgradeDir, 'reference/README.md'), 'utf-8')).toContain(
