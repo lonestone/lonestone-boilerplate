@@ -6,7 +6,7 @@ Valid types and scopes live in [`commitlint.config.ts`](./commitlint.config.ts).
 
 ## Commits
 
-We follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). Every message looks like `type(scope): description`. A local git hook (lefthook) runs commitlint on the message. If it fails, the error tells you which rule broke; the allowed values are in `commitlint.config.ts`. Pre-push runs lint and typecheck; tests run in CI.
+We follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). Every message looks like `type(scope): description`. A local git hook (lefthook) runs commitlint on the message. If it fails, the error tells you which rule broke; the allowed values are in `commitlint.config.ts`. Pre-push runs lint and typecheck; tests run in CI. Those hooks are the same on Windows, macOS, and Linux.
 
 **WIP commits on your branch only need that format.** Half-steps, typo fixes, and "wip" subjects are fine. They will never land on `main` as commits. We squash. Their messages die with them unless you deliberately promote the *content* into the pull request description.
 

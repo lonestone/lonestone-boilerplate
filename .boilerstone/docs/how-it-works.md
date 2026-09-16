@@ -8,14 +8,14 @@ A project generated from this boilerplate diverges from day one. After the first
 
 ## The idea: ship meaning, not diffs
 
-So the boilerplate doesn't ship diffs. Each release ships **migration intentions**: short markdown files that describe what a change *means*, so that someone else can redo it in a different codebase:
+So the boilerplate doesn't ship diffs. Each release ships **migration intentions**: short markdown files that describe what a change _means_, so that someone else can redo it in a different codebase:
 
 - **Goal** — the end state to reach.
 - **Why** — the reason the boilerplate changed.
 - **Applies when / Do not apply when** — concrete signals for deciding whether the change concerns this project. Agents propose apply-or-skip and a human confirms; agents never decide alone.
 - **Reference paths** — which files to compare to understand the change.
 
-One decision mistake comes up often enough to call out here. Take an intention like "migrate from ESLint to oxlint": finding ESLint in the project doesn't mean the intention is irrelevant — ESLint is exactly what the intention is there to replace, so it's the signal to *apply*. Skip an intention only when the concern doesn't exist in the project at all (say, an AI-related intention in a project with no AI features).
+One decision mistake comes up often enough to call out here. Take an intention like "migrate from ESLint to oxlint": finding ESLint in the project doesn't mean the intention is irrelevant — ESLint is exactly what the intention is there to replace, so it's the signal to _apply_. Skip an intention only when the concern doesn't exist in the project at all (say, an AI-related intention in a project with no AI features).
 
 Whoever runs the upgrade — you, or an AI agent — reads each intention and replays the smallest safe equivalent change in your project, keeping your behavior intact. The boilerplate declares the knowledge; your project executes it locally.
 
@@ -31,7 +31,7 @@ A few state-file details that occasionally matter (skip this on first read): the
 
 ## Onboarding
 
-`@lonestone/cli` is the entry point. It needs `git` and `pnpm`:
+`@lonestone/cli` is the entry point. It needs `git` and `pnpm`, and it runs the same way on Windows, macOS, and Linux:
 
 ```bash
 pnpm dlx @lonestone/cli init my-app
@@ -62,7 +62,7 @@ From there everything is local: intentions are read from the fetched refs, and r
 
 ## The commands, in the order you meet them
 
-**`bootstrap`** — wires an *existing* project into the system (see [Onboarding](#onboarding)). New projects get all of this through `pnpm rock` instead.
+**`bootstrap`** — wires an _existing_ project into the system (see [Onboarding](#onboarding)). New projects get all of this through `pnpm rock` instead.
 
 **`upgrade status`** — answers "where am I, and am I ready?": your current version, the intentions already applied or skipped, and readiness checks (state file valid, worktree clean, release tags available). It changes nothing — it only reports, and prints the command to fix anything missing.
 
@@ -73,7 +73,7 @@ From there everything is local: intentions are read from the fetched refs, and r
 **`upgrade prepare --to <version>`** — builds the workspace for the upgrade. This is the first command that touches your repo, and it's deliberately paranoid about how:
 
 1. it refuses to run if your worktree is dirty or an upgrade workspace already exists;
-2. it resolves the path and intention selection *before* changing anything;
+2. it resolves the path and intention selection _before_ changing anything;
 3. it builds the complete workspace in a temporary directory first, and fails there if the target ref or a required `copy` path is missing;
 4. only once everything checks out does it create (or confirm) the branch `upgrade/v<current>-to-v<target>` and publish `.boilerstone/upgrade/` in one move: numbered intentions, source and target file projections, provenance, the `copy`/`adapt` policy, and a session checklist.
 
