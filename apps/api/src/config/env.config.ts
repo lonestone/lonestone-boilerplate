@@ -61,6 +61,7 @@ export const configValidationSchema = z.object({
   EMAIL_FROM: z.string().email().default('noreply@lonestone.io'),
 
   // Storage
+  STORAGE_ENABLED: z.stringbool().default(false),
   STORAGE_BUCKET: z.string().min(1).default('lonestone'),
   STORAGE_ENDPOINT: z.url().optional().default('http://localhost:9000'),
   STORAGE_REGION: z.string().min(1).default('us-east-1'),
@@ -128,6 +129,7 @@ export const config = {
     from: configParsed.data.EMAIL_FROM,
   },
   storage: {
+    enabled: configParsed.data.STORAGE_ENABLED,
     bucket: configParsed.data.STORAGE_BUCKET,
     endpoint: configParsed.data.STORAGE_ENDPOINT,
     region: configParsed.data.STORAGE_REGION,

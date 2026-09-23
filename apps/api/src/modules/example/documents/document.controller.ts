@@ -20,19 +20,22 @@ import {
   ApiOkResponse,
   ApiProduces,
 } from '@nestjs/swagger'
-import { config } from '../../config/env.config'
-import { AuthGuard } from '../auth/auth.guard'
+import { config } from '../../../config/env.config'
+import { LoggedInBetterAuthSession } from '../../auth/auth.config'
+import { Session } from '../../auth/auth.decorator'
+import { AuthGuard } from '../../auth/auth.guard'
 import {
-  StoredObject,
-  storageKeySchema,
-  storageMultipartSchema,
-  storedObjectSchema,
-} from './contracts/storage.contract'
-import { StorageService } from './storage.service'
+  DocumentResponse,
+  documentIdSchema,
+  documentMultipartSchema,
+  documentSchema,
+} from './contracts/document.contract'
+import { DocumentMapper } from './document.mapper'
+import { DocumentService } from './document.service'
 
 const SWAGGER_API_PARAMETERS = 'swagger/apiParameters'
 
-function ApiStorageUploadBody(): MethodDecorator {
+function ApiDocumentUploadBody(): MethodDecorator {
   const apiBody = ApiBody({
     schema: {
       type: 'object',
@@ -66,16 +69,19 @@ function isBodyParameter(value: unknown): boolean {
   return typeof value === 'object' && value !== null && 'in' in value && value.in === 'body'
 }
 
-@TypedController('storage', undefined, {
-  tags: ['Storage'],
+@TypedController('documents', undefined, {
+  tags: ['Documents'],
 })
 @UseGuards(AuthGuard)
-export class StorageController {
-  constructor(private readonly storageService: StorageService) {}
+export class DocumentController {
+  constructor(
+    private readonly documentService: DocumentService,
+    private readonly documentMapper: DocumentMapper,
+  ) {}
 
-  @ApiStorageUploadBody()
+  @ApiDocumentUploadBody()
   @ApiConsumes('multipart/form-data')
-  @TypedRoute.Post('', storedObjectSchema, { status: 201 })
+  @TypedRoute.Post('', documentSchema, { status: 201 })
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
@@ -84,23 +90,26 @@ export class StorageController {
     }),
   )
   async upload(
-    @TypedMultipartBody(storageMultipartSchema) _body: Record<string, never>,
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedMultipartBody(documentMultipartSchema) _body: Record<string, never>,
     @UploadedFile() file?: Express.Multer.File,
-  ): Promise<StoredObject> {
+  ): Promise<DocumentResponse> {
     if (!file) throw new BadRequestException('A file is required')
 
-    return this.storageService.upload({
+    const document = await this.documentService.upload(session.user.id, {
       body: file.buffer,
       filename: file.originalname,
       mimeType: file.mimetype || 'application/octet-stream',
       size: file.size,
     })
+
+    return this.documentMapper.toResponse(document)
   }
 
-  @TypedRoute.Get(':key')
+  @TypedRoute.Get(':id')
   @ApiProduces('application/octet-stream')
   @ApiOkResponse({
-    description: 'Stored object contents',
+    description: 'Document contents',
     content: {
       'application/octet-stream': {
         schema: {
@@ -110,21 +119,27 @@ export class StorageController {
       },
     },
   })
-  async download(@TypedParam('key', storageKeySchema) key: string): Promise<StreamableFile> {
-    const object = await this.storageService.download(key)
+  async download(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedParam('id', documentIdSchema) documentId: string,
+  ): Promise<StreamableFile> {
+    const { document, object } = await this.documentService.download(documentId, session.user.id)
 
     return new StreamableFile(object.body, {
-      type: object.contentType,
-      length: object.size,
-      disposition: `attachment; filename*=UTF-8''${this.encodeFilename(object.filename)}`,
+      type: document.mimeType,
+      length: document.size,
+      disposition: `attachment; filename*=UTF-8''${this.encodeFilename(document.filename)}`,
     })
   }
 
-  @TypedRoute.Delete(':key')
+  @TypedRoute.Delete(':id')
   @ApiNoContentResponse()
   @HttpCode(204)
-  async delete(@TypedParam('key', storageKeySchema) key: string): Promise<void> {
-    await this.storageService.delete(key)
+  async delete(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedParam('id', documentIdSchema) documentId: string,
+  ): Promise<void> {
+    await this.documentService.delete(documentId, session.user.id)
   }
 
   private encodeFilename(filename: string): string {

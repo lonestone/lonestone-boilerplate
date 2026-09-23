@@ -135,6 +135,15 @@ export type CreateCommentSchema = {
 };
 
 /**
+ * UpdateCommentSchema
+ *
+ * Schema for updating a comment
+ */
+export type UpdateCommentSchema = {
+    content: string;
+};
+
+/**
  * CreatePostSchema
  *
  * Schema for creating/updating a post
@@ -360,6 +369,20 @@ export type CommentsSchema = {
 };
 
 /**
+ * Document
+ *
+ * Metadata for a document owned by the authenticated user
+ */
+export type Document = {
+    id: string;
+    filename: string;
+    mimeType: string;
+    size: number;
+    createdAt: string;
+    updatedAt: string;
+};
+
+/**
  * UserPostSchema
  *
  * Schema for a user's post
@@ -512,6 +535,15 @@ export type PublicAuthorPostsSchema = {
         itemCount: number;
         hasMore: boolean;
     };
+};
+
+/**
+ * Document Upload
+ *
+ * Multipart upload fields validated separately from the binary file
+ */
+export type DocumentUpload = {
+    [key: string]: never;
 };
 
 /**
@@ -783,27 +815,6 @@ export type PublicAuthorControllerGetAuthorPostsSortItem = {
 
 export type PublicAuthorControllerGetAuthorPostsSortArray = Array<PublicAuthorControllerGetAuthorPostsSortItem>;
 
-/**
- * Stored Object
- *
- * Provider-neutral metadata for an uploaded object
- */
-export type StoredObject = {
-    key: string;
-    filename: string;
-    mimeType: string;
-    size: number;
-};
-
-/**
- * Storage Upload
- *
- * Multipart upload fields validated separately from the binary file
- */
-export type StorageUpload = {
-    [key: string]: never;
-};
-
 export type AppControllerGetHelloData = {
     body?: never;
     path?: never;
@@ -878,6 +889,46 @@ export type CommentsControllerCreateCommentResponses = {
 
 export type CommentsControllerCreateCommentResponse = CommentsControllerCreateCommentResponses[keyof CommentsControllerCreateCommentResponses];
 
+export type CommentsControllerDeleteCommentData = {
+    body?: never;
+    path: {
+        commentId: string;
+        postSlug: string;
+    };
+    query?: never;
+    url: '/api/posts/{postSlug}/comments/{commentId}';
+};
+
+export type CommentsControllerDeleteCommentResponses = {
+    200: unknown;
+};
+
+export type CommentsControllerUpdateCommentData = {
+    /**
+     * UpdateCommentSchema
+     *
+     * Schema for updating a comment
+     */
+    body: {
+        content: string;
+    };
+    path: {
+        commentId: string;
+        postSlug: string;
+    };
+    query?: never;
+    url: '/api/posts/{postSlug}/comments/{commentId}';
+};
+
+export type CommentsControllerUpdateCommentResponses = {
+    /**
+     * Schema for a comment
+     */
+    200: CommentSchema;
+};
+
+export type CommentsControllerUpdateCommentResponse = CommentsControllerUpdateCommentResponses[keyof CommentsControllerUpdateCommentResponses];
+
 export type CommentsControllerGetCommentCountData = {
     body?: never;
     path: {
@@ -922,20 +973,6 @@ export type CommentsControllerGetCommentRepliesResponses = {
 };
 
 export type CommentsControllerGetCommentRepliesResponse = CommentsControllerGetCommentRepliesResponses[keyof CommentsControllerGetCommentRepliesResponses];
-
-export type CommentsControllerDeleteCommentData = {
-    body?: never;
-    path: {
-        commentId: string;
-        postSlug: string;
-    };
-    query?: never;
-    url: '/api/posts/{postSlug}/comments/{commentId}';
-};
-
-export type CommentsControllerDeleteCommentResponses = {
-    200: unknown;
-};
 
 export type PostControllerGetUserPostsData = {
     body?: never;
@@ -1912,59 +1949,59 @@ export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedRespons
 
 export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponse = AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses[keyof AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses];
 
-export type StorageControllerUploadData = {
+export type DocumentControllerUploadData = {
     body: {
         file: Blob | File;
     };
     path?: never;
     query?: never;
-    url: '/api/storage';
+    url: '/api/documents';
 };
 
-export type StorageControllerUploadResponses = {
+export type DocumentControllerUploadResponses = {
     /**
-     * Provider-neutral metadata for an uploaded object
+     * Metadata for a document owned by the authenticated user
      */
-    201: StoredObject;
+    201: Document;
 };
 
-export type StorageControllerUploadResponse = StorageControllerUploadResponses[keyof StorageControllerUploadResponses];
+export type DocumentControllerUploadResponse = DocumentControllerUploadResponses[keyof DocumentControllerUploadResponses];
 
-export type StorageControllerDeleteData = {
+export type DocumentControllerDeleteData = {
     body?: never;
     path: {
         /**
-         * Opaque storage object key
+         * Document identifier
          */
-        key: string;
+        id: string;
     };
     query?: never;
-    url: '/api/storage/{key}';
+    url: '/api/documents/{id}';
 };
 
-export type StorageControllerDeleteResponses = {
+export type DocumentControllerDeleteResponses = {
     204: void;
 };
 
-export type StorageControllerDeleteResponse = StorageControllerDeleteResponses[keyof StorageControllerDeleteResponses];
+export type DocumentControllerDeleteResponse = DocumentControllerDeleteResponses[keyof DocumentControllerDeleteResponses];
 
-export type StorageControllerDownloadData = {
+export type DocumentControllerDownloadData = {
     body?: never;
     path: {
         /**
-         * Opaque storage object key
+         * Document identifier
          */
-        key: string;
+        id: string;
     };
     query?: never;
-    url: '/api/storage/{key}';
+    url: '/api/documents/{id}';
 };
 
-export type StorageControllerDownloadResponses = {
+export type DocumentControllerDownloadResponses = {
     /**
-     * Stored object contents
+     * Document contents
      */
     200: Blob | File;
 };
 
-export type StorageControllerDownloadResponse = StorageControllerDownloadResponses[keyof StorageControllerDownloadResponses];
+export type DocumentControllerDownloadResponse = DocumentControllerDownloadResponses[keyof DocumentControllerDownloadResponses];

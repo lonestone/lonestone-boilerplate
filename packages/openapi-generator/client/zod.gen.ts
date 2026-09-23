@@ -62,6 +62,15 @@ export const zCreateCommentSchema = z.object({
 });
 
 /**
+ * UpdateCommentSchema
+ *
+ * Schema for updating a comment
+ */
+export const zUpdateCommentSchema = z.object({
+    content: z.string().min(1).max(1000)
+});
+
+/**
  * TokenUsage
  *
  * Token usage information for an AI generation
@@ -250,6 +259,20 @@ export const zCommentsSchema = z.object({
         itemCount: z.number(),
         hasMore: z.boolean()
     })
+});
+
+/**
+ * Document
+ *
+ * Metadata for a document owned by the authenticated user
+ */
+export const zDocument = z.object({
+    id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+    filename: z.string(),
+    mimeType: z.string(),
+    size: z.int().gte(0).lte(9007199254740991),
+    createdAt: z.string(),
+    updatedAt: z.string()
 });
 
 /**
@@ -446,6 +469,13 @@ export const zPublicAuthorPostsSchema = z.object({
         hasMore: z.boolean()
     })
 });
+
+/**
+ * Document Upload
+ *
+ * Multipart upload fields validated separately from the binary file
+ */
+export const zDocumentUpload = z.record(z.string(), z.never());
 
 /**
  * AiCoreMessage
@@ -880,25 +910,6 @@ export const zPublicAuthorControllerGetAuthorPostsSortItem = z.object({
 
 export const zPublicAuthorControllerGetAuthorPostsSortArray = z.array(zPublicAuthorControllerGetAuthorPostsSortItem);
 
-/**
- * Stored Object
- *
- * Provider-neutral metadata for an uploaded object
- */
-export const zStoredObject = z.object({
-    key: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
-    filename: z.string(),
-    mimeType: z.string(),
-    size: z.int().gte(0).lte(9007199254740991)
-});
-
-/**
- * Storage Upload
- *
- * Multipart upload fields validated separately from the binary file
- */
-export const zStorageUpload = z.record(z.string(), z.never());
-
 export const zAppControllerGetHelloData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
@@ -939,6 +950,31 @@ export const zCommentsControllerCreateCommentData = z.object({
  */
 export const zCommentsControllerCreateCommentResponse = zCommentSchema;
 
+export const zCommentsControllerDeleteCommentData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        commentId: z.string(),
+        postSlug: z.string()
+    }),
+    query: z.optional(z.never())
+});
+
+export const zCommentsControllerUpdateCommentData = z.object({
+    body: z.object({
+        content: z.string().min(1).max(1000)
+    }),
+    path: z.object({
+        commentId: z.string(),
+        postSlug: z.string()
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Schema for a comment
+ */
+export const zCommentsControllerUpdateCommentResponse = zCommentSchema;
+
 export const zCommentsControllerGetCommentCountData = z.object({
     body: z.optional(z.never()),
     path: z.object({
@@ -964,15 +1000,6 @@ export const zCommentsControllerGetCommentRepliesData = z.object({
  * Schema for a paginated list of comments
  */
 export const zCommentsControllerGetCommentRepliesResponse = zCommentsSchema;
-
-export const zCommentsControllerDeleteCommentData = z.object({
-    body: z.optional(z.never()),
-    path: z.object({
-        commentId: z.string(),
-        postSlug: z.string()
-    }),
-    query: z.optional(z.never())
-});
 
 export const zPostControllerGetUserPostsData = z.object({
     body: z.optional(z.never()),
@@ -1570,7 +1597,7 @@ export const zAiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedData 
  */
 export const zAiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponse = zGenerateTextResponse;
 
-export const zStorageControllerUploadData = z.object({
+export const zDocumentControllerUploadData = z.object({
     body: z.object({
         file: z.string()
     }),
@@ -1579,29 +1606,29 @@ export const zStorageControllerUploadData = z.object({
 });
 
 /**
- * Provider-neutral metadata for an uploaded object
+ * Metadata for a document owned by the authenticated user
  */
-export const zStorageControllerUploadResponse = zStoredObject;
+export const zDocumentControllerUploadResponse = zDocument;
 
-export const zStorageControllerDeleteData = z.object({
+export const zDocumentControllerDeleteData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        key: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
     }),
     query: z.optional(z.never())
 });
 
-export const zStorageControllerDeleteResponse = z.void();
+export const zDocumentControllerDeleteResponse = z.void();
 
-export const zStorageControllerDownloadData = z.object({
+export const zDocumentControllerDownloadData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        key: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
     }),
     query: z.optional(z.never())
 });
 
 /**
- * Stored object contents
+ * Document contents
  */
-export const zStorageControllerDownloadResponse = z.string();
+export const zDocumentControllerDownloadResponse = z.string();

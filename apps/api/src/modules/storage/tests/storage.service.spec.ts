@@ -1,8 +1,8 @@
 import { Readable } from 'node:stream'
 import { InternalServerErrorException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { IStorageProvider } from './providers/storage-provider.interface'
-import { StorageService } from './storage.service'
+import { IStorageProvider } from '../providers/storage-provider.interface'
+import { StorageService } from '../storage.service'
 
 describe('StorageService', () => {
   let provider: IStorageProvider
@@ -66,7 +66,8 @@ describe('StorageService', () => {
   })
 
   it('normalizes provider failures', async () => {
-    vi.mocked(provider.upload).mockRejectedValue(new Error('S3 unavailable'))
+    const providerError = new Error('S3 unavailable')
+    vi.mocked(provider.upload).mockRejectedValue(providerError)
 
     await expect(
       service.upload({
@@ -75,7 +76,28 @@ describe('StorageService', () => {
         mimeType: 'text/plain',
         size: 7,
       }),
-    ).rejects.toBeInstanceOf(InternalServerErrorException)
+    ).rejects.toMatchObject({
+      constructor: InternalServerErrorException,
+      cause: providerError,
+    })
+  })
+
+  it('preserves download failures as their exception cause', async () => {
+    const providerError = new Error('S3 unavailable')
+    vi.mocked(provider.download).mockRejectedValue(providerError)
+
+    await expect(service.download('44b82136-0dd7-4b5f-a36b-38b26a4941aa')).rejects.toMatchObject({
+      cause: providerError,
+    })
+  })
+
+  it('preserves delete failures as their exception cause', async () => {
+    const providerError = new Error('S3 unavailable')
+    vi.mocked(provider.delete).mockRejectedValue(providerError)
+
+    await expect(service.delete('44b82136-0dd7-4b5f-a36b-38b26a4941aa')).rejects.toMatchObject({
+      cause: providerError,
+    })
   })
 
   it('deletes from the default bucket', async () => {
