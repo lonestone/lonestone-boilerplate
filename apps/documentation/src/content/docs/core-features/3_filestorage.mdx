@@ -1,14 +1,103 @@
 ---
 title: File Storage
-description: File storage explanation
+description: Store and serve files through a provider-neutral S3 module
 ---
-
-🚧 TODO
 
 # File Storage
 
-## S3 module
+The API includes a generic storage module for files that do not need database-backed business
+metadata. It keeps application code independent from the selected S3-compatible provider.
 
-## MinIO
+The module uses one default bucket. Uploaded files receive opaque UUID keys. The original
+filename, MIME type, and size remain available without exposing provider-specific response
+objects.
 
-## Production setup
+## Configuration
+
+Configure the API with these provider-neutral variables:
+
+- `STORAGE_BUCKET`: default bucket name.
+- `STORAGE_ENDPOINT`: S3 endpoint. Use the provider endpoint in production.
+- `STORAGE_REGION`: S3 region.
+- `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY`: provider credentials.
+- `STORAGE_FORCE_PATH_STYLE`: required by many self-hosted S3-compatible services.
+- `STORAGE_CREATE_BUCKET`: create the default bucket during startup when it is missing.
+- `STORAGE_MAX_UPLOAD_SIZE`: maximum HTTP upload size in bytes.
+
+## Local RustFS
+
+Docker Compose provides RustFS as the local S3-compatible service. Its data is stored in the
+`rustfs_data` volume.
+
+```bash
+pnpm docker:up
+```
+
+The default S3 endpoint is `http://localhost:9000`. The RustFS console is available at
+`http://localhost:9001`. Credentials come from the root `.env` file and are mapped to RustFS by
+Compose.
+
+## Use from API code
+
+Inject `StorageService` into another NestJS service. Business modules should depend on this
+service instead of importing the AWS SDK or the S3 provider.
+
+```typescript
+@Injectable()
+export class DocumentsService {
+  constructor(private readonly storageService: StorageService) {}
+
+  async save(file: Buffer): Promise<string> {
+    const object = await this.storageService.upload({
+      body: file,
+      filename: 'document.pdf',
+      mimeType: 'application/pdf',
+      size: file.byteLength,
+    })
+
+    return object.key
+  }
+}
+```
+
+Store the returned key in a business entity when the file belongs to a domain concept. The
+storage module intentionally does not create an entity or store ownership metadata.
+
+## Use over HTTP
+
+Authenticated clients can upload one multipart `file`, download an object by key, and delete an
+object by key under `/api/storage`.
+
+The generated SDK builds `FormData` for uploads and returns a `Blob` for downloads:
+
+```typescript
+const upload = await storageControllerUpload({
+  body: { file },
+})
+
+const download = await storageControllerDownload({
+  path: { key: upload.data.key },
+})
+```
+
+:::caution
+Storage access is shared. Any authenticated user who knows an object key can download or delete
+that object. UUID keys are difficult to guess, but they are not an authorization mechanism. Add
+business ownership checks before using this module for private user files.
+:::
+
+## Production
+
+Use a dedicated bucket and restricted credentials. Disable automatic bucket creation after
+provisioning infrastructure. Configure the provider endpoint, region, TLS, retention, backups,
+and lifecycle rules according to the chosen service. Set a size limit that also matches reverse
+proxy and platform limits.
+
+AWS S3 normally uses virtual-hosted addressing, so set `STORAGE_FORCE_PATH_STYLE=false`. Keep it
+enabled only when the selected compatible provider requires it.
+
+## Remove storage
+
+Remove `StorageModule` from `AppModule`, delete `apps/api/src/modules/storage`, and remove the AWS
+SDK and Multer type dependencies. Remove the `STORAGE_*` variables, the RustFS Compose service and
+volume, and regenerate the OpenAPI client.

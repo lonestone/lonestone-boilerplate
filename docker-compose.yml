@@ -23,5 +23,24 @@ services:
       - '${SMTP_PORT_WEB}:1080'
       - '${SMTP_PORT}:1025'
 
+  rustfs:
+    container_name: lonestone-rustfs
+    image: rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: ${STORAGE_ACCESS_KEY_ID}
+      RUSTFS_SECRET_KEY: ${STORAGE_SECRET_ACCESS_KEY}
+      RUSTFS_CONSOLE_ENABLE: 'true'
+    volumes:
+      - rustfs_data:/data
+    ports:
+      - '${STORAGE_API_PORT}:9000'
+      - '${STORAGE_CONSOLE_PORT}:9001'
+    healthcheck:
+      test: [CMD-SHELL, 'curl -f http://localhost:9000/health || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
+  rustfs_data:

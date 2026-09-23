@@ -783,6 +783,27 @@ export type PublicAuthorControllerGetAuthorPostsSortItem = {
 
 export type PublicAuthorControllerGetAuthorPostsSortArray = Array<PublicAuthorControllerGetAuthorPostsSortItem>;
 
+/**
+ * Stored Object
+ *
+ * Provider-neutral metadata for an uploaded object
+ */
+export type StoredObject = {
+    key: string;
+    filename: string;
+    mimeType: string;
+    size: number;
+};
+
+/**
+ * Storage Upload
+ *
+ * Multipart upload fields validated separately from the binary file
+ */
+export type StorageUpload = {
+    [key: string]: never;
+};
+
 export type AppControllerGetHelloData = {
     body?: never;
     path?: never;
@@ -1890,3 +1911,60 @@ export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedRespons
 };
 
 export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponse = AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses[keyof AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses];
+
+export type StorageControllerUploadData = {
+    body: {
+        file: Blob | File;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/storage';
+};
+
+export type StorageControllerUploadResponses = {
+    /**
+     * Provider-neutral metadata for an uploaded object
+     */
+    201: StoredObject;
+};
+
+export type StorageControllerUploadResponse = StorageControllerUploadResponses[keyof StorageControllerUploadResponses];
+
+export type StorageControllerDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Opaque storage object key
+         */
+        key: string;
+    };
+    query?: never;
+    url: '/api/storage/{key}';
+};
+
+export type StorageControllerDeleteResponses = {
+    204: void;
+};
+
+export type StorageControllerDeleteResponse = StorageControllerDeleteResponses[keyof StorageControllerDeleteResponses];
+
+export type StorageControllerDownloadData = {
+    body?: never;
+    path: {
+        /**
+         * Opaque storage object key
+         */
+        key: string;
+    };
+    query?: never;
+    url: '/api/storage/{key}';
+};
+
+export type StorageControllerDownloadResponses = {
+    /**
+     * Stored object contents
+     */
+    200: Blob | File;
+};
+
+export type StorageControllerDownloadResponse = StorageControllerDownloadResponses[keyof StorageControllerDownloadResponses];
