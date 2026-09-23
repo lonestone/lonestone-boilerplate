@@ -60,6 +60,20 @@ export const configValidationSchema = z.object({
   EMAIL_PASSWORD: z.string().optional(),
   EMAIL_FROM: z.string().email().default('noreply@lonestone.io'),
 
+  // Storage
+  STORAGE_BUCKET: z.string().min(1).default('lonestone'),
+  STORAGE_ENDPOINT: z.url().optional().default('http://localhost:9000'),
+  STORAGE_REGION: z.string().min(1).default('us-east-1'),
+  STORAGE_ACCESS_KEY_ID: z.string().min(1).default('rustfsadmin'),
+  STORAGE_SECRET_ACCESS_KEY: z.string().min(1).default('rustfsadmin'),
+  STORAGE_FORCE_PATH_STYLE: z.stringbool().default(true),
+  STORAGE_CREATE_BUCKET: z.stringbool().default(true),
+  STORAGE_MAX_UPLOAD_SIZE: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(10 * 1024 * 1024),
+
   // AI Providers
   OPENAI_API_KEY: z.string().optional(), // OpenAI
   ANTHROPIC_API_KEY: z.string().optional(), // Anthropic
@@ -112,6 +126,16 @@ export const config = {
     user: configParsed.data.EMAIL_USER,
     password: configParsed.data.EMAIL_PASSWORD,
     from: configParsed.data.EMAIL_FROM,
+  },
+  storage: {
+    bucket: configParsed.data.STORAGE_BUCKET,
+    endpoint: configParsed.data.STORAGE_ENDPOINT,
+    region: configParsed.data.STORAGE_REGION,
+    accessKeyId: configParsed.data.STORAGE_ACCESS_KEY_ID,
+    secretAccessKey: configParsed.data.STORAGE_SECRET_ACCESS_KEY,
+    forcePathStyle: configParsed.data.STORAGE_FORCE_PATH_STYLE,
+    createBucket: configParsed.data.STORAGE_CREATE_BUCKET,
+    maxUploadSize: configParsed.data.STORAGE_MAX_UPLOAD_SIZE,
   },
   clients: {
     webApp: {

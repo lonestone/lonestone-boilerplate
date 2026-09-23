@@ -880,6 +880,25 @@ export const zPublicAuthorControllerGetAuthorPostsSortItem = z.object({
 
 export const zPublicAuthorControllerGetAuthorPostsSortArray = z.array(zPublicAuthorControllerGetAuthorPostsSortItem);
 
+/**
+ * Stored Object
+ *
+ * Provider-neutral metadata for an uploaded object
+ */
+export const zStoredObject = z.object({
+    key: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+    filename: z.string(),
+    mimeType: z.string(),
+    size: z.int().gte(0).lte(9007199254740991)
+});
+
+/**
+ * Storage Upload
+ *
+ * Multipart upload fields validated separately from the binary file
+ */
+export const zStorageUpload = z.record(z.string(), z.never());
+
 export const zAppControllerGetHelloData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
@@ -1550,3 +1569,39 @@ export const zAiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedData 
  * Response from text generation
  */
 export const zAiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponse = zGenerateTextResponse;
+
+export const zStorageControllerUploadData = z.object({
+    body: z.object({
+        file: z.string()
+    }),
+    path: z.optional(z.never()),
+    query: z.optional(z.never())
+});
+
+/**
+ * Provider-neutral metadata for an uploaded object
+ */
+export const zStorageControllerUploadResponse = zStoredObject;
+
+export const zStorageControllerDeleteData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        key: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+export const zStorageControllerDeleteResponse = z.void();
+
+export const zStorageControllerDownloadData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        key: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Stored object contents
+ */
+export const zStorageControllerDownloadResponse = z.string();

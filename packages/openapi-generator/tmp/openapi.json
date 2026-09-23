@@ -2164,6 +2164,98 @@
           }
         }
       }
+    },
+    "/api/storage": {
+      "post": {
+        "operationId": "StorageController_upload",
+        "tags": ["Storage"],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Provider-neutral metadata for an uploaded object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stored Object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/{key}": {
+      "get": {
+        "operationId": "StorageController_download",
+        "tags": ["Storage"],
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Opaque storage object key"
+            },
+            "description": "Opaque storage object key"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored object contents",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "StorageController_delete",
+        "tags": ["Storage"],
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Opaque storage object key"
+            },
+            "description": "Opaque storage object key"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4183,6 +4275,38 @@
         "items": {
           "$ref": "#/components/schemas/PublicAuthorController_getAuthorPosts_sortItem"
         }
+      },
+      "Stored Object": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["key", "filename", "mimeType", "size"],
+        "additionalProperties": false,
+        "title": "Stored Object",
+        "description": "Provider-neutral metadata for an uploaded object"
+      },
+      "Storage Upload": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "title": "Storage Upload",
+        "description": "Multipart upload fields validated separately from the binary file"
       }
     }
   }
