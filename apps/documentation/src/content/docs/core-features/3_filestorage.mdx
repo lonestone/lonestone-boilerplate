@@ -5,23 +5,27 @@ description: Store and serve files through a provider-neutral S3 module
 
 # File Storage
 
-The API includes a generic storage module for files that do not need database-backed business
-metadata. It keeps application code independent from the selected S3-compatible provider.
+The API includes provider-neutral S3 infrastructure and an optional Documents example. Storage is
+disabled by default, so an unavailable S3 service cannot prevent an application that does not use
+files from starting.
 
-The module uses one default bucket. Uploaded files receive opaque UUID keys. The original
-filename, MIME type, and size remain available without exposing provider-specific response
-objects.
+`StorageModule` is infrastructure-only. It exports `StorageService`, uses one default bucket, and
+does not expose HTTP routes or provider internals. Business modules own their HTTP contracts,
+authorization rules, and database metadata.
 
 ## Configuration
 
 Configure the API with these provider-neutral variables:
 
+- `STORAGE_ENABLED`: register the Documents example and its storage infrastructure. Defaults to
+  `false`.
 - `STORAGE_BUCKET`: default bucket name.
 - `STORAGE_ENDPOINT`: S3 endpoint. Use the provider endpoint in production.
 - `STORAGE_REGION`: S3 region.
 - `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY`: provider credentials.
 - `STORAGE_FORCE_PATH_STYLE`: required by many self-hosted S3-compatible services.
-- `STORAGE_CREATE_BUCKET`: create the default bucket during startup when it is missing.
+- `STORAGE_CREATE_BUCKET`: create the default bucket during startup when storage is enabled and the
+  bucket is missing.
 - `STORAGE_MAX_UPLOAD_SIZE`: maximum HTTP upload size in bytes.
 
 ## Local RustFS
@@ -60,31 +64,34 @@ export class DocumentsService {
 }
 ```
 
-Store the returned key in a business entity when the file belongs to a domain concept. The
-storage module intentionally does not create an entity or store ownership metadata.
+Store the returned opaque key in a business entity when the file belongs to a domain concept. Do
+not expose that key as the public resource identifier. The Documents example shows this pattern.
 
-## Use over HTTP
+## Documents example
 
-Authenticated clients can upload one multipart `file`, download an object by key, and delete an
-object by key under `/api/storage`.
+Set `STORAGE_ENABLED=true` to register the example. Authenticated clients can upload one multipart
+`file`, then download or delete it by document ID under `/api/documents`. The `Document` entity
+stores the owner, storage key, original filename, MIME type, and size.
+
+Every read and delete includes the authenticated owner in the database query. A different user
+receives `404`, which does not reveal whether the document exists. If the metadata transaction
+fails after upload, the service deletes the uploaded object as compensation.
 
 The generated SDK builds `FormData` for uploads and returns a `Blob` for downloads:
 
 ```typescript
-const upload = await storageControllerUpload({
+const upload = await documentControllerUpload({
   body: { file },
 })
 
-const download = await storageControllerDownload({
-  path: { key: upload.data.key },
+const download = await documentControllerDownload({
+  path: { id: upload.data.id },
 })
 ```
 
-:::caution
-Storage access is shared. Any authenticated user who knows an object key can download or delete
-that object. UUID keys are difficult to guess, but they are not an authorization mechanism. Add
-business ownership checks before using this module for private user files.
-:::
+Use the example as a starting point for domain-specific modules such as invoices, profile images,
+or attachments. Keep storage mechanics in `StorageService`, but put access rules and routes in the
+domain module.
 
 ## Production
 
@@ -98,6 +105,7 @@ enabled only when the selected compatible provider requires it.
 
 ## Remove storage
 
-Remove `StorageModule` from `AppModule`, delete `apps/api/src/modules/storage`, and remove the AWS
-SDK and Multer type dependencies. Remove the `STORAGE_*` variables, the RustFS Compose service and
-volume, and regenerate the OpenAPI client.
+Delete `apps/api/src/modules/example/documents` and remove `DocumentModule` from `ExampleModule`.
+Then delete `apps/api/src/modules/storage`, the document migration and snapshot entry, and the AWS
+SDK, direct `testcontainers`, and Multer type dependencies if nothing else uses them. Remove the
+`STORAGE_*` variables, the RustFS Compose service and volume, then regenerate the OpenAPI client.

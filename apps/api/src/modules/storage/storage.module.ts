@@ -2,11 +2,9 @@ import { Module } from '@nestjs/common'
 import { config } from '../../config/env.config'
 import { S3StorageProvider } from './providers/s3-storage.provider'
 import { STORAGE_PROVIDER } from './providers/storage-provider.interface'
-import { StorageController } from './storage.controller'
 import { StorageService } from './storage.service'
 
 @Module({
-  controllers: [StorageController],
   providers: [
     {
       provide: STORAGE_PROVIDER,
@@ -18,7 +16,7 @@ import { StorageService } from './storage.service'
           accessKeyId: config.storage.accessKeyId,
           secretAccessKey: config.storage.secretAccessKey,
           forcePathStyle: config.storage.forcePathStyle,
-          createBucket: config.storage.createBucket,
+          createBucket: config.storage.enabled && config.storage.createBucket,
         }),
     },
     {
@@ -27,6 +25,6 @@ import { StorageService } from './storage.service'
     },
     StorageService,
   ],
-  exports: [StorageService, STORAGE_PROVIDER],
+  exports: [StorageService],
 })
 export class StorageModule {}

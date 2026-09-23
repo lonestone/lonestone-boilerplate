@@ -7,7 +7,7 @@ import {
   PutObjectCommand,
 } from '@aws-sdk/client-s3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { S3StorageProvider, S3StorageProviderOptions } from './s3-storage.provider'
+import { S3StorageProvider, S3StorageProviderOptions } from '../providers/s3-storage.provider'
 
 describe('S3StorageProvider', () => {
   const options: S3StorageProviderOptions = {
@@ -83,6 +83,24 @@ describe('S3StorageProvider', () => {
     await expect(provider.download('test-bucket', 'object-key')).resolves.toBeNull()
   })
 
+  it('keeps a missing bucket as an infrastructure failure', async () => {
+    const error = new Error('missing bucket')
+    error.name = 'NoSuchBucket'
+    send.mockRejectedValue(error)
+
+    await expect(provider.download('test-bucket', 'object-key')).rejects.toBe(error)
+  })
+
+  it('rejects invalid object responses', async () => {
+    send.mockResolvedValue({
+      Body: 'not-a-readable-stream',
+    })
+
+    await expect(provider.download('test-bucket', 'object-key')).rejects.toThrow(
+      'The storage provider returned an invalid object stream',
+    )
+  })
+
   it('deletes an object', async () => {
     send.mockResolvedValue({})
 
@@ -122,5 +140,14 @@ describe('S3StorageProvider', () => {
     await provider.onModuleInit()
 
     expect(send).not.toHaveBeenCalled()
+  })
+
+  it('does not create a bucket for non-missing-bucket failures', async () => {
+    const error = new Error('forbidden')
+    error.name = 'AccessDenied'
+    send.mockRejectedValue(error)
+
+    await expect(provider.onModuleInit()).rejects.toBe(error)
+    expect(send).toHaveBeenCalledTimes(1)
   })
 })

@@ -43,6 +43,7 @@ pnpm install
 | `BETTER_AUTH_SECRET` | Secret key for JWTs | Yes | - |
 | `NODE_ENV` | Environment (development, production) | No | `development` |
 | `TRUSTED_ORIGINS` | List of trusted origins. ⚠️ If you change the port of your frontends, you need to update this variable. | Yes | - |
+| `STORAGE_ENABLED` | Enable storage infrastructure and the Documents example | No | `false` |
 | `STORAGE_BUCKET` | Default S3 bucket | No | `lonestone` |
 | `STORAGE_ENDPOINT` | S3-compatible endpoint | No | `http://localhost:9000` |
 | `STORAGE_REGION` | S3 region | No | `us-east-1` |
@@ -51,6 +52,8 @@ pnpm install
 | `STORAGE_FORCE_PATH_STYLE` | Use path-style S3 addresses | No | `true` |
 | `STORAGE_CREATE_BUCKET` | Create the default bucket on startup | No | `true` |
 | `STORAGE_MAX_UPLOAD_SIZE` | Maximum upload size in bytes | No | `10485760` |
+
+Storage is opt-in. The API does not connect to S3 when `STORAGE_ENABLED=false`.
 
 See [`.env.example`](./.env.example) for reference.
 

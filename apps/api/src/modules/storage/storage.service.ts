@@ -1,16 +1,26 @@
 import { randomUUID } from 'node:crypto'
+import { Readable } from 'node:stream'
 import { Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
-import { StoredObject } from './contracts/storage.contract'
-import {
-  IStorageProvider,
-  STORAGE_PROVIDER,
-  StorageProviderObject,
-} from './providers/storage-provider.interface'
+import { IStorageProvider, STORAGE_PROVIDER } from './providers/storage-provider.interface'
 
 export interface StorageUpload {
   body: Buffer
   filename: string
   mimeType: string
+  size: number
+}
+
+export interface StoredObject {
+  key: string
+  filename: string
+  mimeType: string
+  size: number
+}
+
+export interface StorageDownload {
+  body: Readable
+  contentType: string
+  filename: string
   size: number
 }
 
@@ -35,8 +45,8 @@ export class StorageService {
         filename: file.filename,
         size: file.size,
       })
-    } catch {
-      throw new InternalServerErrorException('Failed to upload object')
+    } catch (error: unknown) {
+      throw new InternalServerErrorException('Failed to upload object', { cause: error })
     }
 
     return {
@@ -47,22 +57,22 @@ export class StorageService {
     }
   }
 
-  async download(key: string): Promise<StorageProviderObject> {
+  async download(key: string): Promise<StorageDownload> {
     try {
       const object = await this.provider.download(this.bucket, key)
       if (!object) throw new NotFoundException('Stored object not found')
       return object
     } catch (error: unknown) {
       if (error instanceof NotFoundException) throw error
-      throw new InternalServerErrorException('Failed to download object')
+      throw new InternalServerErrorException('Failed to download object', { cause: error })
     }
   }
 
   async delete(key: string): Promise<void> {
     try {
       await this.provider.delete(this.bucket, key)
-    } catch {
-      throw new InternalServerErrorException('Failed to delete object')
+    } catch (error: unknown) {
+      throw new InternalServerErrorException('Failed to delete object', { cause: error })
     }
   }
 }

@@ -57,7 +57,7 @@ export class S3StorageProvider implements IStorageProvider, OnModuleInit {
     try {
       await this.client.send(new HeadBucketCommand({ Bucket: this.options.bucket }))
     } catch (error: unknown) {
-      if (!this.isNotFoundError(error)) throw error
+      if (!this.isMissingBucketError(error)) throw error
 
       await this.client.send(
         new CreateBucketCommand({
@@ -101,7 +101,7 @@ export class S3StorageProvider implements IStorageProvider, OnModuleInit {
         size: response.ContentLength ?? 0,
       }
     } catch (error: unknown) {
-      if (this.isNotFoundError(error)) return null
+      if (this.isMissingObjectError(error)) return null
       throw error
     }
   }
@@ -124,10 +124,14 @@ export class S3StorageProvider implements IStorageProvider, OnModuleInit {
     )
   }
 
-  private isNotFoundError(error: unknown): boolean {
+  private isMissingObjectError(error: unknown): boolean {
+    return error instanceof Error && error.name === 'NoSuchKey'
+  }
+
+  private isMissingBucketError(error: unknown): boolean {
     return (
       (error instanceof S3ServiceException && error.$metadata.httpStatusCode === 404) ||
-      (error instanceof Error && ['NoSuchBucket', 'NoSuchKey', 'NotFound'].includes(error.name))
+      (error instanceof Error && ['NoSuchBucket', 'NotFound'].includes(error.name))
     )
   }
 
