@@ -62,6 +62,15 @@ export const zCreateCommentSchema = z.object({
 });
 
 /**
+ * UpdateCommentSchema
+ *
+ * Schema for updating a comment
+ */
+export const zUpdateCommentSchema = z.object({
+    content: z.string().min(1).max(1000)
+});
+
+/**
  * TokenUsage
  *
  * Token usage information for an AI generation
@@ -273,30 +282,6 @@ export const zPostContentSchema = z.union([
 ]);
 
 /**
- * CreatePostSchema
- *
- * Schema for creating/updating a post
- */
-export const zCreatePostSchema = z.object({
-    title: z.string().min(1),
-    content: z.array(zPostContentSchema),
-    coverImage: z.optional(z.url()),
-    tags: z.optional(z.array(z.string()))
-});
-
-/**
- * UpdatePostSchema
- *
- * Schema for updating a post
- */
-export const zUpdatePostSchema = z.object({
-    title: z.optional(z.string().min(1)),
-    content: z.optional(z.array(zPostContentSchema)),
-    coverImage: z.optional(z.url()),
-    tags: z.optional(z.array(z.string()))
-});
-
-/**
  * PostVersionSchema
  *
  * Schema for a post version
@@ -305,6 +290,17 @@ export const zPostVersionSchema = z.object({
     id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
     title: z.string(),
     createdAt: z.string()
+});
+
+/**
+ * PostCoverImageSchema
+ *
+ * Public metadata for a post cover image. The storage key is never exposed.
+ */
+export const zPostCoverImageSchema = z.object({
+    filename: z.string(),
+    mimeType: z.string(),
+    size: z.int().gte(0).lte(9007199254740991)
 });
 
 /**
@@ -338,7 +334,7 @@ export const zUserPostSchema = z.object({
     ])),
     type: z.enum(['published', 'draft']),
     commentCount: z.optional(z.number()),
-    coverImage: z.optional(z.url()),
+    coverImage: z.optional(zPostCoverImageSchema),
     tags: z.array(zTagSchema)
 });
 
@@ -362,7 +358,7 @@ export const zUserPostsSchema = z.object({
         ])),
         type: z.enum(['published', 'draft']),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zPostCoverImageSchema),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
     })),
@@ -388,7 +384,7 @@ export const zPublicPostSchema = z.object({
     publishedAt: z.string(),
     slug: z.optional(z.string()),
     commentCount: z.optional(z.number()),
-    coverImage: z.optional(z.url()),
+    coverImage: z.optional(zPostCoverImageSchema),
     likesCount: z.number(),
     tags: z.array(zTagSchema)
 });
@@ -407,7 +403,7 @@ export const zPublicPostsSchema = z.object({
         publishedAt: z.string(),
         slug: z.optional(z.string()),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zPostCoverImageSchema),
         likesCount: z.number(),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
@@ -434,7 +430,7 @@ export const zPublicAuthorPostsSchema = z.object({
         publishedAt: z.string(),
         slug: z.optional(z.string()),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zPostCoverImageSchema),
         likesCount: z.number(),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
@@ -445,6 +441,28 @@ export const zPublicAuthorPostsSchema = z.object({
         itemCount: z.number(),
         hasMore: z.boolean()
     })
+});
+
+/**
+ * CreatePostSchema
+ *
+ * Multipart fields for creating a post. Send content and tags as JSON strings.
+ */
+export const zCreatePostSchema = z.object({
+    title: z.string().min(1),
+    content: z.string().min(1),
+    tags: z.optional(z.string())
+});
+
+/**
+ * UpdatePostSchema
+ *
+ * Multipart fields for updating a post. Omit coverImage to keep the current one. Send content and tags as JSON strings.
+ */
+export const zUpdatePostSchema = z.object({
+    title: z.optional(z.string().min(1)),
+    content: z.optional(z.string()),
+    tags: z.optional(z.string())
 });
 
 /**
@@ -920,6 +938,31 @@ export const zCommentsControllerCreateCommentData = z.object({
  */
 export const zCommentsControllerCreateCommentResponse = zCommentSchema;
 
+export const zCommentsControllerDeleteCommentData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        commentId: z.string(),
+        postSlug: z.string()
+    }),
+    query: z.optional(z.never())
+});
+
+export const zCommentsControllerUpdateCommentData = z.object({
+    body: z.object({
+        content: z.string().min(1).max(1000)
+    }),
+    path: z.object({
+        commentId: z.string(),
+        postSlug: z.string()
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Schema for a comment
+ */
+export const zCommentsControllerUpdateCommentResponse = zCommentSchema;
+
 export const zCommentsControllerGetCommentCountData = z.object({
     body: z.optional(z.never()),
     path: z.object({
@@ -946,15 +989,6 @@ export const zCommentsControllerGetCommentRepliesData = z.object({
  */
 export const zCommentsControllerGetCommentRepliesResponse = zCommentsSchema;
 
-export const zCommentsControllerDeleteCommentData = z.object({
-    body: z.optional(z.never()),
-    path: z.object({
-        commentId: z.string(),
-        postSlug: z.string()
-    }),
-    query: z.optional(z.never())
-});
-
 export const zPostControllerGetUserPostsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
@@ -973,23 +1007,10 @@ export const zPostControllerGetUserPostsResponse = zUserPostsSchema;
 
 export const zPostControllerCreatePostData = z.object({
     body: z.object({
-        title: z.string().min(1),
-        content: z.array(z.union([
-            z.object({
-                type: z.literal('text'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('image'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('video'),
-                data: z.string()
-            })
-        ])),
-        coverImage: z.optional(z.url()),
-        tags: z.optional(z.array(z.string()))
+        title: z.string(),
+        content: z.string(),
+        tags: z.optional(z.string()),
+        coverImage: z.optional(z.string())
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
@@ -1015,23 +1036,10 @@ export const zPostControllerGetUserPostResponse = zUserPostSchema;
 
 export const zPostControllerUpdatePostData = z.object({
     body: z.object({
-        title: z.optional(z.string().min(1)),
-        content: z.optional(z.array(z.union([
-            z.object({
-                type: z.literal('text'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('image'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('video'),
-                data: z.string()
-            })
-        ]))),
-        coverImage: z.optional(z.url()),
-        tags: z.optional(z.array(z.string()))
+        title: z.optional(z.string()),
+        content: z.optional(z.string()),
+        tags: z.optional(z.string()),
+        coverImage: z.optional(z.string())
     }),
     path: z.object({
         id: z.string()
@@ -1060,6 +1068,29 @@ export const zPostControllerUnpublishPostData = z.object({
     query: z.optional(z.never())
 });
 
+export const zPostControllerRemoveUserPostImageData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+export const zPostControllerRemoveUserPostImageResponse = z.void();
+
+export const zPostControllerDownloadUserPostImageData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Post cover image contents
+ */
+export const zPostControllerDownloadUserPostImageResponse = z.string();
+
 export const zPublicPostControllerGetRandomPostData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
@@ -1070,6 +1101,19 @@ export const zPublicPostControllerGetRandomPostData = z.object({
  * A public post
  */
 export const zPublicPostControllerGetRandomPostResponse = zPublicPostSchema;
+
+export const zPublicPostControllerDownloadPublicPostImageData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        slug: z.string().min(1)
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Published post cover image contents
+ */
+export const zPublicPostControllerDownloadPublicPostImageResponse = z.string();
 
 export const zPublicPostControllerGetPostData = z.object({
     body: z.optional(z.never()),

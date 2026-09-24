@@ -275,8 +275,8 @@
           "length": 255,
           "mappedType": "string"
         },
-        "coverImage": {
-          "name": "coverImage",
+        "coverImageStorageKey": {
+          "name": "coverImageStorageKey",
           "type": "varchar(255)",
           "unsigned": false,
           "autoincrement": false,
@@ -291,6 +291,57 @@
           "collation": null,
           "enumItems": [],
           "mappedType": "string"
+        },
+        "coverImageFilename": {
+          "name": "coverImageFilename",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "coverImageMimeType": {
+          "name": "coverImageMimeType",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "coverImageSize": {
+          "name": "coverImageSize",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
         },
         "likesCount": {
           "name": "likesCount",

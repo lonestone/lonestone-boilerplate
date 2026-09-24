@@ -17,7 +17,9 @@
     "/api": {
       "get": {
         "operationId": "AppController_getHello",
-        "tags": ["App"],
+        "tags": [
+          "App"
+        ],
         "parameters": [],
         "responses": {
           "200": {
@@ -29,7 +31,9 @@
     "/api/posts/{postSlug}/comments": {
       "post": {
         "operationId": "CommentsController_createComment",
-        "tags": ["Comments"],
+        "tags": [
+          "Comments"
+        ],
         "parameters": [
           {
             "name": "postSlug",
@@ -59,7 +63,9 @@
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
-                "required": ["content"],
+                "required": [
+                  "content"
+                ],
                 "additionalProperties": false,
                 "title": "CreateCommentSchema",
                 "description": "Schema for creating a comment"
@@ -82,7 +88,9 @@
       },
       "get": {
         "operationId": "CommentsController_getComments",
-        "tags": ["Comments"],
+        "tags": [
+          "Comments"
+        ],
         "parameters": [
           {
             "name": "filter",
@@ -153,10 +161,103 @@
         }
       }
     },
+    "/api/posts/{postSlug}/comments/{commentId}": {
+      "patch": {
+        "operationId": "CommentsController_updateComment",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Schema for updating a comment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "content"
+                ],
+                "additionalProperties": false,
+                "title": "UpdateCommentSchema",
+                "description": "Schema for updating a comment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema for a comment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentSchema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "CommentsController_deleteComment",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/posts/{postSlug}/comments/count": {
       "get": {
         "operationId": "CommentsController_getCommentCount",
-        "tags": ["Comments"],
+        "tags": [
+          "Comments"
+        ],
         "parameters": [
           {
             "name": "postSlug",
@@ -177,7 +278,9 @@
     "/api/posts/{postSlug}/comments/{commentId}/replies": {
       "get": {
         "operationId": "CommentsController_getCommentReplies",
-        "tags": ["Comments"],
+        "tags": [
+          "Comments"
+        ],
         "parameters": [
           {
             "name": "sort",
@@ -245,125 +348,46 @@
         }
       }
     },
-    "/api/posts/{postSlug}/comments/{commentId}": {
-      "delete": {
-        "operationId": "CommentsController_deleteComment",
-        "tags": ["Comments"],
-        "parameters": [
-          {
-            "name": "commentId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/admin/posts": {
       "post": {
         "operationId": "PostController_createPost",
-        "tags": ["Admin Posts"],
+        "tags": [
+          "Admin Posts"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Schema for creating/updating a post",
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "title",
+                  "content"
+                ],
                 "properties": {
                   "title": {
-                    "type": "string",
-                    "minLength": 1
+                    "type": "string"
                   },
                   "content": {
-                    "type": "array",
-                    "items": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "text"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "image"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "video"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        }
-                      ],
-                      "title": "PostContentSchema",
-                      "description": "Schema for content items (text, image, video)",
-                      "type": "object"
-                    }
+                    "type": "string",
+                    "description": "JSON array of post content blocks"
+                  },
+                  "tags": {
+                    "type": "string",
+                    "description": "JSON array of tag names"
                   },
                   "coverImage": {
                     "type": "string",
-                    "format": "uri"
-                  },
-                  "tags": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                    "format": "binary"
                   }
-                },
-                "required": ["title", "content"],
-                "additionalProperties": false,
-                "title": "CreatePostSchema",
-                "description": "Schema for creating/updating a post"
+                }
               }
             }
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Schema for a user's post",
             "content": {
               "application/json": {
@@ -377,7 +401,9 @@
       },
       "get": {
         "operationId": "PostController_getUserPosts",
-        "tags": ["Admin Posts"],
+        "tags": [
+          "Admin Posts"
+        ],
         "parameters": [
           {
             "name": "filter",
@@ -443,7 +469,9 @@
     "/api/admin/posts/{id}": {
       "put": {
         "operationId": "PostController_updatePost",
-        "tags": ["Admin Posts"],
+        "tags": [
+          "Admin Posts"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -456,82 +484,28 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Schema for updating a post",
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
                 "type": "object",
+                "required": [],
                 "properties": {
                   "title": {
-                    "type": "string",
-                    "minLength": 1
+                    "type": "string"
                   },
                   "content": {
-                    "type": "array",
-                    "items": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "text"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "image"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "video"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        }
-                      ],
-                      "title": "PostContentSchema",
-                      "description": "Schema for content items (text, image, video)",
-                      "type": "object"
-                    }
+                    "type": "string",
+                    "description": "JSON array of post content blocks"
+                  },
+                  "tags": {
+                    "type": "string",
+                    "description": "JSON array of tag names"
                   },
                   "coverImage": {
                     "type": "string",
-                    "format": "uri"
-                  },
-                  "tags": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                    "format": "binary"
                   }
-                },
-                "additionalProperties": false,
-                "title": "UpdatePostSchema",
-                "description": "Schema for updating a post"
+                }
               }
             }
           }
@@ -551,7 +525,9 @@
       },
       "get": {
         "operationId": "PostController_getUserPost",
-        "tags": ["Admin Posts"],
+        "tags": [
+          "Admin Posts"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -579,7 +555,9 @@
     "/api/admin/posts/{id}/publish": {
       "patch": {
         "operationId": "PostController_publishPost",
-        "tags": ["Admin Posts"],
+        "tags": [
+          "Admin Posts"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -600,7 +578,9 @@
     "/api/admin/posts/{id}/unpublish": {
       "patch": {
         "operationId": "PostController_unpublishPost",
-        "tags": ["Admin Posts"],
+        "tags": [
+          "Admin Posts"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -618,10 +598,72 @@
         }
       }
     },
+    "/api/admin/posts/{id}/cover-image": {
+      "get": {
+        "operationId": "PostController_downloadUserPostImage",
+        "tags": [
+          "Admin Posts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Post identifier"
+            },
+            "description": "Post identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post cover image contents",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "PostController_removeUserPostImage",
+        "tags": [
+          "Admin Posts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Post identifier"
+            },
+            "description": "Post identifier"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/public/posts/random": {
       "get": {
         "operationId": "PublicPostController_getRandomPost",
-        "tags": ["Public Posts"],
+        "tags": [
+          "Public Posts"
+        ],
         "parameters": [],
         "responses": {
           "200": {
@@ -637,10 +679,46 @@
         }
       }
     },
+    "/api/public/posts/{slug}/cover-image": {
+      "get": {
+        "operationId": "PublicPostController_downloadPublicPostImage",
+        "tags": [
+          "Public Posts"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Public post slug"
+            },
+            "description": "Public post slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published post cover image contents",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/public/posts/{slug}": {
       "get": {
         "operationId": "PublicPostController_getPost",
-        "tags": ["Public Posts"],
+        "tags": [
+          "Public Posts"
+        ],
         "parameters": [
           {
             "name": "slug",
@@ -668,7 +746,9 @@
     "/api/public/posts": {
       "get": {
         "operationId": "PublicPostController_getPosts",
-        "tags": ["Public Posts"],
+        "tags": [
+          "Public Posts"
+        ],
         "parameters": [
           {
             "name": "filter",
@@ -734,7 +814,9 @@
     "/api/public/posts/{slug}/like": {
       "post": {
         "operationId": "PublicPostController_likePost",
-        "tags": ["Public Posts"],
+        "tags": [
+          "Public Posts"
+        ],
         "parameters": [
           {
             "name": "slug",
@@ -762,7 +844,9 @@
     "/api/public/authors/{slug}/posts": {
       "get": {
         "operationId": "PublicAuthorController_getAuthorPosts",
-        "tags": ["Public Authors"],
+        "tags": [
+          "Public Authors"
+        ],
         "parameters": [
           {
             "name": "sort",
@@ -825,7 +909,9 @@
     "/api/ai/generate-text": {
       "post": {
         "operationId": "AiExampleController_generateText",
-        "tags": ["AiExample"],
+        "tags": [
+          "AiExample"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -890,7 +976,10 @@
                           "traceMode": {
                             "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "enum": ["inherit", "split"]
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
                           },
                           "traceId": {
                             "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
@@ -936,7 +1025,9 @@
                     "description": "Options for an AI generation"
                   }
                 },
-                "required": ["prompt"],
+                "required": [
+                  "prompt"
+                ],
                 "additionalProperties": false,
                 "title": "GenerateTextRequest",
                 "description": "Request for simple text generation with a single prompt"
@@ -961,7 +1052,9 @@
     "/api/ai/generate-object": {
       "post": {
         "operationId": "AiExampleController_generateObject",
-        "tags": ["AiExample"],
+        "tags": [
+          "AiExample"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -977,7 +1070,12 @@
                   },
                   "schemaType": {
                     "type": "string",
-                    "enum": ["userProfile", "task", "product", "recipe"]
+                    "enum": [
+                      "userProfile",
+                      "task",
+                      "product",
+                      "recipe"
+                    ]
                   },
                   "model": {
                     "type": "string",
@@ -1030,7 +1128,10 @@
                           "traceMode": {
                             "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "enum": ["inherit", "split"]
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
                           },
                           "traceId": {
                             "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
@@ -1076,7 +1177,10 @@
                     "description": "Options for an AI generation"
                   }
                 },
-                "required": ["prompt", "schemaType"],
+                "required": [
+                  "prompt",
+                  "schemaType"
+                ],
                 "additionalProperties": false,
                 "title": "GenerateObjectRequest",
                 "description": "Request for structured object generation with a predefined schema type"
@@ -1101,7 +1205,9 @@
     "/api/ai/chat": {
       "post": {
         "operationId": "AiExampleController_chat",
-        "tags": ["AiExample"],
+        "tags": [
+          "AiExample"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1119,7 +1225,12 @@
                       "properties": {
                         "role": {
                           "type": "string",
-                          "enum": ["user", "assistant", "system", "tool"]
+                          "enum": [
+                            "user",
+                            "assistant",
+                            "system",
+                            "tool"
+                          ]
                         },
                         "content": {
                           "type": "string"
@@ -1144,7 +1255,11 @@
                                   "type": "number"
                                 }
                               },
-                              "required": ["promptTokens", "completionTokens", "totalTokens"],
+                              "required": [
+                                "promptTokens",
+                                "completionTokens",
+                                "totalTokens"
+                              ],
                               "additionalProperties": false,
                               "title": "TokenUsage"
                             },
@@ -1177,7 +1292,11 @@
                                     "additionalProperties": {}
                                   }
                                 },
-                                "required": ["toolCallId", "toolName", "args"],
+                                "required": [
+                                  "toolCallId",
+                                  "toolName",
+                                  "args"
+                                ],
                                 "additionalProperties": false,
                                 "title": "ToolCall",
                                 "description": "A tool call made by the AI"
@@ -1189,7 +1308,13 @@
                             },
                             "schemaType": {
                               "type": "string",
-                              "enum": ["userProfile", "task", "product", "recipe", "none"],
+                              "enum": [
+                                "userProfile",
+                                "task",
+                                "product",
+                                "recipe",
+                                "none"
+                              ],
                               "title": "ChatSchemaType",
                               "description": "Predefined schema types for testing structured output"
                             }
@@ -1197,7 +1322,10 @@
                           "additionalProperties": false
                         }
                       },
-                      "required": ["role", "content"],
+                      "required": [
+                        "role",
+                        "content"
+                      ],
                       "additionalProperties": false,
                       "title": "ChatMessageWithSchemaType",
                       "description": "A message with optional schemaType metadata for identifying structured output"
@@ -1254,7 +1382,10 @@
                           "traceMode": {
                             "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "enum": ["inherit", "split"]
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
                           },
                           "traceId": {
                             "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
@@ -1301,12 +1432,20 @@
                   },
                   "schemaType": {
                     "type": "string",
-                    "enum": ["userProfile", "task", "product", "recipe", "none"],
+                    "enum": [
+                      "userProfile",
+                      "task",
+                      "product",
+                      "recipe",
+                      "none"
+                    ],
                     "title": "ChatSchemaType",
                     "description": "Predefined schema types for testing structured output"
                   }
                 },
-                "required": ["messages"],
+                "required": [
+                  "messages"
+                ],
                 "additionalProperties": false,
                 "title": "ChatRequest",
                 "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output."
@@ -1331,7 +1470,9 @@
     "/api/ai/stream-text": {
       "post": {
         "operationId": "AiExampleController_streamText",
-        "tags": ["AiExample"],
+        "tags": [
+          "AiExample"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1396,7 +1537,10 @@
                           "traceMode": {
                             "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "enum": ["inherit", "split"]
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
                           },
                           "traceId": {
                             "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
@@ -1442,7 +1586,9 @@
                     "description": "Options for an AI generation"
                   }
                 },
-                "required": ["prompt"],
+                "required": [
+                  "prompt"
+                ],
                 "additionalProperties": false,
                 "title": "StreamTextRequest",
                 "description": "Request for streaming text generation with a single prompt"
@@ -1460,7 +1606,9 @@
     "/api/ai/stream-object": {
       "post": {
         "operationId": "AiExampleController_streamObject",
-        "tags": ["AiExample"],
+        "tags": [
+          "AiExample"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1476,7 +1624,12 @@
                   },
                   "schemaType": {
                     "type": "string",
-                    "enum": ["userProfile", "task", "product", "recipe"]
+                    "enum": [
+                      "userProfile",
+                      "task",
+                      "product",
+                      "recipe"
+                    ]
                   },
                   "model": {
                     "type": "string",
@@ -1529,7 +1682,10 @@
                           "traceMode": {
                             "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "enum": ["inherit", "split"]
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
                           },
                           "traceId": {
                             "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
@@ -1575,7 +1731,10 @@
                     "description": "Options for an AI generation"
                   }
                 },
-                "required": ["prompt", "schemaType"],
+                "required": [
+                  "prompt",
+                  "schemaType"
+                ],
                 "additionalProperties": false,
                 "title": "StreamObjectRequest",
                 "description": "Request for streaming structured object generation"
@@ -1593,7 +1752,9 @@
     "/api/ai/stream-chat": {
       "post": {
         "operationId": "AiExampleController_streamChat",
-        "tags": ["AiExample"],
+        "tags": [
+          "AiExample"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1611,7 +1772,12 @@
                       "properties": {
                         "role": {
                           "type": "string",
-                          "enum": ["user", "assistant", "system", "tool"]
+                          "enum": [
+                            "user",
+                            "assistant",
+                            "system",
+                            "tool"
+                          ]
                         },
                         "content": {
                           "type": "string"
@@ -1636,7 +1802,11 @@
                                   "type": "number"
                                 }
                               },
-                              "required": ["promptTokens", "completionTokens", "totalTokens"],
+                              "required": [
+                                "promptTokens",
+                                "completionTokens",
+                                "totalTokens"
+                              ],
                               "additionalProperties": false,
                               "title": "TokenUsage"
                             },
@@ -1669,7 +1839,11 @@
                                     "additionalProperties": {}
                                   }
                                 },
-                                "required": ["toolCallId", "toolName", "args"],
+                                "required": [
+                                  "toolCallId",
+                                  "toolName",
+                                  "args"
+                                ],
                                 "additionalProperties": false,
                                 "title": "ToolCall",
                                 "description": "A tool call made by the AI"
@@ -1681,7 +1855,13 @@
                             },
                             "schemaType": {
                               "type": "string",
-                              "enum": ["userProfile", "task", "product", "recipe", "none"],
+                              "enum": [
+                                "userProfile",
+                                "task",
+                                "product",
+                                "recipe",
+                                "none"
+                              ],
                               "title": "ChatSchemaType",
                               "description": "Predefined schema types for testing structured output"
                             }
@@ -1689,7 +1869,10 @@
                           "additionalProperties": false
                         }
                       },
-                      "required": ["role", "content"],
+                      "required": [
+                        "role",
+                        "content"
+                      ],
                       "additionalProperties": false,
                       "title": "ChatMessageWithSchemaType",
                       "description": "A message with optional schemaType metadata for identifying structured output"
@@ -1746,7 +1929,10 @@
                           "traceMode": {
                             "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "enum": ["inherit", "split"]
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
                           },
                           "traceId": {
                             "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
@@ -1792,7 +1978,9 @@
                     "description": "Options for an AI generation"
                   }
                 },
-                "required": ["messages"],
+                "required": [
+                  "messages"
+                ],
                 "additionalProperties": false,
                 "title": "StreamChatRequest",
                 "description": "Request for streaming multi-turn AI conversation"
@@ -1810,7 +1998,9 @@
     "/api/ai/examples/use-case-1-single-generation": {
       "post": {
         "operationId": "AiExampleUseCasesController_useCase1SingleGeneration",
-        "tags": ["AiExampleUseCases"],
+        "tags": [
+          "AiExampleUseCases"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1875,7 +2065,10 @@
                           "traceMode": {
                             "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "enum": ["inherit", "split"]
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
                           },
                           "traceId": {
                             "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
@@ -1921,7 +2114,9 @@
                     "description": "Options for an AI generation"
                   }
                 },
-                "required": ["prompt"],
+                "required": [
+                  "prompt"
+                ],
                 "additionalProperties": false,
                 "title": "UseCase1SingleGenerationRequest",
                 "description": "Single generation; trace is finalized with name/output so Langfuse shows them"
@@ -1946,7 +2141,9 @@
     "/api/ai/examples/use-case-2-grouped-calls": {
       "post": {
         "operationId": "AiExampleUseCasesController_useCase2GroupedCalls",
-        "tags": ["AiExampleUseCases"],
+        "tags": [
+          "AiExampleUseCases"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1977,7 +2174,9 @@
                     ]
                   }
                 },
-                "required": ["prompts"],
+                "required": [
+                  "prompts"
+                ],
                 "additionalProperties": false,
                 "title": "UseCase2GroupedCallsRequest",
                 "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end"
@@ -2002,7 +2201,9 @@
     "/api/ai/examples/use-case-3-logical-units": {
       "post": {
         "operationId": "AiExampleUseCasesController_useCase3LogicalUnits",
-        "tags": ["AiExampleUseCases"],
+        "tags": [
+          "AiExampleUseCases"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2033,7 +2234,9 @@
                     ]
                   }
                 },
-                "required": ["workflowPrompts"],
+                "required": [
+                  "workflowPrompts"
+                ],
                 "additionalProperties": false,
                 "title": "UseCase3LogicalUnitsRequest",
                 "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)"
@@ -2058,7 +2261,9 @@
     "/api/ai/examples/use-case-4-chat-session": {
       "post": {
         "operationId": "AiExampleUseCasesController_useCase4ChatSession",
-        "tags": ["AiExampleUseCases"],
+        "tags": [
+          "AiExampleUseCases"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2088,7 +2293,10 @@
                     ]
                   }
                 },
-                "required": ["prompt", "sessionId"],
+                "required": [
+                  "prompt",
+                  "sessionId"
+                ],
                 "additionalProperties": false,
                 "title": "UseCase4ChatSessionRequest",
                 "description": "Simple generateText with sessionId for grouping traces across requests"
@@ -2113,7 +2321,9 @@
     "/api/ai/examples/use-case-5-chat-session-with-turns-merged": {
       "post": {
         "operationId": "AiExampleUseCasesController_useCase5ChatSessionWithTurnsMerged",
-        "tags": ["AiExampleUseCases"],
+        "tags": [
+          "AiExampleUseCases"
+        ],
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2143,7 +2353,10 @@
                     ]
                   }
                 },
-                "required": ["prompt", "sessionId"],
+                "required": [
+                  "prompt",
+                  "sessionId"
+                ],
                 "additionalProperties": false,
                 "title": "UseCase4ChatSessionRequest",
                 "description": "Simple generateText with sessionId for grouping traces across requests"
@@ -2189,7 +2402,9 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": ["prompt"],
+        "required": [
+          "prompt"
+        ],
         "additionalProperties": false,
         "title": "UseCase1SingleGenerationRequest",
         "description": "Single generation; trace is finalized with name/output so Langfuse shows them"
@@ -2218,7 +2433,9 @@
             ]
           }
         },
-        "required": ["prompts"],
+        "required": [
+          "prompts"
+        ],
         "additionalProperties": false,
         "title": "UseCase2GroupedCallsRequest",
         "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end"
@@ -2247,7 +2464,9 @@
             ]
           }
         },
-        "required": ["workflowPrompts"],
+        "required": [
+          "workflowPrompts"
+        ],
         "additionalProperties": false,
         "title": "UseCase3LogicalUnitsRequest",
         "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)"
@@ -2275,7 +2494,10 @@
             ]
           }
         },
-        "required": ["prompt", "sessionId"],
+        "required": [
+          "prompt",
+          "sessionId"
+        ],
         "additionalProperties": false,
         "title": "UseCase4ChatSessionRequest",
         "description": "Simple generateText with sessionId for grouping traces across requests"
@@ -2301,7 +2523,9 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": ["prompt"],
+        "required": [
+          "prompt"
+        ],
         "additionalProperties": false,
         "title": "GenerateTextRequest",
         "description": "Request for simple text generation with a single prompt"
@@ -2315,7 +2539,12 @@
           },
           "schemaType": {
             "type": "string",
-            "enum": ["userProfile", "task", "product", "recipe"]
+            "enum": [
+              "userProfile",
+              "task",
+              "product",
+              "recipe"
+            ]
           },
           "model": {
             "type": "string",
@@ -2331,7 +2560,10 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": ["prompt", "schemaType"],
+        "required": [
+          "prompt",
+          "schemaType"
+        ],
         "additionalProperties": false,
         "title": "GenerateObjectRequest",
         "description": "Request for structured object generation with a predefined schema type"
@@ -2363,7 +2595,9 @@
             "$ref": "#/components/schemas/ChatSchemaType"
           }
         },
-        "required": ["messages"],
+        "required": [
+          "messages"
+        ],
         "additionalProperties": false,
         "title": "ChatRequest",
         "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output."
@@ -2389,7 +2623,9 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": ["prompt"],
+        "required": [
+          "prompt"
+        ],
         "additionalProperties": false,
         "title": "StreamTextRequest",
         "description": "Request for streaming text generation with a single prompt"
@@ -2403,7 +2639,12 @@
           },
           "schemaType": {
             "type": "string",
-            "enum": ["userProfile", "task", "product", "recipe"]
+            "enum": [
+              "userProfile",
+              "task",
+              "product",
+              "recipe"
+            ]
           },
           "model": {
             "type": "string",
@@ -2419,7 +2660,10 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": ["prompt", "schemaType"],
+        "required": [
+          "prompt",
+          "schemaType"
+        ],
         "additionalProperties": false,
         "title": "StreamObjectRequest",
         "description": "Request for streaming structured object generation"
@@ -2448,7 +2692,9 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": ["messages"],
+        "required": [
+          "messages"
+        ],
         "additionalProperties": false,
         "title": "StreamChatRequest",
         "description": "Request for streaming multi-turn AI conversation"
@@ -2467,67 +2713,28 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           }
         },
-        "required": ["content"],
+        "required": [
+          "content"
+        ],
         "additionalProperties": false,
         "title": "CreateCommentSchema",
         "description": "Schema for creating a comment"
       },
-      "CreatePostSchema": {
+      "UpdateCommentSchema": {
         "type": "object",
         "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1
-          },
           "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PostContentSchema"
-            }
-          },
-          "coverImage": {
             "type": "string",
-            "format": "uri"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "minLength": 1,
+            "maxLength": 1000
           }
         },
-        "required": ["title", "content"],
+        "required": [
+          "content"
+        ],
         "additionalProperties": false,
-        "title": "CreatePostSchema",
-        "description": "Schema for creating/updating a post"
-      },
-      "UpdatePostSchema": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PostContentSchema"
-            }
-          },
-          "coverImage": {
-            "type": "string",
-            "format": "uri"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdatePostSchema",
-        "description": "Schema for updating a post"
+        "title": "UpdateCommentSchema",
+        "description": "Schema for updating a comment"
       },
       "GenerateTextResponse": {
         "type": "object",
@@ -2554,7 +2761,9 @@
             "type": "string"
           }
         },
-        "required": ["result"],
+        "required": [
+          "result"
+        ],
         "additionalProperties": false,
         "title": "GenerateTextResponse",
         "description": "Response from text generation"
@@ -2572,7 +2781,11 @@
             "type": "number"
           }
         },
-        "required": ["promptTokens", "completionTokens", "totalTokens"],
+        "required": [
+          "promptTokens",
+          "completionTokens",
+          "totalTokens"
+        ],
         "additionalProperties": false,
         "title": "TokenUsage",
         "description": "Token usage information for an AI generation"
@@ -2594,7 +2807,11 @@
             "additionalProperties": {}
           }
         },
-        "required": ["toolCallId", "toolName", "args"],
+        "required": [
+          "toolCallId",
+          "toolName",
+          "args"
+        ],
         "additionalProperties": false,
         "title": "ToolCall",
         "description": "A tool call made by the AI"
@@ -2610,7 +2827,11 @@
           },
           "result": {}
         },
-        "required": ["toolCallId", "toolName", "result"],
+        "required": [
+          "toolCallId",
+          "toolName",
+          "result"
+        ],
         "additionalProperties": false,
         "title": "ToolResult",
         "description": "The result of a tool call"
@@ -2631,7 +2852,10 @@
             "$ref": "#/components/schemas/TokenUsage"
           }
         },
-        "required": ["traceName", "results"],
+        "required": [
+          "traceName",
+          "results"
+        ],
         "additionalProperties": false,
         "title": "UseCase2GroupedCallsResponse",
         "description": "Combined results from grouped LLM calls"
@@ -2654,12 +2878,17 @@
                   "$ref": "#/components/schemas/TokenUsage"
                 }
               },
-              "required": ["index", "result"],
+              "required": [
+                "index",
+                "result"
+              ],
               "additionalProperties": false
             }
           }
         },
-        "required": ["workflows"],
+        "required": [
+          "workflows"
+        ],
         "additionalProperties": false,
         "title": "UseCase3LogicalUnitsResponse",
         "description": "One result per workflow (each in its own trace)"
@@ -2687,7 +2916,9 @@
           },
           "result": {}
         },
-        "required": ["result"],
+        "required": [
+          "result"
+        ],
         "additionalProperties": false,
         "title": "GenerateObjectResponse",
         "description": "Response from structured object generation"
@@ -2723,7 +2954,10 @@
             }
           }
         },
-        "required": ["result", "messages"],
+        "required": [
+          "result",
+          "messages"
+        ],
         "additionalProperties": false,
         "title": "ChatResponse",
         "description": "Response from AI chat conversation"
@@ -2733,7 +2967,12 @@
         "properties": {
           "role": {
             "type": "string",
-            "enum": ["user", "assistant", "system", "tool"]
+            "enum": [
+              "user",
+              "assistant",
+              "system",
+              "tool"
+            ]
           },
           "content": {
             "type": "string"
@@ -2758,7 +2997,11 @@
                     "type": "number"
                   }
                 },
-                "required": ["promptTokens", "completionTokens", "totalTokens"],
+                "required": [
+                  "promptTokens",
+                  "completionTokens",
+                  "totalTokens"
+                ],
                 "additionalProperties": false,
                 "title": "TokenUsage"
               },
@@ -2791,7 +3034,11 @@
                       "additionalProperties": {}
                     }
                   },
-                  "required": ["toolCallId", "toolName", "args"],
+                  "required": [
+                    "toolCallId",
+                    "toolName",
+                    "args"
+                  ],
                   "additionalProperties": false,
                   "title": "ToolCall",
                   "description": "A tool call made by the AI"
@@ -2803,7 +3050,13 @@
               },
               "schemaType": {
                 "type": "string",
-                "enum": ["userProfile", "task", "product", "recipe", "none"],
+                "enum": [
+                  "userProfile",
+                  "task",
+                  "product",
+                  "recipe",
+                  "none"
+                ],
                 "title": "ChatSchemaType",
                 "description": "Predefined schema types for testing structured output"
               }
@@ -2811,14 +3064,23 @@
             "additionalProperties": false
           }
         },
-        "required": ["role", "content"],
+        "required": [
+          "role",
+          "content"
+        ],
         "additionalProperties": false,
         "title": "ChatMessageWithSchemaType",
         "description": "A message with optional schemaType metadata for identifying structured output"
       },
       "ChatSchemaType": {
         "type": "string",
-        "enum": ["userProfile", "task", "product", "recipe", "none"],
+        "enum": [
+          "userProfile",
+          "task",
+          "product",
+          "recipe",
+          "none"
+        ],
         "title": "ChatSchemaType",
         "description": "Predefined schema types for testing structured output"
       },
@@ -2860,7 +3122,10 @@
                     "type": "string"
                   }
                 },
-                "required": ["id", "name"],
+                "required": [
+                  "id",
+                  "name"
+                ],
                 "additionalProperties": false
               },
               {
@@ -2892,7 +3157,14 @@
             "type": "number"
           }
         },
-        "required": ["id", "content", "authorName", "createdAt", "user", "parentId"],
+        "required": [
+          "id",
+          "content",
+          "authorName",
+          "createdAt",
+          "user",
+          "parentId"
+        ],
         "additionalProperties": false,
         "title": "CommentSchema",
         "description": "Schema for a comment"
@@ -2922,11 +3194,19 @@
                 "type": "boolean"
               }
             },
-            "required": ["offset", "pageSize", "itemCount", "hasMore"],
+            "required": [
+              "offset",
+              "pageSize",
+              "itemCount",
+              "hasMore"
+            ],
             "additionalProperties": false
           }
         },
-        "required": ["data", "meta"],
+        "required": [
+          "data",
+          "meta"
+        ],
         "additionalProperties": false,
         "title": "CommentsSchema",
         "description": "Schema for a paginated list of comments"
@@ -2976,14 +3256,16 @@
           },
           "type": {
             "type": "string",
-            "enum": ["published", "draft"]
+            "enum": [
+              "published",
+              "draft"
+            ]
           },
           "commentCount": {
             "type": "number"
           },
           "coverImage": {
-            "type": "string",
-            "format": "uri"
+            "$ref": "#/components/schemas/PostCoverImageSchema"
           },
           "tags": {
             "type": "array",
@@ -2992,7 +3274,14 @@
             }
           }
         },
-        "required": ["id", "title", "content", "versions", "type", "tags"],
+        "required": [
+          "id",
+          "title",
+          "content",
+          "versions",
+          "type",
+          "tags"
+        ],
         "additionalProperties": false,
         "title": "UserPostSchema",
         "description": "Schema for a user's post"
@@ -3010,7 +3299,10 @@
                 "type": "string"
               }
             },
-            "required": ["type", "data"],
+            "required": [
+              "type",
+              "data"
+            ],
             "additionalProperties": false
           },
           {
@@ -3024,7 +3316,10 @@
                 "type": "string"
               }
             },
-            "required": ["type", "data"],
+            "required": [
+              "type",
+              "data"
+            ],
             "additionalProperties": false
           },
           {
@@ -3038,7 +3333,10 @@
                 "type": "string"
               }
             },
-            "required": ["type", "data"],
+            "required": [
+              "type",
+              "data"
+            ],
             "additionalProperties": false
           }
         ],
@@ -3061,10 +3359,38 @@
             "type": "string"
           }
         },
-        "required": ["id", "title", "createdAt"],
+        "required": [
+          "id",
+          "title",
+          "createdAt"
+        ],
         "additionalProperties": false,
         "title": "PostVersionSchema",
         "description": "Schema for a post version"
+      },
+      "PostCoverImageSchema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "filename",
+          "mimeType",
+          "size"
+        ],
+        "additionalProperties": false,
+        "title": "PostCoverImageSchema",
+        "description": "Public metadata for a post cover image. The storage key is never exposed."
       },
       "TagSchema": {
         "type": "object",
@@ -3081,7 +3407,11 @@
             "type": "string"
           }
         },
-        "required": ["id", "name", "slug"],
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ],
         "additionalProperties": false,
         "title": "TagSchema",
         "description": "A tag attached to a post"
@@ -3130,14 +3460,16 @@
                 },
                 "type": {
                   "type": "string",
-                  "enum": ["published", "draft"]
+                  "enum": [
+                    "published",
+                    "draft"
+                  ]
                 },
                 "commentCount": {
                   "type": "number"
                 },
                 "coverImage": {
-                  "type": "string",
-                  "format": "uri"
+                  "$ref": "#/components/schemas/PostCoverImageSchema"
                 },
                 "tags": {
                   "type": "array",
@@ -3149,7 +3481,14 @@
                   "$ref": "#/components/schemas/PostContentSchema"
                 }
               },
-              "required": ["id", "title", "versions", "type", "tags", "contentPreview"],
+              "required": [
+                "id",
+                "title",
+                "versions",
+                "type",
+                "tags",
+                "contentPreview"
+              ],
               "additionalProperties": false
             }
           },
@@ -3169,11 +3508,19 @@
                 "type": "boolean"
               }
             },
-            "required": ["offset", "pageSize", "itemCount", "hasMore"],
+            "required": [
+              "offset",
+              "pageSize",
+              "itemCount",
+              "hasMore"
+            ],
             "additionalProperties": false
           }
         },
-        "required": ["data", "meta"],
+        "required": [
+          "data",
+          "meta"
+        ],
         "additionalProperties": false,
         "title": "UserPostsSchema",
         "description": "Schema for a list of user's posts"
@@ -3191,7 +3538,9 @@
                 "type": "string"
               }
             },
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "additionalProperties": false
           },
           "content": {
@@ -3210,8 +3559,7 @@
             "type": "number"
           },
           "coverImage": {
-            "type": "string",
-            "format": "uri"
+            "$ref": "#/components/schemas/PostCoverImageSchema"
           },
           "likesCount": {
             "type": "number"
@@ -3223,7 +3571,14 @@
             }
           }
         },
-        "required": ["title", "author", "content", "publishedAt", "likesCount", "tags"],
+        "required": [
+          "title",
+          "author",
+          "content",
+          "publishedAt",
+          "likesCount",
+          "tags"
+        ],
         "additionalProperties": false,
         "title": "PublicPostSchema",
         "description": "A public post"
@@ -3246,7 +3601,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["name"],
+                  "required": [
+                    "name"
+                  ],
                   "additionalProperties": false
                 },
                 "publishedAt": {
@@ -3259,8 +3616,7 @@
                   "type": "number"
                 },
                 "coverImage": {
-                  "type": "string",
-                  "format": "uri"
+                  "$ref": "#/components/schemas/PostCoverImageSchema"
                 },
                 "likesCount": {
                   "type": "number"
@@ -3302,11 +3658,19 @@
                 "type": "boolean"
               }
             },
-            "required": ["offset", "pageSize", "itemCount", "hasMore"],
+            "required": [
+              "offset",
+              "pageSize",
+              "itemCount",
+              "hasMore"
+            ],
             "additionalProperties": false
           }
         },
-        "required": ["data", "meta"],
+        "required": [
+          "data",
+          "meta"
+        ],
         "additionalProperties": false,
         "title": "PublicPostsSchema",
         "description": "A list of public posts"
@@ -3329,7 +3693,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["name"],
+                  "required": [
+                    "name"
+                  ],
                   "additionalProperties": false
                 },
                 "publishedAt": {
@@ -3342,8 +3708,7 @@
                   "type": "number"
                 },
                 "coverImage": {
-                  "type": "string",
-                  "format": "uri"
+                  "$ref": "#/components/schemas/PostCoverImageSchema"
                 },
                 "likesCount": {
                   "type": "number"
@@ -3385,21 +3750,75 @@
                 "type": "boolean"
               }
             },
-            "required": ["offset", "pageSize", "itemCount", "hasMore"],
+            "required": [
+              "offset",
+              "pageSize",
+              "itemCount",
+              "hasMore"
+            ],
             "additionalProperties": false
           }
         },
-        "required": ["data", "meta"],
+        "required": [
+          "data",
+          "meta"
+        ],
         "additionalProperties": false,
         "title": "PublicAuthorPostsSchema",
         "description": "A list of posts from a specific author"
+      },
+      "CreatePostSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tags": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "content"
+        ],
+        "additionalProperties": false,
+        "title": "CreatePostSchema",
+        "description": "Multipart fields for creating a post. Send content and tags as JSON strings."
+      },
+      "UpdatePostSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdatePostSchema",
+        "description": "Multipart fields for updating a post. Omit coverImage to keep the current one. Send content and tags as JSON strings."
       },
       "AiCoreMessage": {
         "type": "object",
         "properties": {
           "role": {
             "type": "string",
-            "enum": ["user", "assistant", "system", "tool"]
+            "enum": [
+              "user",
+              "assistant",
+              "system",
+              "tool"
+            ]
           },
           "content": {
             "type": "string"
@@ -3437,7 +3856,10 @@
             "additionalProperties": false
           }
         },
-        "required": ["role", "content"],
+        "required": [
+          "role",
+          "content"
+        ],
         "additionalProperties": false,
         "title": "AiCoreMessage",
         "description": "A message in the conversation history following Vercel AI SDK patterns"
@@ -3455,7 +3877,10 @@
                 "type": "string"
               }
             },
-            "required": ["type", "text"],
+            "required": [
+              "type",
+              "text"
+            ],
             "additionalProperties": false,
             "title": "AiStreamTextChunkEvent",
             "description": "A text chunk event during streaming"
@@ -3481,7 +3906,12 @@
                 "additionalProperties": {}
               }
             },
-            "required": ["type", "toolCallId", "toolName", "args"],
+            "required": [
+              "type",
+              "toolCallId",
+              "toolName",
+              "args"
+            ],
             "additionalProperties": false,
             "title": "AiStreamToolCallEvent",
             "description": "Event when a tool is being called during streaming"
@@ -3501,7 +3931,12 @@
               },
               "result": {}
             },
-            "required": ["type", "toolCallId", "toolName", "result"],
+            "required": [
+              "type",
+              "toolCallId",
+              "toolName",
+              "result"
+            ],
             "additionalProperties": false,
             "title": "AiStreamToolResultEvent",
             "description": "Event when a tool returns a result during streaming"
@@ -3529,7 +3964,11 @@
                     "type": "number"
                   }
                 },
-                "required": ["promptTokens", "completionTokens", "totalTokens"],
+                "required": [
+                  "promptTokens",
+                  "completionTokens",
+                  "totalTokens"
+                ],
                 "additionalProperties": false,
                 "title": "AiStreamUsage",
                 "description": "Token usage information for the stream"
@@ -3538,7 +3977,10 @@
                 "type": "string"
               }
             },
-            "required": ["type", "fullText"],
+            "required": [
+              "type",
+              "fullText"
+            ],
             "additionalProperties": false,
             "title": "AiStreamDoneEvent",
             "description": "Final event when streaming is complete"
@@ -3554,7 +3996,10 @@
                 "type": "string"
               }
             },
-            "required": ["type", "message"],
+            "required": [
+              "type",
+              "message"
+            ],
             "additionalProperties": false,
             "title": "AiStreamErrorEvent",
             "description": "Error event during streaming"
@@ -3575,7 +4020,11 @@
           },
           "priority": {
             "type": "string",
-            "enum": ["low", "medium", "high"]
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
           },
           "dueDate": {
             "type": "string"
@@ -3587,7 +4036,11 @@
             }
           }
         },
-        "required": ["title", "description", "priority"],
+        "required": [
+          "title",
+          "description",
+          "priority"
+        ],
         "additionalProperties": false,
         "title": "Task",
         "description": "A task"
@@ -3617,7 +4070,13 @@
             }
           }
         },
-        "required": ["name", "price", "description", "category", "inStock"],
+        "required": [
+          "name",
+          "price",
+          "description",
+          "category",
+          "inStock"
+        ],
         "additionalProperties": false,
         "title": "Product",
         "description": "A product"
@@ -3642,7 +4101,11 @@
           },
           "difficulty": {
             "type": "string",
-            "enum": ["easy", "medium", "hard"]
+            "enum": [
+              "easy",
+              "medium",
+              "hard"
+            ]
           },
           "ingredients": {
             "type": "array",
@@ -3656,7 +4119,10 @@
                   "type": "string"
                 }
               },
-              "required": ["name", "quantity"],
+              "required": [
+                "name",
+                "quantity"
+              ],
               "additionalProperties": false
             }
           },
@@ -3711,7 +4177,11 @@
             }
           }
         },
-        "required": ["name", "age", "email"],
+        "required": [
+          "name",
+          "age",
+          "email"
+        ],
         "additionalProperties": false,
         "title": "UserProfile",
         "description": "A user profile"
@@ -3757,7 +4227,10 @@
               "traceMode": {
                 "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                 "type": "string",
-                "enum": ["inherit", "split"]
+                "enum": [
+                  "inherit",
+                  "split"
+                ]
               },
               "traceId": {
                 "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
@@ -3820,7 +4293,10 @@
             "maximum": 100
           }
         },
-        "required": ["offset", "pageSize"],
+        "required": [
+          "offset",
+          "pageSize"
+        ],
         "additionalProperties": false,
         "title": "PaginationQuerySchema",
         "description": "Schema for pagination query"
@@ -3849,10 +4325,16 @@
             },
             "direction": {
               "type": "string",
-              "enum": ["asc", "desc"]
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           },
-          "required": ["property", "direction"],
+          "required": [
+            "property",
+            "direction"
+          ],
           "additionalProperties": false
         },
         "format": "sort"
@@ -3898,7 +4380,10 @@
               "type": "string"
             }
           },
-          "required": ["property", "rule"],
+          "required": [
+            "property",
+            "rule"
+          ],
           "additionalProperties": false,
           "title": "FilteringSchema",
           "description": "Schema for a single filtering item"
@@ -3940,7 +4425,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "rule"],
+        "required": [
+          "property",
+          "rule"
+        ],
         "additionalProperties": false
       },
       "CommentsController_getComments_filterArray": {
@@ -3966,10 +4454,16 @@
           },
           "direction": {
             "type": "string",
-            "enum": ["asc", "desc"]
+            "enum": [
+              "asc",
+              "desc"
+            ]
           }
         },
-        "required": ["property", "direction"],
+        "required": [
+          "property",
+          "direction"
+        ],
         "additionalProperties": false
       },
       "CommentsController_getComments_sortArray": {
@@ -3995,10 +4489,16 @@
           },
           "direction": {
             "type": "string",
-            "enum": ["asc", "desc"]
+            "enum": [
+              "asc",
+              "desc"
+            ]
           }
         },
-        "required": ["property", "direction"],
+        "required": [
+          "property",
+          "direction"
+        ],
         "additionalProperties": false
       },
       "CommentsController_getCommentReplies_sortArray": {
@@ -4043,7 +4543,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "rule"],
+        "required": [
+          "property",
+          "rule"
+        ],
         "additionalProperties": false
       },
       "PostController_getUserPosts_filterArray": {
@@ -4069,10 +4572,16 @@
           },
           "direction": {
             "type": "string",
-            "enum": ["asc", "desc"]
+            "enum": [
+              "asc",
+              "desc"
+            ]
           }
         },
-        "required": ["property", "direction"],
+        "required": [
+          "property",
+          "direction"
+        ],
         "additionalProperties": false
       },
       "PostController_getUserPosts_sortArray": {
@@ -4117,7 +4626,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "rule"],
+        "required": [
+          "property",
+          "rule"
+        ],
         "additionalProperties": false
       },
       "PublicPostController_getPosts_filterArray": {
@@ -4143,10 +4655,16 @@
           },
           "direction": {
             "type": "string",
-            "enum": ["asc", "desc"]
+            "enum": [
+              "asc",
+              "desc"
+            ]
           }
         },
-        "required": ["property", "direction"],
+        "required": [
+          "property",
+          "direction"
+        ],
         "additionalProperties": false
       },
       "PublicPostController_getPosts_sortArray": {
@@ -4172,10 +4690,16 @@
           },
           "direction": {
             "type": "string",
-            "enum": ["asc", "desc"]
+            "enum": [
+              "asc",
+              "desc"
+            ]
           }
         },
-        "required": ["property", "direction"],
+        "required": [
+          "property",
+          "direction"
+        ],
         "additionalProperties": false
       },
       "PublicAuthorController_getAuthorPosts_sortArray": {
