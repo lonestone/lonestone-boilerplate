@@ -4,6 +4,7 @@ import {
   createSortingQueryStringSchema,
   paginatedSchema,
 } from '@lonestone/nzoth/server'
+import { BadRequestException } from '@nestjs/common'
 import { z } from 'zod'
 
 // 📖 See API Guidelines: Schema Definition Best Practices
@@ -70,38 +71,113 @@ export const tagSchema = z
 
 export type Tag = z.infer<typeof tagSchema>
 
+export const postIdSchema = z.uuid().meta({
+  description: 'Post identifier',
+})
+
+export const postSlugSchema = z.string().min(1).meta({
+  description: 'Public post slug',
+})
+
+export const postCoverImageSchema = z
+  .object({
+    filename: z.string(),
+    mimeType: z.string(),
+    size: z.number().int().nonnegative(),
+  })
+  .meta({
+    title: 'PostCoverImageSchema',
+    description: 'Public metadata for a post cover image. The storage key is never exposed.',
+  })
+
+export type PostCoverImage = z.infer<typeof postCoverImageSchema>
+
+export const postContentListSchema = z.array(postContentSchema)
+export const postTagNamesSchema = z.array(z.string())
+
+export function parseJsonMultipartField<T>(
+  raw: string | undefined,
+  schema: z.ZodType<T>,
+  field: string,
+): T | undefined {
+  if (raw === undefined) return undefined
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new BadRequestException(`${field} must be valid JSON`)
+  }
+
+  const result = schema.safeParse(parsed)
+  if (!result.success) {
+    throw new BadRequestException(result.error.issues[0]?.message ?? `${field} is invalid`)
+  }
+
+  return result.data
+}
+
 // ----------------------------
 // Create/update post schemas //
 // ----------------------------
 
-// Schema for creating/updating a post
 export const createPostSchema = z
   .object({
     title: z.string().min(1),
-    content: z.array(postContentSchema),
-    coverImage: z.string().url().optional(),
-    tags: z.array(z.string()).optional(),
+    content: z.string().min(1),
+    tags: z.string().optional(),
   })
   .meta({
     title: 'CreatePostSchema',
-    description: 'Schema for creating/updating a post',
+    description: 'Multipart fields for creating a post. Send content and tags as JSON strings.',
   })
 
-export type CreatePostInput = z.infer<typeof createPostSchema>
+export type CreatePostMultipart = z.infer<typeof createPostSchema>
+
+export interface CreatePostInput {
+  title: string
+  content: z.infer<typeof postContentListSchema>
+  tags?: string[]
+}
+
+export function toCreatePostInput(body: CreatePostMultipart): CreatePostInput {
+  const content = parseJsonMultipartField(body.content, postContentListSchema, 'content')
+  if (!content) throw new BadRequestException('content is required')
+
+  return {
+    title: body.title,
+    content,
+    tags: parseJsonMultipartField(body.tags, postTagNamesSchema, 'tags'),
+  }
+}
 
 export const updatePostSchema = z
   .object({
     title: z.string().min(1).optional(),
-    content: z.array(postContentSchema).optional(),
-    coverImage: z.string().url().optional(),
-    tags: z.array(z.string()).optional(),
+    content: z.string().optional(),
+    tags: z.string().optional(),
   })
   .meta({
     title: 'UpdatePostSchema',
-    description: 'Schema for updating a post',
+    description:
+      'Multipart fields for updating a post. Omit coverImage to keep the current one. Send content and tags as JSON strings.',
   })
 
-export type UpdatePostInput = z.infer<typeof updatePostSchema>
+export type UpdatePostMultipart = z.infer<typeof updatePostSchema>
+
+export interface UpdatePostInput {
+  title?: string
+  content?: z.infer<typeof postContentListSchema>
+  tags?: string[]
+}
+
+export function toUpdatePostInput(body: UpdatePostMultipart): UpdatePostInput {
+  return {
+    title: body.title,
+    content: parseJsonMultipartField(body.content, postContentListSchema, 'content'),
+    tags: parseJsonMultipartField(body.tags, postTagNamesSchema, 'tags'),
+  }
+}
 
 export const userPostSchema = z
   .object({
@@ -113,7 +189,7 @@ export const userPostSchema = z
     publishedAt: z.date().nullish(),
     type: z.enum(['published', 'draft']),
     commentCount: z.number().optional(),
-    coverImage: z.string().url().optional(),
+    coverImage: postCoverImageSchema.optional(),
     tags: z.array(tagSchema),
   })
   .meta({
@@ -152,7 +228,7 @@ export const publicPostSchema = z
     publishedAt: z.date(),
     slug: z.string().optional(),
     commentCount: z.number().optional(),
-    coverImage: z.string().url().optional(),
+    coverImage: postCoverImageSchema.optional(),
     likesCount: z.number(),
     tags: z.array(tagSchema),
   })

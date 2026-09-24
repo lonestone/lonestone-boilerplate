@@ -1,9 +1,22 @@
 import { EntityManager, FilterQuery } from '@mikro-orm/core'
-import { Injectable, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common'
 import slugify from 'slugify'
 import { User } from '../../auth/auth.entity'
 import { buildOrderBy } from '../../db/query-order.util'
 import { Comment } from '../../example/comments/comments.entity'
+import {
+  StorageDownload,
+  StorageService,
+  StorageUpload,
+  StoredObject,
+} from '../../storage/storage.service'
 import {
   CreatePostInput,
   PostFiltering,
@@ -39,9 +52,21 @@ export interface PublicAuthorPostsResult {
   commentCountByPostId: Map<string, number>
 }
 
+export interface PostImageDownload {
+  filename: string
+  mimeType: string
+  size: number
+  object: StorageDownload
+}
+
 @Injectable()
 export class PostService {
-  constructor(private readonly em: EntityManager) {}
+  private readonly logger = new Logger(PostService.name)
+
+  constructor(
+    private readonly em: EntityManager,
+    @Optional() private readonly storageService?: StorageService,
+  ) {}
 
   // Find existing tags by slug or create them on the fly (used by create/update).
   private async resolveTags(names: string[]): Promise<Tag[]> {
@@ -60,28 +85,40 @@ export class PostService {
     return tags
   }
 
-  async createPost(userId: string, data: CreatePostInput): Promise<Post> {
+  async createPost(userId: string, data: CreatePostInput, image?: StorageUpload): Promise<Post> {
     const user = await this.em.findOne(User, { id: userId })
     if (!user) throw new Error('User not found')
 
-    const post = new Post()
-    post.user = user
+    const storedImage = image ? await this.uploadImage(image) : undefined
 
-    const version = new PostVersion()
-    version.post = post
-    version.title = data.title
-    version.content = data.content
-    post.versions.add(version)
+    try {
+      const post = new Post()
+      post.user = user
+      this.assignImageMetadata(post, storedImage)
 
-    post.coverImage = data.coverImage
-    if (data.tags) post.tags.set(await this.resolveTags(data.tags))
+      const version = new PostVersion()
+      version.post = post
+      version.title = data.title
+      version.content = data.content
+      post.versions.add(version)
 
-    this.em.persist([post, version])
-    await this.em.flush()
-    return post
+      if (data.tags) post.tags.set(await this.resolveTags(data.tags))
+
+      this.em.persist([post, version])
+      await this.em.flush()
+      return post
+    } catch (error: unknown) {
+      if (storedImage) await this.deleteCompensatingObject(storedImage.key, error)
+      throw error
+    }
   }
 
-  async updatePost(postId: string, userId: string, data: UpdatePostInput): Promise<Post> {
+  async updatePost(
+    postId: string,
+    userId: string,
+    data: UpdatePostInput,
+    image?: StorageUpload,
+  ): Promise<Post> {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
@@ -89,39 +126,71 @@ export class PostService {
     )
     if (!post) throw new Error('Post not found')
 
-    const latestVersion = await this.em.findOne(
-      PostVersion,
-      { post: post.id },
-      {
-        orderBy: { createdAt: 'DESC' },
-      },
-    )
-    if (!latestVersion) throw new Error('No version found')
+    const previousImageKey = post.coverImageStorageKey
+    const storedImage = image ? await this.uploadImage(image) : undefined
 
-    // We create a new version only if the post is published and the last version
-    // was created before the publication
-    const shouldCreateNewVersion = post.publishedAt && post.publishedAt < latestVersion.createdAt
+    try {
+      const latestVersion = await this.em.findOne(
+        PostVersion,
+        { post: post.id },
+        {
+          orderBy: { createdAt: 'DESC' },
+        },
+      )
+      if (!latestVersion) throw new Error('No version found')
 
-    if (shouldCreateNewVersion) {
-      const version = new PostVersion()
-      version.post = post
-      version.title = data.title ?? latestVersion.title
-      version.content = data.content ?? latestVersion.content
-      post.versions.add(version)
-      this.em.persist(version)
+      // We create a new version only if the post is published and the last version
+      // was created before the publication
+      const shouldCreateNewVersion = post.publishedAt && post.publishedAt < latestVersion.createdAt
+
+      if (shouldCreateNewVersion) {
+        const version = new PostVersion()
+        version.post = post
+        version.title = data.title ?? latestVersion.title
+        version.content = data.content ?? latestVersion.content
+        post.versions.add(version)
+        this.em.persist(version)
+      } else {
+        if (data.title) latestVersion.title = data.title
+        if (data.content) latestVersion.content = data.content
+      }
+
+      if (storedImage) this.assignImageMetadata(post, storedImage)
+      if (data.tags) post.tags.set(await this.resolveTags(data.tags))
+
       await this.em.flush()
-    } else {
-      // Otherwise we update the last version
-      if (data.title) latestVersion.title = data.title
-      if (data.content) latestVersion.content = data.content
-      await this.em.flush()
+    } catch (error: unknown) {
+      if (storedImage) await this.deleteCompensatingObject(storedImage.key, error)
+      throw error
     }
 
-    if (data.coverImage !== undefined) post.coverImage = data.coverImage
-    if (data.tags) post.tags.set(await this.resolveTags(data.tags))
-    await this.em.flush()
+    if (storedImage && previousImageKey) {
+      await this.deleteStaleObject(previousImageKey)
+    }
 
     return post
+  }
+
+  async removePostImage(postId: string, userId: string): Promise<void> {
+    const post = await this.findOwnedPost(postId, userId)
+    if (!post.coverImageStorageKey) throw new NotFoundException('Post cover image not found')
+
+    const storageKey = post.coverImageStorageKey
+    this.clearImageMetadata(post)
+    await this.em.flush()
+    await this.deleteStaleObject(storageKey)
+  }
+
+  async downloadUserPostImage(postId: string, userId: string): Promise<PostImageDownload> {
+    const post = await this.findOwnedPost(postId, userId)
+    return this.downloadPostImage(post)
+  }
+
+  async downloadPublicPostImage(slug: string): Promise<PostImageDownload> {
+    const post = await this.em.findOne(Post, { slug, publishedAt: { $ne: null } })
+    if (!post) throw new NotFoundException('Post not found')
+
+    return this.downloadPostImage(post)
   }
 
   async computeSlug(post: Post) {
@@ -375,6 +444,89 @@ export class PostService {
     return {
       post,
       commentCount,
+    }
+  }
+
+  private getStorageService(): StorageService {
+    if (!this.storageService) {
+      throw new BadRequestException('File storage is disabled')
+    }
+
+    return this.storageService
+  }
+
+  private async uploadImage(file: StorageUpload): Promise<StoredObject> {
+    return this.getStorageService().upload(file)
+  }
+
+  private assignImageMetadata(post: Post, storedImage?: StoredObject): void {
+    if (!storedImage) return
+
+    post.coverImageStorageKey = storedImage.key
+    post.coverImageFilename = storedImage.filename
+    post.coverImageMimeType = storedImage.mimeType
+    post.coverImageSize = storedImage.size
+  }
+
+  private clearImageMetadata(post: Post): void {
+    post.coverImageStorageKey = undefined
+    post.coverImageFilename = undefined
+    post.coverImageMimeType = undefined
+    post.coverImageSize = undefined
+  }
+
+  private async findOwnedPost(postId: string, userId: string): Promise<Post> {
+    const post = await this.em.findOne(Post, { id: postId, user: userId })
+    if (!post) throw new NotFoundException('Post not found')
+
+    return post
+  }
+
+  private async downloadPostImage(post: Post): Promise<PostImageDownload> {
+    if (
+      !post.coverImageStorageKey ||
+      !post.coverImageFilename ||
+      !post.coverImageMimeType ||
+      post.coverImageSize == null
+    ) {
+      throw new NotFoundException('Post cover image not found')
+    }
+
+    const object = await this.getStorageService().download(post.coverImageStorageKey)
+
+    return {
+      filename: post.coverImageFilename,
+      mimeType: post.coverImageMimeType,
+      size: post.coverImageSize,
+      object,
+    }
+  }
+
+  private async deleteCompensatingObject(
+    storageKey: string,
+    persistenceError: unknown,
+  ): Promise<never> {
+    try {
+      await this.getStorageService().delete(storageKey)
+    } catch (cleanupError: unknown) {
+      throw new InternalServerErrorException('Failed to save post image metadata', {
+        cause: new AggregateError(
+          [persistenceError, cleanupError],
+          'Post image metadata save and object cleanup failed',
+        ),
+      })
+    }
+
+    throw new InternalServerErrorException('Failed to save post image metadata', {
+      cause: persistenceError,
+    })
+  }
+
+  private async deleteStaleObject(storageKey: string): Promise<void> {
+    try {
+      await this.getStorageService().delete(storageKey)
+    } catch (error: unknown) {
+      this.logger.error(`Failed to delete stale storage object ${storageKey}`, error)
     }
   }
 }

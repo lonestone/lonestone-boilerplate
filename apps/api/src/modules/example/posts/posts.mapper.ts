@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import {
+  PostCoverImage,
   PublicAuthorPosts,
   PublicPost,
   PublicPosts,
@@ -37,7 +38,7 @@ export class PostsMapper {
       })),
       publishedAt: post.publishedAt,
       type: this.computePostType(post, latestVersion),
-      coverImage: post.coverImage ?? undefined,
+      coverImage: this.mapCoverImage(post),
       tags: this.mapTags(post),
     }
   }
@@ -75,7 +76,7 @@ export class PostsMapper {
       publishedAt: post.publishedAt!,
       slug: post.slug,
       commentCount,
-      coverImage: post.coverImage ?? undefined,
+      coverImage: this.mapCoverImage(post),
       likesCount: post.likesCount,
       tags: this.mapTags(post),
     }
@@ -100,7 +101,7 @@ export class PostsMapper {
           },
           contentPreview: this.findContentPreview(latestVersion.content),
           commentCount: commentCountByPostId.get(post.id) ?? 0,
-          coverImage: post.coverImage ?? undefined,
+          coverImage: this.mapCoverImage(post),
           likesCount: post.likesCount,
           tags: this.mapTags(post),
         }
@@ -133,7 +134,7 @@ export class PostsMapper {
           },
           contentPreview: this.findContentPreview(latestVersion.content),
           commentCount: commentCountByPostId.get(post.id) ?? 0,
-          coverImage: post.coverImage ?? undefined,
+          coverImage: this.mapCoverImage(post),
           likesCount: post.likesCount,
           tags: this.mapTags(post),
         }
@@ -187,6 +188,23 @@ export class PostsMapper {
     }
 
     return latestVersion
+  }
+
+  private mapCoverImage(post: Post): PostCoverImage | undefined {
+    if (
+      !post.coverImageStorageKey ||
+      !post.coverImageFilename ||
+      !post.coverImageMimeType ||
+      post.coverImageSize == null
+    ) {
+      return undefined
+    }
+
+    return {
+      filename: post.coverImageFilename,
+      mimeType: post.coverImageMimeType,
+      size: post.coverImageSize,
+    }
   }
 
   private mapTags(post: Post): Tag[] {

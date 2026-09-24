@@ -3,7 +3,7 @@
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
 import { aiExampleControllerChatResponseTransformer } from './transformers.gen';
-import type { AiExampleControllerChatData, AiExampleControllerChatResponses, AiExampleControllerGenerateObjectData, AiExampleControllerGenerateObjectResponses, AiExampleControllerGenerateTextData, AiExampleControllerGenerateTextResponses, AiExampleControllerStreamChatData, AiExampleControllerStreamChatResponses, AiExampleControllerStreamObjectData, AiExampleControllerStreamObjectResponses, AiExampleControllerStreamTextData, AiExampleControllerStreamTextResponses, AiExampleUseCasesControllerUseCase1SingleGenerationData, AiExampleUseCasesControllerUseCase1SingleGenerationResponses, AiExampleUseCasesControllerUseCase2GroupedCallsData, AiExampleUseCasesControllerUseCase2GroupedCallsResponses, AiExampleUseCasesControllerUseCase3LogicalUnitsData, AiExampleUseCasesControllerUseCase3LogicalUnitsResponses, AiExampleUseCasesControllerUseCase4ChatSessionData, AiExampleUseCasesControllerUseCase4ChatSessionResponses, AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedData, AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses, AppControllerGetHelloData, AppControllerGetHelloResponses, CommentsControllerCreateCommentData, CommentsControllerCreateCommentResponses, CommentsControllerDeleteCommentData, CommentsControllerDeleteCommentResponses, CommentsControllerGetCommentCountData, CommentsControllerGetCommentCountResponses, CommentsControllerGetCommentRepliesData, CommentsControllerGetCommentRepliesResponses, CommentsControllerGetCommentsData, CommentsControllerGetCommentsResponses, CommentsControllerUpdateCommentData, CommentsControllerUpdateCommentResponses, DocumentControllerDeleteData, DocumentControllerDeleteResponses, DocumentControllerDownloadData, DocumentControllerDownloadResponses, DocumentControllerUploadData, DocumentControllerUploadResponses, PostControllerCreatePostData, PostControllerCreatePostResponses, PostControllerGetUserPostData, PostControllerGetUserPostResponses, PostControllerGetUserPostsData, PostControllerGetUserPostsResponses, PostControllerPublishPostData, PostControllerPublishPostResponses, PostControllerUnpublishPostData, PostControllerUnpublishPostResponses, PostControllerUpdatePostData, PostControllerUpdatePostResponses, PublicAuthorControllerGetAuthorPostsData, PublicAuthorControllerGetAuthorPostsResponses, PublicPostControllerGetPostData, PublicPostControllerGetPostResponses, PublicPostControllerGetPostsData, PublicPostControllerGetPostsResponses, PublicPostControllerGetRandomPostData, PublicPostControllerGetRandomPostResponses, PublicPostControllerLikePostData, PublicPostControllerLikePostResponses } from './types.gen';
+import type { AiExampleControllerChatData, AiExampleControllerChatResponses, AiExampleControllerGenerateObjectData, AiExampleControllerGenerateObjectResponses, AiExampleControllerGenerateTextData, AiExampleControllerGenerateTextResponses, AiExampleControllerStreamChatData, AiExampleControllerStreamChatResponses, AiExampleControllerStreamObjectData, AiExampleControllerStreamObjectResponses, AiExampleControllerStreamTextData, AiExampleControllerStreamTextResponses, AiExampleUseCasesControllerUseCase1SingleGenerationData, AiExampleUseCasesControllerUseCase1SingleGenerationResponses, AiExampleUseCasesControllerUseCase2GroupedCallsData, AiExampleUseCasesControllerUseCase2GroupedCallsResponses, AiExampleUseCasesControllerUseCase3LogicalUnitsData, AiExampleUseCasesControllerUseCase3LogicalUnitsResponses, AiExampleUseCasesControllerUseCase4ChatSessionData, AiExampleUseCasesControllerUseCase4ChatSessionResponses, AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedData, AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses, AppControllerGetHelloData, AppControllerGetHelloResponses, CommentsControllerCreateCommentData, CommentsControllerCreateCommentResponses, CommentsControllerDeleteCommentData, CommentsControllerDeleteCommentResponses, CommentsControllerGetCommentCountData, CommentsControllerGetCommentCountResponses, CommentsControllerGetCommentRepliesData, CommentsControllerGetCommentRepliesResponses, CommentsControllerGetCommentsData, CommentsControllerGetCommentsResponses, CommentsControllerUpdateCommentData, CommentsControllerUpdateCommentResponses, PostControllerCreatePostData, PostControllerCreatePostResponses, PostControllerDownloadUserPostImageData, PostControllerDownloadUserPostImageResponses, PostControllerGetUserPostData, PostControllerGetUserPostResponses, PostControllerGetUserPostsData, PostControllerGetUserPostsResponses, PostControllerPublishPostData, PostControllerPublishPostResponses, PostControllerRemoveUserPostImageData, PostControllerRemoveUserPostImageResponses, PostControllerUnpublishPostData, PostControllerUnpublishPostResponses, PostControllerUpdatePostData, PostControllerUpdatePostResponses, PublicAuthorControllerGetAuthorPostsData, PublicAuthorControllerGetAuthorPostsResponses, PublicPostControllerDownloadPublicPostImageData, PublicPostControllerDownloadPublicPostImageResponses, PublicPostControllerGetPostData, PublicPostControllerGetPostResponses, PublicPostControllerGetPostsData, PublicPostControllerGetPostsResponses, PublicPostControllerGetRandomPostData, PublicPostControllerGetRandomPostResponses, PublicPostControllerLikePostData, PublicPostControllerLikePostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -50,10 +50,11 @@ export const commentsControllerGetCommentReplies = <ThrowOnError extends boolean
 export const postControllerGetUserPosts = <ThrowOnError extends boolean = false>(options: Options<PostControllerGetUserPostsData, ThrowOnError>) => (options.client ?? client).get<PostControllerGetUserPostsResponses, unknown, ThrowOnError>({ url: '/api/admin/posts', ...options });
 
 export const postControllerCreatePost = <ThrowOnError extends boolean = false>(options: Options<PostControllerCreatePostData, ThrowOnError>) => (options.client ?? client).post<PostControllerCreatePostResponses, unknown, ThrowOnError>({
+    ...formDataBodySerializer,
     url: '/api/admin/posts',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': null,
         ...options.headers
     }
 });
@@ -61,10 +62,11 @@ export const postControllerCreatePost = <ThrowOnError extends boolean = false>(o
 export const postControllerGetUserPost = <ThrowOnError extends boolean = false>(options: Options<PostControllerGetUserPostData, ThrowOnError>) => (options.client ?? client).get<PostControllerGetUserPostResponses, unknown, ThrowOnError>({ url: '/api/admin/posts/{id}', ...options });
 
 export const postControllerUpdatePost = <ThrowOnError extends boolean = false>(options: Options<PostControllerUpdatePostData, ThrowOnError>) => (options.client ?? client).put<PostControllerUpdatePostResponses, unknown, ThrowOnError>({
+    ...formDataBodySerializer,
     url: '/api/admin/posts/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': null,
         ...options.headers
     }
 });
@@ -73,7 +75,13 @@ export const postControllerPublishPost = <ThrowOnError extends boolean = false>(
 
 export const postControllerUnpublishPost = <ThrowOnError extends boolean = false>(options: Options<PostControllerUnpublishPostData, ThrowOnError>) => (options.client ?? client).patch<PostControllerUnpublishPostResponses, unknown, ThrowOnError>({ url: '/api/admin/posts/{id}/unpublish', ...options });
 
+export const postControllerRemoveUserPostImage = <ThrowOnError extends boolean = false>(options: Options<PostControllerRemoveUserPostImageData, ThrowOnError>) => (options.client ?? client).delete<PostControllerRemoveUserPostImageResponses, unknown, ThrowOnError>({ url: '/api/admin/posts/{id}/cover-image', ...options });
+
+export const postControllerDownloadUserPostImage = <ThrowOnError extends boolean = false>(options: Options<PostControllerDownloadUserPostImageData, ThrowOnError>) => (options.client ?? client).get<PostControllerDownloadUserPostImageResponses, unknown, ThrowOnError>({ url: '/api/admin/posts/{id}/cover-image', ...options });
+
 export const publicPostControllerGetRandomPost = <ThrowOnError extends boolean = false>(options?: Options<PublicPostControllerGetRandomPostData, ThrowOnError>) => (options?.client ?? client).get<PublicPostControllerGetRandomPostResponses, unknown, ThrowOnError>({ url: '/api/public/posts/random', ...options });
+
+export const publicPostControllerDownloadPublicPostImage = <ThrowOnError extends boolean = false>(options: Options<PublicPostControllerDownloadPublicPostImageData, ThrowOnError>) => (options.client ?? client).get<PublicPostControllerDownloadPublicPostImageResponses, unknown, ThrowOnError>({ url: '/api/public/posts/{slug}/cover-image', ...options });
 
 export const publicPostControllerGetPost = <ThrowOnError extends boolean = false>(options: Options<PublicPostControllerGetPostData, ThrowOnError>) => (options.client ?? client).get<PublicPostControllerGetPostResponses, unknown, ThrowOnError>({ url: '/api/public/posts/{slug}', ...options });
 
@@ -182,17 +190,3 @@ export const aiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMerged = <Th
         ...options.headers
     }
 });
-
-export const documentControllerUpload = <ThrowOnError extends boolean = false>(options: Options<DocumentControllerUploadData, ThrowOnError>) => (options.client ?? client).post<DocumentControllerUploadResponses, unknown, ThrowOnError>({
-    ...formDataBodySerializer,
-    url: '/api/documents',
-    ...options,
-    headers: {
-        'Content-Type': null,
-        ...options.headers
-    }
-});
-
-export const documentControllerDelete = <ThrowOnError extends boolean = false>(options: Options<DocumentControllerDeleteData, ThrowOnError>) => (options.client ?? client).delete<DocumentControllerDeleteResponses, unknown, ThrowOnError>({ url: '/api/documents/{id}', ...options });
-
-export const documentControllerDownload = <ThrowOnError extends boolean = false>(options: Options<DocumentControllerDownloadData, ThrowOnError>) => (options.client ?? client).get<DocumentControllerDownloadResponses, unknown, ThrowOnError>({ url: '/api/documents/{id}', ...options });

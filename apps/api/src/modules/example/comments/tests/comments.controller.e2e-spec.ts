@@ -25,10 +25,8 @@ async function createPublishedPost(
   const createResponse = await request
     .withSession(session)
     .post('/admin/posts')
-    .send({
-      title,
-      content: [{ type: 'text', data: 'Post body' }],
-    })
+    .field('title', title)
+    .field('content', JSON.stringify([{ type: 'text', data: 'Post body' }]))
   const postId = createResponse.body.id as string
   const publishResponse = await request.withSession(session).patch(`/admin/posts/${postId}/publish`)
   return { slug: publishResponse.body.slug as string }

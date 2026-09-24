@@ -50,9 +50,9 @@ After years using GraphQL, we went back to REST (you can find the reasoning in t
 - [DotenvX](https://dotenvx.com/) - Environment variables management
 
 Optional infrastructure is registered only when its feature is enabled. For example, storage does
-not create an S3 client or inspect a bucket until `STORAGE_ENABLED=true`. The low-level storage
-module exposes a service to domain modules, while domain modules such as Documents own HTTP routes,
-database metadata, and authorization.
+not inspect a bucket until `STORAGE_ENABLED=true`. The low-level storage module exposes a service
+to domain modules, while domain modules such as Posts own HTTP routes, database metadata, and
+authorization.
 
 ## Project Structure
 

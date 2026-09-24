@@ -5,9 +5,9 @@ description: Store and serve files through a provider-neutral S3 module
 
 # File Storage
 
-The API includes provider-neutral S3 infrastructure and an optional Documents example. Storage is
-disabled by default, so an unavailable S3 service cannot prevent an application that does not use
-files from starting.
+The API includes provider-neutral S3 infrastructure. Posts demonstrate how a domain module stores
+an optional image. Storage is disabled by default, so an unavailable S3 service cannot prevent an
+application that does not use files from starting.
 
 `StorageModule` is infrastructure-only. It exports `StorageService`, uses one default bucket, and
 does not expose HTTP routes or provider internals. Business modules own their HTTP contracts,
@@ -17,8 +17,7 @@ authorization rules, and database metadata.
 
 Configure the API with these provider-neutral variables:
 
-- `STORAGE_ENABLED`: register the Documents example and its storage infrastructure. Defaults to
-  `false`.
+- `STORAGE_ENABLED`: register storage infrastructure on the Posts module. Defaults to `false`.
 - `STORAGE_BUCKET`: default bucket name.
 - `STORAGE_ENDPOINT`: S3 endpoint. Use the provider endpoint in production.
 - `STORAGE_REGION`: S3 region.
@@ -48,14 +47,14 @@ service instead of importing the AWS SDK or the S3 provider.
 
 ```typescript
 @Injectable()
-export class DocumentsService {
+export class PostService {
   constructor(private readonly storageService: StorageService) {}
 
-  async save(file: Buffer): Promise<string> {
+  async saveCover(file: Buffer): Promise<string> {
     const object = await this.storageService.upload({
       body: file,
-      filename: 'document.pdf',
-      mimeType: 'application/pdf',
+      filename: 'cover.png',
+      mimeType: 'image/png',
       size: file.byteLength,
     })
 
@@ -65,33 +64,35 @@ export class DocumentsService {
 ```
 
 Store the returned opaque key in a business entity when the file belongs to a domain concept. Do
-not expose that key as the public resource identifier. The Documents example shows this pattern.
+not expose that key as the public resource identifier. The Posts example shows this pattern.
 
-## Documents example
+## Posts example
 
-Set `STORAGE_ENABLED=true` to register the example. Authenticated clients can upload one multipart
-`file`, then download or delete it by document ID under `/api/documents`. The `Document` entity
-stores the owner, storage key, original filename, MIME type, and size.
+Set `STORAGE_ENABLED=true` so `PostModule` can upload images. Creating or updating a post uses
+`multipart/form-data`: `title` as text, `content` and `tags` as JSON fields, and an optional
+`coverImage` file. Omitting `coverImage` on update keeps the current file. `DELETE /api/admin/posts/:id/cover-image`
+removes it. The owner can download a draft from `GET /api/admin/posts/:id/cover-image`. Published posts
+serve the same file from `GET /api/public/posts/:slug/cover-image`.
 
-Every read and delete includes the authenticated owner in the database query. A different user
-receives `404`, which does not reveal whether the document exists. If the metadata transaction
-fails after upload, the service deletes the uploaded object as compensation.
+The `Post` entity stores the storage key, original filename, detected MIME type, and size. Image
+contracts expose only filename, MIME type, and size. Every owner download and delete includes the
+authenticated user in the query. A different user receives `404`. If SQL persistence fails after
+upload, the service deletes the new object. An old object is deleted only after the replacement
+metadata is committed.
 
-The generated SDK builds `FormData` for uploads and returns a `Blob` for downloads:
+The generated SDK builds `FormData` for create and update, and returns a `Blob` for downloads:
 
 ```typescript
-const upload = await documentControllerUpload({
-  body: { file },
+const created = await postControllerCreatePost({
+  body: { title, content, coverImage: file },
 })
 
-const download = await documentControllerDownload({
-  path: { id: upload.data.id },
+const download = await publicPostControllerDownloadPublicPostImage({
+  path: { slug: created.data.slug },
 })
 ```
 
-Use the example as a starting point for domain-specific modules such as invoices, profile images,
-or attachments. Keep storage mechanics in `StorageService`, but put access rules and routes in the
-domain module.
+Keep storage mechanics in `StorageService`, but put access rules and routes in the domain module.
 
 ## Production
 
@@ -105,7 +106,7 @@ enabled only when the selected compatible provider requires it.
 
 ## Remove storage
 
-Delete `apps/api/src/modules/example/documents` and remove `DocumentModule` from `ExampleModule`.
-Then delete `apps/api/src/modules/storage`, the document migration and snapshot entry, and the AWS
-SDK, direct `testcontainers`, and Multer type dependencies if nothing else uses them. Remove the
-`STORAGE_*` variables, the RustFS Compose service and volume, then regenerate the OpenAPI client.
+If you do not need files, leave `STORAGE_ENABLED=false` and ignore the image fields on posts. To
+remove the infrastructure, delete `apps/api/src/modules/storage`, the AWS SDK, direct
+`testcontainers`, and Multer type dependencies if nothing else uses them. Remove the `STORAGE_*`
+variables, the RustFS Compose service and volume, then regenerate the OpenAPI client.

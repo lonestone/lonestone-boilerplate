@@ -357,101 +357,37 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Schema for creating/updating a post",
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "properties": {
-                  "title": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "content": {
-                    "type": "array",
-                    "items": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "text"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "type",
-                            "data"
-                          ],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "image"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "type",
-                            "data"
-                          ],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "video"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "type",
-                            "data"
-                          ],
-                          "additionalProperties": false
-                        }
-                      ],
-                      "title": "PostContentSchema",
-                      "description": "Schema for content items (text, image, video)",
-                      "type": "object"
-                    }
-                  },
-                  "coverImage": {
-                    "type": "string",
-                    "format": "uri"
-                  },
-                  "tags": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                },
                 "required": [
                   "title",
                   "content"
                 ],
-                "additionalProperties": false,
-                "title": "CreatePostSchema",
-                "description": "Schema for creating/updating a post"
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "JSON array of post content blocks"
+                  },
+                  "tags": {
+                    "type": "string",
+                    "description": "JSON array of tag names"
+                  },
+                  "coverImage": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
               }
             }
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Schema for a user's post",
             "content": {
               "application/json": {
@@ -548,91 +484,28 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Schema for updating a post",
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
                 "type": "object",
+                "required": [],
                 "properties": {
                   "title": {
-                    "type": "string",
-                    "minLength": 1
+                    "type": "string"
                   },
                   "content": {
-                    "type": "array",
-                    "items": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "text"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "type",
-                            "data"
-                          ],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "image"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "type",
-                            "data"
-                          ],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "video"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "type",
-                            "data"
-                          ],
-                          "additionalProperties": false
-                        }
-                      ],
-                      "title": "PostContentSchema",
-                      "description": "Schema for content items (text, image, video)",
-                      "type": "object"
-                    }
+                    "type": "string",
+                    "description": "JSON array of post content blocks"
+                  },
+                  "tags": {
+                    "type": "string",
+                    "description": "JSON array of tag names"
                   },
                   "coverImage": {
                     "type": "string",
-                    "format": "uri"
-                  },
-                  "tags": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                    "format": "binary"
                   }
-                },
-                "additionalProperties": false,
-                "title": "UpdatePostSchema",
-                "description": "Schema for updating a post"
+                }
               }
             }
           }
@@ -725,6 +598,66 @@
         }
       }
     },
+    "/api/admin/posts/{id}/cover-image": {
+      "get": {
+        "operationId": "PostController_downloadUserPostImage",
+        "tags": [
+          "Admin Posts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Post identifier"
+            },
+            "description": "Post identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post cover image contents",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "PostController_removeUserPostImage",
+        "tags": [
+          "Admin Posts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Post identifier"
+            },
+            "description": "Post identifier"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/public/posts/random": {
       "get": {
         "operationId": "PublicPostController_getRandomPost",
@@ -739,6 +672,40 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PublicPostSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/posts/{slug}/cover-image": {
+      "get": {
+        "operationId": "PublicPostController_downloadPublicPostImage",
+        "tags": [
+          "Public Posts"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Public post slug"
+            },
+            "description": "Public post slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published post cover image contents",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -2410,106 +2377,6 @@
           }
         }
       }
-    },
-    "/api/documents": {
-      "post": {
-        "operationId": "DocumentController_upload",
-        "tags": [
-          "Documents"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "file"
-                ],
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Metadata for a document owned by the authenticated user",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Document"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/documents/{id}": {
-      "get": {
-        "operationId": "DocumentController_download",
-        "tags": [
-          "Documents"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-              "description": "Document identifier"
-            },
-            "description": "Document identifier"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Document contents",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "operationId": "DocumentController_delete",
-        "tags": [
-          "Documents"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-              "description": "Document identifier"
-            },
-            "description": "Document identifier"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        }
-      }
     }
   },
   "components": {
@@ -2868,66 +2735,6 @@
         "additionalProperties": false,
         "title": "UpdateCommentSchema",
         "description": "Schema for updating a comment"
-      },
-      "CreatePostSchema": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PostContentSchema"
-            }
-          },
-          "coverImage": {
-            "type": "string",
-            "format": "uri"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "title",
-          "content"
-        ],
-        "additionalProperties": false,
-        "title": "CreatePostSchema",
-        "description": "Schema for creating/updating a post"
-      },
-      "UpdatePostSchema": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PostContentSchema"
-            }
-          },
-          "coverImage": {
-            "type": "string",
-            "format": "uri"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdatePostSchema",
-        "description": "Schema for updating a post"
       },
       "GenerateTextResponse": {
         "type": "object",
@@ -3404,44 +3211,6 @@
         "title": "CommentsSchema",
         "description": "Schema for a paginated list of comments"
       },
-      "Document": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "filename": {
-            "type": "string"
-          },
-          "mimeType": {
-            "type": "string"
-          },
-          "size": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "filename",
-          "mimeType",
-          "size",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": false,
-        "title": "Document",
-        "description": "Metadata for a document owned by the authenticated user"
-      },
       "UserPostSchema": {
         "type": "object",
         "properties": {
@@ -3496,8 +3265,7 @@
             "type": "number"
           },
           "coverImage": {
-            "type": "string",
-            "format": "uri"
+            "$ref": "#/components/schemas/PostCoverImageSchema"
           },
           "tags": {
             "type": "array",
@@ -3600,6 +3368,30 @@
         "title": "PostVersionSchema",
         "description": "Schema for a post version"
       },
+      "PostCoverImageSchema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "filename",
+          "mimeType",
+          "size"
+        ],
+        "additionalProperties": false,
+        "title": "PostCoverImageSchema",
+        "description": "Public metadata for a post cover image. The storage key is never exposed."
+      },
       "TagSchema": {
         "type": "object",
         "properties": {
@@ -3677,8 +3469,7 @@
                   "type": "number"
                 },
                 "coverImage": {
-                  "type": "string",
-                  "format": "uri"
+                  "$ref": "#/components/schemas/PostCoverImageSchema"
                 },
                 "tags": {
                   "type": "array",
@@ -3768,8 +3559,7 @@
             "type": "number"
           },
           "coverImage": {
-            "type": "string",
-            "format": "uri"
+            "$ref": "#/components/schemas/PostCoverImageSchema"
           },
           "likesCount": {
             "type": "number"
@@ -3826,8 +3616,7 @@
                   "type": "number"
                 },
                 "coverImage": {
-                  "type": "string",
-                  "format": "uri"
+                  "$ref": "#/components/schemas/PostCoverImageSchema"
                 },
                 "likesCount": {
                   "type": "number"
@@ -3919,8 +3708,7 @@
                   "type": "number"
                 },
                 "coverImage": {
-                  "type": "string",
-                  "format": "uri"
+                  "$ref": "#/components/schemas/PostCoverImageSchema"
                 },
                 "likesCount": {
                   "type": "number"
@@ -3979,12 +3767,46 @@
         "title": "PublicAuthorPostsSchema",
         "description": "A list of posts from a specific author"
       },
-      "Document Upload": {
+      "CreatePostSchema": {
         "type": "object",
-        "properties": {},
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tags": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "content"
+        ],
         "additionalProperties": false,
-        "title": "Document Upload",
-        "description": "Multipart upload fields validated separately from the binary file"
+        "title": "CreatePostSchema",
+        "description": "Multipart fields for creating a post. Send content and tags as JSON strings."
+      },
+      "UpdatePostSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdatePostSchema",
+        "description": "Multipart fields for updating a post. Omit coverImage to keep the current one. Send content and tags as JSON strings."
       },
       "AiCoreMessage": {
         "type": "object",
