@@ -49,7 +49,16 @@ export class Post {
   slug?: string
 
   @Property({ nullable: true })
-  coverImage?: string
+  coverImageStorageKey?: string
+
+  @Property({ nullable: true })
+  coverImageFilename?: string
+
+  @Property({ nullable: true })
+  coverImageMimeType?: string
+
+  @Property({ nullable: true })
+  coverImageSize?: number
 
   @Property({ default: 0 })
   likesCount: number = 0

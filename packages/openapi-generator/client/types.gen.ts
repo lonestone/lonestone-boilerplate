@@ -144,30 +144,6 @@ export type UpdateCommentSchema = {
 };
 
 /**
- * CreatePostSchema
- *
- * Schema for creating/updating a post
- */
-export type CreatePostSchema = {
-    title: string;
-    content: Array<PostContentSchema>;
-    coverImage?: string;
-    tags?: Array<string>;
-};
-
-/**
- * UpdatePostSchema
- *
- * Schema for updating a post
- */
-export type UpdatePostSchema = {
-    title?: string;
-    content?: Array<PostContentSchema>;
-    coverImage?: string;
-    tags?: Array<string>;
-};
-
-/**
  * GenerateTextResponse
  *
  * Response from text generation
@@ -369,20 +345,6 @@ export type CommentsSchema = {
 };
 
 /**
- * Document
- *
- * Metadata for a document owned by the authenticated user
- */
-export type Document = {
-    id: string;
-    filename: string;
-    mimeType: string;
-    size: number;
-    createdAt: string;
-    updatedAt: string;
-};
-
-/**
  * UserPostSchema
  *
  * Schema for a user's post
@@ -396,7 +358,7 @@ export type UserPostSchema = {
     publishedAt?: string | null;
     type: 'published' | 'draft';
     commentCount?: number;
-    coverImage?: string;
+    coverImage?: PostCoverImageSchema;
     tags: Array<TagSchema>;
 };
 
@@ -428,6 +390,17 @@ export type PostVersionSchema = {
 };
 
 /**
+ * PostCoverImageSchema
+ *
+ * Public metadata for a post cover image. The storage key is never exposed.
+ */
+export type PostCoverImageSchema = {
+    filename: string;
+    mimeType: string;
+    size: number;
+};
+
+/**
  * TagSchema
  *
  * A tag attached to a post
@@ -452,7 +425,7 @@ export type UserPostsSchema = {
         publishedAt?: string | null;
         type: 'published' | 'draft';
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: PostCoverImageSchema;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
     }>;
@@ -478,7 +451,7 @@ export type PublicPostSchema = {
     publishedAt: string;
     slug?: string;
     commentCount?: number;
-    coverImage?: string;
+    coverImage?: PostCoverImageSchema;
     likesCount: number;
     tags: Array<TagSchema>;
 };
@@ -497,7 +470,7 @@ export type PublicPostsSchema = {
         publishedAt: string;
         slug?: string;
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: PostCoverImageSchema;
         likesCount: number;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
@@ -524,7 +497,7 @@ export type PublicAuthorPostsSchema = {
         publishedAt: string;
         slug?: string;
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: PostCoverImageSchema;
         likesCount: number;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
@@ -538,12 +511,25 @@ export type PublicAuthorPostsSchema = {
 };
 
 /**
- * Document Upload
+ * CreatePostSchema
  *
- * Multipart upload fields validated separately from the binary file
+ * Multipart fields for creating a post. Send content and tags as JSON strings.
  */
-export type DocumentUpload = {
-    [key: string]: never;
+export type CreatePostSchema = {
+    title: string;
+    content: string;
+    tags?: string;
+};
+
+/**
+ * UpdatePostSchema
+ *
+ * Multipart fields for updating a post. Omit coverImage to keep the current one. Send content and tags as JSON strings.
+ */
+export type UpdatePostSchema = {
+    title?: string;
+    content?: string;
+    tags?: string;
 };
 
 /**
@@ -1010,30 +996,17 @@ export type PostControllerGetUserPostsResponses = {
 export type PostControllerGetUserPostsResponse = PostControllerGetUserPostsResponses[keyof PostControllerGetUserPostsResponses];
 
 export type PostControllerCreatePostData = {
-    /**
-     * CreatePostSchema
-     *
-     * Schema for creating/updating a post
-     */
     body: {
         title: string;
         /**
-         * PostContentSchema
-         *
-         * Schema for content items (text, image, video)
+         * JSON array of post content blocks
          */
-        content: Array<{
-            type: 'text';
-            data: string;
-        } | {
-            type: 'image';
-            data: string;
-        } | {
-            type: 'video';
-            data: string;
-        }>;
-        coverImage?: string;
-        tags?: Array<string>;
+        content: string;
+        /**
+         * JSON array of tag names
+         */
+        tags?: string;
+        coverImage?: Blob | File;
     };
     path?: never;
     query?: never;
@@ -1044,7 +1017,7 @@ export type PostControllerCreatePostResponses = {
     /**
      * Schema for a user's post
      */
-    200: UserPostSchema;
+    201: UserPostSchema;
 };
 
 export type PostControllerCreatePostResponse = PostControllerCreatePostResponses[keyof PostControllerCreatePostResponses];
@@ -1068,30 +1041,17 @@ export type PostControllerGetUserPostResponses = {
 export type PostControllerGetUserPostResponse = PostControllerGetUserPostResponses[keyof PostControllerGetUserPostResponses];
 
 export type PostControllerUpdatePostData = {
-    /**
-     * UpdatePostSchema
-     *
-     * Schema for updating a post
-     */
     body: {
         title?: string;
         /**
-         * PostContentSchema
-         *
-         * Schema for content items (text, image, video)
+         * JSON array of post content blocks
          */
-        content?: Array<{
-            type: 'text';
-            data: string;
-        } | {
-            type: 'image';
-            data: string;
-        } | {
-            type: 'video';
-            data: string;
-        }>;
-        coverImage?: string;
-        tags?: Array<string>;
+        content?: string;
+        /**
+         * JSON array of tag names
+         */
+        tags?: string;
+        coverImage?: Blob | File;
     };
     path: {
         id: string;
@@ -1135,6 +1095,45 @@ export type PostControllerUnpublishPostResponses = {
     200: unknown;
 };
 
+export type PostControllerRemoveUserPostImageData = {
+    body?: never;
+    path: {
+        /**
+         * Post identifier
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/admin/posts/{id}/cover-image';
+};
+
+export type PostControllerRemoveUserPostImageResponses = {
+    204: void;
+};
+
+export type PostControllerRemoveUserPostImageResponse = PostControllerRemoveUserPostImageResponses[keyof PostControllerRemoveUserPostImageResponses];
+
+export type PostControllerDownloadUserPostImageData = {
+    body?: never;
+    path: {
+        /**
+         * Post identifier
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/admin/posts/{id}/cover-image';
+};
+
+export type PostControllerDownloadUserPostImageResponses = {
+    /**
+     * Post cover image contents
+     */
+    200: Blob | File;
+};
+
+export type PostControllerDownloadUserPostImageResponse = PostControllerDownloadUserPostImageResponses[keyof PostControllerDownloadUserPostImageResponses];
+
 export type PublicPostControllerGetRandomPostData = {
     body?: never;
     path?: never;
@@ -1150,6 +1149,27 @@ export type PublicPostControllerGetRandomPostResponses = {
 };
 
 export type PublicPostControllerGetRandomPostResponse = PublicPostControllerGetRandomPostResponses[keyof PublicPostControllerGetRandomPostResponses];
+
+export type PublicPostControllerDownloadPublicPostImageData = {
+    body?: never;
+    path: {
+        /**
+         * Public post slug
+         */
+        slug: string;
+    };
+    query?: never;
+    url: '/api/public/posts/{slug}/cover-image';
+};
+
+export type PublicPostControllerDownloadPublicPostImageResponses = {
+    /**
+     * Published post cover image contents
+     */
+    200: Blob | File;
+};
+
+export type PublicPostControllerDownloadPublicPostImageResponse = PublicPostControllerDownloadPublicPostImageResponses[keyof PublicPostControllerDownloadPublicPostImageResponses];
 
 export type PublicPostControllerGetPostData = {
     body?: never;
@@ -1948,60 +1968,3 @@ export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedRespons
 };
 
 export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponse = AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses[keyof AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses];
-
-export type DocumentControllerUploadData = {
-    body: {
-        file: Blob | File;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/documents';
-};
-
-export type DocumentControllerUploadResponses = {
-    /**
-     * Metadata for a document owned by the authenticated user
-     */
-    201: Document;
-};
-
-export type DocumentControllerUploadResponse = DocumentControllerUploadResponses[keyof DocumentControllerUploadResponses];
-
-export type DocumentControllerDeleteData = {
-    body?: never;
-    path: {
-        /**
-         * Document identifier
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/documents/{id}';
-};
-
-export type DocumentControllerDeleteResponses = {
-    204: void;
-};
-
-export type DocumentControllerDeleteResponse = DocumentControllerDeleteResponses[keyof DocumentControllerDeleteResponses];
-
-export type DocumentControllerDownloadData = {
-    body?: never;
-    path: {
-        /**
-         * Document identifier
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/documents/{id}';
-};
-
-export type DocumentControllerDownloadResponses = {
-    /**
-     * Document contents
-     */
-    200: Blob | File;
-};
-
-export type DocumentControllerDownloadResponse = DocumentControllerDownloadResponses[keyof DocumentControllerDownloadResponses];

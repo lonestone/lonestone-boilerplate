@@ -262,20 +262,6 @@ export const zCommentsSchema = z.object({
 });
 
 /**
- * Document
- *
- * Metadata for a document owned by the authenticated user
- */
-export const zDocument = z.object({
-    id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
-    filename: z.string(),
-    mimeType: z.string(),
-    size: z.int().gte(0).lte(9007199254740991),
-    createdAt: z.string(),
-    updatedAt: z.string()
-});
-
-/**
  * PostContentSchema
  *
  * Schema for content items (text, image, video)
@@ -296,30 +282,6 @@ export const zPostContentSchema = z.union([
 ]);
 
 /**
- * CreatePostSchema
- *
- * Schema for creating/updating a post
- */
-export const zCreatePostSchema = z.object({
-    title: z.string().min(1),
-    content: z.array(zPostContentSchema),
-    coverImage: z.optional(z.url()),
-    tags: z.optional(z.array(z.string()))
-});
-
-/**
- * UpdatePostSchema
- *
- * Schema for updating a post
- */
-export const zUpdatePostSchema = z.object({
-    title: z.optional(z.string().min(1)),
-    content: z.optional(z.array(zPostContentSchema)),
-    coverImage: z.optional(z.url()),
-    tags: z.optional(z.array(z.string()))
-});
-
-/**
  * PostVersionSchema
  *
  * Schema for a post version
@@ -328,6 +290,17 @@ export const zPostVersionSchema = z.object({
     id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
     title: z.string(),
     createdAt: z.string()
+});
+
+/**
+ * PostCoverImageSchema
+ *
+ * Public metadata for a post cover image. The storage key is never exposed.
+ */
+export const zPostCoverImageSchema = z.object({
+    filename: z.string(),
+    mimeType: z.string(),
+    size: z.int().gte(0).lte(9007199254740991)
 });
 
 /**
@@ -361,7 +334,7 @@ export const zUserPostSchema = z.object({
     ])),
     type: z.enum(['published', 'draft']),
     commentCount: z.optional(z.number()),
-    coverImage: z.optional(z.url()),
+    coverImage: z.optional(zPostCoverImageSchema),
     tags: z.array(zTagSchema)
 });
 
@@ -385,7 +358,7 @@ export const zUserPostsSchema = z.object({
         ])),
         type: z.enum(['published', 'draft']),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zPostCoverImageSchema),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
     })),
@@ -411,7 +384,7 @@ export const zPublicPostSchema = z.object({
     publishedAt: z.string(),
     slug: z.optional(z.string()),
     commentCount: z.optional(z.number()),
-    coverImage: z.optional(z.url()),
+    coverImage: z.optional(zPostCoverImageSchema),
     likesCount: z.number(),
     tags: z.array(zTagSchema)
 });
@@ -430,7 +403,7 @@ export const zPublicPostsSchema = z.object({
         publishedAt: z.string(),
         slug: z.optional(z.string()),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zPostCoverImageSchema),
         likesCount: z.number(),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
@@ -457,7 +430,7 @@ export const zPublicAuthorPostsSchema = z.object({
         publishedAt: z.string(),
         slug: z.optional(z.string()),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zPostCoverImageSchema),
         likesCount: z.number(),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
@@ -471,11 +444,26 @@ export const zPublicAuthorPostsSchema = z.object({
 });
 
 /**
- * Document Upload
+ * CreatePostSchema
  *
- * Multipart upload fields validated separately from the binary file
+ * Multipart fields for creating a post. Send content and tags as JSON strings.
  */
-export const zDocumentUpload = z.record(z.string(), z.never());
+export const zCreatePostSchema = z.object({
+    title: z.string().min(1),
+    content: z.string().min(1),
+    tags: z.optional(z.string())
+});
+
+/**
+ * UpdatePostSchema
+ *
+ * Multipart fields for updating a post. Omit coverImage to keep the current one. Send content and tags as JSON strings.
+ */
+export const zUpdatePostSchema = z.object({
+    title: z.optional(z.string().min(1)),
+    content: z.optional(z.string()),
+    tags: z.optional(z.string())
+});
 
 /**
  * AiCoreMessage
@@ -1019,23 +1007,10 @@ export const zPostControllerGetUserPostsResponse = zUserPostsSchema;
 
 export const zPostControllerCreatePostData = z.object({
     body: z.object({
-        title: z.string().min(1),
-        content: z.array(z.union([
-            z.object({
-                type: z.literal('text'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('image'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('video'),
-                data: z.string()
-            })
-        ])),
-        coverImage: z.optional(z.url()),
-        tags: z.optional(z.array(z.string()))
+        title: z.string(),
+        content: z.string(),
+        tags: z.optional(z.string()),
+        coverImage: z.optional(z.string())
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
@@ -1061,23 +1036,10 @@ export const zPostControllerGetUserPostResponse = zUserPostSchema;
 
 export const zPostControllerUpdatePostData = z.object({
     body: z.object({
-        title: z.optional(z.string().min(1)),
-        content: z.optional(z.array(z.union([
-            z.object({
-                type: z.literal('text'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('image'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('video'),
-                data: z.string()
-            })
-        ]))),
-        coverImage: z.optional(z.url()),
-        tags: z.optional(z.array(z.string()))
+        title: z.optional(z.string()),
+        content: z.optional(z.string()),
+        tags: z.optional(z.string()),
+        coverImage: z.optional(z.string())
     }),
     path: z.object({
         id: z.string()
@@ -1106,6 +1068,29 @@ export const zPostControllerUnpublishPostData = z.object({
     query: z.optional(z.never())
 });
 
+export const zPostControllerRemoveUserPostImageData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+export const zPostControllerRemoveUserPostImageResponse = z.void();
+
+export const zPostControllerDownloadUserPostImageData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Post cover image contents
+ */
+export const zPostControllerDownloadUserPostImageResponse = z.string();
+
 export const zPublicPostControllerGetRandomPostData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
@@ -1116,6 +1101,19 @@ export const zPublicPostControllerGetRandomPostData = z.object({
  * A public post
  */
 export const zPublicPostControllerGetRandomPostResponse = zPublicPostSchema;
+
+export const zPublicPostControllerDownloadPublicPostImageData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        slug: z.string().min(1)
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Published post cover image contents
+ */
+export const zPublicPostControllerDownloadPublicPostImageResponse = z.string();
 
 export const zPublicPostControllerGetPostData = z.object({
     body: z.optional(z.never()),
@@ -1596,39 +1594,3 @@ export const zAiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedData 
  * Response from text generation
  */
 export const zAiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponse = zGenerateTextResponse;
-
-export const zDocumentControllerUploadData = z.object({
-    body: z.object({
-        file: z.string()
-    }),
-    path: z.optional(z.never()),
-    query: z.optional(z.never())
-});
-
-/**
- * Metadata for a document owned by the authenticated user
- */
-export const zDocumentControllerUploadResponse = zDocument;
-
-export const zDocumentControllerDeleteData = z.object({
-    body: z.optional(z.never()),
-    path: z.object({
-        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
-    }),
-    query: z.optional(z.never())
-});
-
-export const zDocumentControllerDeleteResponse = z.void();
-
-export const zDocumentControllerDownloadData = z.object({
-    body: z.optional(z.never()),
-    path: z.object({
-        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
-    }),
-    query: z.optional(z.never())
-});
-
-/**
- * Document contents
- */
-export const zDocumentControllerDownloadResponse = z.string();

@@ -43,7 +43,7 @@ pnpm install
 | `BETTER_AUTH_SECRET` | Secret key for JWTs | Yes | - |
 | `NODE_ENV` | Environment (development, production) | No | `development` |
 | `TRUSTED_ORIGINS` | List of trusted origins. ⚠️ If you change the port of your frontends, you need to update this variable. | Yes | - |
-| `STORAGE_ENABLED` | Enable storage infrastructure and the Documents example | No | `false` |
+| `STORAGE_ENABLED` | Enable storage infrastructure for optional post images | No | `false` |
 | `STORAGE_BUCKET` | Default S3 bucket | No | `lonestone` |
 | `STORAGE_ENDPOINT` | S3-compatible endpoint | No | `http://localhost:9000` |
 | `STORAGE_REGION` | S3 region | No | `us-east-1` |

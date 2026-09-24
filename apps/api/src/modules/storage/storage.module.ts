@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common'
+import { Global, Module } from '@nestjs/common'
 import { config } from '../../config/env.config'
 import { S3StorageProvider } from './providers/s3-storage.provider'
 import { STORAGE_PROVIDER } from './providers/storage-provider.interface'
 import { StorageService } from './storage.service'
 
+@Global()
 @Module({
   providers: [
     {
