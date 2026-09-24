@@ -11,6 +11,7 @@ import { motion, useReducedMotion, useScroll, useSpring } from 'motion/react'
 import { ArrowLeft, ArrowRight, Calendar, Clock, Heart, User } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useFetcher, useSearchParams } from 'react-router'
+import { publicPostImageUrl } from '@/lib/post-image'
 import { CommentsList } from '../comments/comments-list'
 
 // ── Read-time helper (~200 wpm) ─────────────────────────────────────────────
@@ -57,7 +58,7 @@ interface RelatedCardProps {
   title: string
   authorName: string
   publishedAt: string
-  coverImage?: string | null
+  coverImage?: boolean
   index: number
 }
 
@@ -88,7 +89,7 @@ function RelatedCard({
         <div className="h-16 w-24 shrink-0 overflow-hidden rounded-sm bg-muted">
           {coverImage && !imgError ? (
             <img
-              src={coverImage}
+              src={publicPostImageUrl(slug)}
               alt={title}
               onLoad={() => setImgLoaded(true)}
               onError={() => setImgError(true)}
@@ -184,7 +185,7 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
       {post?.coverImage && (
         <div className="relative aspect-[21/9] w-full overflow-hidden bg-muted">
           <img
-            src={post.coverImage}
+            src={publicPostImageUrl(postSlug)}
             alt={post.title}
             onLoad={() => setCoverLoaded(true)}
             className={[
@@ -340,7 +341,7 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
                       title={relPost.title}
                       authorName={relPost.author.name}
                       publishedAt={relPost.publishedAt}
-                      coverImage={relPost.coverImage}
+                      coverImage={Boolean(relPost.coverImage)}
                       index={idx}
                     />
                   ))}
