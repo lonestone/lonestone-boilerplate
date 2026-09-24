@@ -41,7 +41,6 @@ describe('S3StorageProvider with RustFS', () => {
 
     await provider.onModuleInit()
     await provider.upload({
-      bucket,
       key,
       body: inputBody,
       contentType: 'text/plain',
@@ -49,7 +48,7 @@ describe('S3StorageProvider with RustFS', () => {
       size: inputBody.length,
     })
 
-    const object = await provider.download(bucket, key)
+    const object = await provider.download(key)
     expect(object).not.toBeNull()
     expect(object).toMatchObject({
       contentType: 'text/plain',
@@ -58,8 +57,8 @@ describe('S3StorageProvider with RustFS', () => {
     })
     expect(await readStream(object!.body)).toEqual(inputBody)
 
-    await provider.delete(bucket, key)
-    await expect(provider.download(bucket, key)).resolves.toBeNull()
+    await provider.delete(key)
+    await expect(provider.download(key)).resolves.toBeNull()
   })
 })
 

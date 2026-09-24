@@ -31,7 +31,6 @@ describe('S3StorageProvider', () => {
     send.mockResolvedValue({})
 
     await provider.upload({
-      bucket: 'test-bucket',
       key: 'object-key',
       body: Buffer.from('content'),
       contentType: 'text/plain',
@@ -64,7 +63,7 @@ describe('S3StorageProvider', () => {
       },
     })
 
-    const actualObject = await provider.download('test-bucket', 'object-key')
+    const actualObject = await provider.download('object-key')
 
     expect(send.mock.calls[0]?.[0]).toBeInstanceOf(GetObjectCommand)
     expect(actualObject).toEqual({
@@ -80,7 +79,7 @@ describe('S3StorageProvider', () => {
     error.name = 'NoSuchKey'
     send.mockRejectedValue(error)
 
-    await expect(provider.download('test-bucket', 'object-key')).resolves.toBeNull()
+    await expect(provider.download('object-key')).resolves.toBeNull()
   })
 
   it('keeps a missing bucket as an infrastructure failure', async () => {
@@ -88,7 +87,7 @@ describe('S3StorageProvider', () => {
     error.name = 'NoSuchBucket'
     send.mockRejectedValue(error)
 
-    await expect(provider.download('test-bucket', 'object-key')).rejects.toBe(error)
+    await expect(provider.download('object-key')).rejects.toBe(error)
   })
 
   it('rejects invalid object responses', async () => {
@@ -96,7 +95,7 @@ describe('S3StorageProvider', () => {
       Body: 'not-a-readable-stream',
     })
 
-    await expect(provider.download('test-bucket', 'object-key')).rejects.toThrow(
+    await expect(provider.download('object-key')).rejects.toThrow(
       'The storage provider returned an invalid object stream',
     )
   })
@@ -104,7 +103,7 @@ describe('S3StorageProvider', () => {
   it('deletes an object', async () => {
     send.mockResolvedValue({})
 
-    await provider.delete('test-bucket', 'object-key')
+    await provider.delete('object-key')
 
     const command = send.mock.calls[0]?.[0]
     expect(command).toBeInstanceOf(DeleteObjectCommand)

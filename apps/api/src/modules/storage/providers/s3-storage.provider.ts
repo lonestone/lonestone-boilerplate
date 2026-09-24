@@ -74,7 +74,7 @@ export class S3StorageProvider implements IStorageProvider, OnModuleInit {
   async upload(input: StorageProviderUploadInput): Promise<void> {
     await this.client.send(
       new PutObjectCommand({
-        Bucket: input.bucket,
+        Bucket: this.options.bucket,
         Key: input.key,
         Body: input.body,
         ContentLength: input.size,
@@ -86,9 +86,11 @@ export class S3StorageProvider implements IStorageProvider, OnModuleInit {
     )
   }
 
-  async download(bucket: string, key: string): Promise<StorageProviderObject | null> {
+  async download(key: string): Promise<StorageProviderObject | null> {
     try {
-      const response = await this.client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
+      const response = await this.client.send(
+        new GetObjectCommand({ Bucket: this.options.bucket, Key: key }),
+      )
 
       if (!this.isGetObjectResponse(response)) {
         throw new Error('The storage provider returned an invalid object stream')
@@ -106,8 +108,8 @@ export class S3StorageProvider implements IStorageProvider, OnModuleInit {
     }
   }
 
-  async delete(bucket: string, key: string): Promise<void> {
-    await this.client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }))
+  async delete(key: string): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.options.bucket, Key: key }))
   }
 
   private isGetObjectResponse(value: unknown): value is {

@@ -42,9 +42,9 @@ Business modules need file storage without coupling their contracts, authorizati
    Adapt the `STORAGE_*` schema and `config.storage` mapping from the staged reference. Add matching placeholders to the API and root env examples, preserving project-specific values and keeping `STORAGE_ENABLED=false` by default.
    Done when: the API validates all storage settings centrally and boots with storage disabled while the object store is unavailable.
 
-4. **Conditional domain integration** — signal: a business module that needs files does not import `StorageModule`, or storage infrastructure is registered unconditionally in the root application module.
-   Follow the staged `posts.module.ts` pattern in the project's owning business module: register `StorageModule` only when storage is enabled. Keep HTTP routes, authorization, file metadata, and rollback behavior in that business module.
-   Done when: the owning module can use `StorageService` when enabled, and disabling storage removes its runtime dependency on S3.
+4. **Domain integration with a stable API contract** — signal: a business module that needs files does not import `StorageModule`, conditionally registers file routes, or injects `StorageService` as optional.
+   Follow the staged `posts.module.ts` pattern in the project's owning business module: always register `StorageModule` so routes and generated OpenAPI clients do not depend on deployment configuration. The module selects a disabled provider when `STORAGE_ENABLED=false`; file operations then return `503 Service Unavailable` without contacting S3. Keep HTTP routes, authorization, file metadata, and rollback behavior in the business module.
+   Done when: the owning module always injects `StorageService`, its API contract is stable, and the disabled provider avoids all S3 calls.
 
 5. **Local S3-compatible service** — signal: `docker-compose.yml` has no object storage service for local development, or it uses storage credentials unrelated to the API env.
    Adapt the staged RustFS service, ports, health check, and named volume. Reuse the API storage credentials and preserve existing Compose services and project port choices.

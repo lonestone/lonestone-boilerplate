@@ -10,7 +10,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
  * - Auth guard behavior (401 when unauthenticated)
  * - Post image upload, download, replacement, and removal
  */
-import { config } from '../../../../config/env.config'
 import {
   IStorageProvider,
   STORAGE_PROVIDER,
@@ -21,6 +20,7 @@ import { StorageModule } from '../../../storage/storage.module'
 import { initializeTestApp } from '../../../../test/helpers/test-app.helper'
 import { createRequest, TestRequest } from '../../../../test/helpers/test-auth.helper'
 import { createUserWithSession } from '../../../../test/helpers/test-user.helpers'
+import { POST_COVER_IMAGE_MAX_SIZE_BYTES } from '../image-file.util'
 import { PostModule } from '../posts.module'
 
 const MINIMAL_PNG = Buffer.from(
@@ -48,7 +48,7 @@ class InMemoryStorageProvider implements IStorageProvider {
     })
   }
 
-  async download(_bucket: string, key: string): Promise<StorageProviderObject | null> {
+  async download(key: string): Promise<StorageProviderObject | null> {
     const object = this.objects.get(key)
     if (!object) return null
 
@@ -58,7 +58,7 @@ class InMemoryStorageProvider implements IStorageProvider {
     }
   }
 
-  async delete(_bucket: string, key: string): Promise<void> {
+  async delete(key: string): Promise<void> {
     this.objects.delete(key)
   }
 }
@@ -121,7 +121,7 @@ describe('postController (e2e)', () => {
         content: [{ type: 'text', data: 'content' }],
       }).attach('coverImage', MINIMAL_PNG, { filename: 'cover.png', contentType: 'image/png' })
 
-      expect(response.status).toBe(400)
+      expect(response.status).toBe(503)
       expect(response.body.message).toMatch(/storage is disabled/i)
     })
   })
@@ -425,7 +425,7 @@ describe('postController images (e2e)', () => {
     const response = await postFields(context.request.withSession(session).post('/admin/posts'), {
       title: 'Huge File',
       content: [{ type: 'text', data: 'content' }],
-    }).attach('coverImage', Buffer.alloc(config.storage.maxUploadSize + 1), {
+    }).attach('coverImage', Buffer.alloc(POST_COVER_IMAGE_MAX_SIZE_BYTES + 1), {
       filename: 'large.png',
       contentType: 'image/png',
     })

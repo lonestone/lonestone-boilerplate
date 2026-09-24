@@ -1,12 +1,5 @@
 import { EntityManager, FilterQuery } from '@mikro-orm/core'
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-  Optional,
-} from '@nestjs/common'
+import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common'
 import slugify from 'slugify'
 import { User } from '../../auth/auth.entity'
 import { buildOrderBy } from '../../db/query-order.util'
@@ -65,7 +58,7 @@ export class PostService {
 
   constructor(
     private readonly em: EntityManager,
-    @Optional() private readonly storageService?: StorageService,
+    private readonly storageService: StorageService,
   ) {}
 
   // Find existing tags by slug or create them on the fly (used by create/update).
@@ -447,16 +440,8 @@ export class PostService {
     }
   }
 
-  private getStorageService(): StorageService {
-    if (!this.storageService) {
-      throw new BadRequestException('File storage is disabled')
-    }
-
-    return this.storageService
-  }
-
   private async uploadImage(file: StorageUpload): Promise<StoredObject> {
-    return this.getStorageService().upload(file)
+    return this.storageService.upload(file)
   }
 
   private assignImageMetadata(post: Post, storedImage?: StoredObject): void {
@@ -492,7 +477,7 @@ export class PostService {
       throw new NotFoundException('Post cover image not found')
     }
 
-    const object = await this.getStorageService().download(post.coverImageStorageKey)
+    const object = await this.storageService.download(post.coverImageStorageKey)
 
     return {
       filename: post.coverImageFilename,
@@ -507,7 +492,7 @@ export class PostService {
     persistenceError: unknown,
   ): Promise<never> {
     try {
-      await this.getStorageService().delete(storageKey)
+      await this.storageService.delete(storageKey)
     } catch (cleanupError: unknown) {
       throw new InternalServerErrorException('Failed to save post image metadata', {
         cause: new AggregateError(
@@ -524,7 +509,7 @@ export class PostService {
 
   private async deleteStaleObject(storageKey: string): Promise<void> {
     try {
-      await this.getStorageService().delete(storageKey)
+      await this.storageService.delete(storageKey)
     } catch (error: unknown) {
       this.logger.error(`Failed to delete stale storage object ${storageKey}`, error)
     }

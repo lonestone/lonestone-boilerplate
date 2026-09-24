@@ -24,7 +24,6 @@ import {
   ApiProduces,
 } from '@nestjs/swagger'
 import { z } from 'zod'
-import { config } from '../../../config/env.config'
 import { LoggedInBetterAuthSession } from '../../auth/auth.config'
 import { Session } from '../../auth/auth.decorator'
 import { AuthGuard } from '../../auth/auth.guard'
@@ -50,7 +49,7 @@ import {
   userPostSchema,
   userPostsSchema,
 } from './contracts/posts.contract'
-import { parsePostImageFile } from './image-file.util'
+import { parsePostImageFile, POST_COVER_IMAGE_MAX_SIZE_BYTES } from './image-file.util'
 import { PostsMapper } from './posts.mapper'
 import { PostService } from './posts.service'
 
@@ -119,7 +118,7 @@ export class PostController {
   @UseInterceptors(
     FileInterceptor('coverImage', {
       limits: {
-        fileSize: config.storage.maxUploadSize,
+        fileSize: POST_COVER_IMAGE_MAX_SIZE_BYTES,
       },
     }),
   )
@@ -143,7 +142,7 @@ export class PostController {
   @UseInterceptors(
     FileInterceptor('coverImage', {
       limits: {
-        fileSize: config.storage.maxUploadSize,
+        fileSize: POST_COVER_IMAGE_MAX_SIZE_BYTES,
       },
     }),
   )

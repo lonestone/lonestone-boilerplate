@@ -2,8 +2,14 @@ import { Readable } from 'node:stream'
 
 export const STORAGE_PROVIDER = Symbol('STORAGE_PROVIDER')
 
+export class StorageUnavailableError extends Error {
+  constructor() {
+    super('File storage is disabled')
+    this.name = StorageUnavailableError.name
+  }
+}
+
 export interface StorageProviderUploadInput {
-  bucket: string
   key: string
   body: Buffer
   contentType: string
@@ -20,6 +26,6 @@ export interface StorageProviderObject {
 
 export interface IStorageProvider {
   upload(input: StorageProviderUploadInput): Promise<void>
-  download(bucket: string, key: string): Promise<StorageProviderObject | null>
-  delete(bucket: string, key: string): Promise<void>
+  download(key: string): Promise<StorageProviderObject | null>
+  delete(key: string): Promise<void>
 }

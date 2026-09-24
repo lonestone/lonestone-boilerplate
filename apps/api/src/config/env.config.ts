@@ -69,11 +69,6 @@ export const configValidationSchema = z.object({
   STORAGE_SECRET_ACCESS_KEY: z.string().min(1).default('rustfsadmin'),
   STORAGE_FORCE_PATH_STYLE: z.stringbool().default(true),
   STORAGE_CREATE_BUCKET: z.stringbool().default(true),
-  STORAGE_MAX_UPLOAD_SIZE: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(10 * 1024 * 1024),
 
   // AI Providers
   OPENAI_API_KEY: z.string().optional(), // OpenAI
@@ -137,7 +132,6 @@ export const config = {
     secretAccessKey: configParsed.data.STORAGE_SECRET_ACCESS_KEY,
     forcePathStyle: configParsed.data.STORAGE_FORCE_PATH_STYLE,
     createBucket: configParsed.data.STORAGE_CREATE_BUCKET,
-    maxUploadSize: configParsed.data.STORAGE_MAX_UPLOAD_SIZE,
   },
   clients: {
     webApp: {
