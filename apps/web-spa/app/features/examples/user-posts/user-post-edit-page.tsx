@@ -1,7 +1,7 @@
-import type { UpdatePostSchema } from '@boilerstone/openapi-generator'
 import {
   postControllerGetUserPost,
   postControllerPublishPost,
+  postControllerRemoveUserPostImage,
   postControllerUnpublishPost,
   postControllerUpdatePost,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
@@ -12,7 +12,8 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { queryClient } from '@/lib/query-client'
-import UserPostForm, { UserPostFormSkeleton } from './user-post-form'
+import { adminPostImageUrl } from '@/lib/post-image'
+import UserPostForm, { UserPostFormSkeleton, type PostFormSubmitData } from './user-post-form'
 
 export default function UserPostEditPage() {
   const { userPostId } = useParams()
@@ -36,9 +37,14 @@ export default function UserPostEditPage() {
   })
 
   const { mutate: updatePost, isPending } = useMutation({
-    mutationFn: (data: UpdatePostSchema) =>
+    mutationFn: (data: PostFormSubmitData) =>
       postControllerUpdatePost({
-        body: data,
+        body: {
+          title: data.title,
+          content: JSON.stringify(data.content),
+          tags: data.tags ? JSON.stringify(data.tags) : undefined,
+          coverImage: data.coverImage,
+        },
         path: {
           id: userPostId as string,
         },
@@ -80,7 +86,25 @@ export default function UserPostEditPage() {
     },
   })
 
-  const onSubmit = async (data: UpdatePostSchema) => {
+  const { mutateAsync: removeImage } = useMutation({
+    mutationFn: async () => {
+      const response = await postControllerRemoveUserPostImage({
+        path: { id: userPostId as string },
+      })
+
+      if (response.error) {
+        throw response.error
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+    },
+    onError: () => {
+      toast.error(t('toasts.postUpdateError'))
+    },
+  })
+
+  const onSubmit = async (data: PostFormSubmitData) => {
     try {
       await updatePost(data)
     } catch (error) {
@@ -132,8 +156,11 @@ export default function UserPostEditPage() {
         initialData={{
           title: post?.title ?? '',
           content: post?.content ?? [],
-          coverImage: post?.coverImage ?? '',
           tags: post?.tags?.map((tag) => tag.name) ?? [],
+        }}
+        existingImageSrc={post?.coverImage ? adminPostImageUrl(post.id) : undefined}
+        onRemoveImage={async () => {
+          await removeImage()
         }}
         isSubmitting={isPending}
       />

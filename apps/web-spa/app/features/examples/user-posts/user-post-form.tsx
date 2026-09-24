@@ -15,23 +15,35 @@ interface PostContentItem {
 interface PostFormData {
   title: string
   content: PostContentItem[]
-  coverImage?: string
   tags?: string[]
+  coverImage?: FileList
+}
+
+export type PostFormSubmitData = {
+  title: string
+  content: PostContentItem[]
+  tags?: string[]
+  coverImage?: File
 }
 
 interface UserPostFormProps {
-  onSubmit: (data: PostFormData) => Promise<void>
-  initialData?: PostFormData
+  onSubmit: (data: PostFormSubmitData) => Promise<void>
+  initialData?: Omit<PostFormData, 'coverImage'>
+  existingImageSrc?: string
+  onRemoveImage?: () => Promise<void>
   isSubmitting?: boolean
 }
 
 export default function UserPostForm({
   onSubmit,
   initialData,
+  existingImageSrc,
+  onRemoveImage,
   isSubmitting = false,
 }: UserPostFormProps) {
   const { t } = useTranslation()
   const [activeContentType, setActiveContentType] = useState<'text' | 'image' | 'video'>('text')
+  const [imagePreview, setImagePreview] = useState<string | undefined>(existingImageSrc)
 
   const {
     register,
@@ -42,7 +54,6 @@ export default function UserPostForm({
     defaultValues: initialData || {
       title: '',
       content: [{ type: 'text', data: '' }],
-      coverImage: '',
       tags: [],
     },
   })
@@ -55,9 +66,10 @@ export default function UserPostForm({
   const handleFormSubmit = async (data: PostFormData) => {
     try {
       await onSubmit({
-        ...data,
-        coverImage: data.coverImage?.trim() ? data.coverImage.trim() : undefined,
+        title: data.title,
+        content: data.content,
         tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
+        coverImage: data.coverImage?.[0],
       })
     } catch (error) {
       console.error('Error submitting form:', error)
@@ -96,11 +108,43 @@ export default function UserPostForm({
           </label>
           <Input
             id="coverImage"
-            type="url"
-            placeholder={t('posts.form.coverImagePlaceholder')}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
             className="w-full"
-            {...register('coverImage')}
+            {...register('coverImage', {
+              onChange: (event) => {
+                const file = event.target.files?.[0] as File | undefined
+                setImagePreview(file ? URL.createObjectURL(file) : existingImageSrc)
+              },
+            })}
           />
+          {imagePreview && (
+            <div className="mt-2 relative rounded-md overflow-hidden border">
+              <img
+                src={imagePreview}
+                alt={t('posts.form.imagePreviewAlt')}
+                className="max-h-[200px] w-full object-cover"
+              />
+              {onRemoveImage && existingImageSrc && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 size-7 opacity-80 hover:opacity-100"
+                  onClick={async () => {
+                    try {
+                      await onRemoveImage()
+                      setImagePreview(undefined)
+                    } catch {
+                      // The parent mutation reports the error.
+                    }
+                  }}
+                >
+                  <X className="size-3.5" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">

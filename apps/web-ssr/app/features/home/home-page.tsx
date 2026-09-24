@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight, BookOpen, Pen } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { publicPostImageUrl } from '@/lib/post-image'
 
 type TeaserPost = PublicPostsSchema['data'][number]
 
@@ -34,9 +35,9 @@ function TeaserCard({ post, index }: { post: TeaserPost; index: number }) {
 
         {/* Cover — always present (image or branded fallback) for consistent cards */}
         <div className="mb-4 aspect-video overflow-hidden rounded-sm bg-muted">
-          {post.coverImage && !imgError ? (
+          {post.coverImage && post.slug && !imgError ? (
             <img
-              src={post.coverImage}
+              src={publicPostImageUrl(post.slug)}
               alt={post.title}
               onLoad={() => setImgLoaded(true)}
               onError={() => setImgError(true)}
