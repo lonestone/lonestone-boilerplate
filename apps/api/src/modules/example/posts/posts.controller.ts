@@ -24,7 +24,6 @@ import {
 } from '@nestjs/swagger'
 import { AllowAnonymous, Session } from '@thallesp/nestjs-better-auth'
 import { z } from 'zod'
-import { config } from '../../../config/env.config'
 import { LoggedInBetterAuthSession } from '../../auth/auth.config'
 import {
   CreatePostMultipart,
@@ -48,7 +47,7 @@ import {
   userPostSchema,
   userPostsSchema,
 } from './contracts/posts.contract'
-import { parsePostImageFile } from './image-file.util'
+import { parsePostImageFile, POST_COVER_IMAGE_MAX_SIZE_BYTES } from './image-file.util'
 import { PostsMapper } from './posts.mapper'
 import { PostService } from './posts.service'
 
@@ -116,7 +115,7 @@ export class PostController {
   @UseInterceptors(
     FileInterceptor('coverImage', {
       limits: {
-        fileSize: config.storage.maxUploadSize,
+        fileSize: POST_COVER_IMAGE_MAX_SIZE_BYTES,
       },
     }),
   )
@@ -140,7 +139,7 @@ export class PostController {
   @UseInterceptors(
     FileInterceptor('coverImage', {
       limits: {
-        fileSize: config.storage.maxUploadSize,
+        fileSize: POST_COVER_IMAGE_MAX_SIZE_BYTES,
       },
     }),
   )

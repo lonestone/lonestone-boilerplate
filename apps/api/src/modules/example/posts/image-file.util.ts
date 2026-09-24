@@ -1,6 +1,7 @@
 import { BadRequestException, PayloadTooLargeException } from '@nestjs/common'
-import { config } from '../../../config/env.config'
 import { StorageUpload } from '../../storage/storage.service'
+
+export const POST_COVER_IMAGE_MAX_SIZE_BYTES = 10 * 1024 * 1024
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const JPEG_SIGNATURE = Buffer.from([0xff, 0xd8, 0xff])
@@ -20,6 +21,11 @@ function hasPrefix(buffer: Buffer, signature: Buffer): boolean {
   return buffer.length >= signature.length && buffer.subarray(0, signature.length).equals(signature)
 }
 
+/**
+ * Detects the MIME type of an image file based on its signature (for security reasons).
+ * @param buffer - The buffer containing the image file.
+ * @returns The MIME type of the image, or null if the MIME type is not supported.
+ */
 export function detectImageMimeType(buffer: Buffer): SupportedImageMimeType | null {
   if (hasPrefix(buffer, JPEG_SIGNATURE)) return 'image/jpeg'
   if (hasPrefix(buffer, PNG_SIGNATURE)) return 'image/png'
@@ -36,8 +42,8 @@ export function detectImageMimeType(buffer: Buffer): SupportedImageMimeType | nu
 }
 
 export function parsePostImageFile(file: Express.Multer.File): StorageUpload {
-  if (file.size > config.storage.maxUploadSize) {
-    throw new PayloadTooLargeException('Image exceeds the configured size limit')
+  if (file.size > POST_COVER_IMAGE_MAX_SIZE_BYTES) {
+    throw new PayloadTooLargeException('Image exceeds the 10 MiB size limit')
   }
 
   const mimeType = detectImageMimeType(file.buffer)

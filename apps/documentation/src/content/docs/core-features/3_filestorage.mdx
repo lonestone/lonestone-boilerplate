@@ -7,7 +7,8 @@ description: Store and serve files through a provider-neutral S3 module
 
 The API includes provider-neutral S3 infrastructure. Posts demonstrate how a domain module stores
 an optional image. Storage is disabled by default, so an unavailable S3 service cannot prevent an
-application that does not use files from starting.
+application that does not use files from starting. File operations return `503 Service Unavailable`
+while storage is disabled.
 
 `StorageModule` is infrastructure-only. It exports `StorageService`, uses one default bucket, and
 does not expose HTTP routes or provider internals. Business modules own their HTTP contracts,
@@ -17,7 +18,7 @@ authorization rules, and database metadata.
 
 Configure the API with these provider-neutral variables:
 
-- `STORAGE_ENABLED`: register storage infrastructure on the Posts module. Defaults to `false`.
+- `STORAGE_ENABLED`: enable the configured storage provider. Defaults to `false`.
 - `STORAGE_BUCKET`: default bucket name.
 - `STORAGE_ENDPOINT`: S3 endpoint. Use the provider endpoint in production.
 - `STORAGE_REGION`: S3 region.
@@ -25,7 +26,6 @@ Configure the API with these provider-neutral variables:
 - `STORAGE_FORCE_PATH_STYLE`: required by many self-hosted S3-compatible services.
 - `STORAGE_CREATE_BUCKET`: create the default bucket during startup when storage is enabled and the
   bucket is missing.
-- `STORAGE_MAX_UPLOAD_SIZE`: maximum HTTP upload size in bytes.
 
 ## Local RustFS
 
@@ -72,7 +72,8 @@ Set `STORAGE_ENABLED=true` so `PostModule` can upload images. Creating or updati
 `multipart/form-data`: `title` as text, `content` and `tags` as JSON fields, and an optional
 `coverImage` file. Omitting `coverImage` on update keeps the current file. `DELETE /api/admin/posts/:id/cover-image`
 removes it. The owner can download a draft from `GET /api/admin/posts/:id/cover-image`. Published posts
-serve the same file from `GET /api/public/posts/:slug/cover-image`.
+serve the same file from `GET /api/public/posts/:slug/cover-image`. The domain limits cover images
+to 10 MiB.
 
 The `Post` entity stores the storage key, original filename, detected MIME type, and size. Image
 contracts expose only filename, MIME type, and size. Every owner download and delete includes the
@@ -98,8 +99,8 @@ Keep storage mechanics in `StorageService`, but put access rules and routes in t
 
 Use a dedicated bucket and restricted credentials. Disable automatic bucket creation after
 provisioning infrastructure. Configure the provider endpoint, region, TLS, retention, backups,
-and lifecycle rules according to the chosen service. Set a size limit that also matches reverse
-proxy and platform limits.
+and lifecycle rules according to the chosen service. Domain modules should set upload size limits
+that also match reverse proxy and platform limits.
 
 AWS S3 normally uses virtual-hosted addressing, so set `STORAGE_FORCE_PATH_STYLE=false`. Keep it
 enabled only when the selected compatible provider requires it.

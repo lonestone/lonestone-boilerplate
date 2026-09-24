@@ -1,6 +1,5 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Module } from '@nestjs/common'
-import { config } from '../../../config/env.config'
 import { StorageModule } from '../../storage/storage.module'
 import { Tag } from '../tags/tag.entity'
 import { PostController, PublicAuthorController, PublicPostController } from './posts.controller'
@@ -9,10 +8,7 @@ import { PostsMapper } from './posts.mapper'
 import { PostService } from './posts.service'
 
 @Module({
-  imports: [
-    MikroOrmModule.forFeature([Post, PostVersion, Tag]),
-    ...(config.storage.enabled ? [StorageModule] : []),
-  ],
+  imports: [MikroOrmModule.forFeature([Post, PostVersion, Tag]), StorageModule],
   controllers: [PostController, PublicPostController, PublicAuthorController],
   providers: [PostService, PostsMapper],
   exports: [PostService],

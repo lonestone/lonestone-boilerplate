@@ -51,7 +51,6 @@ pnpm install
 | `STORAGE_SECRET_ACCESS_KEY` | S3 secret key | No | `rustfsadmin` |
 | `STORAGE_FORCE_PATH_STYLE` | Use path-style S3 addresses | No | `true` |
 | `STORAGE_CREATE_BUCKET` | Create the default bucket on startup | No | `true` |
-| `STORAGE_MAX_UPLOAD_SIZE` | Maximum upload size in bytes | No | `10485760` |
 
 Storage is opt-in. The API does not connect to S3 when `STORAGE_ENABLED=false`.
 

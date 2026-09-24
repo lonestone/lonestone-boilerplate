@@ -1,7 +1,11 @@
 import { Readable } from 'node:stream'
-import { InternalServerErrorException, NotFoundException } from '@nestjs/common'
+import {
+  InternalServerErrorException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { IStorageProvider } from '../providers/storage-provider.interface'
+import { IStorageProvider, StorageUnavailableError } from '../providers/storage-provider.interface'
 import { StorageService } from '../storage.service'
 
 describe('StorageService', () => {
@@ -14,7 +18,7 @@ describe('StorageService', () => {
       download: vi.fn(),
       delete: vi.fn(),
     }
-    service = new StorageService(provider, 'test-bucket')
+    service = new StorageService(provider)
   })
 
   it('uploads an object with generated provider-neutral metadata', async () => {
@@ -34,7 +38,6 @@ describe('StorageService', () => {
       size: file.size,
     })
     expect(provider.upload).toHaveBeenCalledWith({
-      bucket: 'test-bucket',
       key: actualObject.key,
       body: file.body,
       contentType: file.mimeType,
@@ -82,6 +85,19 @@ describe('StorageService', () => {
     })
   })
 
+  it('maps disabled storage to a service unavailable exception', async () => {
+    vi.mocked(provider.upload).mockRejectedValue(new StorageUnavailableError())
+
+    await expect(
+      service.upload({
+        body: Buffer.from('content'),
+        filename: 'report.txt',
+        mimeType: 'text/plain',
+        size: 7,
+      }),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException)
+  })
+
   it('preserves download failures as their exception cause', async () => {
     const providerError = new Error('S3 unavailable')
     vi.mocked(provider.download).mockRejectedValue(providerError)
@@ -100,12 +116,9 @@ describe('StorageService', () => {
     })
   })
 
-  it('deletes from the default bucket', async () => {
+  it('deletes an object by key', async () => {
     await service.delete('44b82136-0dd7-4b5f-a36b-38b26a4941aa')
 
-    expect(provider.delete).toHaveBeenCalledWith(
-      'test-bucket',
-      '44b82136-0dd7-4b5f-a36b-38b26a4941aa',
-    )
+    expect(provider.delete).toHaveBeenCalledWith('44b82136-0dd7-4b5f-a36b-38b26a4941aa')
   })
 })
