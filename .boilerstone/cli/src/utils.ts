@@ -19,6 +19,11 @@ const cliVersion = (
   }
 ).version
 
+/** Version of the CLI currently running. It is also the template release it generates. */
+export function getCliVersion(): string {
+  return cliVersion
+}
+
 /** Semver range that pins a project to the CLI version currently running. */
 export function getPublishedCliRange(): string {
   return `^${cliVersion}`

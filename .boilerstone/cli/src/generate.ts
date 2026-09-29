@@ -68,9 +68,8 @@ export function isBoilerplateMaintainerCheckout(rootPath: string): boolean {
 }
 
 /**
- * True when the template's own `pnpm rock` runs the published CLI. Older
- * releases (v1.1.0 and before) vendored their setup script and still generate
- * themselves through it.
+ * True when the template's own `pnpm rock` runs the published CLI. Releases up
+ * to v1.1.0 vendored their setup script instead and cannot be generated here.
  */
 export function isPublishedCliTemplate(rootPath: string): boolean {
   const pkgPath = join(rootPath, 'package.json')

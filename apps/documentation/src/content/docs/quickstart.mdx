@@ -9,7 +9,7 @@ Create a new project from the directory that should contain it:
 pnpm dlx @lonestone/cli init my-project
 ```
 
-`init` creates the project from the latest release, renames the workspace to `@my-project/*`, installs dependencies, and runs the setup script below. The directory name becomes the package scope, so use lowercase letters, digits and dashes.
+`init` creates the project from the release matching the CLI version (the latest, unless you pin the CLI: `pnpm dlx @lonestone/cli@1.2.0 init my-project`), renames the workspace to `@my-project/*`, installs dependencies, and runs the setup script below. The directory name becomes the package scope, so use lowercase letters, digits and dashes.
 
 When you join an existing project instead, follow these steps:
 

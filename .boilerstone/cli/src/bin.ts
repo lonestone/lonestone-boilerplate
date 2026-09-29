@@ -12,7 +12,7 @@ ${colorize('Usage:', 'cyan')}
   lonestone <command> [args]
 
 ${colorize('Project commands:', 'cyan')}
-  ${colorize('init [dir]', 'bright')}              Create a new project from the template
+  ${colorize('init [dir]', 'bright')}              Create a new project from the release matching this CLI
   ${colorize('onboard', 'bright')}                 Add the upgrade system to an existing project
   ${colorize('rock', 'bright')}                    Set up the local dev environment: .env files, Docker, migrations (pnpm rock)
   ${colorize('upgrade [version]', 'bright')}       Stage a boilerplate upgrade (default: latest)
@@ -27,12 +27,12 @@ ${colorize('Upgrade commands:', 'cyan')}
   ${colorize('versions list', 'bright')}           List available boilerplate versions
 
 ${colorize('Options:', 'cyan')}
-  ${colorize('--ref <latest|vX.Y.Z>', 'bright')}   Template release for init/onboard (default: latest)
+  ${colorize('--ref <latest|vX.Y.Z>', 'bright')}   Release onboard fetches (default: latest)
   ${colorize('--project <path>', 'bright')}        Project root (default: current directory)
 
 ${colorize('Examples:', 'cyan')}
   ${colorize('lonestone init my-app', 'dim')}
-  ${colorize('lonestone init my-app --ref v1.1.0', 'dim')}
+  ${colorize('pnpm dlx @lonestone/cli@1.2.0 init my-app', 'dim')}   ${colorize('(pin the release by pinning the CLI)', 'dim')}
   ${colorize('lonestone onboard', 'dim')}
   ${colorize('lonestone upgrade', 'dim')}
   ${colorize('pnpm dlx @lonestone/cli init my-app', 'dim')}

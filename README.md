@@ -6,7 +6,7 @@
 
 This repository represents the typical project structure at Lonestone, consisting of an API and one to several frontends.
 
-Start new projects with the versioned installer described below. It resolves the latest published boilerplate release by default, so projects never start from unreleased changes on `main`.
+Start new projects with the versioned installer described below. Each CLI version creates the boilerplate release with the same version, so projects never start from unreleased changes on `main`.
 
 For more details, see the [documentation](https://lonestone.github.io/lonestone-boilerplate/) or check out the local documentation in the `apps/documentation` folder.
 
@@ -61,13 +61,13 @@ Create the project from the directory that should contain it:
 pnpm dlx @lonestone/cli init my-project
 ```
 
-The CLI resolves the latest stable `vX.Y.Z` tag, creates the project, renames the workspace to `@my-project/*` (the directory name, so use lowercase letters, digits and dashes), installs dependencies, and runs the interactive `pnpm rock` setup. Pin a specific release when reproducibility requires it:
+The CLI creates the project from the release that has its own version (`@lonestone/cli@X.Y.Z` creates `vX.Y.Z`), renames the workspace to `@my-project/*` (the directory name, so use lowercase letters, digits and dashes), installs dependencies, and runs the interactive `pnpm rock` setup. Without a version, `pnpm dlx` takes the latest CLI, so the latest release. Pin a specific release by pinning the CLI:
 
 ```bash
-pnpm dlx @lonestone/cli init my-project --ref v1.0.0
+pnpm dlx @lonestone/cli@1.2.0 init my-project
 ```
 
-`--ref` accepts only `latest` (the default) or an explicit release tag such as `v1.0.0`. Branches such as `main` are intentionally rejected.
+A CLI only generates its own release: each release's layout is what that CLI knows. Releases published before the CLI existed (v1.0.0, v1.1.0) cannot be used to create a new project.
 
 ### Onboard an existing project
 

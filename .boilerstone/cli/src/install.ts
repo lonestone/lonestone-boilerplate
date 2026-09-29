@@ -8,6 +8,7 @@ import { generateProject, isPublishedCliTemplate, isValidProjectName } from './g
 import {
   canReadTty,
   colorize,
+  getCliVersion,
   getPublishedCliRange,
   isolatedGitEnv,
   movePath,
@@ -19,7 +20,8 @@ const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerp
 
 interface InstallerOptions {
   mode: string
-  ref: string
+  /** Undefined when `--ref` was not passed. */
+  ref?: string
   positionals: string[]
 }
 
@@ -85,7 +87,7 @@ function cloneRelease(
 
 function parseArgs(argv: string[]): InstallerOptions {
   const [mode = 'help', ...rest] = argv
-  let ref = 'latest'
+  let ref: string | undefined
   const positionals: string[] = []
 
   for (let index = 0; index < rest.length; index += 1) {
@@ -199,18 +201,17 @@ function fetchSubdirs(repoUrl: string, ref: string, subdirs: string[], cwd: stri
   rmSync(tmp, { recursive: true, force: true })
 }
 
-interface StagedProject {
-  isGenerated: boolean
-  sourceCommit: string
-  sourceVersion: string
-}
-
 /**
  * Clone the release into a sibling staging directory, generate the project
  * there, then move it into place. The CLI runs from outside the project it
  * builds, and a failure leaves nothing behind at `dir`.
  */
-function stageProject(repoUrl: string, ref: string, dir: string): StagedProject {
+function stageProject(repoUrl: string, ref: string, dir: string): void {
+  const projectName = basename(dir)
+  if (!isValidProjectName(projectName)) {
+    die(`'${projectName}' is not a valid project name: use lowercase letters, digits and dashes`)
+  }
+
   mkdirSync(dirname(dir), { recursive: true })
   const staging = mkdtempSync(join(dirname(dir), '.lonestone-init-'))
   try {
@@ -221,30 +222,22 @@ function stageProject(repoUrl: string, ref: string, dir: string): StagedProject 
     } catch {
       sourceCommit = ''
     }
-    const sourceVersion = ref.replace(/^v/, '')
     rmSync(join(staging, '.git'), { recursive: true, force: true })
 
-    // Releases that still vendor their setup script generate themselves
-    // through their own `pnpm rock`.
-    const isGenerated = isPublishedCliTemplate(staging)
-    if (isGenerated) {
-      const projectName = basename(dir)
-      if (!isValidProjectName(projectName)) {
-        throw new Error(
-          `'${projectName}' is not a valid project name: use lowercase letters, digits and dashes`,
-        )
-      }
-      generateProject(staging, {
-        projectName,
-        cliRange: getPublishedCliRange(),
-        sourceVersion,
-        sourceCommit: sourceCommit || undefined,
-        remote: process.env.BOILERPLATE_REPO?.trim() || undefined,
-      })
+    if (!isPublishedCliTemplate(staging)) {
+      throw new Error(
+        `${ref} at ${repoUrl} is not a template for @lonestone/cli: its pnpm rock does not run the published CLI`,
+      )
     }
+    generateProject(staging, {
+      projectName,
+      cliRange: getPublishedCliRange(),
+      sourceVersion: ref.replace(/^v/, ''),
+      sourceCommit: sourceCommit || undefined,
+      remote: process.env.BOILERPLATE_REPO?.trim() || undefined,
+    })
 
     movePath(staging, dir)
-    return { isGenerated, sourceCommit, sourceVersion }
   } catch (error) {
     // die() exits the process, so clean up before calling it.
     rmSync(staging, { recursive: true, force: true })
@@ -326,12 +319,14 @@ Usage:
   pnpm dlx @lonestone/cli <command> [args]
 
 Commands:
-  init [dir]          Create a new project from the template (default dir: my-app)
+  init [dir]          Create a new project from the release matching this CLI (default dir: my-app)
   onboard             Add the upgrade system + agent skills to an existing project (run at its root)
   upgrade [version]   Prepare a boilerplate upgrade in an already-wired project (default: latest)
 
 Options:
-  --ref <latest|tag>  Published release to fetch (default: latest; tag format: vX.Y.Z)
+  --ref <latest|tag>  Release onboard fetches (default: latest; tag format: vX.Y.Z)
+
+Pin a release for init by pinning the CLI: pnpm dlx @lonestone/cli@1.2.0 init my-app
 
 Environment:
   BOILERPLATE_REPO    Override the repository URL (e.g. an SSH URL for a private fork)
@@ -348,37 +343,36 @@ export async function runInstaller(argv: string[]): Promise<void> {
     return
   }
 
-  validateReleaseRef(options.ref)
-
   if (options.mode === 'init') {
     if (options.positionals.length > 1) {
       die('init accepts at most one directory argument')
     }
+    // The CLI only knows how to generate its own release: the template
+    // version is the CLI version. Pinning a release means pinning the CLI.
+    const ref = `v${getCliVersion()}`
+    const dirInput = options.positionals[0] || 'my-app'
+    if (options.ref !== undefined && options.ref !== ref) {
+      const requested = options.ref.replace(/^v/, '')
+      die(
+        `init always creates the release that matches this CLI (${ref}). For ${options.ref}, run: pnpm dlx @lonestone/cli@${requested} init ${dirInput}`,
+      )
+    }
     need('git')
     need('pnpm')
-    const ref = resolveReleaseRef(repoUrl, options.ref)
-    const dirInput = options.positionals[0] || 'my-app'
     const dir = resolve(cwd, dirInput)
     if (existsSync(dir)) {
       die(`Directory '${dirInput}' already exists`)
     }
     info(`Creating new project in ${dir} from ${repoUrl}@${ref}`)
-    const staged = stageProject(repoUrl, ref, dir)
+    stageProject(repoUrl, ref, dir)
 
     runGit(['init', '--quiet'], dir)
     runPnpm(['install'], dir)
-    if (staged.isGenerated) {
-      // The scope rename can reorder imports; the generated project must lint clean.
-      if (!tryRunPnpm(['lint:fix'], dir)) {
-        info('pnpm lint:fix failed — run it yourself before the first commit')
-      }
-      runPnpm(['rock'], dir)
-    } else {
-      runPnpm(['rock'], dir, {
-        BOILERPLATE_SOURCE_COMMIT: staged.sourceCommit,
-        BOILERPLATE_SOURCE_VERSION: staged.sourceVersion,
-      })
+    // The scope rename can reorder imports; the generated project must lint clean.
+    if (!tryRunPnpm(['lint:fix'], dir)) {
+      info('pnpm lint:fix failed — run it yourself before the first commit')
     }
+    runPnpm(['rock'], dir)
     ok(`Project ready in ${dir}`)
     return
   }
@@ -387,9 +381,11 @@ export async function runInstaller(argv: string[]): Promise<void> {
     if (options.positionals.length > 0) {
       die('onboard does not accept positional arguments')
     }
+    const requestedRef = options.ref ?? 'latest'
+    validateReleaseRef(requestedRef)
     need('git')
     need('pnpm')
-    const ref = resolveReleaseRef(repoUrl, options.ref)
+    const ref = resolveReleaseRef(repoUrl, requestedRef)
     if (!existsSync(join(cwd, 'package.json'))) {
       die('Run this at the root of an existing project (package.json not found)')
     }

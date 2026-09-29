@@ -121,7 +121,7 @@ pnpm boilerplate upgrade status
 After the human has merged and the tag exists, the **Publish @lonestone/cli** job on the Release Please workflow publishes the package. Confirm `npm view @lonestone/cli version` matches `X.Y.Z`, then verify with a remote install:
 
 ```bash
-pnpm dlx @lonestone/cli init test-boilerstone --ref vX.Y.Z
+pnpm dlx @lonestone/cli@X.Y.Z init test-boilerstone
 pnpm boilerplate upgrade prepare --to X.Y.Z --fetch
 ```
 

@@ -40,13 +40,13 @@ pnpm dlx @lonestone/cli upgrade
 pnpm dlx @lonestone/cli upgrade 1.6.0
 ```
 
-By default the CLI resolves the latest published release tag and downloads that exact snapshot (a full clone for a new project, a sparse checkout of `.boilerstone/` for onboarding).
+`init` always creates the release that has the CLI's own version: `@lonestone/cli@X.Y.Z` creates `vX.Y.Z`, because each release's layout is exactly what that CLI knows how to generate. To pin a release, pin the CLI (`pnpm dlx @lonestone/cli@1.2.0 init my-app`); without a version, `pnpm dlx` takes the latest CLI, so the latest release. Releases published before the CLI existed (v1.0.0, v1.1.0) cannot be used to create a project. `onboard` resolves the latest published release tag by default and fetches a sparse checkout of its `.boilerstone/`.
 
 - **`init`** clones the release into a temporary directory and generates the project there: it renames the workspace after the directory, drops the producer-only files, pins `@lonestone/cli` to the version that is running, and records the source release in `boilerplate.json`. It then moves the project into place, installs dependencies, and runs `pnpm rock`. The CLI never runs from inside the project it builds, and a failed generation leaves nothing behind.
 - **`onboard`** fetches `.boilerstone/` and the `boilerstone-upgrade` skills into an existing project, runs `bootstrap` (below), then offers to commit (`[Y/n]`, default yes).
 - **`upgrade [version]`** stages an upgrade workspace on a dedicated branch. It never edits your app code, commits, or pushes — applying intentions is a separate step ([runbook](./upgrade-runbook.md)).
 
-`--ref latest` is the default; pin with `--ref vX.Y.Z`. Branch refs like `main` are rejected so a project never starts from unreleased code. For a fork or private mirror, set `BOILERPLATE_REPO=<url>` — that repository must publish compatible `vX.Y.Z` tags.
+For `onboard`, `--ref latest` is the default; pin with `--ref vX.Y.Z`. Branch refs like `main` are rejected so a project never tracks unreleased code. For a fork or private mirror, set `BOILERPLATE_REPO=<url>` — that repository must publish compatible `vX.Y.Z` tags.
 
 `bootstrap` adds the `@lonestone/cli` dependency and the `boilerplate` script, gitignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It's idempotent, never overwrites what's already there, and never removes anything outside `.boilerstone/`. It leaves your `rock` script alone: an older project may still run a vendored `cli/setup.ts`, which renames packages and is destructive on a real project. The `adopt-published-cli` intention moves it to `lonestone rock`, which only sets up the local environment (`.env` files, Docker, migrations) and is safe to re-run.
 

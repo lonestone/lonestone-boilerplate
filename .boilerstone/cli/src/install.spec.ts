@@ -39,7 +39,7 @@ function writeStub(binPath: string, name: string, source: string): void {
 
 function runInstaller(
   args: string[],
-  env: NodeJS.ProcessEnv = {},
+  { env = {}, prepare }: { env?: NodeJS.ProcessEnv; prepare?: (fixturePath: string) => void } = {},
 ): {
   status: number | null
   stderr: string
@@ -98,6 +98,7 @@ process.exit(0)
 `,
   )
 
+  prepare?.(fixturePath)
   const result = spawnSync(process.execPath, [cliBin, ...args], {
     cwd: fixturePath,
     encoding: 'utf-8',
@@ -157,40 +158,56 @@ function leftoverStagingDirs(fixturePath: string): string[] {
   return readdirSync(fixturePath).filter((entry) => entry.startsWith('.lonestone-init-'))
 }
 
-describe('installer release references', () => {
+const cliVersion = (
+  JSON.parse(readFileSync(join(projectRoot, '.boilerstone/cli/package.json'), 'utf-8')) as {
+    version: string
+  }
+).version
+
+function onboardCloneCommand(tag: string): RegExp {
+  return new RegExp(
+    `git clone --quiet --depth 1 --filter=blob:none --sparse --branch ${tag.replaceAll('.', '\\.')} https://github\\.com/lonestone/lonestone-boilerplate \\S+\\n`,
+  )
+}
+
+// The fixture release is empty, so onboard stops right after cloning: enough
+// to check which release it resolved.
+const existingProject = (fixturePath: string): void => {
+  writeFixtureFile(fixturePath, 'package.json', '{"name":"client-app"}\n')
+}
+
+describe('onboard release references', () => {
   it.each([
     ['default', []],
     ['explicit latest', ['--ref', 'latest']],
   ])('resolves %s to the newest published SemVer tag', (_label, refArgs) => {
-    const result = runInstaller(['init', 'app', ...refArgs])
+    const result = runInstaller(['onboard', ...refArgs], { prepare: existingProject })
 
     try {
-      expect(result.status, result.stderr).toBe(0)
       expect(result.commandLog).toContain(
         'git ls-remote --tags --refs --sort=-version:refname https://github.com/lonestone/lonestone-boilerplate v*',
       )
-      expect(result.commandLog).toMatch(cloneCommand('v1.10.0'))
+      expect(result.commandLog).toMatch(onboardCloneCommand('v1.10.0'))
+      expect(result.stderr).toContain('.boilerstone not found at ref v1.10.0')
     } finally {
       result.cleanup()
     }
   })
 
   it('keeps an explicit published release tag', () => {
-    const result = runInstaller(['init', 'app', '--ref', 'v1.9.0'])
+    const result = runInstaller(['onboard', '--ref', 'v1.9.0'], { prepare: existingProject })
 
     try {
-      expect(result.status, result.stderr).toBe(0)
       expect(result.commandLog).not.toContain('git ls-remote')
-      expect(result.commandLog).toMatch(cloneCommand('v1.9.0'))
-      expect(existsSync(join(result.fixturePath, 'app'))).toBe(true)
-      expect(leftoverStagingDirs(result.fixturePath)).toEqual([])
+      expect(result.commandLog).toMatch(onboardCloneCommand('v1.9.0'))
+      expect(result.stderr).toContain('.boilerstone not found at ref v1.9.0')
     } finally {
       result.cleanup()
     }
   })
 
   it('rejects branch references such as main', () => {
-    const result = runInstaller(['init', 'app', '--ref', 'main'])
+    const result = runInstaller(['onboard', '--ref', 'main'], { prepare: existingProject })
 
     try {
       expect(result.status).toBe(1)
@@ -202,22 +219,21 @@ describe('installer release references', () => {
   })
 })
 
-describe('installer project generation', () => {
-  const cliVersion = (
-    JSON.parse(readFileSync(join(projectRoot, '.boilerstone/cli/package.json'), 'utf-8')) as {
-      version: string
-    }
-  ).version
-
-  it('generates the project before running the dev setup', () => {
+describe('init project generation', () => {
+  it.each([
+    ['without --ref', []],
+    ['with --ref naming the CLI version', ['--ref', `v${cliVersion}`]],
+  ])('generates the release matching the CLI version (%s)', (_label, refArgs) => {
     const templatePath = createPublishedCliTemplate()
-    const result = runInstaller(['init', 'app', '--ref', 'v1.9.0'], {
-      TEMPLATE_FIXTURE: templatePath,
+    const result = runInstaller(['init', 'app', ...refArgs], {
+      env: { TEMPLATE_FIXTURE: templatePath },
     })
     const appPath = join(result.fixturePath, 'app')
 
     try {
       expect(result.status, result.stderr).toBe(0)
+      expect(result.commandLog).not.toContain('git ls-remote')
+      expect(result.commandLog).toMatch(cloneCommand(`v${cliVersion}`))
 
       const pkg = JSON.parse(readFileSync(join(appPath, 'package.json'), 'utf-8'))
       expect(pkg.name).toBe('app')
@@ -236,7 +252,7 @@ describe('installer project generation', () => {
       expect(
         JSON.parse(readFileSync(join(appPath, '.boilerstone/boilerplate.json'), 'utf-8')).source
           .currentVersion,
-      ).toBe('1.9.0')
+      ).toBe(cliVersion)
 
       const pnpmCalls = result.commandLog
         .split('\n')
@@ -249,21 +265,44 @@ describe('installer project generation', () => {
     }
   })
 
-  it('rejects a directory name that cannot be a package scope, leaving nothing behind', () => {
-    const templatePath = createPublishedCliTemplate()
-    const result = runInstaller(['init', 'My_App', '--ref', 'v1.9.0'], {
-      TEMPLATE_FIXTURE: templatePath,
-    })
+  it('refuses another release and points to the matching CLI', () => {
+    const result = runInstaller(['init', 'app', '--ref', 'v1.9.0'])
+
+    try {
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain(`init always creates the release that matches this CLI`)
+      expect(result.stderr).toContain('pnpm dlx @lonestone/cli@1.9.0 init app')
+      expect(result.commandLog).not.toContain('git clone')
+    } finally {
+      result.cleanup()
+    }
+  })
+
+  it('refuses a release that does not use the published CLI, leaving nothing behind', () => {
+    // An empty clone: no package.json, so no `lonestone rock` script.
+    const result = runInstaller(['init', 'app'])
+
+    try {
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('is not a template for @lonestone/cli')
+      expect(existsSync(join(result.fixturePath, 'app'))).toBe(false)
+      expect(leftoverStagingDirs(result.fixturePath)).toEqual([])
+      expect(result.commandLog).not.toContain('pnpm install')
+    } finally {
+      result.cleanup()
+    }
+  })
+
+  it('rejects a directory name that cannot be a package scope before cloning', () => {
+    const result = runInstaller(['init', 'My_App'])
 
     try {
       expect(result.status).toBe(1)
       expect(result.stderr).toContain("'My_App' is not a valid project name")
       expect(existsSync(join(result.fixturePath, 'My_App'))).toBe(false)
-      expect(leftoverStagingDirs(result.fixturePath)).toEqual([])
-      expect(result.commandLog).not.toContain('pnpm install')
+      expect(result.commandLog).not.toContain('git clone')
     } finally {
       result.cleanup()
-      rmSync(templatePath, { recursive: true, force: true })
     }
   })
 })
