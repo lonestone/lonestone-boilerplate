@@ -117,37 +117,19 @@ function parseArgs(argv: string[]): InstallerOptions {
   return { mode, ref, positionals }
 }
 
-function validateReleaseRef(ref: string): void {
-  if (ref === 'latest') {
-    return
-  }
-  if (!/^v\d+\.\d+\.\d+$/.test(ref)) {
+/**
+ * The release a CLI works with is the one carrying its own version: it only
+ * knows that release's layout. Pinning a release means pinning the CLI, so
+ * `--ref` is accepted only when it names that same release.
+ */
+function getCliReleaseRef(requestedRef: string | undefined, retryCommand: string): string {
+  const ref = `v${getCliVersion()}`
+  if (requestedRef !== undefined && requestedRef !== ref) {
     die(
-      "--ref accepts only 'latest' or a release tag (vX.Y.Z); branches such as main are not supported",
+      `This CLI only works with its own release (${ref}). For ${requestedRef}, run: pnpm dlx @lonestone/cli@${requestedRef.replace(/^v/, '')} ${retryCommand}`,
     )
   }
-}
-
-function resolveReleaseRef(repoUrl: string, ref: string): string {
-  if (ref !== 'latest') {
-    return ref
-  }
-
-  const output = runFileSync(
-    'git',
-    ['ls-remote', '--tags', '--refs', '--sort=-version:refname', repoUrl, 'v*'],
-    { env: gitEnv() },
-  )
-  const tag = output
-    .split('\n')
-    .map((line) => line.replace(/.*refs\/tags\//, '').trim())
-    .find((candidate) => /^v\d+\.\d+\.\d+$/.test(candidate))
-
-  if (!tag) {
-    die(`No published boilerplate release found at ${repoUrl}`)
-  }
-  info(`Resolved latest release: ${tag}`)
-  return tag
+  return ref
 }
 
 async function promptYesNo(message: string, defaultYes: boolean): Promise<boolean> {
@@ -323,10 +305,8 @@ Commands:
   onboard             Add the upgrade system + agent skills to an existing project (run at its root)
   upgrade [version]   Prepare a boilerplate upgrade in an already-wired project (default: latest)
 
-Options:
-  --ref <latest|tag>  Release onboard fetches (default: latest; tag format: vX.Y.Z)
-
-Pin a release for init by pinning the CLI: pnpm dlx @lonestone/cli@1.2.0 init my-app
+init and onboard use the release that has this CLI's version. Pin a release by
+pinning the CLI: pnpm dlx @lonestone/cli@1.2.0 init my-app
 
 Environment:
   BOILERPLATE_REPO    Override the repository URL (e.g. an SSH URL for a private fork)
@@ -347,16 +327,8 @@ export async function runInstaller(argv: string[]): Promise<void> {
     if (options.positionals.length > 1) {
       die('init accepts at most one directory argument')
     }
-    // The CLI only knows how to generate its own release: the template
-    // version is the CLI version. Pinning a release means pinning the CLI.
-    const ref = `v${getCliVersion()}`
     const dirInput = options.positionals[0] || 'my-app'
-    if (options.ref !== undefined && options.ref !== ref) {
-      const requested = options.ref.replace(/^v/, '')
-      die(
-        `init always creates the release that matches this CLI (${ref}). For ${options.ref}, run: pnpm dlx @lonestone/cli@${requested} init ${dirInput}`,
-      )
-    }
+    const ref = getCliReleaseRef(options.ref, `init ${dirInput}`)
     need('git')
     need('pnpm')
     const dir = resolve(cwd, dirInput)
@@ -381,11 +353,9 @@ export async function runInstaller(argv: string[]): Promise<void> {
     if (options.positionals.length > 0) {
       die('onboard does not accept positional arguments')
     }
-    const requestedRef = options.ref ?? 'latest'
-    validateReleaseRef(requestedRef)
+    const ref = getCliReleaseRef(options.ref, 'onboard')
     need('git')
     need('pnpm')
-    const ref = resolveReleaseRef(repoUrl, requestedRef)
     if (!existsSync(join(cwd, 'package.json'))) {
       die('Run this at the root of an existing project (package.json not found)')
     }

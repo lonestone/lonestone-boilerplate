@@ -59,17 +59,6 @@ function runInstaller(
 const { appendFileSync, cpSync, mkdirSync } = require('node:fs')
 const args = process.argv.slice(2)
 appendFileSync(process.env.COMMAND_LOG, \`git \${args.join(' ')}\\n\`)
-if (args[0] === 'ls-remote') {
-  process.stdout.write(
-    [
-      'dddddddddddddddddddddddddddddddddddddddd refs/tags/v2.0.0-beta.1',
-      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb refs/tags/v1.10.0',
-      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa refs/tags/v1.9.0',
-      '',
-    ].join('\\n'),
-  )
-  process.exit(0)
-}
 if (args[0] === 'clone') {
   mkdirSync(args.at(-1), { recursive: true })
   if (process.env.TEMPLATE_FIXTURE) {
@@ -171,52 +160,42 @@ function onboardCloneCommand(tag: string): RegExp {
 }
 
 // The fixture release is empty, so onboard stops right after cloning: enough
-// to check which release it resolved.
+// to check which release it fetched.
 const existingProject = (fixturePath: string): void => {
   writeFixtureFile(fixturePath, 'package.json', '{"name":"client-app"}\n')
 }
 
-describe('onboard release references', () => {
+describe('onboard release reference', () => {
   it.each([
-    ['default', []],
-    ['explicit latest', ['--ref', 'latest']],
-  ])('resolves %s to the newest published SemVer tag', (_label, refArgs) => {
+    ['without --ref', []],
+    ['with --ref naming the CLI version', ['--ref', `v${cliVersion}`]],
+  ])('fetches the release matching the CLI version (%s)', (_label, refArgs) => {
     const result = runInstaller(['onboard', ...refArgs], { prepare: existingProject })
 
     try {
-      expect(result.commandLog).toContain(
-        'git ls-remote --tags --refs --sort=-version:refname https://github.com/lonestone/lonestone-boilerplate v*',
-      )
-      expect(result.commandLog).toMatch(onboardCloneCommand('v1.10.0'))
-      expect(result.stderr).toContain('.boilerstone not found at ref v1.10.0')
-    } finally {
-      result.cleanup()
-    }
-  })
-
-  it('keeps an explicit published release tag', () => {
-    const result = runInstaller(['onboard', '--ref', 'v1.9.0'], { prepare: existingProject })
-
-    try {
       expect(result.commandLog).not.toContain('git ls-remote')
-      expect(result.commandLog).toMatch(onboardCloneCommand('v1.9.0'))
-      expect(result.stderr).toContain('.boilerstone not found at ref v1.9.0')
+      expect(result.commandLog).toMatch(onboardCloneCommand(`v${cliVersion}`))
+      expect(result.stderr).toContain(`.boilerstone not found at ref v${cliVersion}`)
     } finally {
       result.cleanup()
     }
   })
 
-  it('rejects branch references such as main', () => {
-    const result = runInstaller(['onboard', '--ref', 'main'], { prepare: existingProject })
+  it.each([['v1.9.0'], ['latest'], ['main']])(
+    'refuses --ref %s and points to the matching CLI',
+    (ref) => {
+      const result = runInstaller(['onboard', '--ref', ref], { prepare: existingProject })
 
-    try {
-      expect(result.status).toBe(1)
-      expect(result.stderr).toContain("--ref accepts only 'latest' or a release tag (vX.Y.Z)")
-      expect(result.commandLog).not.toContain('git clone')
-    } finally {
-      result.cleanup()
-    }
-  })
+      try {
+        expect(result.status).toBe(1)
+        expect(result.stderr).toContain('This CLI only works with its own release')
+        expect(result.stderr).toContain(`pnpm dlx @lonestone/cli@${ref.replace(/^v/, '')} onboard`)
+        expect(result.commandLog).not.toContain('git clone')
+      } finally {
+        result.cleanup()
+      }
+    },
+  )
 })
 
 describe('init project generation', () => {
@@ -270,7 +249,7 @@ describe('init project generation', () => {
 
     try {
       expect(result.status).toBe(1)
-      expect(result.stderr).toContain(`init always creates the release that matches this CLI`)
+      expect(result.stderr).toContain('This CLI only works with its own release')
       expect(result.stderr).toContain('pnpm dlx @lonestone/cli@1.9.0 init app')
       expect(result.commandLog).not.toContain('git clone')
     } finally {

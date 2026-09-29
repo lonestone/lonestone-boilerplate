@@ -27,7 +27,7 @@ ${colorize('Upgrade commands:', 'cyan')}
   ${colorize('versions list', 'bright')}           List available boilerplate versions
 
 ${colorize('Options:', 'cyan')}
-  ${colorize('--ref <latest|vX.Y.Z>', 'bright')}   Release onboard fetches (default: latest)
+  ${colorize('--ref <vX.Y.Z>', 'bright')}          Optional for init/onboard; must be this CLI's version
   ${colorize('--project <path>', 'bright')}        Project root (default: current directory)
 
 ${colorize('Examples:', 'cyan')}
