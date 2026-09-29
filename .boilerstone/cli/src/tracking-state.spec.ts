@@ -459,7 +459,6 @@ describe('tracking state lifecycle', () => {
     try {
       generateProject(projectPath, {
         projectName: 'acme',
-        cliRange: '^1.2.3',
         sourceVersion: '1.2.3',
       })
 

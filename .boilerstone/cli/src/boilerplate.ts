@@ -24,13 +24,14 @@ import {
   parseIntentionMetadataContent,
   parseReferencePathDeclarations,
   parseReferencePaths,
+  pinRockScript,
   PRODUCER_ARTIFACTS,
   promoteUnreleasedIntentions,
   readOptionValue,
   resolveTargetVersion,
 } from './boilerplate-core.js'
 import { isBoilerplateMaintainerCheckout, stripBoilerstoneProducerArtifacts } from './generate.js'
-import { colorize, getPublishedCliRange, isolatedGitEnv, movePath, runFileSync } from './utils.js'
+import { colorize, isolatedGitEnv, movePath, runFileSync } from './utils.js'
 import { trackingState } from './tracking-state.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -966,7 +967,32 @@ function finishUpgrade(options: UpgradeFinishCommandOptions): UpgradePathResolut
   }
 
   trackingState.write(absolutePath, trackingState.finish(state, targetVersion))
+  if (syncRockScriptPin(absolutePath, targetVersion)) {
+    console.log(
+      `  ${colorize('✓', 'green')} package.json: rock now runs @lonestone/cli@${targetVersion}`,
+    )
+  }
   return resolution
+}
+
+/**
+ * Keeps a pinned `pnpm dlx @lonestone/cli@<version> rock` script on the
+ * release the project now tracks. A custom or vendored `rock` is left alone.
+ */
+function syncRockScriptPin(projectPath: string, version: string): boolean {
+  const pkgPath = join(projectPath, 'package.json')
+  if (!existsSync(pkgPath)) {
+    return false
+  }
+  const next = pinRockScript(
+    JSON.parse(readFileSync(pkgPath, 'utf-8')) as PackageJsonShape,
+    version,
+  )
+  if (!next) {
+    return false
+  }
+  writeFileSync(pkgPath, `${JSON.stringify(next, null, 2)}\n`, 'utf-8')
+  return true
 }
 
 function cmdUpgradeFinish(options: UpgradeFinishCommandOptions): void {
@@ -1013,14 +1039,15 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
     process.exit(1)
   }
 
-  // 1. Wire the root package.json (boilerplate script + published CLI).
+  // 1. Wire the root package.json: a `boilerplate` script running the published
+  //    CLI through pnpm dlx. No dependency is added.
   const pkgPath = join(root, 'package.json')
   if (!existsSync(pkgPath)) {
     console.error(`  ${colorize('❌', 'red')} No package.json found in ${root}`)
     process.exit(1)
   }
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as PackageJsonShape
-  const wiring = ensurePackageJsonWiring(pkg, getPublishedCliRange())
+  const wiring = ensurePackageJsonWiring(pkg)
   if (wiring.changes.length > 0) {
     writeFileSync(pkgPath, `${JSON.stringify(wiring.pkg, null, 2)}\n`, 'utf-8')
     for (const change of wiring.changes) {
@@ -1066,7 +1093,7 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
     )
   } else {
     console.log(
-      `  ${colorize('1.', 'bright')} Install the CLI runtime: ${colorize('pnpm install', 'blue')}`,
+      `  ${colorize('1.', 'bright')} Refresh the lockfile:    ${colorize('pnpm install', 'blue')}`,
     )
     console.log(
       `  ${colorize('2.', 'bright')} Check readiness:         ${colorize('pnpm boilerplate upgrade status', 'blue')}`,

@@ -35,7 +35,7 @@ Runtime validation mirrors `boilerplate.schema.json`: schema version 1, source f
 
 Producer drafts never mix working-tree intentions with committed references: resolution requires a clean producer checkout and a release folder committed in `HEAD`, then reads both intention content and reference projections from that same `HEAD`.
 
-Setup and the upgrade CLI live in `.boilerstone/cli` (`@lonestone/cli`). They share `tracking-state` and `PRODUCER_ARTIFACTS`; generated projects depend on the published package instead of vendoring TypeScript sources. That location keeps the CLI out of `packages/`, so it is not mistaken for an app workspace package.
+Setup and the upgrade CLI live in `.boilerstone/cli` (`@lonestone/cli`). They share `tracking-state` and `PRODUCER_ARTIFACTS`; generated projects call the published package with `pnpm dlx` instead of installing it or vendoring TypeScript sources. That location keeps the CLI out of `packages/`, so it is not mistaken for an app workspace package.
 
 ## Two classifications drive the plan
 
@@ -43,7 +43,7 @@ Intentions carry a `classification` in their frontmatter. `no-migration` and `in
 
 ## Producer vs consumer (one directory, two modes)
 
-In the boilerplate repo, intentions, consumer docs, and the CLI sources live in `.boilerstone/`. In a generated or onboarded project, the producer side is dropped. `generateProject()` in `.boilerstone/cli/src/generate.ts` (for `init`, on a staging copy of the release) and `stripBoilerstoneProducerArtifacts()` (for `bootstrap` on an existing project) both remove `cli/`, `migration-intentions/`, the example state, the release-maintainer runbook, and these internal docs — and keep the local state, the schema, and the consumer-facing docs. Only `generateProject()` touches files outside `.boilerstone/` (maintainer-only skills, the workspace rename): `bootstrap` runs on client code and never does. `pnpm rock` removes nothing. The CLI is the `@lonestone/cli` dependency, not a copy of sources. Future-release intentions are then read from git tags rather than from disk.
+In the boilerplate repo, intentions, consumer docs, and the CLI sources live in `.boilerstone/`. In a generated or onboarded project, the producer side is dropped. `generateProject()` in `.boilerstone/cli/src/generate.ts` (for `init`, on a staging copy of the release) and `stripBoilerstoneProducerArtifacts()` (for `bootstrap` on an existing project) both remove `cli/`, `migration-intentions/`, the example state, the release-maintainer runbook, and these internal docs — and keep the local state, the schema, and the consumer-facing docs. Only `generateProject()` touches files outside `.boilerstone/` (maintainer-only skills, the workspace rename): `bootstrap` runs on client code and never does. `pnpm rock` removes nothing. The CLI runs through `pnpm dlx @lonestone/cli`: it is neither a dependency nor a copy of sources. Future-release intentions are then read from git tags rather than from disk.
 
 The list of producer-only paths has one home, `PRODUCER_ARTIFACTS` in `boilerplate-core.ts`. The "consumer cleanup" readiness check in `status` derives from it, and `PRODUCER_FILES_TO_REMOVE` in `generate.ts` includes that list plus the maintainer-only skills.
 

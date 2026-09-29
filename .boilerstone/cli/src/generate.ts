@@ -1,10 +1,10 @@
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import {
-  ensurePackageJsonWiring,
   type PackageJsonShape,
   PRODUCER_ARTIFACTS,
-  ROCK_SCRIPT_COMMAND,
+  TEMPLATE_ROCK_SCRIPT_COMMAND,
+  wireGeneratedPackageJson,
 } from './boilerplate-core.js'
 import { trackingState } from './tracking-state.js'
 import { colorize, isolatedGitEnv, runFileSync } from './utils.js'
@@ -27,7 +27,7 @@ export const PRODUCER_FILES_TO_REMOVE = [
 
 export interface GenerateProjectOptions {
   projectName: string
-  cliRange: string
+  /** Release the project is generated from; `rock` is pinned to it. */
   sourceVersion: string
   sourceCommit?: string
   /** Defaults to the public boilerplate repository. */
@@ -76,7 +76,7 @@ export function isPublishedCliTemplate(rootPath: string): boolean {
   if (!existsSync(pkgPath)) {
     return false
   }
-  return readJson<PackageJsonShape>(pkgPath).scripts?.rock === ROCK_SCRIPT_COMMAND
+  return readJson<PackageJsonShape>(pkgPath).scripts?.rock === TEMPLATE_ROCK_SCRIPT_COMMAND
 }
 
 /** True while the workspace still uses the template scope, i.e. was never generated. */
@@ -299,16 +299,12 @@ function renameWorkspace(rootPath: string, projectName: string): void {
   updateDockerCompose(rootPath, projectName)
 }
 
-function pinPublishedCli(rootPath: string, cliRange: string): void {
+function wirePublishedCli(rootPath: string, version: string): void {
   const pkgPath = join(rootPath, 'package.json')
-  const wiring = ensurePackageJsonWiring(readJson<PackageJsonShape>(pkgPath), cliRange)
-  if (wiring.changes.length === 0) {
-    return
-  }
-  writeJson(pkgPath, wiring.pkg)
-  for (const change of wiring.changes) {
-    console.log(`  ${colorize('✓', 'green')} package.json: ${change}`)
-  }
+  writeJson(pkgPath, wireGeneratedPackageJson(readJson<PackageJsonShape>(pkgPath), version))
+  console.log(
+    `  ${colorize('✓', 'green')} package.json: scripts run ${colorize(`@lonestone/cli`, 'dim')} through pnpm dlx (rock pinned to ${version}), no CLI dependency`,
+  )
 }
 
 /**
@@ -323,7 +319,7 @@ export function generateProject(rootPath: string, options: GenerateProjectOption
   removePaths(rootPath, PRODUCER_FILES_TO_REMOVE)
   stripCliPackageReferences(rootPath)
   renameWorkspace(rootPath, options.projectName)
-  pinPublishedCli(rootPath, options.cliRange)
+  wirePublishedCli(rootPath, options.sourceVersion)
 
   // The template ships the producer's own state file; the new project starts
   // from the release it was generated from.

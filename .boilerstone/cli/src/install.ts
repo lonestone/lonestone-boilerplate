@@ -9,7 +9,6 @@ import {
   canReadTty,
   colorize,
   getCliVersion,
-  getPublishedCliRange,
   isolatedGitEnv,
   movePath,
   runFileSync,
@@ -213,7 +212,6 @@ function stageProject(repoUrl: string, ref: string, dir: string): void {
     }
     generateProject(staging, {
       projectName,
-      cliRange: getPublishedCliRange(),
       sourceVersion: ref.replace(/^v/, ''),
       sourceCommit: sourceCommit || undefined,
       remote: process.env.BOILERPLATE_REPO?.trim() || undefined,
@@ -368,6 +366,8 @@ export async function runInstaller(argv: string[]): Promise<void> {
     rmSync(join(cwd, '.boilerstone/boilerplate.json'), { force: true })
     process.env.BOILERPLATE_INSTALLER_ONBOARD = '1'
     await bootstrapProject(cwd)
+    // No CLI dependency to install, but bootstrap may have dropped old
+    // `.boilerstone` workspace entries: keep the lockfile in sync.
     runPnpm(['install'], cwd)
     await offerOnboardCommit(cwd)
     ok('Project onboarded')

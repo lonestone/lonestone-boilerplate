@@ -37,6 +37,9 @@ import {
   ensureGitignoreLine,
   ensurePackageJsonWiring,
   getFallbackIntentionId,
+  getRockScriptCommand,
+  pinRockScript,
+  wireGeneratedPackageJson,
   getIntentionOrderIssues,
   isUnreleasedIntentionPath,
   parseIntentionMetadataContent,
@@ -459,51 +462,69 @@ describe('boilerplate core', () => {
     expect(() => resolveTargetVersion('latest', [])).toThrow('Cannot resolve "latest"')
   })
 
-  it('wires a package.json with the published CLI, idempotently', () => {
-    const first = ensurePackageJsonWiring({ name: 'app', scripts: { dev: 'vite' } }, '^1.1.0')
+  it('wires the boilerplate script through pnpm dlx without a dependency, idempotently', () => {
+    const first = ensurePackageJsonWiring({ name: 'app', scripts: { dev: 'vite' } })
+    expect(first.pkg.scripts?.[BOILERPLATE_SCRIPT_NAME]).toBe('pnpm dlx @lonestone/cli@latest')
     expect(first.pkg.scripts?.[BOILERPLATE_SCRIPT_NAME]).toBe(BOILERPLATE_SCRIPT_COMMAND)
     expect(first.pkg.scripts?.rock).toBeUndefined()
     expect(first.pkg.scripts?.dev).toBe('vite')
-    expect(first.pkg.devDependencies?.['@lonestone/cli']).toBe('^1.1.0')
+    expect(first.pkg.devDependencies).toBeUndefined()
     expect(first.changes.length).toBeGreaterThan(0)
 
-    const second = ensurePackageJsonWiring(first.pkg, '^1.1.0')
+    const second = ensurePackageJsonWiring(first.pkg)
     expect(second.changes).toEqual([])
   })
 
-  it('replaces the legacy boilerplate command and pins workspace protocol', () => {
-    const result = ensurePackageJsonWiring(
-      {
-        scripts: {
-          boilerplate: 'tsx ./.boilerstone/cli/boilerplate.ts',
-          rock: 'tsx ./cli/setup.ts',
-        },
-        devDependencies: { '@lonestone/cli': 'workspace:*', enquirer: '^2.4.1' },
+  it('replaces the legacy boilerplate command and leaves rock and dependencies alone', () => {
+    const result = ensurePackageJsonWiring({
+      scripts: {
+        boilerplate: 'tsx ./.boilerstone/cli/boilerplate.ts',
+        rock: 'tsx ./cli/setup.ts',
       },
-      '^1.1.0',
-    )
+      devDependencies: { enquirer: '^2.4.1' },
+    })
 
-    expect(result.pkg.scripts?.boilerplate).toBe('lonestone')
-    expect(result.pkg.devDependencies?.['@lonestone/cli']).toBe('^1.1.0')
+    expect(result.pkg.scripts?.boilerplate).toBe(BOILERPLATE_SCRIPT_COMMAND)
     // The vendored setup script and its dependency belong to the project:
     // the adopt-published-cli intention migrates them with a human.
     expect(result.pkg.scripts?.rock).toBe('tsx ./cli/setup.ts')
-    expect(result.pkg.devDependencies?.enquirer).toBe('^2.4.1')
+    expect(result.pkg.devDependencies).toEqual({ enquirer: '^2.4.1' })
   })
 
-  it('never overwrites an existing boilerplate script or cli dependency', () => {
-    const result = ensurePackageJsonWiring(
+  it('never overwrites a custom boilerplate script', () => {
+    const pkg = { scripts: { boilerplate: 'custom', rock: 'custom-rock' } }
+    const result = ensurePackageJsonWiring(pkg)
+
+    expect(result.pkg).toEqual(pkg)
+    expect(result.changes).toEqual([])
+  })
+
+  it('wires a generated project: dlx scripts, rock pinned, no CLI dependency', () => {
+    const result = wireGeneratedPackageJson(
       {
-        scripts: { boilerplate: 'custom', rock: 'custom-rock' },
-        devDependencies: { '@lonestone/cli': '^1.0.0' },
+        name: 'acme',
+        scripts: { rock: 'lonestone rock', boilerplate: 'lonestone', dev: 'vite' },
+        devDependencies: { '@lonestone/cli': 'workspace:*', tsx: '^4.0.0' },
       },
-      '^1.1.0',
+      '1.2.0',
     )
 
-    expect(result.pkg.scripts?.boilerplate).toBe('custom')
-    expect(result.pkg.scripts?.rock).toBe('custom-rock')
-    expect(result.pkg.devDependencies?.['@lonestone/cli']).toBe('^1.0.0')
-    expect(result.changes).toEqual([])
+    expect(result.scripts).toEqual({
+      rock: 'pnpm dlx @lonestone/cli@1.2.0 rock',
+      boilerplate: 'pnpm dlx @lonestone/cli@latest',
+      dev: 'vite',
+    })
+    expect(result.devDependencies).toEqual({ tsx: '^4.0.0' })
+    expect(result.dependencies).toBeUndefined()
+  })
+
+  it('moves only a pinned dlx rock script to another release', () => {
+    const pinned = { scripts: { rock: getRockScriptCommand('1.2.0') } }
+    expect(pinRockScript(pinned, '1.3.0')?.scripts?.rock).toBe('pnpm dlx @lonestone/cli@1.3.0 rock')
+    expect(pinRockScript(pinned, '1.2.0')).toBeNull()
+    expect(pinRockScript({ scripts: { rock: 'tsx ./cli/setup.ts' } }, '1.3.0')).toBeNull()
+    expect(pinRockScript({ scripts: { rock: 'my-own-setup' } }, '1.3.0')).toBeNull()
+    expect(pinRockScript({}, '1.3.0')).toBeNull()
   })
 
   it('appends a gitignore line only when missing and stays newline-safe', () => {
@@ -1104,6 +1125,13 @@ describe('resolveUpgradePath', () => {
         intentions: { applied: [] as Array<{ id: string; appliedAt: string }>, skipped: [] },
       }
       writeProjectFile(projectPath, '.boilerstone/boilerplate.json', `${JSON.stringify(state)}\n`)
+      const pkgPath = join(projectPath, 'package.json')
+      const readRockScript = (): string => JSON.parse(readFileSync(pkgPath, 'utf-8')).scripts.rock
+      writeProjectFile(
+        projectPath,
+        'package.json',
+        `${JSON.stringify({ scripts: { rock: 'pnpm dlx @lonestone/cli@0.0.0 rock' } })}\n`,
+      )
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'boilerstone release'])
       runGit(projectPath, ['tag', 'v1.0.0'])
@@ -1112,6 +1140,7 @@ describe('resolveUpgradePath', () => {
         `  - ${intentionId}`,
       )
       expect(JSON.parse(readFileSync(statePath, 'utf-8')).source.currentVersion).toBe('0.0.0')
+      expect(readRockScript()).toBe('pnpm dlx @lonestone/cli@0.0.0 rock')
 
       state.intentions.applied.push({ id: intentionId, appliedAt: '2026-07-15' })
       writeFileSync(statePath, `${JSON.stringify(state)}\n`)
@@ -1127,6 +1156,8 @@ describe('resolveUpgradePath', () => {
       expect(actualResolution.targetRelease).toEqual(expectedResolution.targetRelease)
       expect(actualResolution.targetReference).toEqual(expectedResolution.targetReference)
       expect(JSON.parse(readFileSync(statePath, 'utf-8')).source.currentVersion).toBe('1.0.0')
+      // rock follows the release the project now tracks
+      expect(readRockScript()).toBe('pnpm dlx @lonestone/cli@1.0.0 rock')
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
@@ -2343,9 +2374,9 @@ describe('bootstrap command', () => {
       expect(result.status).toBe(0)
 
       const pkg = JSON.parse(readFileSync(join(projectPath, 'package.json'), 'utf-8'))
-      expect(pkg.scripts.boilerplate).toBe('lonestone')
       expect(pkg.scripts.rock).toBe('tsx ./cli/setup.ts')
-      expect(pkg.devDependencies['@lonestone/cli']).toMatch(/^\^/)
+      expect(pkg.scripts.boilerplate).toBe('pnpm dlx @lonestone/cli@latest')
+      expect(pkg.devDependencies['@lonestone/cli']).toBeUndefined()
       expect(pkg.devDependencies.enquirer).toBe('^2.4.1')
       expect(readFileSync(join(projectPath, '.gitignore'), 'utf-8')).toContain(
         '.boilerstone/upgrade/',
@@ -2494,16 +2525,16 @@ describe('project generation', () => {
 
       generateProject(projectPath, {
         projectName: 'acme',
-        cliRange: '^9.9.9',
         sourceVersion: '1.2.3',
         sourceCommit: 'abcdef1234567890',
       })
 
       const pkg = JSON.parse(readFileSync(join(projectPath, 'package.json'), 'utf-8'))
       expect(pkg.name).toBe('acme')
-      expect(pkg.scripts.rock).toBe('lonestone rock')
+      expect(pkg.scripts.rock).toBe('pnpm dlx @lonestone/cli@1.2.3 rock')
+      expect(pkg.scripts.boilerplate).toBe('pnpm dlx @lonestone/cli@latest')
       expect(pkg.scripts.generate).toBe('pnpm --filter=@acme/openapi-generator run generate')
-      expect(pkg.devDependencies['@lonestone/cli']).toBe('^9.9.9')
+      expect(pkg.devDependencies['@lonestone/cli']).toBeUndefined()
       expect(JSON.parse(readFileSync(join(projectPath, 'apps/api/package.json'), 'utf-8'))).toEqual(
         { name: '@acme/api', dependencies: { '@acme/i18n': 'workspace:*' } },
       )

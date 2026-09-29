@@ -216,9 +216,11 @@ describe('init project generation', () => {
 
       const pkg = JSON.parse(readFileSync(join(appPath, 'package.json'), 'utf-8'))
       expect(pkg.name).toBe('app')
-      expect(pkg.scripts.rock).toBe('lonestone rock')
-      // Pinned to the CLI that generated the project, never the workspace copy.
-      expect(pkg.devDependencies['@lonestone/cli']).toBe(`^${cliVersion}`)
+      // The project runs the CLI through pnpm dlx and never installs it;
+      // rock stays on the release that generated the project.
+      expect(pkg.scripts.rock).toBe(`pnpm dlx @lonestone/cli@${cliVersion} rock`)
+      expect(pkg.scripts.boilerplate).toBe('pnpm dlx @lonestone/cli@latest')
+      expect(pkg.devDependencies['@lonestone/cli']).toBeUndefined()
       expect(JSON.parse(readFileSync(join(appPath, 'apps/api/package.json'), 'utf-8')).name).toBe(
         '@app/api',
       )

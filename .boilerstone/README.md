@@ -47,14 +47,14 @@ migration-intentions/     # Published intentions + unreleased/ staging (boilerpl
 cli/                      # Published as @lonestone/cli (boilerplate repo only)
 ```
 
-Generated projects use the published `@lonestone/cli` package (`pnpm boilerplate` / `lonestone`). They do not keep a copy of `cli/`.
+Generated projects call the published `@lonestone/cli` with `pnpm dlx` from two scripts: `pnpm boilerplate` (latest CLI) and `pnpm rock` (pinned to the project's release). They neither install it nor keep a copy of `cli/`.
 
 In a generated project, the producer side (`cli/`, `migration-intentions/`, release runbook, …) is stripped — intentions then come from git tags. That's expected.
 
 ## Detaching
 
 1. `rm -rf .boilerstone`
-2. Remove the `boilerplate` script from the root `package.json`. Keep the `@lonestone/cli` dependency if you still use `pnpm rock` (it runs `lonestone rock`); otherwise remove both
+2. Remove the `boilerplate` script from the root `package.json`. Keep `rock` if you still use it for local setup: it runs through `pnpm dlx` and needs nothing else
 3. Optionally remove the skill shims and any leftover `.boilerstone` / `.boilerstone/cli` workspace or gitignore entries
 
 Nothing else in the repository depends on this directory.

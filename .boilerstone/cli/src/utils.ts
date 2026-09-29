@@ -24,11 +24,6 @@ export function getCliVersion(): string {
   return cliVersion
 }
 
-/** Semver range that pins a project to the CLI version currently running. */
-export function getPublishedCliRange(): string {
-  return `^${cliVersion}`
-}
-
 export const colors = {
   reset: '\x1B[0m',
   bright: '\x1B[1m',
