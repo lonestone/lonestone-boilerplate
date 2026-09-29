@@ -35,6 +35,14 @@ The description becomes the commit body, copied verbatim. When the pull request 
 1. **Rationale prose** — why this approach, what you rejected, what constraint drove it. Distill this from WIP commit bodies; do not concatenate them.
 2. **One paragraph per additional consumer-visible change.** After a blank line, no bullet, written as a conventional header, for example `fix(api): correct off-by-one in list pagination`. Each one becomes its own changelog line and counts in the version. Use a valid type and scope from `commitlint.config.ts`.
 
+   The **first line** of the paragraph is linted exactly like a commit subject: header alone on that line, 100 characters at most, no trailing full stop. Any explanation goes on the following lines, never after the header on the same line:
+
+   ```text
+   fix(api): correct off-by-one in list pagination
+   The last page skipped one item when the total was a multiple of the page size.
+   ```
+3. **Co-author trailers, last.** When an AI agent wrote part of the change, end the description with a `Co-Authored-By:` trailer naming it, for example `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Trailers on WIP commits die with the squash: the description is the only place where this authorship survives the merge. Reviewers are entitled to know that code was generated, because it changes how they read it.
+
 Drop the rest of the WIP history. Subjects like "wip endpoint" or "fmt" describe the journey. The journey is over. The diff and the rationale describe the result.
 
 **Screenshots, checklists, and review chatter go in comments**, never in the description. They would otherwise land in `git log`.
