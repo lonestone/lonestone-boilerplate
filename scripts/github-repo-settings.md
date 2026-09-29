@@ -58,6 +58,8 @@ gh variable set REQUIRE_RELEASE_NOTE --body true
 gh variable set PROMOTE_ON_RELEASE --body production
 ```
 
+**Private repository on the GitHub free plan.** Branch protection and rulesets are not available there: the API answers `Upgrade to GitHub Pro or make this repository public`. The checks above still run, but they are advisory. A pull request can be merged with **PR lint** red. In that case the merge settings above are what keeps history clean, and the `finalize-pr` skill validates the title and description locally with `pnpm lint:pr` before applying them. Check that the PR lint is green before you merge.
+
 Do not apply branch protection blindly with the API on a repo that already has rules. Set it in the GitHub UI (Settings → Branches, or Rulesets) so you do not wipe existing rules.
 
 Do not add a workflow that auto-merges the Release PR. Green checks are not consent to ship. A human merges that PR.

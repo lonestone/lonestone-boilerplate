@@ -99,5 +99,7 @@ fi
 echo
 echo "Still do in the GitHub UI (see scripts/github-repo-settings.md):"
 echo "  - Protect main; require checks \"PR title and description\", \"Intention gate\", \"Release note\", plus CI jobs"
+echo "    (not available on a private repository on the free plan: the checks are then advisory,"
+echo "    so check that PR lint is green before merging; finalize-pr runs pnpm lint:pr locally)"
 echo "  - Do not enable merge commits or rebase merging"
 echo "  - On Environments staging and production, add DOKPLOY_URL, DOKPLOY_API_KEY, DOKPLOY_APPLICATIONS"
