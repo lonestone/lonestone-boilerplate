@@ -10,7 +10,7 @@ This skill is a thin adapter. The canonical procedure is the "Onboarding a proje
 ## Preflight
 
 1. If the target project already has `.boilerstone/boilerplate.json`, it is already onboarded — point the user to `boilerstone-upgrade` and stop.
-2. Never run `pnpm rock` on an existing project — it renames packages and rewrites env/docker; it is safe only on a fresh template.
+2. Never run `pnpm rock` on an existing project whose `rock` script is still `tsx ./cli/setup.ts` — that vendored script renames packages and rewrites env/docker. The published `lonestone rock` only sets up the local environment and is safe to re-run.
 
 ## Procedure
 

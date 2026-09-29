@@ -61,7 +61,7 @@ Create the project from the directory that should contain it:
 pnpm dlx @lonestone/cli init my-project
 ```
 
-The CLI resolves the latest stable `vX.Y.Z` tag, creates the project, installs dependencies, and runs the interactive `pnpm rock` setup. Pin a specific release when reproducibility requires it:
+The CLI resolves the latest stable `vX.Y.Z` tag, creates the project, renames the workspace to `@my-project/*` (the directory name, so use lowercase letters, digits and dashes), installs dependencies, and runs the interactive `pnpm rock` setup. Pin a specific release when reproducibility requires it:
 
 ```bash
 pnpm dlx @lonestone/cli init my-project --ref v1.0.0
@@ -97,33 +97,20 @@ fnm use 24.13.0
 npm i -g pnpm@10.28.2
 ```
 
-When working from an existing checkout rather than the installer, install dependencies manually:
+When joining an existing project (a fresh clone of a project created with `init`), install dependencies and set up your local environment:
 
 ```bash
 pnpm install
-```
-
-Then run the setup script:
-
-The project includes an automated setup script that will:
-- Detect available applications (API, Web SPA, Web SSR, OpenAPI Generator)
-- Prompt you for database configuration (user, password, name, host, port)
-- Prompt you for application ports
-- Configure SMTP settings (MailDev)
-- Copy and configure all `.env` files automatically
-- Optionally start Docker services (database, MailDev)
-- Optionally run database migrations
-
-```bash
 pnpm rock
 ```
 
-The script will guide you through the configuration process interactively. It will:
-- Ask for your project name
-- Rename workspace packages to `@your-project/*` and rewrite remaining `@boilerstone/` imports in apps, packages, docs, tsconfig, and CI
-- Check for existing `.env` files and only prompt for missing variables
-- Automatically update all `.env` files with your configuration
+`pnpm rock` sets up the local development environment. It will:
+- Create the missing `.env` files from every `.env.example` (root, `apps/*`, `packages/*`)
+- Prompt only for missing variables: database, application ports, SMTP (MailDev)
 - Set up proper API URLs and trusted origins across all applications
+- Optionally start Docker services (database, MailDev) and run database migrations
+
+It never renames packages or deletes files, so it is safe to re-run. Renaming the workspace to `@your-project/*` happens once, in `init`.
 
 Start applications in development mode:
 

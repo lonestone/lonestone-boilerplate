@@ -54,7 +54,7 @@ In a generated project, the producer side (`cli/`, `migration-intentions/`, rele
 ## Detaching
 
 1. `rm -rf .boilerstone`
-2. Remove the `boilerplate` script and the `@lonestone/cli` dependency from the root `package.json`
+2. Remove the `boilerplate` script from the root `package.json`. Keep the `@lonestone/cli` dependency if you still use `pnpm rock` (it runs `lonestone rock`); otherwise remove both
 3. Optionally remove the skill shims and any leftover `.boilerstone` / `.boilerstone/cli` workspace or gitignore entries
 
 Nothing else in the repository depends on this directory.

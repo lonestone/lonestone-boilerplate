@@ -14,7 +14,7 @@ ${colorize('Usage:', 'cyan')}
 ${colorize('Project commands:', 'cyan')}
   ${colorize('init [dir]', 'bright')}              Create a new project from the template
   ${colorize('onboard', 'bright')}                 Add the upgrade system to an existing project
-  ${colorize('rock', 'bright')}                    Interactive first-run setup (pnpm rock)
+  ${colorize('rock', 'bright')}                    Set up the local dev environment: .env files, Docker, migrations (pnpm rock)
   ${colorize('upgrade [version]', 'bright')}       Stage a boilerplate upgrade (default: latest)
 
 ${colorize('Upgrade commands:', 'cyan')}

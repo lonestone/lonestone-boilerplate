@@ -4,16 +4,15 @@ import {
   existsSync,
   readdirSync,
   readFileSync,
-  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, extname, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
-import { CLI_PACKAGE_NAME, ensurePackageJsonWiring, PRODUCER_ARTIFACTS } from './boilerplate-core.js'
-import { colorize, isolatedGitEnv, runFileSync } from './utils.js'
+import { hasTemplateScope, isBoilerplateMaintainerCheckout } from './generate.js'
+import { colorize } from './utils.js'
 
 interface InputPromptOptions {
   message: string
@@ -42,30 +41,7 @@ interface EnquirerConstructors {
 const { Input, Confirm } = Enquirer as unknown as EnquirerConstructors
 
 const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 const projectRoot = process.cwd()
-const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
-
-function getConfiguredBoilerplateRemote(): string {
-  return process.env.BOILERPLATE_REPO?.trim() || defaultBoilerplateRemote
-}
-
-// Producer-only paths removed from generated projects. The `.boilerstone/`
-// subset is derived from PRODUCER_ARTIFACTS so the two lists cannot drift.
-// Keep stripping `install.sh`, `packages/cli`, and root `cli/` from older
-// checkouts that still vendored those layouts.
-export const PRODUCER_FILES_TO_REMOVE = [
-  'install.sh',
-  'packages/cli',
-  'cli',
-  '.claude/skills/boilerstone-release',
-  '.cursor/skills/boilerstone-release',
-  '.claude/skills/boilerstone-intention',
-  '.cursor/skills/boilerstone-intention',
-  '.claude/skills/boilerstone-init',
-  '.cursor/skills/boilerstone-init',
-  ...PRODUCER_ARTIFACTS.map((artifact) => `.boilerstone/${artifact}`),
-]
 
 interface AvailableApps {
   api: boolean
@@ -135,31 +111,6 @@ function runCommand(command: string, args: string[]): Promise<void> {
       reject(error)
     })
   })
-}
-
-function normalizeGitRemote(value: string): string {
-  return value
-    .trim()
-    .replace(/^git@github\.com:/, 'https://github.com/')
-    .replace(/^ssh:\/\/git@github\.com\//, 'https://github.com/')
-    .replace(/^(https?:\/\/)[^/]*@/i, '$1')
-    .replace(/\/$/, '')
-    .replace(/\.git$/, '')
-    .toLowerCase()
-}
-
-function isBoilerplateMaintainerCheckout(rootPath: string): boolean {
-  try {
-    const originUrl = runFileSync('git', ['remote', 'get-url', 'origin'], {
-      cwd: rootPath,
-      stdio: ['ignore', 'pipe', 'ignore'],
-      env: isolatedGitEnv(),
-    })
-
-    return normalizeGitRemote(originUrl) === normalizeGitRemote(defaultBoilerplateRemote)
-  } catch {
-    return false
-  }
 }
 
 function sleep(ms: number): Promise<void> {
@@ -456,29 +407,31 @@ interface EnvFileInfo {
   missingVars: string[]
 }
 
-function checkEnvFiles(availableApps: AvailableApps): EnvFileInfo[] {
+/**
+ * Every `.env.example` at the root and one level under `apps/` and `packages/`,
+ * so an app the project added itself gets its `.env` too.
+ */
+function findEnvExamples(): Array<{ from: string; to: string }> {
   const envFiles: Array<{ from: string; to: string }> = [{ from: '.env.example', to: '.env' }]
 
-  if (availableApps.api) {
-    envFiles.push({ from: 'apps/api/.env.example', to: 'apps/api/.env' })
+  for (const parent of ['apps', 'packages']) {
+    const parentPath = join(projectRoot, parent)
+    if (!existsSync(parentPath)) {
+      continue
+    }
+    for (const entry of readdirSync(parentPath, { withFileTypes: true })) {
+      const from = `${parent}/${entry.name}/.env.example`
+      if (entry.isDirectory() && existsSync(join(projectRoot, from))) {
+        envFiles.push({ from, to: `${parent}/${entry.name}/.env` })
+      }
+    }
   }
 
-  if (availableApps.webSpa) {
-    envFiles.push({ from: 'apps/web-spa/.env.example', to: 'apps/web-spa/.env' })
-  }
+  return envFiles
+}
 
-  if (availableApps.webSsr) {
-    envFiles.push({ from: 'apps/web-ssr/.env.example', to: 'apps/web-ssr/.env' })
-  }
-
-  if (availableApps.openapiGenerator) {
-    envFiles.push({
-      from: 'packages/openapi-generator/.env.example',
-      to: 'packages/openapi-generator/.env',
-    })
-  }
-
-  return envFiles.map(({ from, to }) => {
+function checkEnvFiles(): EnvFileInfo[] {
+  return findEnvExamples().map(({ from, to }) => {
     const fromPath = join(projectRoot, from)
     const toPath = join(projectRoot, to)
     const exists = existsSync(toPath)
@@ -551,381 +504,6 @@ function updateEnvFile(
 
   if (updated) {
     writeFileSync(filePath, content, 'utf-8')
-  }
-}
-
-function updatePackageJsonName(packagePath: string, newName: string): void {
-  if (!existsSync(packagePath)) {
-    return
-  }
-
-  const content = readFileSync(packagePath, 'utf-8')
-  const packageJson = JSON.parse(content)
-  packageJson.name = newName
-
-  writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
-}
-
-function updatePackageJsonDependencies(
-  packagePath: string,
-  oldPrefix: string,
-  newPrefix: string,
-): void {
-  if (!existsSync(packagePath)) {
-    return
-  }
-
-  const content = readFileSync(packagePath, 'utf-8')
-  const packageJson = JSON.parse(content)
-  const preservePackages = new Set<string>(['@lonestone/nzoth', CLI_PACKAGE_NAME])
-
-  const updateDependenciesSection = (
-    deps: Record<string, string> | undefined,
-  ): Record<string, string> | undefined => {
-    if (!deps) {
-      return deps
-    }
-
-    const updatedDeps: Record<string, string> = {}
-    for (const [key, value] of Object.entries(deps)) {
-      if (preservePackages.has(key)) {
-        updatedDeps[key] = value
-      } else if (key.startsWith(oldPrefix)) {
-        const newKey = key.replace(oldPrefix, newPrefix)
-        updatedDeps[newKey] = value
-      } else {
-        updatedDeps[key] = value
-      }
-    }
-    return updatedDeps
-  }
-
-  packageJson.dependencies = updateDependenciesSection(packageJson.dependencies)
-  packageJson.devDependencies = updateDependenciesSection(packageJson.devDependencies)
-  packageJson.peerDependencies = updateDependenciesSection(packageJson.peerDependencies)
-
-  writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
-}
-
-const WORKSPACE_SCOPE_SKIP_DIRS = new Set([
-  '.astro',
-  '.boilerstone',
-  '.git',
-  '.output',
-  '.react-router',
-  '.turbo',
-  'build',
-  'coverage',
-  'dist',
-  'node_modules',
-])
-
-const WORKSPACE_SCOPE_SKIP_FILES = new Set(['CHANGELOG.md', 'package-lock.json', 'pnpm-lock.yaml'])
-
-const WORKSPACE_SCOPE_TEXT_EXTENSIONS = new Set([
-  '.cjs',
-  '.css',
-  '.html',
-  '.js',
-  '.json',
-  '.jsx',
-  '.md',
-  '.mdc',
-  '.mdx',
-  '.mjs',
-  '.ts',
-  '.tsx',
-  '.yaml',
-  '.yml',
-])
-
-/**
- * Replace `@old-scope/` with `@new-scope/` in project text files.
- * Skips `.boilerstone/`, lockfiles, and the changelog so the upgrade CLI and
- * historical records keep their own names.
- */
-export function rewriteWorkspaceScope(
-  rootPath: string,
-  oldPrefix: string,
-  newPrefix: string,
-): number {
-  if (oldPrefix === newPrefix) {
-    return 0
-  }
-
-  const oldScoped = `${oldPrefix}/`
-  const newScoped = `${newPrefix}/`
-  let filesUpdated = 0
-
-  function walk(dirPath: string): void {
-    for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
-      if (entry.isSymbolicLink()) {
-        continue
-      }
-
-      if (entry.isDirectory()) {
-        if (WORKSPACE_SCOPE_SKIP_DIRS.has(entry.name)) {
-          continue
-        }
-        walk(join(dirPath, entry.name))
-        continue
-      }
-
-      if (!entry.isFile() || WORKSPACE_SCOPE_SKIP_FILES.has(entry.name)) {
-        continue
-      }
-
-      if (!WORKSPACE_SCOPE_TEXT_EXTENSIONS.has(extname(entry.name))) {
-        continue
-      }
-
-      const filePath = join(dirPath, entry.name)
-      const content = readFileSync(filePath, 'utf-8')
-      if (!content.includes(oldScoped)) {
-        continue
-      }
-
-      writeFileSync(filePath, content.replaceAll(oldScoped, newScoped), 'utf-8')
-      filesUpdated += 1
-    }
-  }
-
-  walk(rootPath)
-  return filesUpdated
-}
-
-function updateDockerCompose(projectName: string): void {
-  const dockerComposePath = join(projectRoot, 'docker-compose.yml')
-  if (!existsSync(dockerComposePath)) {
-    return
-  }
-
-  let content = readFileSync(dockerComposePath, 'utf-8')
-  const oldNames = ['boilerstone', 'lonestone']
-  let updated = false
-
-  for (const oldName of oldNames) {
-    const regex = new RegExp(oldName, 'g')
-    if (regex.test(content)) {
-      content = content.replace(regex, projectName)
-      updated = true
-    }
-  }
-
-  if (updated) {
-    writeFileSync(dockerComposePath, content, 'utf-8')
-    console.log(`  ${colorize('✓', 'green')} Updated ${colorize('docker-compose.yml', 'dim')}`)
-  }
-}
-
-interface PackageJson {
-  scripts?: Record<string, string>
-  [key: string]: unknown
-}
-
-interface BoilerplateState {
-  schemaVersion: number
-  source: {
-    repository: string
-    remote: string
-    currentVersion: string
-    commit?: string
-  }
-  trackedDomains: string[]
-  intentions: {
-    applied: Array<{ id: string; appliedAt: string }>
-    skipped: Array<{ id: string; reason: string }>
-  }
-}
-
-function updateRootScripts(
-  packageJson: PackageJson,
-  oldPrefix: string,
-  newPrefix: string,
-): PackageJson {
-  if (!packageJson.scripts) {
-    return packageJson
-  }
-
-  const scriptsToRewrite = ['dev', 'generate', 'docs-only']
-  const nextScripts: Record<string, string> = {}
-
-  for (const [key, value] of Object.entries<string>(packageJson.scripts)) {
-    if (scriptsToRewrite.includes(key)) {
-      nextScripts[key] = value.replaceAll(oldPrefix, newPrefix)
-    } else {
-      nextScripts[key] = value
-    }
-  }
-
-  return {
-    ...packageJson,
-    scripts: nextScripts,
-  }
-}
-
-function getBoilerplateSourceVersion(rootPath: string): string {
-  const envVersion = process.env.BOILERPLATE_SOURCE_VERSION?.trim().replace(/^v/, '')
-  if (envVersion) {
-    return envVersion
-  }
-
-  const packageJsonPath = join(rootPath, 'package.json')
-  if (!existsSync(packageJsonPath)) {
-    return '1.0.0'
-  }
-
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: unknown }
-  return typeof packageJson.version === 'string'
-    ? packageJson.version.replace(/^v(?=\d)/, '')
-    : '1.0.0'
-}
-
-function getBoilerplateSourceCommit(): string | undefined {
-  const commit = process.env.BOILERPLATE_SOURCE_COMMIT?.trim()
-  return commit || undefined
-}
-
-function createBoilerplateState(rootPath: string): BoilerplateState {
-  const state: BoilerplateState = {
-    schemaVersion: 1,
-    source: {
-      repository: 'lonestone/lonestone-boilerplate',
-      remote: getConfiguredBoilerplateRemote(),
-      currentVersion: getBoilerplateSourceVersion(rootPath),
-    },
-    trackedDomains: [
-      'tooling',
-      'api',
-      'frontend',
-      'ci',
-      'docker-env',
-      'monitoring',
-      'email',
-      'auth',
-      'storage',
-      'ai',
-    ],
-    intentions: {
-      applied: [],
-      skipped: [],
-    },
-  }
-
-  const commit = getBoilerplateSourceCommit()
-  if (commit) {
-    state.source.commit = commit
-  }
-
-  return state
-}
-
-function initializeBoilerplateTracking(rootPath: string): void {
-  const targetPath = join(rootPath, '.boilerstone', 'boilerplate.json')
-  if (existsSync(targetPath)) {
-    return
-  }
-
-  writeFileSync(
-    targetPath,
-    `${JSON.stringify(createBoilerplateState(rootPath), null, 2)}\n`,
-    'utf-8',
-  )
-  console.log(
-    `  ${colorize('✓', 'green')} Created ${colorize('.boilerstone/boilerplate.json', 'dim')}`,
-  )
-}
-
-async function renameProjects(projectName: string, availableApps: AvailableApps): Promise<void> {
-  console.log(`\n${colorize('📦 Renaming project packages', 'cyan')}\n`)
-
-  const oldPrefix = '@boilerstone'
-  const newPrefix = `@${projectName}`
-
-  // Update root package.json
-  const rootPackagePath = join(projectRoot, 'package.json')
-  if (existsSync(rootPackagePath)) {
-    const content = readFileSync(rootPackagePath, 'utf-8')
-    let packageJson = JSON.parse(content)
-    packageJson.name = projectName
-    packageJson = updateRootScripts(packageJson, oldPrefix, newPrefix)
-    writeFileSync(rootPackagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8')
-    console.log(`  ${colorize('✓', 'green')} Updated ${colorize('package.json', 'dim')}`)
-  }
-
-  // Update apps
-  const appsToUpdate: Array<{ path: string; name: string; condition: boolean }> = [
-    { path: 'apps/api/package.json', name: 'api', condition: availableApps.api },
-    { path: 'apps/web-spa/package.json', name: 'web-spa', condition: availableApps.webSpa },
-    { path: 'apps/web-ssr/package.json', name: 'web-ssr', condition: availableApps.webSsr },
-    { path: 'apps/documentation/package.json', name: 'documentation', condition: true },
-  ]
-
-  for (const { path, name, condition } of appsToUpdate) {
-    if (!condition) {
-      continue
-    }
-
-    const packagePath = join(projectRoot, path)
-    updatePackageJsonName(packagePath, `${newPrefix}/${name}`)
-    updatePackageJsonDependencies(packagePath, oldPrefix, newPrefix)
-    console.log(`  ${colorize('✓', 'green')} Updated ${colorize(path, 'dim')}`)
-  }
-
-  // Update packages
-  const packagesToUpdate: Array<{ path: string; name: string; condition: boolean }> = [
-    { path: 'packages/ui/package.json', name: 'ui', condition: true },
-    { path: 'packages/i18n/package.json', name: 'i18n', condition: true },
-    {
-      path: 'packages/openapi-generator/package.json',
-      name: 'openapi-generator',
-      condition: availableApps.openapiGenerator,
-    },
-  ]
-
-  for (const { path, name, condition } of packagesToUpdate) {
-    if (!condition) {
-      continue
-    }
-
-    const packagePath = join(projectRoot, path)
-    updatePackageJsonName(packagePath, `${newPrefix}/${name}`)
-    updatePackageJsonDependencies(packagePath, oldPrefix, newPrefix)
-    console.log(`  ${colorize('✓', 'green')} Updated ${colorize(path, 'dim')}`)
-  }
-
-  const rewrittenCount = rewriteWorkspaceScope(projectRoot, oldPrefix, newPrefix)
-  if (rewrittenCount > 0) {
-    console.log(
-      `  ${colorize('✓', 'green')} Rewrote ${colorize(String(rewrittenCount), 'bright')} files still referencing ${colorize(`${oldPrefix}/`, 'dim')}`,
-    )
-  }
-
-  console.log(
-    `\n  ${colorize('✓', 'green')} All project packages renamed to ${colorize(`@${projectName}/*`, 'bright')}`,
-  )
-
-  // Update docker-compose.yml
-  updateDockerCompose(projectName)
-
-  // Run linter with auto-fix to ensure formatting is correct
-  console.log(`\n  ${colorize('→', 'cyan')} Running linter with auto-fix...`)
-  try {
-    await runCommand('pnpm', ['lint:fix'])
-    console.log(`  ${colorize('✓', 'green')} Linting completed`)
-  } catch {
-    console.log(`  ${colorize('⚠', 'yellow')} Linting failed, but continuing setup`)
-  }
-
-  // Install dependencies
-  console.log(`\n  ${colorize('→', 'cyan')} Installing new dependencies...`)
-  try {
-    await runCommand('pnpm', ['install'])
-    console.log(`  ${colorize('✓', 'green')} New dependencies installed`)
-  } catch {
-    console.log(
-      `  ${colorize('⚠', 'yellow')} New dependencies installation failed, but continuing setup`,
-    )
   }
 }
 
@@ -1050,118 +628,31 @@ function updateAllEnvFiles(config: EnvConfig, availableApps: AvailableApps): voi
 }
 
 /**
- * Drop producer-only paths and wire the published CLI. Shared by `pnpm rock` and
- * `bootstrap` so init/onboard/onboard-style flows cannot drift.
+ * A checkout that still uses the template scope was cloned by hand instead of
+ * generated by `init`. Rock never renames or strips anything, so say so
+ * instead of leaving a half-configured template behind.
  */
-export function applyConsumerProjectCleanup(rootPath: string): boolean {
-  if (isBoilerplateMaintainerCheckout(rootPath)) {
-    console.log(
-      `  ${colorize('→', 'cyan')} Skipped producer-side cleanup in boilerplate maintainer checkout`,
-    )
-    return false
+async function confirmRawTemplateSetup(): Promise<boolean> {
+  if (!hasTemplateScope(projectRoot) || isBoilerplateMaintainerCheckout(projectRoot)) {
+    return true
   }
-
-  for (const file of PRODUCER_FILES_TO_REMOVE) {
-    const filePath = join(rootPath, file)
-    if (existsSync(filePath)) {
-      try {
-        rmSync(filePath, { recursive: true, force: true })
-        console.log(`  ${colorize('✓', 'green')} Removed ${colorize(file, 'dim')}`)
-      } catch {
-        console.log(`  ${colorize('⚠', 'yellow')} Failed to remove ${colorize(file, 'dim')}`)
-      }
-    }
-  }
-
-  stripPnpmWorkspaceEntry(rootPath, '.boilerstone')
-  stripPnpmWorkspaceEntry(rootPath, '.boilerstone/cli')
-  stripReleasePleaseCliExtraFile(rootPath)
-  wirePublishedCli(rootPath)
-  return true
-}
-
-function cleanupBoilerplateFiles(rootPath = projectRoot): void {
-  console.log(`\n${colorize('🧹 Cleaning up boilerplate-only files', 'cyan')}\n`)
-
-  initializeBoilerplateTracking(rootPath)
-  applyConsumerProjectCleanup(rootPath)
-
-  console.log(`\n  ${colorize('✓', 'green')} Boilerplate cleanup completed`)
-}
-
-function stripReleasePleaseCliExtraFile(rootPath: string): void {
-  const configPath = join(rootPath, 'release-please-config.json')
-  if (!existsSync(configPath)) {
-    return
-  }
-  const config = JSON.parse(readFileSync(configPath, 'utf-8')) as {
-    packages?: Record<string, { 'extra-files'?: Array<string | { path?: string }> }>
-  }
-  const rootPackage = config.packages?.['.']
-  const extraFiles = rootPackage?.['extra-files']
-  if (!rootPackage || !Array.isArray(extraFiles)) {
-    return
-  }
-  const next = extraFiles.filter((file) =>
-    typeof file === 'string'
-      ? file !== '.boilerstone/cli/package.json'
-      : file.path !== '.boilerstone/cli/package.json',
-  )
-  if (next.length === extraFiles.length) {
-    return
-  }
-  if (next.length === 0) {
-    delete rootPackage['extra-files']
-  } else {
-    rootPackage['extra-files'] = next
-  }
-  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, 'utf-8')
   console.log(
-    `  ${colorize('✓', 'green')} Removed CLI extra-files from ${colorize('release-please-config.json', 'dim')}`,
+    `  ${colorize('⚠', 'yellow')} This looks like the raw boilerplate template, not a generated project.`,
   )
-}
-
-function stripPnpmWorkspaceEntry(rootPath: string, entry: string): void {
-  const workspacePath = join(rootPath, 'pnpm-workspace.yaml')
-  if (!existsSync(workspacePath)) {
-    return
-  }
-  const content = readFileSync(workspacePath, 'utf-8')
-  const escaped = entry.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const next = content.replace(new RegExp(`^\\s*-\\s+${escaped}\\s*$`, 'm'), '')
-  if (next !== content) {
-    writeFileSync(workspacePath, next, 'utf-8')
-    console.log(
-      `  ${colorize('✓', 'green')} Removed ${colorize(entry, 'dim')} from ${colorize('pnpm-workspace.yaml', 'dim')}`,
-    )
-  }
-}
-
-function wirePublishedCli(rootPath: string): void {
-  const pkgPath = join(rootPath, 'package.json')
-  if (!existsSync(pkgPath)) {
-    return
-  }
-  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as Parameters<
-    typeof ensurePackageJsonWiring
-  >[0]
-  const cliPkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')) as {
-    version: string
-  }
-  const wiring = ensurePackageJsonWiring(pkg, `^${cliPkg.version}`)
-  if (wiring.changes.length === 0) {
-    return
-  }
-  writeFileSync(pkgPath, `${JSON.stringify(wiring.pkg, null, 2)}\n`, 'utf-8')
-  for (const change of wiring.changes) {
-    console.log(`  ${colorize('✓', 'green')} package.json: ${change}`)
-  }
+  console.log(
+    `  ${colorize('→', 'cyan')} To start a new project, run: ${colorize('pnpm dlx @lonestone/cli init my-app', 'bright')}`,
+  )
+  return confirm('Set up the local environment of this checkout anyway?')
 }
 
 async function main(): Promise<void> {
   console.log(`\n${colorize('🚀 Development Environment Setup', 'bright')}\n`)
 
   try {
+    if (!(await confirmRawTemplateSetup())) {
+      return
+    }
+
     // Detect available applications
     const availableApps = detectAvailableApps()
 
@@ -1175,13 +666,7 @@ async function main(): Promise<void> {
       console.log(`  ${colorize('✓', 'green')} ${colorize('OpenAPI Generator', 'bright')}`)
 
     // Check .env files (but don't copy yet)
-    const envFilesInfo = checkEnvFiles(availableApps)
-
-    // Prompt for project name
-    const projectName = await prompt('Project name', 'my-project')
-
-    // Rename workspace packages and rewrite leftover @boilerstone/ imports
-    await renameProjects(projectName, availableApps)
+    const envFilesInfo = checkEnvFiles()
 
     // Prompt for configuration BEFORE copying files
     const databaseConfig = await promptDatabaseConfig()
@@ -1202,9 +687,6 @@ async function main(): Promise<void> {
 
     // Update Vite config ports (SPA/SSR)
     updateViteConfigPorts(config, availableApps)
-
-    // Template cleanup: remove boilerplate-only files
-    cleanupBoilerplateFiles()
 
     console.log(`\n${colorize('✅ Setup completed successfully!', 'green')}`)
     console.log(`\n${colorize('📝 Configuration Summary:', 'cyan')}`)
@@ -1316,4 +798,4 @@ if (isDirectExecution) {
   main()
 }
 
-export { cleanupBoilerplateFiles, main as runSetup }
+export { main as runSetup }

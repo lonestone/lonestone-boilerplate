@@ -264,14 +264,11 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
 const CLI_PACKAGE_NAME = '@lonestone/cli'
 const BOILERPLATE_SCRIPT_NAME = 'boilerplate'
 const BOILERPLATE_SCRIPT_COMMAND = 'lonestone'
-const ROCK_SCRIPT_NAME = 'rock'
 const ROCK_SCRIPT_COMMAND = 'lonestone rock'
 const LEGACY_BOILERPLATE_SCRIPT_COMMAND = 'tsx ./.boilerstone/cli/boilerplate.ts'
-const LEGACY_ROCK_SCRIPT_COMMAND = 'tsx ./cli/setup.ts'
 
 // Producer-only artifacts that ship inside .boilerstone/ but are not maintained
-// in a consumer project. Mirrors the .boilerstone/ subset of setup.ts's
-// cleanupBoilerplateFiles(). Paths are relative to the .boilerstone/ directory.
+// in a consumer project. Paths are relative to the .boilerstone/ directory.
 const PRODUCER_ARTIFACTS = [
   'migration-intentions',
   'boilerplate.example.json',
@@ -297,31 +294,27 @@ interface PackageJsonWiring {
 }
 
 /**
- * Returns a copy of the root package.json wired for the published CLI:
- * adds `boilerplate` / `rock` scripts and an `@lonestone/cli` devDependency.
- * Idempotent for custom scripts. Replaces the legacy vendored `tsx` commands
- * and pins `workspace:*` to a published version range for consumers.
+ * Returns a copy of the root package.json wired for the published CLI: adds
+ * the `boilerplate` script and an `@lonestone/cli` devDependency, replaces the
+ * legacy vendored `boilerplate` command, and pins `workspace:*` to a published
+ * range. Leaves `rock` and every other dependency alone: on an existing
+ * project those belong to the project (the adopt-published-cli intention
+ * migrates them with a human in the loop).
  */
 function ensurePackageJsonWiring(pkg: PackageJsonShape, cliRange: string): PackageJsonWiring {
   const next: PackageJsonShape = { ...pkg }
   const changes: string[] = []
 
   const scripts = { ...next.scripts }
-  if (!scripts[BOILERPLATE_SCRIPT_NAME] || scripts[BOILERPLATE_SCRIPT_NAME] === LEGACY_BOILERPLATE_SCRIPT_COMMAND) {
-    if (scripts[BOILERPLATE_SCRIPT_NAME] !== BOILERPLATE_SCRIPT_COMMAND) {
-      scripts[BOILERPLATE_SCRIPT_NAME] = BOILERPLATE_SCRIPT_COMMAND
-      changes.push(`set "${BOILERPLATE_SCRIPT_NAME}" script to ${BOILERPLATE_SCRIPT_COMMAND}`)
-    }
-  }
-  if (!scripts[ROCK_SCRIPT_NAME] || scripts[ROCK_SCRIPT_NAME] === LEGACY_ROCK_SCRIPT_COMMAND) {
-    if (scripts[ROCK_SCRIPT_NAME] !== ROCK_SCRIPT_COMMAND) {
-      scripts[ROCK_SCRIPT_NAME] = ROCK_SCRIPT_COMMAND
-      changes.push(`set "${ROCK_SCRIPT_NAME}" script to ${ROCK_SCRIPT_COMMAND}`)
-    }
+  const currentScript = scripts[BOILERPLATE_SCRIPT_NAME]
+  if (!currentScript || currentScript === LEGACY_BOILERPLATE_SCRIPT_COMMAND) {
+    scripts[BOILERPLATE_SCRIPT_NAME] = BOILERPLATE_SCRIPT_COMMAND
+    changes.push(`set "${BOILERPLATE_SCRIPT_NAME}" script to ${BOILERPLATE_SCRIPT_COMMAND}`)
   }
   next.scripts = scripts
 
-  const currentRange = next.dependencies?.[CLI_PACKAGE_NAME] ?? next.devDependencies?.[CLI_PACKAGE_NAME]
+  const currentRange =
+    next.dependencies?.[CLI_PACKAGE_NAME] ?? next.devDependencies?.[CLI_PACKAGE_NAME]
   if (!currentRange) {
     next.devDependencies = { ...next.devDependencies, [CLI_PACKAGE_NAME]: cliRange }
     changes.push(`added "${CLI_PACKAGE_NAME}" devDependency (${cliRange})`)
@@ -332,13 +325,6 @@ function ensurePackageJsonWiring(pkg: PackageJsonShape, cliRange: string): Packa
       next.devDependencies = { ...next.devDependencies, [CLI_PACKAGE_NAME]: cliRange }
     }
     changes.push(`pinned "${CLI_PACKAGE_NAME}" to ${cliRange}`)
-  }
-
-  if (next.devDependencies?.enquirer) {
-    const remainingDevDependencies = { ...next.devDependencies }
-    delete remainingDevDependencies.enquirer
-    next.devDependencies = remainingDevDependencies
-    changes.push('removed enquirer devDependency (provided by @lonestone/cli)')
   }
 
   return { pkg: next, changes }
@@ -569,6 +555,7 @@ export {
   BOILERPLATE_SCRIPT_COMMAND,
   BOILERPLATE_SCRIPT_NAME,
   CLI_PACKAGE_NAME,
+  ROCK_SCRIPT_COMMAND,
   compareVersions,
   computeUpgradePath,
   type ComputeUpgradePathOptions,

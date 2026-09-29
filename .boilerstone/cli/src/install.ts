@@ -1,12 +1,14 @@
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import { bootstrapProject } from './boilerplate.js'
+import { generateProject, isPublishedCliTemplate, isValidProjectName } from './generate.js'
 import {
   canReadTty,
   colorize,
+  getPublishedCliRange,
   isolatedGitEnv,
   movePath,
   runFileSync,
@@ -53,14 +55,31 @@ function runGit(args: string[], cwd?: string): string {
   }).trim()
 }
 
-function runPnpm(args: string[], cwd: string, env: NodeJS.ProcessEnv = {}): void {
+function tryRunPnpm(args: string[], cwd: string, env: NodeJS.ProcessEnv = {}): boolean {
   const result = spawnProcessSync('pnpm', args, {
     cwd,
     env: { ...gitEnv(), ...env },
     stdio: 'inherit',
   })
-  if (result.status !== 0) {
+  return result.status === 0
+}
+
+function runPnpm(args: string[], cwd: string, env: NodeJS.ProcessEnv = {}): void {
+  if (!tryRunPnpm(args, cwd, env)) {
     die(`pnpm ${args.join(' ')} failed`)
+  }
+}
+
+function cloneRelease(
+  repoUrl: string,
+  ref: string,
+  target: string,
+  extraArgs: string[] = [],
+): void {
+  try {
+    runGit(['clone', '--quiet', '--depth', '1', ...extraArgs, '--branch', ref, repoUrl, target])
+  } catch {
+    throw new Error(`git clone failed (ref: ${ref})`)
   }
 }
 
@@ -160,23 +179,12 @@ function fetchSubdirs(repoUrl: string, ref: string, subdirs: string[], cwd: stri
   const tmp = mkdtempSync(join(tmpdir(), 'lonestone-fetch-'))
   try {
     info(`Fetching ${subdirs.join(' ')} from ${repoUrl}@${ref}`)
-    runGit([
-      'clone',
-      '--quiet',
-      '--depth',
-      '1',
-      '--filter=blob:none',
-      '--sparse',
-      '--branch',
-      ref,
-      repoUrl,
-      tmp,
-    ])
+    cloneRelease(repoUrl, ref, tmp, ['--filter=blob:none', '--sparse'])
     runGit(['sparse-checkout', 'set', ...subdirs], tmp)
     for (const subdir of subdirs) {
       const source = join(tmp, subdir)
       if (!existsSync(source)) {
-        die(`${subdir} not found at ref ${ref}`)
+        throw new Error(`${subdir} not found at ref ${ref}`)
       }
       const destination = join(cwd, subdir)
       mkdirSync(dirname(destination), { recursive: true })
@@ -184,12 +192,63 @@ function fetchSubdirs(repoUrl: string, ref: string, subdirs: string[], cwd: stri
       ok(`Fetched ${subdir}`)
     }
   } catch (error) {
-    if (error instanceof Error && error.message.includes('clone')) {
-      die(`git clone failed (ref: ${ref})`)
-    }
-    throw error
-  } finally {
+    // die() exits the process, so clean up before calling it.
     rmSync(tmp, { recursive: true, force: true })
+    die(error instanceof Error ? error.message : String(error))
+  }
+  rmSync(tmp, { recursive: true, force: true })
+}
+
+interface StagedProject {
+  isGenerated: boolean
+  sourceCommit: string
+  sourceVersion: string
+}
+
+/**
+ * Clone the release into a sibling staging directory, generate the project
+ * there, then move it into place. The CLI runs from outside the project it
+ * builds, and a failure leaves nothing behind at `dir`.
+ */
+function stageProject(repoUrl: string, ref: string, dir: string): StagedProject {
+  mkdirSync(dirname(dir), { recursive: true })
+  const staging = mkdtempSync(join(dirname(dir), '.lonestone-init-'))
+  try {
+    cloneRelease(repoUrl, ref, staging)
+    let sourceCommit = ''
+    try {
+      sourceCommit = runGit(['rev-parse', 'HEAD'], staging)
+    } catch {
+      sourceCommit = ''
+    }
+    const sourceVersion = ref.replace(/^v/, '')
+    rmSync(join(staging, '.git'), { recursive: true, force: true })
+
+    // Releases that still vendor their setup script generate themselves
+    // through their own `pnpm rock`.
+    const isGenerated = isPublishedCliTemplate(staging)
+    if (isGenerated) {
+      const projectName = basename(dir)
+      if (!isValidProjectName(projectName)) {
+        throw new Error(
+          `'${projectName}' is not a valid project name: use lowercase letters, digits and dashes`,
+        )
+      }
+      generateProject(staging, {
+        projectName,
+        cliRange: getPublishedCliRange(),
+        sourceVersion,
+        sourceCommit: sourceCommit || undefined,
+        remote: process.env.BOILERPLATE_REPO?.trim() || undefined,
+      })
+    }
+
+    movePath(staging, dir)
+    return { isGenerated, sourceCommit, sourceVersion }
+  } catch (error) {
+    // die() exits the process, so clean up before calling it.
+    rmSync(staging, { recursive: true, force: true })
+    die(error instanceof Error ? error.message : String(error))
   }
 }
 
@@ -304,37 +363,22 @@ export async function runInstaller(argv: string[]): Promise<void> {
       die(`Directory '${dirInput}' already exists`)
     }
     info(`Creating new project in ${dir} from ${repoUrl}@${ref}`)
-    try {
-      runGit(['clone', '--quiet', '--depth', '1', '--branch', ref, repoUrl, dirInput])
-    } catch {
-      die(`git clone failed (ref: ${ref})`)
-    }
+    const staged = stageProject(repoUrl, ref, dir)
 
-    let sourceCommit = ''
-    let sourceVersion = ''
-    try {
-      sourceCommit = runGit(['rev-parse', 'HEAD'], dir)
-    } catch {
-      sourceCommit = ''
-    }
-    try {
-      sourceVersion = runGit(['describe', '--tags', '--exact-match', '--match', 'v*'], dir)
-    } catch {
-      try {
-        sourceVersion = runGit(['describe', '--tags', '--abbrev=0', '--match', 'v*'], dir)
-      } catch {
-        sourceVersion = ''
-      }
-    }
-    sourceVersion = sourceVersion.replace(/^v/, '')
-
-    rmSync(join(dir, '.git'), { recursive: true, force: true })
     runGit(['init', '--quiet'], dir)
     runPnpm(['install'], dir)
-    runPnpm(['rock'], dir, {
-      BOILERPLATE_SOURCE_COMMIT: sourceCommit,
-      BOILERPLATE_SOURCE_VERSION: sourceVersion,
-    })
+    if (staged.isGenerated) {
+      // The scope rename can reorder imports; the generated project must lint clean.
+      if (!tryRunPnpm(['lint:fix'], dir)) {
+        info('pnpm lint:fix failed — run it yourself before the first commit')
+      }
+      runPnpm(['rock'], dir)
+    } else {
+      runPnpm(['rock'], dir, {
+        BOILERPLATE_SOURCE_COMMIT: staged.sourceCommit,
+        BOILERPLATE_SOURCE_VERSION: staged.sourceVersion,
+      })
+    }
     ok(`Project ready in ${dir}`)
     return
   }

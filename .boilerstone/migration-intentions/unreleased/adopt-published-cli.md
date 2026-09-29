@@ -33,19 +33,19 @@ Vendoring the upgrade CLI copied hundreds of lines of TypeScript (plus Vitest wi
    Done when: `rg '"@lonestone/cli"' package.json` matches a semver range, not `workspace:*`.
 
 2. **Root scripts** — signal: `"boilerplate"` is not `lonestone`, or `"rock"` is still `tsx ./cli/setup.ts`.
-   Set `"boilerplate": "lonestone"` and `"rock": "lonestone rock"`. Keep every other script.
+   Set `"boilerplate": "lonestone"` and `"rock": "lonestone rock"`. Keep every other script. `lonestone rock` only sets up the local environment (`.env` files, ports, Docker, migrations): it never renames packages or deletes files. If `git log -- cli/setup.ts` shows commits made in this project (the file was customized), stop and ask the human before switching `rock`: those changes would be lost.
    Done when: `pnpm boilerplate --help` prints the Lonestone CLI usage.
 
 3. **Vendored CLI sources** — signal: `.boilerstone/cli/` or `cli/setup.ts` exists.
-   Delete `.boilerstone/cli/`, `cli/setup.ts`, `cli/utils.ts`, and `.boilerstone/package.json` / `tsconfig.json` / `vitest.config.ts` if present. Do not delete `.boilerstone/boilerplate.json`, the schema, or consumer docs.
-   Done when: `test ! -e .boilerstone/cli && test ! -e cli/setup.ts`.
+   Delete `.boilerstone/cli/`, `.boilerstone/package.json` / `tsconfig.json` / `vitest.config.ts` if present. Delete `cli/setup.ts` and `cli/utils.ts` only once gap 2 switched `rock`, and remove `cli/` if it is then empty. Remove the root `enquirer` devDependency only if nothing else imports it (`rg "from 'enquirer'" --glob '!node_modules'` returns nothing). Do not delete `.boilerstone/boilerplate.json`, the schema, or consumer docs.
+   Done when: `test ! -e .boilerstone/cli && test ! -e cli/setup.ts && test ! -e cli/utils.ts`.
 
 4. **Workspace membership** — signal: `pnpm-workspace.yaml` lists `.boilerstone` or `.boilerstone/cli`.
    Remove those entries. Leave `packages/*` and `apps/*`. Do not add `.boilerstone/cli` in a consumer.
    Done when: `rg -n '^\s*-\s+\.boilerstone(/cli)?\s*$' pnpm-workspace.yaml` returns nothing.
 
 5. **Lockfile** — signal: `pnpm-lock.yaml` has no `@lonestone/cli`.
-   Run `pnpm install`. Touch no other dependency ranges.
+   Run `pnpm install`. Touch no other dependency ranges (beyond the `enquirer` removal in gap 3).
    Done when: `pnpm why @lonestone/cli` resolves.
 
 6. **Leftover installer script** — signal: `install.sh` exists at the project root.

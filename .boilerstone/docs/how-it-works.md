@@ -4,7 +4,7 @@ Start here. This page explains why the system exists and what each command does.
 
 ## The problem
 
-A project generated from this boilerplate diverges from day one. After the first `pnpm rock`, the code is yours: your routes, your models, your business logic. When the boilerplate later improves something — a lint rule, an auth pattern, a CI step — you can't merge that improvement as a diff. The diff would land on top of code that has moved on, and clobber your work. The usual "fork and pull from upstream" model simply doesn't apply.
+A project generated from this boilerplate diverges from day one. After `init`, the code is yours: your routes, your models, your business logic. When the boilerplate later improves something — a lint rule, an auth pattern, a CI step — you can't merge that improvement as a diff. The diff would land on top of code that has moved on, and clobber your work. The usual "fork and pull from upstream" model simply doesn't apply.
 
 ## The idea: ship meaning, not diffs
 
@@ -42,13 +42,13 @@ pnpm dlx @lonestone/cli upgrade 1.6.0
 
 By default the CLI resolves the latest published release tag and downloads that exact snapshot (a full clone for a new project, a sparse checkout of `.boilerstone/` for onboarding).
 
-- **`init`** clones the template and runs `pnpm rock`.
+- **`init`** clones the release into a temporary directory and generates the project there: it renames the workspace after the directory, drops the producer-only files, pins `@lonestone/cli` to the version that is running, and records the source release in `boilerplate.json`. It then moves the project into place, installs dependencies, and runs `pnpm rock`. The CLI never runs from inside the project it builds, and a failed generation leaves nothing behind.
 - **`onboard`** fetches `.boilerstone/` and the `boilerstone-upgrade` skills into an existing project, runs `bootstrap` (below), then offers to commit (`[Y/n]`, default yes).
 - **`upgrade [version]`** stages an upgrade workspace on a dedicated branch. It never edits your app code, commits, or pushes — applying intentions is a separate step ([runbook](./upgrade-runbook.md)).
 
 `--ref latest` is the default; pin with `--ref vX.Y.Z`. Branch refs like `main` are rejected so a project never starts from unreleased code. For a fork or private mirror, set `BOILERPLATE_REPO=<url>` — that repository must publish compatible `vX.Y.Z` tags.
 
-`bootstrap` adds the `@lonestone/cli` dependency and the `boilerplate` / `rock` scripts, gitignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It's idempotent and never overwrites what's already there. It deliberately does **not** run `pnpm rock` — that script renames packages, rewrites leftover `@boilerstone/` imports, and rewrites env/docker files, which is fine on a fresh template and destructive on a real project.
+`bootstrap` adds the `@lonestone/cli` dependency and the `boilerplate` script, gitignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It's idempotent, never overwrites what's already there, and never removes anything outside `.boilerstone/`. It leaves your `rock` script alone: an older project may still run a vendored `cli/setup.ts`, which renames packages and is destructive on a real project. The `adopt-published-cli` intention moves it to `lonestone rock`, which only sets up the local environment (`.env` files, Docker, migrations) and is safe to re-run.
 
 > **Heads-up on v1.0.0:** its intentions are baseline catch-ups ("align with the v1.0.0 …"), broader than the narrow deltas later releases ship. When onboarding an older project, budget roughly one working session per intention.
 
@@ -62,7 +62,7 @@ From there everything is local: intentions are read from the fetched refs, and r
 
 ## The commands, in the order you meet them
 
-**`bootstrap`** — wires an _existing_ project into the system (see [Onboarding](#onboarding)). New projects get all of this through `pnpm rock` instead.
+**`bootstrap`** — wires an _existing_ project into the system (see [Onboarding](#onboarding)). New projects get all of this from `init` instead.
 
 **`upgrade status`** — answers "where am I, and am I ready?": your current version, the intentions already applied or skipped, and readiness checks (state file valid, worktree clean, release tags available). It changes nothing — it only reports, and prints the command to fix anything missing.
 

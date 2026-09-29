@@ -29,12 +29,11 @@ import {
   readOptionValue,
   resolveTargetVersion,
 } from './boilerplate-core.js'
-import { applyConsumerProjectCleanup } from './setup.js'
-import { colorize, isolatedGitEnv, movePath, runFileSync } from './utils.js'
+import { isBoilerplateMaintainerCheckout, stripBoilerstoneProducerArtifacts } from './generate.js'
+import { colorize, getPublishedCliRange, isolatedGitEnv, movePath, runFileSync } from './utils.js'
 import { trackingState } from './tracking-state.js'
 
 const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 function resolveDefaultProjectRoot(): string {
   let dir = process.cwd()
@@ -56,13 +55,6 @@ function resolveDefaultProjectRoot(): string {
 const projectRoot = resolveDefaultProjectRoot()
 const boilerplateDir = join(projectRoot, '.boilerstone')
 const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
-
-function getPublishedCliRange(): string {
-  const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')) as {
-    version: string
-  }
-  return `^${pkg.version}`
-}
 
 async function prompt(message: string, initial: string): Promise<string> {
   // Without a terminal the question would never resolve and the process would
@@ -1021,7 +1013,7 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
     process.exit(1)
   }
 
-  // 1. Wire the root package.json (boilerplate / rock scripts + published CLI).
+  // 1. Wire the root package.json (boilerplate script + published CLI).
   const pkgPath = join(root, 'package.json')
   if (!existsSync(pkgPath)) {
     console.error(`  ${colorize('❌', 'red')} No package.json found in ${root}`)
@@ -1049,9 +1041,16 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
     console.log(`  ${colorize('✓', 'green')} .gitignore already ignores .boilerstone/upgrade/`)
   }
 
-  // 3. Drop producer-only paths (same pass as `pnpm rock`).
+  // 3. Drop producer-only files inside .boilerstone/. This is client code:
+  //    nothing outside .boilerstone/ is ever removed here.
   console.log(`\n${colorize('🧹 Switching .boilerstone/ to consumer mode', 'cyan')}\n`)
-  applyConsumerProjectCleanup(root)
+  if (isBoilerplateMaintainerCheckout(root)) {
+    console.log(
+      `  ${colorize('→', 'cyan')} Skipped producer-side cleanup in boilerplate maintainer checkout`,
+    )
+  } else {
+    stripBoilerstoneProducerArtifacts(root)
+  }
 
   // 4. Initialize tracking state (detects/confirms the source version).
   await cmdUpgradeInit(projectPath)

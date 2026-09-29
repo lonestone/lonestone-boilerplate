@@ -15,7 +15,8 @@ import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
-import { cleanupBoilerplateFiles, PRODUCER_FILES_TO_REMOVE } from './setup'
+import { generateProject, PRODUCER_FILES_TO_REMOVE } from './generate'
+import { trackingState } from './tracking-state'
 import { isolatedGitEnv, spawnProcessSync } from './utils'
 import {
   archiveGitReference,
@@ -461,7 +462,7 @@ describe('boilerplate core', () => {
   it('wires a package.json with the published CLI, idempotently', () => {
     const first = ensurePackageJsonWiring({ name: 'app', scripts: { dev: 'vite' } }, '^1.1.0')
     expect(first.pkg.scripts?.[BOILERPLATE_SCRIPT_NAME]).toBe(BOILERPLATE_SCRIPT_COMMAND)
-    expect(first.pkg.scripts?.rock).toBe('lonestone rock')
+    expect(first.pkg.scripts?.rock).toBeUndefined()
     expect(first.pkg.scripts?.dev).toBe('vite')
     expect(first.pkg.devDependencies?.['@lonestone/cli']).toBe('^1.1.0')
     expect(first.changes.length).toBeGreaterThan(0)
@@ -470,7 +471,7 @@ describe('boilerplate core', () => {
     expect(second.changes).toEqual([])
   })
 
-  it('replaces the legacy vendored tsx commands and pins workspace protocol', () => {
+  it('replaces the legacy boilerplate command and pins workspace protocol', () => {
     const result = ensurePackageJsonWiring(
       {
         scripts: {
@@ -483,12 +484,11 @@ describe('boilerplate core', () => {
     )
 
     expect(result.pkg.scripts?.boilerplate).toBe('lonestone')
-    expect(result.pkg.scripts?.rock).toBe('lonestone rock')
     expect(result.pkg.devDependencies?.['@lonestone/cli']).toBe('^1.1.0')
-    expect(result.pkg.devDependencies?.enquirer).toBeUndefined()
-    expect(result.changes).toContain(
-      'removed enquirer devDependency (provided by @lonestone/cli)',
-    )
+    // The vendored setup script and its dependency belong to the project:
+    // the adopt-published-cli intention migrates them with a human.
+    expect(result.pkg.scripts?.rock).toBe('tsx ./cli/setup.ts')
+    expect(result.pkg.devDependencies?.enquirer).toBe('^2.4.1')
   })
 
   it('never overwrites an existing boilerplate script or cli dependency', () => {
@@ -532,7 +532,7 @@ describe('boilerplate core', () => {
     expect(PRODUCER_ARTIFACTS).toContain('docs/release-maintainer-runbook.md')
   })
 
-  it('keeps the setup cleanup list in sync with PRODUCER_ARTIFACTS', () => {
+  it('keeps the generation cleanup list in sync with PRODUCER_ARTIFACTS', () => {
     for (const artifact of PRODUCER_ARTIFACTS) {
       expect(PRODUCER_FILES_TO_REMOVE).toContain(`.boilerstone/${artifact}`)
     }
@@ -1872,12 +1872,12 @@ describe('boilerplate CLI smoke', () => {
       expect(result.targetReference.provenance).toBe('consumer-ref')
       expect(selectableIds).toEqual(['v1.1.0/update-demo'])
       const referenceDir = join(projectPath, '.boilerstone', 'upgrade', 'reference')
-      expect(readProjectText(projectPath, '.boilerstone/upgrade/reference/source/apps/demo.txt')).toBe(
-        'source version\n',
-      )
-      expect(readProjectText(projectPath, '.boilerstone/upgrade/reference/target/apps/demo.txt')).toBe(
-        'target version\n',
-      )
+      expect(
+        readProjectText(projectPath, '.boilerstone/upgrade/reference/source/apps/demo.txt'),
+      ).toBe('source version\n')
+      expect(
+        readProjectText(projectPath, '.boilerstone/upgrade/reference/target/apps/demo.txt'),
+      ).toBe('target version\n')
       expect(readFileSync(join(referenceDir, 'README.md'), 'utf-8')).toContain(
         '| `apps/demo.txt` | adapt | staged | staged |',
       )
@@ -1949,9 +1949,9 @@ describe('boilerplate CLI smoke', () => {
       expect(
         readFileSync(join(upgradeDir, 'intentions/01-v9.9.9-draft-example.md'), 'utf-8'),
       ).toContain('Committed producer HEAD intention.')
-      expect(readProjectText(projectPath, '.boilerstone/upgrade/reference/target/apps/draft.txt')).toBe(
-        'committed producer HEAD reference\n',
-      )
+      expect(
+        readProjectText(projectPath, '.boilerstone/upgrade/reference/target/apps/draft.txt'),
+      ).toBe('committed producer HEAD reference\n')
       expect(readFileSync(join(upgradeDir, 'reference/README.md'), 'utf-8')).toContain(
         'producer checkout HEAD is the temporary source of truth',
       )
@@ -2316,6 +2316,7 @@ describe('bootstrap command', () => {
       )
       writeProjectFile(projectPath, 'install.sh', '#!/usr/bin/env sh\n')
       writeProjectFile(projectPath, 'cli/setup.ts', "const oldPrefix = '@boilerstone'\n")
+      writeProjectFile(projectPath, 'packages/cli/package.json', '{"name":"@client/cli"}\n')
       writeProjectFile(projectPath, '.gitignore', 'node_modules\n')
       writeProjectFile(
         projectPath,
@@ -2343,9 +2344,9 @@ describe('bootstrap command', () => {
 
       const pkg = JSON.parse(readFileSync(join(projectPath, 'package.json'), 'utf-8'))
       expect(pkg.scripts.boilerplate).toBe('lonestone')
-      expect(pkg.scripts.rock).toBe('lonestone rock')
+      expect(pkg.scripts.rock).toBe('tsx ./cli/setup.ts')
       expect(pkg.devDependencies['@lonestone/cli']).toMatch(/^\^/)
-      expect(pkg.devDependencies.enquirer).toBeUndefined()
+      expect(pkg.devDependencies.enquirer).toBe('^2.4.1')
       expect(readFileSync(join(projectPath, '.gitignore'), 'utf-8')).toContain(
         '.boilerstone/upgrade/',
       )
@@ -2353,9 +2354,10 @@ describe('bootstrap command', () => {
         /^\s*-\s+\.boilerstone(\/cli)?\s*$/m,
       )
 
-      // Producer-only artifacts dropped, consumer files preserved
-      expect(existsSync(join(projectPath, 'install.sh'))).toBe(false)
-      expect(existsSync(join(projectPath, 'cli'))).toBe(false)
+      // Producer-only artifacts dropped inside .boilerstone/, client code untouched
+      expect(existsSync(join(projectPath, 'install.sh'))).toBe(true)
+      expect(existsSync(join(projectPath, 'cli/setup.ts'))).toBe(true)
+      expect(existsSync(join(projectPath, 'packages/cli/package.json'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/cli'))).toBe(false)
@@ -2400,17 +2402,44 @@ describe('bootstrap command', () => {
   })
 })
 
-describe('setup cleanup', () => {
-  it('switches .boilerstone to consumer mode without losing local upgrade state', () => {
-    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-consumer-cleanup-'))
+describe('project generation', () => {
+  it('turns a template checkout into a consumer project', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-generate-'))
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
-    const previousVersion = process.env.BOILERPLATE_SOURCE_VERSION
-    const previousCommit = process.env.BOILERPLATE_SOURCE_COMMIT
 
     try {
-      process.env.BOILERPLATE_SOURCE_VERSION = '1.2.3'
-      process.env.BOILERPLATE_SOURCE_COMMIT = 'abcdef1234567890'
-
+      writeProjectFile(
+        projectPath,
+        'package.json',
+        `${JSON.stringify(
+          {
+            name: 'boilerstone',
+            scripts: {
+              rock: 'lonestone rock',
+              boilerplate: 'lonestone',
+              generate: 'pnpm --filter=@boilerstone/openapi-generator run generate',
+            },
+            devDependencies: { '@lonestone/cli': 'workspace:*' },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      writeProjectFile(
+        projectPath,
+        'apps/api/package.json',
+        '{"name":"@boilerstone/api","dependencies":{"@boilerstone/i18n":"workspace:*"}}\n',
+      )
+      writeProjectFile(projectPath, 'apps/api/src/main.ts', "import '@boilerstone/i18n/setup'\n")
+      writeProjectFile(projectPath, 'docker-compose.yml', 'name: boilerstone\n')
+      writeProjectFile(projectPath, '.claude/skills/boilerstone-release/SKILL.md', '# Release')
+      writeProjectFile(projectPath, '.claude/skills/boilerstone-upgrade/SKILL.md', '# Upgrade')
+      // The template ships the producer's own state; generation must replace it.
+      writeProjectFile(
+        projectPath,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify(trackingState.create({ currentVersion: '1.0.0' }), null, 2)}\n`,
+      )
       writeProjectFile(
         projectPath,
         '.boilerstone/boilerplate.example.json',
@@ -2462,17 +2491,31 @@ describe('setup cleanup', () => {
       writeProjectFile(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md', '# Internal')
       writeProjectFile(projectPath, '.boilerstone/docs/pilot-rollout.md', '# Pilot')
       writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
-      writeProjectFile(projectPath, 'install.sh', '#!/usr/bin/env sh\n')
-      writeProjectFile(projectPath, 'cli/setup.ts', "const oldPrefix = '@boilerstone'\n")
-      writeProjectFile(
-        projectPath,
-        'pnpm-workspace.yaml',
-        'packages:\n  - apps/*\n  - .boilerstone/cli\n',
+
+      generateProject(projectPath, {
+        projectName: 'acme',
+        cliRange: '^9.9.9',
+        sourceVersion: '1.2.3',
+        sourceCommit: 'abcdef1234567890',
+      })
+
+      const pkg = JSON.parse(readFileSync(join(projectPath, 'package.json'), 'utf-8'))
+      expect(pkg.name).toBe('acme')
+      expect(pkg.scripts.rock).toBe('lonestone rock')
+      expect(pkg.scripts.generate).toBe('pnpm --filter=@acme/openapi-generator run generate')
+      expect(pkg.devDependencies['@lonestone/cli']).toBe('^9.9.9')
+      expect(JSON.parse(readFileSync(join(projectPath, 'apps/api/package.json'), 'utf-8'))).toEqual(
+        { name: '@acme/api', dependencies: { '@acme/i18n': 'workspace:*' } },
+      )
+      expect(readFileSync(join(projectPath, 'apps/api/src/main.ts'), 'utf-8')).toContain(
+        "'@acme/i18n/setup'",
+      )
+      expect(readFileSync(join(projectPath, 'docker-compose.yml'), 'utf-8')).toBe('name: acme\n')
+      expect(existsSync(join(projectPath, '.claude/skills/boilerstone-release'))).toBe(false)
+      expect(existsSync(join(projectPath, '.claude/skills/boilerstone-upgrade/SKILL.md'))).toBe(
+        true,
       )
 
-      cleanupBoilerplateFiles(projectPath)
-
-      expect(existsSync(join(projectPath, '.boilerstone/boilerplate.json'))).toBe(true)
       expect(
         JSON.parse(readFileSync(join(projectPath, '.boilerstone/boilerplate.json'), 'utf-8')).source
           .remote,
@@ -2503,30 +2546,14 @@ describe('setup cleanup', () => {
         false,
       )
       expect(existsSync(join(projectPath, '.boilerstone/docs/pilot-rollout.md'))).toBe(false)
-      expect(existsSync(join(projectPath, 'install.sh'))).toBe(false)
-      expect(existsSync(join(projectPath, 'cli'))).toBe(false)
-      expect(readFileSync(join(projectPath, 'pnpm-workspace.yaml'), 'utf-8')).not.toContain(
-        '.boilerstone/cli',
-      )
     } finally {
-      if (previousVersion === undefined) {
-        delete process.env.BOILERPLATE_SOURCE_VERSION
-      } else {
-        process.env.BOILERPLATE_SOURCE_VERSION = previousVersion
-      }
-      if (previousCommit === undefined) {
-        delete process.env.BOILERPLATE_SOURCE_COMMIT
-      } else {
-        process.env.BOILERPLATE_SOURCE_COMMIT = previousCommit
-      }
       logSpy.mockRestore()
       rmSync(projectPath, { recursive: true, force: true })
     }
   })
 
-  it('keeps producer artifacts in a boilerplate maintainer checkout', () => {
+  it('keeps producer artifacts when bootstrapping the boilerplate maintainer checkout', () => {
     const projectPath = createGitRepo('boilerplate-maintainer-cleanup-')
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
     try {
       runGit(projectPath, [
@@ -2535,34 +2562,26 @@ describe('setup cleanup', () => {
         'origin',
         'https://github.com/lonestone/lonestone-boilerplate.git',
       ])
+      writeProjectFile(projectPath, 'package.json', '{"name":"boilerstone"}\n')
+      // boilerplate.json already exists, so init returns early (no interactive prompt)
       writeProjectFile(
         projectPath,
-        '.boilerstone/boilerplate.example.json',
-        `${JSON.stringify(
-          {
-            schemaVersion: 1,
-            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
-            trackedDomains: [],
-            intentions: { applied: [], skipped: [] },
-          },
-          null,
-          2,
-        )}\n`,
+        '.boilerstone/boilerplate.json',
+        `${JSON.stringify(trackingState.create({ currentVersion: '1.0.0' }), null, 2)}\n`,
       )
+      writeProjectFile(projectPath, '.boilerstone/boilerplate.example.json', '{}')
       writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
       writeProjectFile(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md', '# Internal')
 
-      cleanupBoilerplateFiles(projectPath)
+      const result = runCli(['bootstrap', '--project', projectPath])
 
-      // boilerplate.json is still created, but producer-side files are preserved
-      expect(existsSync(join(projectPath, '.boilerstone/boilerplate.json'))).toBe(true)
+      expect(result.status, result.stderr).toBe(0)
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(true)
       expect(existsSync(join(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md'))).toBe(
         true,
       )
     } finally {
-      logSpy.mockRestore()
       rmSync(projectPath, { recursive: true, force: true })
     }
   })

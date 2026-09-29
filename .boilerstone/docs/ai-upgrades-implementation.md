@@ -43,9 +43,9 @@ Intentions carry a `classification` in their frontmatter. `no-migration` and `in
 
 ## Producer vs consumer (one directory, two modes)
 
-In the boilerplate repo, intentions, consumer docs, and the CLI sources live in `.boilerstone/`. In a generated or onboarded project, the producer side is dropped. `cleanupBoilerplateFiles()` in `.boilerstone/cli/src/setup.ts` (for `pnpm rock`) and the `bootstrap` command (for existing projects) both remove `cli/`, `migration-intentions/`, the example state, the release-maintainer runbook, and these internal docs — and keep the local state, the schema, and the consumer-facing docs. The CLI is the `@lonestone/cli` dependency, not a copy of sources. Future-release intentions are then read from git tags rather than from disk.
+In the boilerplate repo, intentions, consumer docs, and the CLI sources live in `.boilerstone/`. In a generated or onboarded project, the producer side is dropped. `generateProject()` in `.boilerstone/cli/src/generate.ts` (for `init`, on a staging copy of the release) and `stripBoilerstoneProducerArtifacts()` (for `bootstrap` on an existing project) both remove `cli/`, `migration-intentions/`, the example state, the release-maintainer runbook, and these internal docs — and keep the local state, the schema, and the consumer-facing docs. Only `generateProject()` touches files outside `.boilerstone/` (maintainer-only skills, the workspace rename): `bootstrap` runs on client code and never does. `pnpm rock` removes nothing. The CLI is the `@lonestone/cli` dependency, not a copy of sources. Future-release intentions are then read from git tags rather than from disk.
 
-The list of producer-only paths has one home, `PRODUCER_ARTIFACTS` in `boilerplate-core.ts`. The "consumer cleanup" readiness check in `status` derives from it, and `PRODUCER_FILES_TO_REMOVE` in `setup.ts` includes that list plus installer/CLI-source paths.
+The list of producer-only paths has one home, `PRODUCER_ARTIFACTS` in `boilerplate-core.ts`. The "consumer cleanup" readiness check in `status` derives from it, and `PRODUCER_FILES_TO_REMOVE` in `generate.ts` includes that list plus the maintainer-only skills.
 
 ## Where the system actually stands
 
@@ -74,6 +74,7 @@ Be honest with yourself about this when extending the system:
     src/boilerplate-core.ts  # pure logic ← start here
     src/boilerplate.ts       # commands wired to git/fs
     src/tracking-state.ts    # the tracking-state lifecycle interface
-    src/setup.ts             # pnpm rock / lonestone rock
+    src/setup.ts             # pnpm rock / lonestone rock (local dev environment only)
+    src/generate.ts          # turns a release checkout into a new project (init)
     src/install.ts           # init / onboard
 ```

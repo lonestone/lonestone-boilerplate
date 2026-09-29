@@ -5,10 +5,24 @@ import {
   type SpawnSyncOptions,
   type SpawnSyncReturns,
 } from 'node:child_process'
-import { closeSync, cpSync, openSync, renameSync, rmSync } from 'node:fs'
+import { closeSync, cpSync, openSync, readFileSync, renameSync, rmSync } from 'node:fs'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 
 export const isWindows = process.platform === 'win32'
+
+// Read once at load: callers may delete files later in the same process, and
+// `../package.json` is the package root from both src/ (tests) and dist/.
+const cliVersion = (
+  JSON.parse(readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf-8')) as {
+    version: string
+  }
+).version
+
+/** Semver range that pins a project to the CLI version currently running. */
+export function getPublishedCliRange(): string {
+  return `^${cliVersion}`
+}
 
 export const colors = {
   reset: '\x1B[0m',
