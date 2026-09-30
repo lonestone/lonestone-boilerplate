@@ -51,6 +51,7 @@ pnpm install
 | `STORAGE_SECRET_ACCESS_KEY` | S3 secret key | No | `rustfsadmin` |
 | `STORAGE_FORCE_PATH_STYLE` | Use path-style S3 addresses | No | `true` |
 | `STORAGE_CREATE_BUCKET` | Create the default bucket on startup | No | `true` |
+| `STORAGE_SIGNED_URL_EXPIRES_IN` | Lifetime of signed download URLs, in seconds (1 to 604800) | No | `3600` |
 
 Storage is opt-in. The API does not connect to S3 when `STORAGE_ENABLED=false`.
 

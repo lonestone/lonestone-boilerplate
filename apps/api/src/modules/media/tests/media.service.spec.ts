@@ -1,4 +1,3 @@
-import { Readable } from 'node:stream'
 import { EntityManager } from '@mikro-orm/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { StorageService } from '../../storage/storage.service'
@@ -24,7 +23,6 @@ describe('MediaService', () => {
     } as unknown as EntityManager
     storageService = {
       upload: vi.fn(),
-      download: vi.fn(),
       delete: vi.fn(),
     } as unknown as StorageService
     service = new MediaService(em, storageService)
@@ -59,21 +57,6 @@ describe('MediaService', () => {
     await expect(service.create(imageUpload)).rejects.toBe(uploadError)
 
     expect(em.persist).not.toHaveBeenCalled()
-  })
-
-  it('downloads an object by storage key', async () => {
-    const expectedObject = {
-      body: Readable.from('content'),
-      contentType: 'image/png',
-      filename: 'cover.png',
-      size: 7,
-    }
-    vi.mocked(storageService.download).mockResolvedValue(expectedObject)
-
-    const actualObject = await service.downloadObject('stored-key')
-
-    expect(storageService.download).toHaveBeenCalledWith('stored-key')
-    expect(actualObject).toBe(expectedObject)
   })
 
   it('deletes an object by storage key', async () => {

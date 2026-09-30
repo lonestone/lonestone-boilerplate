@@ -1,6 +1,6 @@
 import { EntityManager } from '@mikro-orm/core'
 import { Injectable } from '@nestjs/common'
-import { StorageDownload, StorageService, StorageUpload } from '../storage/storage.service'
+import { StorageService, StorageUpload } from '../storage/storage.service'
 import { Media } from './media.entity'
 
 @Injectable()
@@ -25,10 +25,6 @@ export class MediaService {
     this.em.persist(media)
 
     return media
-  }
-
-  async downloadObject(storageKey: string): Promise<StorageDownload> {
-    return this.storageService.download(storageKey)
   }
 
   async deleteObject(storageKey: string): Promise<void> {

@@ -599,39 +599,6 @@
       }
     },
     "/api/admin/posts/{id}/cover-image": {
-      "get": {
-        "operationId": "PostController_downloadUserPostImage",
-        "tags": [
-          "Admin Posts"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-              "description": "Post identifier"
-            },
-            "description": "Post identifier"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Post cover image contents",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        }
-      },
       "delete": {
         "operationId": "PostController_removeUserPostImage",
         "tags": [
@@ -672,40 +639,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PublicPostSchema"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/public/posts/{slug}/cover-image": {
-      "get": {
-        "operationId": "PublicPostController_downloadPublicPostImage",
-        "tags": [
-          "Public Posts"
-        ],
-        "parameters": [
-          {
-            "name": "slug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Public post slug"
-            },
-            "description": "Public post slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Published post cover image contents",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
                 }
               }
             }
@@ -3386,17 +3319,26 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiresAt": {
+            "type": "string"
           }
         },
         "required": [
           "id",
           "filename",
           "mimeType",
-          "size"
+          "size",
+          "url",
+          "expiresAt"
         ],
         "additionalProperties": false,
         "title": "MediaSchema",
-        "description": "A stored file. The storage key is never exposed."
+        "description": "A stored file. `url` is a short-lived signed download link that expires at `expiresAt`. The storage key is never returned as a field."
       },
       "TagSchema": {
         "type": "object",

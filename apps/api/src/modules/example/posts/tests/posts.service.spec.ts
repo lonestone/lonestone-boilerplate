@@ -45,7 +45,6 @@ describe('PostService images', () => {
     } as unknown as EntityManager
     mediaService = {
       create: vi.fn(),
-      downloadObject: vi.fn(),
       deleteObject: vi.fn(),
     } as unknown as MediaService
     service = new PostService(em, mediaService)

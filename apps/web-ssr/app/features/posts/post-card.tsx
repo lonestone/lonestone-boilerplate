@@ -4,7 +4,6 @@ import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight, Calendar, Heart, MessageCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { publicPostImageUrl } from '@/lib/post-image'
 
 interface PostCardProps {
   post: PublicPostsSchema['data'][number]
@@ -46,9 +45,9 @@ export default function PostCard({ post, index = 0 }: PostCardProps) {
           {/* Cover — image, or a branded fallback so every card stays consistent */}
           <div className="relative w-full shrink-0 overflow-hidden bg-muted md:w-64 lg:w-80">
             <div className="aspect-video md:h-full md:min-h-[13rem]">
-              {post.coverImage && post.slug && !imgError ? (
+              {post.coverImage && !imgError ? (
                 <img
-                  src={publicPostImageUrl(post.slug)}
+                  src={post.coverImage.url}
                   alt={post.title}
                   onLoad={() => setImgLoaded(true)}
                   onError={() => setImgError(true)}

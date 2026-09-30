@@ -11,7 +11,6 @@ import { motion, useReducedMotion, useScroll, useSpring } from 'motion/react'
 import { ArrowLeft, ArrowRight, Calendar, Clock, Heart, User } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useFetcher, useSearchParams } from 'react-router'
-import { publicPostImageUrl } from '@/lib/post-image'
 import { CommentsList } from '../comments/comments-list'
 
 // ── Read-time helper (~200 wpm) ─────────────────────────────────────────────
@@ -58,7 +57,7 @@ interface RelatedCardProps {
   title: string
   authorName: string
   publishedAt: string
-  coverImage?: boolean
+  coverImageUrl?: string
   index: number
 }
 
@@ -67,7 +66,7 @@ function RelatedCard({
   title,
   authorName,
   publishedAt,
-  coverImage,
+  coverImageUrl,
   index,
 }: RelatedCardProps) {
   const [imgLoaded, setImgLoaded] = useState(false)
@@ -87,9 +86,9 @@ function RelatedCard({
       >
         {/* Thumbnail */}
         <div className="h-16 w-24 shrink-0 overflow-hidden rounded-sm bg-muted">
-          {coverImage && !imgError ? (
+          {coverImageUrl && !imgError ? (
             <img
-              src={publicPostImageUrl(slug)}
+              src={coverImageUrl}
               alt={title}
               onLoad={() => setImgLoaded(true)}
               onError={() => setImgError(true)}
@@ -185,7 +184,7 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
       {post?.coverImage && (
         <div className="relative aspect-[21/9] w-full overflow-hidden bg-muted">
           <img
-            src={publicPostImageUrl(postSlug)}
+            src={post.coverImage.url}
             alt={post.title}
             onLoad={() => setCoverLoaded(true)}
             className={[
@@ -341,7 +340,7 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
                       title={relPost.title}
                       authorName={relPost.author.name}
                       publishedAt={relPost.publishedAt}
-                      coverImage={Boolean(relPost.coverImage)}
+                      coverImageUrl={relPost.coverImage?.url}
                       index={idx}
                     />
                   ))}

@@ -295,13 +295,15 @@ export const zPostVersionSchema = z.object({
 /**
  * MediaSchema
  *
- * A stored file. The storage key is never exposed.
+ * A stored file. `url` is a short-lived signed download link that expires at `expiresAt`. The storage key is never returned as a field.
  */
 export const zMediaSchema = z.object({
     id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
     filename: z.string(),
     mimeType: z.string(),
-    size: z.int().gte(0).lte(9007199254740991)
+    size: z.int().gte(0).lte(9007199254740991),
+    url: z.url(),
+    expiresAt: z.string()
 });
 
 /**
@@ -1079,19 +1081,6 @@ export const zPostControllerRemoveUserPostImageData = z.object({
 
 export const zPostControllerRemoveUserPostImageResponse = z.void();
 
-export const zPostControllerDownloadUserPostImageData = z.object({
-    body: z.optional(z.never()),
-    path: z.object({
-        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
-    }),
-    query: z.optional(z.never())
-});
-
-/**
- * Post cover image contents
- */
-export const zPostControllerDownloadUserPostImageResponse = z.string();
-
 export const zPublicPostControllerGetRandomPostData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
@@ -1102,19 +1091,6 @@ export const zPublicPostControllerGetRandomPostData = z.object({
  * A public post
  */
 export const zPublicPostControllerGetRandomPostResponse = zPublicPostSchema;
-
-export const zPublicPostControllerDownloadPublicPostImageData = z.object({
-    body: z.optional(z.never()),
-    path: z.object({
-        slug: z.string().min(1)
-    }),
-    query: z.optional(z.never())
-});
-
-/**
- * Published post cover image contents
- */
-export const zPublicPostControllerDownloadPublicPostImageResponse = z.string();
 
 export const zPublicPostControllerGetPostData = z.object({
     body: z.optional(z.never()),

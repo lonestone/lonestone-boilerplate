@@ -24,8 +24,19 @@ export interface StorageProviderObject {
   size: number
 }
 
+export interface SignedUrlOptions {
+  filename: string
+  mimeType: string
+}
+
+export interface SignedUrl {
+  url: string
+  expiresAt: Date
+}
+
 export interface IStorageProvider {
   upload(input: StorageProviderUploadInput): Promise<void>
   download(key: string): Promise<StorageProviderObject | null>
   delete(key: string): Promise<void>
+  getSignedUrl(key: string, options: SignedUrlOptions): Promise<SignedUrl>
 }

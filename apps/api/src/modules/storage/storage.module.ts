@@ -21,6 +21,7 @@ import { StorageService } from './storage.service'
           secretAccessKey: config.storage.secretAccessKey,
           forcePathStyle: config.storage.forcePathStyle,
           createBucket: config.storage.createBucket,
+          signedUrlExpiresIn: config.storage.signedUrlExpiresIn,
         })
       },
     },

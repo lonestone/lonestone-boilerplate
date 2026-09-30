@@ -17,6 +17,7 @@ describe('StorageService', () => {
       upload: vi.fn(),
       download: vi.fn(),
       delete: vi.fn(),
+      getSignedUrl: vi.fn(),
     }
     service = new StorageService(provider)
   })
@@ -120,5 +121,39 @@ describe('StorageService', () => {
     await service.delete('44b82136-0dd7-4b5f-a36b-38b26a4941aa')
 
     expect(provider.delete).toHaveBeenCalledWith('44b82136-0dd7-4b5f-a36b-38b26a4941aa')
+  })
+
+  it('returns the signed URL from the provider', async () => {
+    const expectedSignedUrl = {
+      url: 'http://localhost:9000/bucket/key?X-Amz-Signature=signature',
+      expiresAt: new Date('2026-01-01T00:00:00.000Z'),
+    }
+    const inputOptions = { filename: 'cover.png', mimeType: 'image/png' }
+    vi.mocked(provider.getSignedUrl).mockResolvedValue(expectedSignedUrl)
+
+    const actualSignedUrl = await service.getSignedUrl('stored-key', inputOptions)
+
+    expect(provider.getSignedUrl).toHaveBeenCalledWith('stored-key', inputOptions)
+    expect(actualSignedUrl).toBe(expectedSignedUrl)
+  })
+
+  it('maps disabled storage to a service unavailable exception when signing', async () => {
+    vi.mocked(provider.getSignedUrl).mockRejectedValue(new StorageUnavailableError())
+
+    await expect(
+      service.getSignedUrl('stored-key', { filename: 'cover.png', mimeType: 'image/png' }),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException)
+  })
+
+  it('preserves signing failures as their exception cause', async () => {
+    const providerError = new Error('Invalid credentials')
+    vi.mocked(provider.getSignedUrl).mockRejectedValue(providerError)
+
+    await expect(
+      service.getSignedUrl('stored-key', { filename: 'cover.png', mimeType: 'image/png' }),
+    ).rejects.toMatchObject({
+      constructor: InternalServerErrorException,
+      cause: providerError,
+    })
   })
 })

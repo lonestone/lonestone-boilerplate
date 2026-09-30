@@ -5,7 +5,7 @@ import { User } from '../../auth/auth.entity'
 import { buildOrderBy } from '../../db/query-order.util'
 import { Comment } from '../../example/comments/comments.entity'
 import { MediaService } from '../../media/media.service'
-import { StorageDownload, StorageUpload } from '../../storage/storage.service'
+import { StorageUpload } from '../../storage/storage.service'
 import {
   CreatePostInput,
   PostFiltering,
@@ -39,13 +39,6 @@ export interface PublicAuthorPostsResult {
   total: number
   pagination: PostPagination
   commentCountByPostId: Map<string, number>
-}
-
-export interface PostImageDownload {
-  filename: string
-  mimeType: string
-  size: number
-  object: StorageDownload
 }
 
 @Injectable()
@@ -172,22 +165,6 @@ export class PostService {
     this.em.remove(coverImage)
     await this.em.flush()
     await this.deleteStaleObject(coverImage.storageKey)
-  }
-
-  async downloadUserPostImage(postId: string, userId: string): Promise<PostImageDownload> {
-    const post = await this.findOwnedPost(postId, userId)
-    return this.downloadPostImage(post)
-  }
-
-  async downloadPublicPostImage(slug: string): Promise<PostImageDownload> {
-    const post = await this.em.findOne(
-      Post,
-      { slug, publishedAt: { $ne: null } },
-      { populate: ['coverImage'] },
-    )
-    if (!post) throw new NotFoundException('Post not found')
-
-    return this.downloadPostImage(post)
   }
 
   async computeSlug(post: Post) {
@@ -453,20 +430,6 @@ export class PostService {
     if (!post) throw new NotFoundException('Post not found')
 
     return post
-  }
-
-  private async downloadPostImage(post: Post): Promise<PostImageDownload> {
-    const coverImage = post.coverImage
-    if (!coverImage) throw new NotFoundException('Post cover image not found')
-
-    const object = await this.mediaService.downloadObject(coverImage.storageKey)
-
-    return {
-      filename: coverImage.filename,
-      mimeType: coverImage.mimeType,
-      size: coverImage.size,
-      object,
-    }
   }
 
   private async deleteCompensatingObject(

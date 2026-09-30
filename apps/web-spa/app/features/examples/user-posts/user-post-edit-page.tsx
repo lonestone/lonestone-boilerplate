@@ -12,7 +12,6 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { queryClient } from '@/lib/query-client'
-import { adminPostImageUrl } from '@/lib/post-image'
 import UserPostForm, { UserPostFormSkeleton, type PostFormSubmitData } from './user-post-form'
 
 export default function UserPostEditPage() {
@@ -158,7 +157,7 @@ export default function UserPostEditPage() {
           content: post?.content ?? [],
           tags: post?.tags?.map((tag) => tag.name) ?? [],
         }}
-        existingImageSrc={post?.coverImage ? adminPostImageUrl(post.id) : undefined}
+        existingImageSrc={post?.coverImage?.url}
         onRemoveImage={async () => {
           await removeImage()
         }}

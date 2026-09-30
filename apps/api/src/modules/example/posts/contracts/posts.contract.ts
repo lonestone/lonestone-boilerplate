@@ -76,10 +76,6 @@ export const postIdSchema = z.uuid().meta({
   description: 'Post identifier',
 })
 
-export const postSlugSchema = z.string().min(1).meta({
-  description: 'Public post slug',
-})
-
 export const postContentListSchema = z.array(postContentSchema)
 export const postTagNamesSchema = z.array(z.string())
 

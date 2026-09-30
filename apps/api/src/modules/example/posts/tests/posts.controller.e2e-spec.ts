@@ -1,4 +1,3 @@
-import { Readable } from 'node:stream'
 import { beforeEach, describe, expect, it } from 'vitest'
 /**
  * E2E Tests for PostController
@@ -8,10 +7,11 @@ import { beforeEach, describe, expect, it } from 'vitest'
  * - PATCH /admin/posts/:id/publish - Publish a post
  * - PATCH /admin/posts/:id/unpublish - Unpublish a post
  * - Auth guard behavior (401 when unauthenticated)
- * - Post image upload, download, replacement, and removal
+ * - Post image upload, signed URLs, replacement, and removal
  */
 import {
   IStorageProvider,
+  SignedUrl,
   STORAGE_PROVIDER,
   StorageProviderObject,
   StorageProviderUploadInput,
@@ -34,33 +34,36 @@ const MINIMAL_JPEG = Buffer.from([
   0x00, 0x01, 0x00, 0x00, 0xff, 0xd9,
 ])
 
+const FAKE_STORAGE_ORIGIN = 'https://storage.test'
+
 class InMemoryStorageProvider implements IStorageProvider {
-  private readonly objects = new Map<
-    string,
-    Omit<StorageProviderObject, 'body'> & { body: Buffer }
-  >()
+  private readonly objects = new Map<string, Buffer>()
 
   async upload(input: StorageProviderUploadInput): Promise<void> {
-    this.objects.set(input.key, {
-      body: input.body,
-      contentType: input.contentType,
-      filename: input.filename,
-      size: input.size,
-    })
+    this.objects.set(input.key, input.body)
   }
 
-  async download(key: string): Promise<StorageProviderObject | null> {
-    const object = this.objects.get(key)
-    if (!object) return null
-
-    return {
-      ...object,
-      body: Readable.from(object.body),
-    }
+  async download(): Promise<StorageProviderObject | null> {
+    throw new Error('Posts must not download objects through the API')
   }
 
   async delete(key: string): Promise<void> {
     this.objects.delete(key)
+  }
+
+  async getSignedUrl(key: string): Promise<SignedUrl> {
+    return {
+      url: `${FAKE_STORAGE_ORIGIN}/${key}?X-Amz-Signature=fake`,
+      expiresAt: new Date(Date.now() + 3600_000),
+    }
+  }
+
+  /** Plays the bucket: returns the bytes a browser would get from a signed URL. */
+  readSignedUrl(url: string): Buffer | undefined {
+    const { origin, pathname } = new URL(url)
+    if (origin !== FAKE_STORAGE_ORIGIN) return undefined
+
+    return this.objects.get(pathname.slice(1))
   }
 }
 
@@ -220,7 +223,10 @@ describe('postController (e2e)', () => {
 })
 
 describe('postController images (e2e)', () => {
+  let storageProvider: InMemoryStorageProvider
+
   beforeEach(async (context) => {
+    storageProvider = new InMemoryStorageProvider()
     const { orm, app } = await initializeTestApp(
       { orm: context.orm },
       {
@@ -228,7 +234,7 @@ describe('postController images (e2e)', () => {
         providers: [
           {
             provide: STORAGE_PROVIDER,
-            useValue: new InMemoryStorageProvider(),
+            useValue: storageProvider,
           },
         ],
       },
@@ -238,7 +244,7 @@ describe('postController images (e2e)', () => {
     context.request = createRequest(app)
   })
 
-  it('creates a post with an image and lets the owner download it', async (context) => {
+  it('creates a post with an image and returns a signed URL to the owner', async (context) => {
     const { session } = await createUserWithSession(context.em)
 
     const createResponse = await postFields(
@@ -255,18 +261,43 @@ describe('postController images (e2e)', () => {
       filename: 'cover.png',
       mimeType: 'image/png',
       size: MINIMAL_PNG.length,
+      url: expect.stringMatching(new RegExp(`^${FAKE_STORAGE_ORIGIN}/`)),
+      expiresAt: expect.any(String),
     })
     expect(createResponse.body.coverImage).not.toHaveProperty('storageKey')
+    expect(storageProvider.readSignedUrl(createResponse.body.coverImage.url)).toEqual(MINIMAL_PNG)
 
     const postId = createResponse.body.id as string
-    const downloadResponse = await context.request
-      .withSession(session)
-      .get(`/admin/posts/${postId}/cover-image`)
+    const ownerResponse = await context.request.withSession(session).get(`/admin/posts/${postId}`)
+    const listResponse = await context.request.withSession(session).get('/admin/posts')
 
-    expect(downloadResponse.status).toBe(200)
-    expect(downloadResponse.headers['content-type']).toContain('image/png')
-    expect(downloadResponse.headers['content-disposition']).toContain('cover.png')
-    expect(downloadResponse.body).toEqual(MINIMAL_PNG)
+    expect(ownerResponse.body.coverImage.url).toEqual(expect.any(String))
+    expect(storageProvider.readSignedUrl(ownerResponse.body.coverImage.url)).toEqual(MINIMAL_PNG)
+    expect(listResponse.body.data[0].coverImage).toMatchObject({
+      id: createResponse.body.coverImage.id,
+      url: expect.any(String),
+    })
+  })
+
+  it('returns no cover image for a post without an image', async (context) => {
+    const { session } = await createUserWithSession(context.em)
+    const createResponse = await postFields(
+      context.request.withSession(session).post('/admin/posts'),
+      {
+        title: 'Plain Post',
+        content: [{ type: 'text', data: 'No cover' }],
+      },
+    )
+    const postId = createResponse.body.id as string
+    const publishResponse = await context.request
+      .withSession(session)
+      .patch(`/admin/posts/${postId}/publish`)
+
+    const publicResponse = await context.request.get(`/public/posts/${publishResponse.body.slug}`)
+
+    expect(createResponse.body).not.toHaveProperty('coverImage')
+    expect(publishResponse.body).not.toHaveProperty('coverImage')
+    expect(publicResponse.body).not.toHaveProperty('coverImage')
   })
 
   it('keeps the current image when an update omits the image field', async (context) => {
@@ -293,9 +324,10 @@ describe('postController images (e2e)', () => {
         mimeType: 'image/png',
       },
     })
+    expect(storageProvider.readSignedUrl(updateResponse.body.coverImage.url)).toEqual(MINIMAL_PNG)
   })
 
-  it('replaces an image and serves the new file to the owner', async (context) => {
+  it('replaces an image and signs a URL for the new file', async (context) => {
     const { session } = await createUserWithSession(context.em)
     const createResponse = await postFields(
       context.request.withSession(session).post('/admin/posts'),
@@ -317,20 +349,14 @@ describe('postController images (e2e)', () => {
       mimeType: 'image/jpeg',
     })
     expect(updateResponse.body.coverImage.id).not.toBe(createResponse.body.coverImage.id)
+    expect(storageProvider.readSignedUrl(updateResponse.body.coverImage.url)).toEqual(MINIMAL_JPEG)
+    expect(storageProvider.readSignedUrl(createResponse.body.coverImage.url)).toBeUndefined()
     await expect(
       context.em.fork().findOne(Media, { id: createResponse.body.coverImage.id }),
     ).resolves.toBeNull()
-
-    const downloadResponse = await context.request
-      .withSession(session)
-      .get(`/admin/posts/${postId}/cover-image`)
-
-    expect(downloadResponse.status).toBe(200)
-    expect(downloadResponse.headers['content-type']).toContain('image/jpeg')
-    expect(downloadResponse.body).toEqual(MINIMAL_JPEG)
   })
 
-  it('serves a public image only after the post is published', async (context) => {
+  it('returns a signed URL in public responses once the post is published', async (context) => {
     const { session } = await createUserWithSession(context.em)
     const createResponse = await postFields(
       context.request.withSession(session).post('/admin/posts'),
@@ -341,30 +367,33 @@ describe('postController images (e2e)', () => {
     ).attach('coverImage', MINIMAL_PNG, { filename: 'cover.png', contentType: 'image/png' })
     const postId = createResponse.body.id as string
 
-    const guessedSlug = `public-cover-${postId.slice(0, 8)}`
-    const draftResponse = await context.request.get(`/public/posts/${guessedSlug}/cover-image`)
-    expect(draftResponse.status).toBe(404)
+    const draftListResponse = await context.request.get('/public/posts')
+    expect(draftListResponse.body.data).toHaveLength(0)
 
     const publishResponse = await context.request
       .withSession(session)
       .patch(`/admin/posts/${postId}/publish`)
     const slug = publishResponse.body.slug as string
 
-    const publicResponse = await context.request.get(`/public/posts/${slug}/cover-image`)
-    expect(publicResponse.status).toBe(200)
-    expect(publicResponse.body).toEqual(MINIMAL_PNG)
-
     const publicPostResponse = await context.request.get(`/public/posts/${slug}`)
+    const publicListResponse = await context.request.get('/public/posts')
+
     expect(publicPostResponse.body.coverImage).toEqual({
       id: createResponse.body.coverImage.id,
       filename: 'cover.png',
       mimeType: 'image/png',
       size: MINIMAL_PNG.length,
+      url: expect.any(String),
+      expiresAt: expect.any(String),
     })
-
-    await context.request.withSession(session).patch(`/admin/posts/${postId}/unpublish`)
-    const unpublishedResponse = await context.request.get(`/public/posts/${slug}/cover-image`)
-    expect(unpublishedResponse.status).toBe(404)
+    expect(publicPostResponse.body.coverImage).not.toHaveProperty('storageKey')
+    expect(storageProvider.readSignedUrl(publicPostResponse.body.coverImage.url)).toEqual(
+      MINIMAL_PNG,
+    )
+    expect(publicListResponse.body.data[0].coverImage).toMatchObject({
+      id: createResponse.body.coverImage.id,
+      url: expect.any(String),
+    })
   })
 
   it('removes an image for the owner', async (context) => {
@@ -383,18 +412,15 @@ describe('postController images (e2e)', () => {
       .del(`/admin/posts/${postId}/cover-image`)
 
     expect(deleteResponse.status).toBe(204)
-    await expect(
-      context.request.withSession(session).get(`/admin/posts/${postId}/cover-image`),
-    ).resolves.toMatchObject({ status: 404 })
-
     const postResponse = await context.request.withSession(session).get(`/admin/posts/${postId}`)
     expect(postResponse.body).not.toHaveProperty('coverImage')
+    expect(storageProvider.readSignedUrl(createResponse.body.coverImage.url)).toBeUndefined()
     await expect(
       context.em.fork().findOne(Media, { id: createResponse.body.coverImage.id }),
     ).resolves.toBeNull()
   })
 
-  it('returns not found when another user downloads or removes an image', async (context) => {
+  it('returns not found when another user removes an image', async (context) => {
     const { session: ownerSession } = await createUserWithSession(context.em, { name: 'Owner' })
     const { session: otherSession } = await createUserWithSession(context.em, { name: 'Other' })
     const createResponse = await postFields(
@@ -406,15 +432,12 @@ describe('postController images (e2e)', () => {
     ).attach('coverImage', MINIMAL_PNG, { filename: 'cover.png', contentType: 'image/png' })
     const postId = createResponse.body.id as string
 
-    const downloadResponse = await context.request
-      .withSession(otherSession)
-      .get(`/admin/posts/${postId}/cover-image`)
     const deleteResponse = await context.request
       .withSession(otherSession)
       .del(`/admin/posts/${postId}/cover-image`)
 
-    expect(downloadResponse.status).toBe(404)
     expect(deleteResponse.status).toBe(404)
+    expect(storageProvider.readSignedUrl(createResponse.body.coverImage.url)).toEqual(MINIMAL_PNG)
   })
 
   it('rejects unauthenticated image requests', async (context) => {
@@ -424,11 +447,9 @@ describe('postController images (e2e)', () => {
       title: 'Nope',
       content: [{ type: 'text', data: 'content' }],
     }).attach('coverImage', MINIMAL_PNG, { filename: 'cover.png', contentType: 'image/png' })
-    const downloadResponse = await context.request.get(`/admin/posts/${postId}/cover-image`)
     const deleteResponse = await context.request.del(`/admin/posts/${postId}/cover-image`)
 
     expect(uploadResponse.status).toBe(401)
-    expect(downloadResponse.status).toBe(401)
     expect(deleteResponse.status).toBe(401)
   })
 
