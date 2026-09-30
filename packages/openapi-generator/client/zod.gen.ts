@@ -293,11 +293,12 @@ export const zPostVersionSchema = z.object({
 });
 
 /**
- * PostCoverImageSchema
+ * MediaSchema
  *
- * Public metadata for a post cover image. The storage key is never exposed.
+ * A stored file. The storage key is never exposed.
  */
-export const zPostCoverImageSchema = z.object({
+export const zMediaSchema = z.object({
+    id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
     filename: z.string(),
     mimeType: z.string(),
     size: z.int().gte(0).lte(9007199254740991)
@@ -334,7 +335,7 @@ export const zUserPostSchema = z.object({
     ])),
     type: z.enum(['published', 'draft']),
     commentCount: z.optional(z.number()),
-    coverImage: z.optional(zPostCoverImageSchema),
+    coverImage: z.optional(zMediaSchema),
     tags: z.array(zTagSchema)
 });
 
@@ -358,7 +359,7 @@ export const zUserPostsSchema = z.object({
         ])),
         type: z.enum(['published', 'draft']),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(zPostCoverImageSchema),
+        coverImage: z.optional(zMediaSchema),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
     })),
@@ -384,7 +385,7 @@ export const zPublicPostSchema = z.object({
     publishedAt: z.string(),
     slug: z.optional(z.string()),
     commentCount: z.optional(z.number()),
-    coverImage: z.optional(zPostCoverImageSchema),
+    coverImage: z.optional(zMediaSchema),
     likesCount: z.number(),
     tags: z.array(zTagSchema)
 });
@@ -403,7 +404,7 @@ export const zPublicPostsSchema = z.object({
         publishedAt: z.string(),
         slug: z.optional(z.string()),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(zPostCoverImageSchema),
+        coverImage: z.optional(zMediaSchema),
         likesCount: z.number(),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
@@ -430,7 +431,7 @@ export const zPublicAuthorPostsSchema = z.object({
         publishedAt: z.string(),
         slug: z.optional(z.string()),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(zPostCoverImageSchema),
+        coverImage: z.optional(zMediaSchema),
         likesCount: z.number(),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
