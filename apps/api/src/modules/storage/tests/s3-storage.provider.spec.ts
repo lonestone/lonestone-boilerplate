@@ -18,6 +18,7 @@ describe('S3StorageProvider', () => {
     secretAccessKey: 'secret-key',
     forcePathStyle: true,
     createBucket: true,
+    signedUrlExpiresIn: 600,
   }
   let send: ReturnType<typeof vi.fn<(command: object) => Promise<unknown>>>
   let provider: S3StorageProvider
@@ -112,6 +113,28 @@ describe('S3StorageProvider', () => {
       Bucket: 'test-bucket',
       Key: 'object-key',
     })
+  })
+
+  it('signs a GET URL with the configured expiry and response headers', async () => {
+    const beforeSigning = Date.now()
+
+    const actualSignedUrl = await provider.getSignedUrl('object-key', {
+      filename: "l'été.png",
+      mimeType: 'image/png',
+    })
+
+    const actualUrl = new URL(actualSignedUrl.url)
+    expect(actualUrl.origin).toBe('http://localhost:9000')
+    expect(actualUrl.pathname).toBe('/test-bucket/object-key')
+    expect(actualUrl.searchParams.get('X-Amz-Expires')).toBe('600')
+    expect(actualUrl.searchParams.get('X-Amz-Signature')).toEqual(expect.any(String))
+    expect(actualUrl.searchParams.get('response-content-type')).toBe('image/png')
+    expect(actualUrl.searchParams.get('response-content-disposition')).toBe(
+      "inline; filename*=UTF-8''l%27%C3%A9t%C3%A9.png",
+    )
+    expect(actualSignedUrl.expiresAt.getTime()).toBeGreaterThanOrEqual(beforeSigning + 600_000)
+    expect(actualSignedUrl.expiresAt.getTime()).toBeLessThanOrEqual(Date.now() + 600_000)
+    expect(send).not.toHaveBeenCalled()
   })
 
   it('creates the default bucket when it is missing', async () => {

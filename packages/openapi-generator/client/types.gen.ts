@@ -392,13 +392,15 @@ export type PostVersionSchema = {
 /**
  * MediaSchema
  *
- * A stored file. The storage key is never exposed.
+ * A stored file. `url` is a short-lived signed download link that expires at `expiresAt`. The storage key is never returned as a field.
  */
 export type MediaSchema = {
     id: string;
     filename: string;
     mimeType: string;
     size: number;
+    url: string;
+    expiresAt: string;
 };
 
 /**
@@ -1114,27 +1116,6 @@ export type PostControllerRemoveUserPostImageResponses = {
 
 export type PostControllerRemoveUserPostImageResponse = PostControllerRemoveUserPostImageResponses[keyof PostControllerRemoveUserPostImageResponses];
 
-export type PostControllerDownloadUserPostImageData = {
-    body?: never;
-    path: {
-        /**
-         * Post identifier
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/admin/posts/{id}/cover-image';
-};
-
-export type PostControllerDownloadUserPostImageResponses = {
-    /**
-     * Post cover image contents
-     */
-    200: Blob | File;
-};
-
-export type PostControllerDownloadUserPostImageResponse = PostControllerDownloadUserPostImageResponses[keyof PostControllerDownloadUserPostImageResponses];
-
 export type PublicPostControllerGetRandomPostData = {
     body?: never;
     path?: never;
@@ -1150,27 +1131,6 @@ export type PublicPostControllerGetRandomPostResponses = {
 };
 
 export type PublicPostControllerGetRandomPostResponse = PublicPostControllerGetRandomPostResponses[keyof PublicPostControllerGetRandomPostResponses];
-
-export type PublicPostControllerDownloadPublicPostImageData = {
-    body?: never;
-    path: {
-        /**
-         * Public post slug
-         */
-        slug: string;
-    };
-    query?: never;
-    url: '/api/public/posts/{slug}/cover-image';
-};
-
-export type PublicPostControllerDownloadPublicPostImageResponses = {
-    /**
-     * Published post cover image contents
-     */
-    200: Blob | File;
-};
-
-export type PublicPostControllerDownloadPublicPostImageResponse = PublicPostControllerDownloadPublicPostImageResponses[keyof PublicPostControllerDownloadPublicPostImageResponses];
 
 export type PublicPostControllerGetPostData = {
     body?: never;

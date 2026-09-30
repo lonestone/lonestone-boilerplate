@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common'
 import {
   IStorageProvider,
+  SignedUrl,
+  SignedUrlOptions,
   STORAGE_PROVIDER,
   StorageUnavailableError,
 } from './providers/storage-provider.interface'
@@ -86,6 +88,21 @@ export class StorageService {
         throw new ServiceUnavailableException(error.message, { cause: error })
       }
       throw new InternalServerErrorException('Failed to delete object', { cause: error })
+    }
+  }
+
+  /**
+   * Signs a short-lived GET URL for an object. Signing is local: it does not check that the
+   * object exists.
+   */
+  async getSignedUrl(key: string, options: SignedUrlOptions): Promise<SignedUrl> {
+    try {
+      return await this.provider.getSignedUrl(key, options)
+    } catch (error: unknown) {
+      if (error instanceof StorageUnavailableError) {
+        throw new ServiceUnavailableException(error.message, { cause: error })
+      }
+      throw new InternalServerErrorException('Failed to sign object URL', { cause: error })
     }
   }
 }

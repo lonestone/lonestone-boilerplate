@@ -7,21 +7,9 @@ import {
   TypedParam,
   TypedRoute,
 } from '@lonestone/nzoth/server'
-import {
-  HttpCode,
-  Param,
-  StreamableFile,
-  UploadedFile,
-  UseInterceptors,
-} from '@nestjs/common'
+import { HttpCode, Param, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
-import {
-  ApiBody,
-  ApiConsumes,
-  ApiNoContentResponse,
-  ApiOkResponse,
-  ApiProduces,
-} from '@nestjs/swagger'
+import { ApiBody, ApiConsumes, ApiNoContentResponse } from '@nestjs/swagger'
 import { AllowAnonymous, Session } from '@thallesp/nestjs-better-auth'
 import { z } from 'zod'
 import { LoggedInBetterAuthSession } from '../../auth/auth.config'
@@ -33,7 +21,6 @@ import {
   postIdSchema,
   PostPagination,
   postPaginationSchema,
-  postSlugSchema,
   PostSorting,
   postSortingSchema,
   publicAuthorPostsSchema,
@@ -94,10 +81,6 @@ function ApiPostMultipartBody(required: string[]): MethodDecorator {
 
 function isBodyParameter(value: unknown): boolean {
   return typeof value === 'object' && value !== null && 'in' in value && value.in === 'body'
-}
-
-function encodeFilename(filename: string): string {
-  return encodeURIComponent(filename).replaceAll("'", '%27')
 }
 
 @TypedController('admin/posts', undefined, {
@@ -188,32 +171,6 @@ export class PostController {
     return this.postsMapper.toUserPosts(result)
   }
 
-  @TypedRoute.Get(':id/cover-image')
-  @ApiProduces('application/octet-stream')
-  @ApiOkResponse({
-    description: 'Post cover image contents',
-    content: {
-      'application/octet-stream': {
-        schema: {
-          type: 'string',
-          format: 'binary',
-        },
-      },
-    },
-  })
-  async downloadUserPostImage(
-    @Session() session: LoggedInBetterAuthSession,
-    @TypedParam('id', postIdSchema) id: string,
-  ): Promise<StreamableFile> {
-    const image = await this.postService.downloadUserPostImage(id, session.user.id)
-
-    return new StreamableFile(image.object.body, {
-      type: image.mimeType,
-      length: image.size,
-      disposition: `inline; filename*=UTF-8''${encodeFilename(image.filename)}`,
-    })
-  }
-
   @TypedRoute.Delete(':id/cover-image')
   @ApiNoContentResponse()
   @HttpCode(204)
@@ -248,31 +205,6 @@ export class PublicPostController {
   async getRandomPost() {
     const result = await this.postService.getRandomPublicPost()
     return this.postsMapper.toPublicPost(result)
-  }
-
-  @TypedRoute.Get(':slug/cover-image')
-  @ApiProduces('application/octet-stream')
-  @ApiOkResponse({
-    description: 'Published post cover image contents',
-    content: {
-      'application/octet-stream': {
-        schema: {
-          type: 'string',
-          format: 'binary',
-        },
-      },
-    },
-  })
-  async downloadPublicPostImage(
-    @TypedParam('slug', postSlugSchema) slug: string,
-  ): Promise<StreamableFile> {
-    const image = await this.postService.downloadPublicPostImage(slug)
-
-    return new StreamableFile(image.object.body, {
-      type: image.mimeType,
-      length: image.size,
-      disposition: `inline; filename*=UTF-8''${encodeFilename(image.filename)}`,
-    })
   }
 
   @TypedRoute.Get(':slug', publicPostSchema)

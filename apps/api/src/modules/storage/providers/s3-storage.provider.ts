@@ -9,9 +9,12 @@ import {
   S3ServiceException,
 } from '@aws-sdk/client-s3'
 import type { BucketLocationConstraint } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Injectable, OnModuleInit } from '@nestjs/common'
 import {
   IStorageProvider,
+  SignedUrl,
+  SignedUrlOptions,
   StorageProviderObject,
   StorageProviderUploadInput,
 } from './storage-provider.interface'
@@ -24,6 +27,7 @@ export interface S3StorageProviderOptions {
   secretAccessKey: string
   forcePathStyle: boolean
   createBucket: boolean
+  signedUrlExpiresIn: number
 }
 
 interface S3ClientLike {
@@ -33,22 +37,23 @@ interface S3ClientLike {
 @Injectable()
 export class S3StorageProvider implements IStorageProvider, OnModuleInit {
   private readonly client: S3ClientLike
+  // Signing is local and needs a real client, so it never goes through an injected fake.
+  private readonly signingClient: S3Client
 
   constructor(
     private readonly options: S3StorageProviderOptions,
     client?: S3ClientLike,
   ) {
-    this.client =
-      client ??
-      new S3Client({
-        endpoint: options.endpoint,
-        region: options.region,
-        credentials: {
-          accessKeyId: options.accessKeyId,
-          secretAccessKey: options.secretAccessKey,
-        },
-        forcePathStyle: options.forcePathStyle,
-      })
+    this.signingClient = new S3Client({
+      endpoint: options.endpoint,
+      region: options.region,
+      credentials: {
+        accessKeyId: options.accessKeyId,
+        secretAccessKey: options.secretAccessKey,
+      },
+      forcePathStyle: options.forcePathStyle,
+    })
+    this.client = client ?? this.signingClient
   }
 
   async onModuleInit(): Promise<void> {
@@ -112,6 +117,25 @@ export class S3StorageProvider implements IStorageProvider, OnModuleInit {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.options.bucket, Key: key }))
   }
 
+  async getSignedUrl(key: string, options: SignedUrlOptions): Promise<SignedUrl> {
+    const signingDate = new Date()
+    const url = await getSignedUrl(
+      this.signingClient,
+      new GetObjectCommand({
+        Bucket: this.options.bucket,
+        Key: key,
+        ResponseContentType: options.mimeType,
+        ResponseContentDisposition: `inline; filename*=UTF-8''${this.encodeFilename(options.filename)}`,
+      }),
+      { expiresIn: this.options.signedUrlExpiresIn, signingDate },
+    )
+
+    return {
+      url,
+      expiresAt: new Date(signingDate.getTime() + this.options.signedUrlExpiresIn * 1000),
+    }
+  }
+
   private isGetObjectResponse(value: unknown): value is {
     Body: Readable
     ContentType?: string
@@ -135,6 +159,10 @@ export class S3StorageProvider implements IStorageProvider, OnModuleInit {
       (error instanceof S3ServiceException && error.$metadata.httpStatusCode === 404) ||
       (error instanceof Error && ['NoSuchBucket', 'NotFound'].includes(error.name))
     )
+  }
+
+  private encodeFilename(filename: string): string {
+    return encodeURIComponent(filename).replaceAll("'", '%27')
   }
 
   private decodeFilename(filename: string | undefined, fallback: string): string {
