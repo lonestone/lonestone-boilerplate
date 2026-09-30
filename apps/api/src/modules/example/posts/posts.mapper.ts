@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { MediaMapper } from '../../media/media.mapper'
 import {
-  PostCoverImage,
   PublicAuthorPosts,
   PublicPost,
   PublicPosts,
@@ -22,6 +22,8 @@ type PostContentItem = UserPost['content'][number]
 // This mapper is a particulary complex one, to show that mapping logic can be contrieved but should not reside in the service.
 @Injectable()
 export class PostsMapper {
+  constructor(private readonly mediaMapper: MediaMapper) {}
+
   toUserPost(post: Post): UserPost {
     const versions = this.getSortedVersions(post)
     const latestVersion = versions.at(-1)
@@ -38,7 +40,7 @@ export class PostsMapper {
       })),
       publishedAt: post.publishedAt,
       type: this.computePostType(post, latestVersion),
-      coverImage: this.mapCoverImage(post),
+      coverImage: post.coverImage ? this.mediaMapper.toMedia(post.coverImage) : undefined,
       tags: this.mapTags(post),
     }
   }
@@ -76,7 +78,7 @@ export class PostsMapper {
       publishedAt: post.publishedAt!,
       slug: post.slug,
       commentCount,
-      coverImage: this.mapCoverImage(post),
+      coverImage: post.coverImage ? this.mediaMapper.toMedia(post.coverImage) : undefined,
       likesCount: post.likesCount,
       tags: this.mapTags(post),
     }
@@ -101,7 +103,7 @@ export class PostsMapper {
           },
           contentPreview: this.findContentPreview(latestVersion.content),
           commentCount: commentCountByPostId.get(post.id) ?? 0,
-          coverImage: this.mapCoverImage(post),
+          coverImage: post.coverImage ? this.mediaMapper.toMedia(post.coverImage) : undefined,
           likesCount: post.likesCount,
           tags: this.mapTags(post),
         }
@@ -134,7 +136,7 @@ export class PostsMapper {
           },
           contentPreview: this.findContentPreview(latestVersion.content),
           commentCount: commentCountByPostId.get(post.id) ?? 0,
-          coverImage: this.mapCoverImage(post),
+          coverImage: post.coverImage ? this.mediaMapper.toMedia(post.coverImage) : undefined,
           likesCount: post.likesCount,
           tags: this.mapTags(post),
         }
@@ -188,23 +190,6 @@ export class PostsMapper {
     }
 
     return latestVersion
-  }
-
-  private mapCoverImage(post: Post): PostCoverImage | undefined {
-    if (
-      !post.coverImageStorageKey ||
-      !post.coverImageFilename ||
-      !post.coverImageMimeType ||
-      post.coverImageSize == null
-    ) {
-      return undefined
-    }
-
-    return {
-      filename: post.coverImageFilename,
-      mimeType: post.coverImageMimeType,
-      size: post.coverImageSize,
-    }
   }
 
   private mapTags(post: Post): Tag[] {

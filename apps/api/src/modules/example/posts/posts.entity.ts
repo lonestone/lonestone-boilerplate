@@ -5,6 +5,7 @@ import {
   ManyToMany,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryKey,
   Property,
   Unique,
@@ -12,6 +13,7 @@ import {
 import { User } from '../../auth/auth.entity'
 import { Comment } from '../../example/comments/comments.entity'
 import { Tag } from '../../example/tags/tag.entity'
+import { Media } from '../../media/media.entity'
 
 export interface Content {
   type: 'text' | 'image' | 'video'
@@ -48,17 +50,8 @@ export class Post {
   @Index()
   slug?: string
 
-  @Property({ nullable: true })
-  coverImageStorageKey?: string
-
-  @Property({ nullable: true })
-  coverImageFilename?: string
-
-  @Property({ nullable: true })
-  coverImageMimeType?: string
-
-  @Property({ nullable: true })
-  coverImageSize?: number
+  @OneToOne(() => Media, { owner: true, nullable: true, fieldName: 'coverImageId' })
+  coverImage?: Media
 
   @Property({ default: 0 })
   likesCount: number = 0

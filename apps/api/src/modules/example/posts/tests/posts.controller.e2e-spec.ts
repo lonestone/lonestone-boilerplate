@@ -16,6 +16,7 @@ import {
   StorageProviderObject,
   StorageProviderUploadInput,
 } from '../../../storage/providers/storage-provider.interface'
+import { Media } from '../../../media/media.entity'
 import { StorageModule } from '../../../storage/storage.module'
 import { initializeTestApp } from '../../../../test/helpers/test-app.helper'
 import { createRequest, TestRequest } from '../../../../test/helpers/test-auth.helper'
@@ -249,12 +250,13 @@ describe('postController images (e2e)', () => {
     ).attach('coverImage', MINIMAL_PNG, { filename: 'cover.png', contentType: 'image/png' })
 
     expect(createResponse.status).toBe(201)
-    expect(createResponse.body.coverImage).toMatchObject({
+    expect(createResponse.body.coverImage).toEqual({
+      id: expect.any(String),
       filename: 'cover.png',
       mimeType: 'image/png',
       size: MINIMAL_PNG.length,
     })
-    expect(createResponse.body).not.toHaveProperty('coverImageStorageKey')
+    expect(createResponse.body.coverImage).not.toHaveProperty('storageKey')
 
     const postId = createResponse.body.id as string
     const downloadResponse = await context.request
@@ -286,6 +288,7 @@ describe('postController images (e2e)', () => {
     expect(updateResponse.body).toMatchObject({
       title: 'Updated title',
       coverImage: {
+        id: createResponse.body.coverImage.id,
         filename: 'cover.png',
         mimeType: 'image/png',
       },
@@ -303,10 +306,20 @@ describe('postController images (e2e)', () => {
     ).attach('coverImage', MINIMAL_PNG, { filename: 'cover.png', contentType: 'image/png' })
     const postId = createResponse.body.id as string
 
-    await context.request
+    const updateResponse = await context.request
       .withSession(session)
       .put(`/admin/posts/${postId}`)
       .attach('coverImage', MINIMAL_JPEG, { filename: 'cover.jpg', contentType: 'image/jpeg' })
+
+    expect(updateResponse.body.coverImage).toMatchObject({
+      id: expect.any(String),
+      filename: 'cover.jpg',
+      mimeType: 'image/jpeg',
+    })
+    expect(updateResponse.body.coverImage.id).not.toBe(createResponse.body.coverImage.id)
+    await expect(
+      context.em.fork().findOne(Media, { id: createResponse.body.coverImage.id }),
+    ).resolves.toBeNull()
 
     const downloadResponse = await context.request
       .withSession(session)
@@ -341,6 +354,14 @@ describe('postController images (e2e)', () => {
     expect(publicResponse.status).toBe(200)
     expect(publicResponse.body).toEqual(MINIMAL_PNG)
 
+    const publicPostResponse = await context.request.get(`/public/posts/${slug}`)
+    expect(publicPostResponse.body.coverImage).toEqual({
+      id: createResponse.body.coverImage.id,
+      filename: 'cover.png',
+      mimeType: 'image/png',
+      size: MINIMAL_PNG.length,
+    })
+
     await context.request.withSession(session).patch(`/admin/posts/${postId}/unpublish`)
     const unpublishedResponse = await context.request.get(`/public/posts/${slug}/cover-image`)
     expect(unpublishedResponse.status).toBe(404)
@@ -365,6 +386,12 @@ describe('postController images (e2e)', () => {
     await expect(
       context.request.withSession(session).get(`/admin/posts/${postId}/cover-image`),
     ).resolves.toMatchObject({ status: 404 })
+
+    const postResponse = await context.request.withSession(session).get(`/admin/posts/${postId}`)
+    expect(postResponse.body).not.toHaveProperty('coverImage')
+    await expect(
+      context.em.fork().findOne(Media, { id: createResponse.body.coverImage.id }),
+    ).resolves.toBeNull()
   })
 
   it('returns not found when another user downloads or removes an image', async (context) => {

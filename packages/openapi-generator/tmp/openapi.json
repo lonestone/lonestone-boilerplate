@@ -3265,7 +3265,7 @@
             "type": "number"
           },
           "coverImage": {
-            "$ref": "#/components/schemas/PostCoverImageSchema"
+            "$ref": "#/components/schemas/MediaSchema"
           },
           "tags": {
             "type": "array",
@@ -3368,9 +3368,14 @@
         "title": "PostVersionSchema",
         "description": "Schema for a post version"
       },
-      "PostCoverImageSchema": {
+      "MediaSchema": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
           "filename": {
             "type": "string"
           },
@@ -3384,13 +3389,14 @@
           }
         },
         "required": [
+          "id",
           "filename",
           "mimeType",
           "size"
         ],
         "additionalProperties": false,
-        "title": "PostCoverImageSchema",
-        "description": "Public metadata for a post cover image. The storage key is never exposed."
+        "title": "MediaSchema",
+        "description": "A stored file. The storage key is never exposed."
       },
       "TagSchema": {
         "type": "object",
@@ -3469,7 +3475,7 @@
                   "type": "number"
                 },
                 "coverImage": {
-                  "$ref": "#/components/schemas/PostCoverImageSchema"
+                  "$ref": "#/components/schemas/MediaSchema"
                 },
                 "tags": {
                   "type": "array",
@@ -3559,7 +3565,7 @@
             "type": "number"
           },
           "coverImage": {
-            "$ref": "#/components/schemas/PostCoverImageSchema"
+            "$ref": "#/components/schemas/MediaSchema"
           },
           "likesCount": {
             "type": "number"
@@ -3616,7 +3622,7 @@
                   "type": "number"
                 },
                 "coverImage": {
-                  "$ref": "#/components/schemas/PostCoverImageSchema"
+                  "$ref": "#/components/schemas/MediaSchema"
                 },
                 "likesCount": {
                   "type": "number"
@@ -3708,7 +3714,7 @@
                   "type": "number"
                 },
                 "coverImage": {
-                  "$ref": "#/components/schemas/PostCoverImageSchema"
+                  "$ref": "#/components/schemas/MediaSchema"
                 },
                 "likesCount": {
                   "type": "number"

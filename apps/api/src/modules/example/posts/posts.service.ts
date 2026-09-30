@@ -4,12 +4,8 @@ import slugify from 'slugify'
 import { User } from '../../auth/auth.entity'
 import { buildOrderBy } from '../../db/query-order.util'
 import { Comment } from '../../example/comments/comments.entity'
-import {
-  StorageDownload,
-  StorageService,
-  StorageUpload,
-  StoredObject,
-} from '../../storage/storage.service'
+import { MediaService } from '../../media/media.service'
+import { StorageDownload, StorageUpload } from '../../storage/storage.service'
 import {
   CreatePostInput,
   PostFiltering,
@@ -58,7 +54,7 @@ export class PostService {
 
   constructor(
     private readonly em: EntityManager,
-    private readonly storageService: StorageService,
+    private readonly mediaService: MediaService,
   ) {}
 
   // Find existing tags by slug or create them on the fly (used by create/update).
@@ -82,12 +78,12 @@ export class PostService {
     const user = await this.em.findOne(User, { id: userId })
     if (!user) throw new Error('User not found')
 
-    const storedImage = image ? await this.uploadImage(image) : undefined
+    const coverImage = image ? await this.mediaService.create(image) : undefined
 
     try {
       const post = new Post()
       post.user = user
-      this.assignImageMetadata(post, storedImage)
+      post.coverImage = coverImage
 
       const version = new PostVersion()
       version.post = post
@@ -101,7 +97,7 @@ export class PostService {
       await this.em.flush()
       return post
     } catch (error: unknown) {
-      if (storedImage) await this.deleteCompensatingObject(storedImage.key, error)
+      if (coverImage) await this.deleteCompensatingObject(coverImage.storageKey, error)
       throw error
     }
   }
@@ -115,12 +111,12 @@ export class PostService {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
-      { populate: ['versions', 'tags'] },
+      { populate: ['versions', 'tags', 'coverImage'] },
     )
     if (!post) throw new Error('Post not found')
 
-    const previousImageKey = post.coverImageStorageKey
-    const storedImage = image ? await this.uploadImage(image) : undefined
+    const previousCoverImage = post.coverImage
+    const coverImage = image ? await this.mediaService.create(image) : undefined
 
     try {
       const latestVersion = await this.em.findOne(
@@ -148,17 +144,20 @@ export class PostService {
         if (data.content) latestVersion.content = data.content
       }
 
-      if (storedImage) this.assignImageMetadata(post, storedImage)
+      if (coverImage) {
+        post.coverImage = coverImage
+        if (previousCoverImage) this.em.remove(previousCoverImage)
+      }
       if (data.tags) post.tags.set(await this.resolveTags(data.tags))
 
       await this.em.flush()
     } catch (error: unknown) {
-      if (storedImage) await this.deleteCompensatingObject(storedImage.key, error)
+      if (coverImage) await this.deleteCompensatingObject(coverImage.storageKey, error)
       throw error
     }
 
-    if (storedImage && previousImageKey) {
-      await this.deleteStaleObject(previousImageKey)
+    if (coverImage && previousCoverImage) {
+      await this.deleteStaleObject(previousCoverImage.storageKey)
     }
 
     return post
@@ -166,12 +165,13 @@ export class PostService {
 
   async removePostImage(postId: string, userId: string): Promise<void> {
     const post = await this.findOwnedPost(postId, userId)
-    if (!post.coverImageStorageKey) throw new NotFoundException('Post cover image not found')
+    const coverImage = post.coverImage
+    if (!coverImage) throw new NotFoundException('Post cover image not found')
 
-    const storageKey = post.coverImageStorageKey
-    this.clearImageMetadata(post)
+    post.coverImage = undefined
+    this.em.remove(coverImage)
     await this.em.flush()
-    await this.deleteStaleObject(storageKey)
+    await this.deleteStaleObject(coverImage.storageKey)
   }
 
   async downloadUserPostImage(postId: string, userId: string): Promise<PostImageDownload> {
@@ -180,7 +180,11 @@ export class PostService {
   }
 
   async downloadPublicPostImage(slug: string): Promise<PostImageDownload> {
-    const post = await this.em.findOne(Post, { slug, publishedAt: { $ne: null } })
+    const post = await this.em.findOne(
+      Post,
+      { slug, publishedAt: { $ne: null } },
+      { populate: ['coverImage'] },
+    )
     if (!post) throw new NotFoundException('Post not found')
 
     return this.downloadPostImage(post)
@@ -201,7 +205,7 @@ export class PostService {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
-      { populate: ['versions', 'tags'] },
+      { populate: ['versions', 'tags', 'coverImage'] },
     )
     if (!post) throw new Error('Post not found')
 
@@ -235,7 +239,7 @@ export class PostService {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
-      { populate: ['versions', 'tags'] },
+      { populate: ['versions', 'tags', 'coverImage'] },
     )
     if (!post) throw new Error('Post not found')
 
@@ -249,7 +253,7 @@ export class PostService {
       Post,
       { id: postId, user: userId },
       {
-        populate: ['versions', 'user'],
+        populate: ['versions', 'user', 'coverImage'],
       },
     )
     if (!post) throw new Error('Post not found')
@@ -279,7 +283,7 @@ export class PostService {
     }
 
     const [posts, total] = await this.em.findAndCount(Post, where, {
-      populate: ['versions'],
+      populate: ['versions', 'coverImage'],
       orderBy,
       limit: pagination.pageSize,
       offset: pagination.offset,
@@ -303,7 +307,7 @@ export class PostService {
       Post,
       { publishedAt: { $ne: null } },
       {
-        populate: ['user', 'versions', 'tags'],
+        populate: ['user', 'versions', 'tags', 'coverImage'],
         orderBy: { createdAt: 'DESC' },
         offset: randomIndex,
         limit: 1,
@@ -346,7 +350,7 @@ export class PostService {
     }
 
     const [posts, total] = await this.em.findAndCount(Post, where, {
-      populate: ['user', 'versions', 'tags'],
+      populate: ['user', 'versions', 'tags', 'coverImage'],
       orderBy,
       limit: pagination.pageSize,
       offset: pagination.offset,
@@ -388,7 +392,7 @@ export class PostService {
     }
 
     const [posts, total] = await this.em.findAndCount(Post, where, {
-      populate: ['user', 'versions', 'tags'],
+      populate: ['user', 'versions', 'tags', 'coverImage'],
       orderBy,
       limit: pagination.pageSize,
       offset: pagination.offset,
@@ -408,7 +412,7 @@ export class PostService {
     const post = await this.em.findOne(
       Post,
       { slug, publishedAt: { $ne: null } },
-      { populate: ['user', 'versions', 'tags'] },
+      { populate: ['user', 'versions', 'tags', 'coverImage'] },
     )
 
     if (!post) throw new NotFoundException(`Post not found: ${slug}`)
@@ -424,7 +428,7 @@ export class PostService {
       Post,
       { slug, publishedAt: { $ne: null } },
       {
-        populate: ['user', 'versions', 'tags'],
+        populate: ['user', 'versions', 'tags', 'coverImage'],
       },
     )
 
@@ -440,49 +444,27 @@ export class PostService {
     }
   }
 
-  private async uploadImage(file: StorageUpload): Promise<StoredObject> {
-    return this.storageService.upload(file)
-  }
-
-  private assignImageMetadata(post: Post, storedImage?: StoredObject): void {
-    if (!storedImage) return
-
-    post.coverImageStorageKey = storedImage.key
-    post.coverImageFilename = storedImage.filename
-    post.coverImageMimeType = storedImage.mimeType
-    post.coverImageSize = storedImage.size
-  }
-
-  private clearImageMetadata(post: Post): void {
-    post.coverImageStorageKey = undefined
-    post.coverImageFilename = undefined
-    post.coverImageMimeType = undefined
-    post.coverImageSize = undefined
-  }
-
   private async findOwnedPost(postId: string, userId: string): Promise<Post> {
-    const post = await this.em.findOne(Post, { id: postId, user: userId })
+    const post = await this.em.findOne(
+      Post,
+      { id: postId, user: userId },
+      { populate: ['coverImage'] },
+    )
     if (!post) throw new NotFoundException('Post not found')
 
     return post
   }
 
   private async downloadPostImage(post: Post): Promise<PostImageDownload> {
-    if (
-      !post.coverImageStorageKey ||
-      !post.coverImageFilename ||
-      !post.coverImageMimeType ||
-      post.coverImageSize == null
-    ) {
-      throw new NotFoundException('Post cover image not found')
-    }
+    const coverImage = post.coverImage
+    if (!coverImage) throw new NotFoundException('Post cover image not found')
 
-    const object = await this.storageService.download(post.coverImageStorageKey)
+    const object = await this.mediaService.downloadObject(coverImage.storageKey)
 
     return {
-      filename: post.coverImageFilename,
-      mimeType: post.coverImageMimeType,
-      size: post.coverImageSize,
+      filename: coverImage.filename,
+      mimeType: coverImage.mimeType,
+      size: coverImage.size,
       object,
     }
   }
@@ -492,7 +474,7 @@ export class PostService {
     persistenceError: unknown,
   ): Promise<never> {
     try {
-      await this.storageService.delete(storageKey)
+      await this.mediaService.deleteObject(storageKey)
     } catch (cleanupError: unknown) {
       throw new InternalServerErrorException('Failed to save post image metadata', {
         cause: new AggregateError(
@@ -509,7 +491,7 @@ export class PostService {
 
   private async deleteStaleObject(storageKey: string): Promise<void> {
     try {
-      await this.storageService.delete(storageKey)
+      await this.mediaService.deleteObject(storageKey)
     } catch (error: unknown) {
       this.logger.error(`Failed to delete stale storage object ${storageKey}`, error)
     }

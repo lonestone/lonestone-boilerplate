@@ -1,7 +1,8 @@
 import { EntityManager } from '@mikro-orm/core'
 import { InternalServerErrorException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { StorageService } from '../../../storage/storage.service'
+import { Media } from '../../../media/media.entity'
+import { MediaService } from '../../../media/media.service'
 import { Post } from '../posts.entity'
 import { PostService } from '../posts.service'
 
@@ -20,9 +21,19 @@ const imageUpload = {
   size: 11,
 }
 
+function createMedia(storageKey: string): Media {
+  return Object.assign(new Media(), {
+    id: `${storageKey}-id`,
+    storageKey,
+    filename: 'cover.png',
+    mimeType: 'image/png',
+    size: 11,
+  })
+}
+
 describe('PostService images', () => {
   let em: EntityManager
-  let storageService: StorageService
+  let mediaService: MediaService
   let service: PostService
 
   beforeEach(() => {
@@ -30,24 +41,20 @@ describe('PostService images', () => {
       findOne: vi.fn(),
       flush: vi.fn(),
       persist: vi.fn(),
+      remove: vi.fn(),
     } as unknown as EntityManager
-    storageService = {
-      upload: vi.fn(),
-      download: vi.fn(),
-      delete: vi.fn(),
-    } as unknown as StorageService
-    service = new PostService(em, storageService)
+    mediaService = {
+      create: vi.fn(),
+      downloadObject: vi.fn(),
+      deleteObject: vi.fn(),
+    } as unknown as MediaService
+    service = new PostService(em, mediaService)
   })
 
   it('deletes the uploaded object when creating a post fails after upload', async () => {
     const persistenceError = new Error('database unavailable')
     vi.mocked(em.findOne).mockResolvedValue({ id: 'user-id' } as never)
-    vi.mocked(storageService.upload).mockResolvedValue({
-      key: 'new-key',
-      filename: 'cover.png',
-      mimeType: 'image/png',
-      size: 11,
-    })
+    vi.mocked(mediaService.create).mockResolvedValue(createMedia('new-key'))
     vi.mocked(em.flush).mockRejectedValue(persistenceError)
 
     await expect(
@@ -60,7 +67,7 @@ describe('PostService images', () => {
       constructor: InternalServerErrorException,
       cause: persistenceError,
     })
-    expect(storageService.delete).toHaveBeenCalledWith('new-key')
+    expect(mediaService.deleteObject).toHaveBeenCalledWith('new-key')
   })
 
   it('deletes the uploaded object when a database query fails before persistence', async () => {
@@ -68,12 +75,7 @@ describe('PostService images', () => {
     vi.mocked(em.findOne)
       .mockResolvedValueOnce({ id: 'user-id' } as never)
       .mockRejectedValueOnce(persistenceError)
-    vi.mocked(storageService.upload).mockResolvedValue({
-      key: 'new-key',
-      filename: 'cover.png',
-      mimeType: 'image/png',
-      size: 11,
-    })
+    vi.mocked(mediaService.create).mockResolvedValue(createMedia('new-key'))
 
     await expect(
       service.createPost(
@@ -89,13 +91,35 @@ describe('PostService images', () => {
       constructor: InternalServerErrorException,
       cause: persistenceError,
     })
-    expect(storageService.delete).toHaveBeenCalledWith('new-key')
+    expect(mediaService.deleteObject).toHaveBeenCalledWith('new-key')
   })
 
-  it('deletes the previous object only after a replacement is committed', async () => {
+  it('reports both errors when the compensating delete also fails', async () => {
+    const persistenceError = new Error('database unavailable')
+    const cleanupError = new Error('storage unavailable')
+    vi.mocked(em.findOne).mockResolvedValue({ id: 'user-id' } as never)
+    vi.mocked(mediaService.create).mockResolvedValue(createMedia('new-key'))
+    vi.mocked(em.flush).mockRejectedValue(persistenceError)
+    vi.mocked(mediaService.deleteObject).mockRejectedValue(cleanupError)
+
+    await expect(
+      service.createPost(
+        'user-id',
+        { title: 'Title', content: [{ type: 'text', data: 'Body' }] },
+        imageUpload,
+      ),
+    ).rejects.toMatchObject({
+      constructor: InternalServerErrorException,
+      cause: { errors: [persistenceError, cleanupError] },
+    })
+  })
+
+  it('removes the previous media in the same flush and deletes its object after commit', async () => {
+    const previousMedia = createMedia('old-key')
+    const newMedia = createMedia('new-key')
     const post = Object.assign(new Post(), {
       id: 'post-id',
-      coverImageStorageKey: 'old-key',
+      coverImage: previousMedia,
       versions: { add: vi.fn() },
       tags: { set: vi.fn() },
     })
@@ -106,20 +130,18 @@ describe('PostService images', () => {
         content: [{ type: 'text', data: 'Body' }],
         createdAt: new Date(),
       } as never)
-    vi.mocked(storageService.upload).mockResolvedValue({
-      key: 'new-key',
-      filename: 'cover.jpg',
-      mimeType: 'image/jpeg',
-      size: 20,
-    })
+    vi.mocked(mediaService.create).mockResolvedValue(newMedia)
     vi.mocked(em.flush).mockResolvedValue(undefined)
 
     await service.updatePost('post-id', 'user-id', {}, imageUpload)
 
-    expect(storageService.upload).toHaveBeenCalled()
-    expect(em.flush).toHaveBeenCalled()
-    expect(storageService.delete).toHaveBeenCalledWith('old-key')
-    expect(vi.mocked(storageService.delete).mock.invocationCallOrder[0]).toBeGreaterThan(
+    expect(post.coverImage).toBe(newMedia)
+    expect(em.remove).toHaveBeenCalledWith(previousMedia)
+    expect(vi.mocked(em.remove).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(em.flush).mock.invocationCallOrder[0],
+    )
+    expect(mediaService.deleteObject).toHaveBeenCalledWith('old-key')
+    expect(vi.mocked(mediaService.deleteObject).mock.invocationCallOrder[0]).toBeGreaterThan(
       vi.mocked(em.flush).mock.invocationCallOrder[0],
     )
   })
@@ -128,7 +150,7 @@ describe('PostService images', () => {
     const persistenceError = new Error('database unavailable')
     const post = Object.assign(new Post(), {
       id: 'post-id',
-      coverImageStorageKey: 'old-key',
+      coverImage: createMedia('old-key'),
       versions: { add: vi.fn() },
       tags: { set: vi.fn() },
     })
@@ -139,38 +161,32 @@ describe('PostService images', () => {
         content: [{ type: 'text', data: 'Body' }],
         createdAt: new Date(),
       } as never)
-    vi.mocked(storageService.upload).mockResolvedValue({
-      key: 'new-key',
-      filename: 'cover.jpg',
-      mimeType: 'image/jpeg',
-      size: 20,
-    })
+    vi.mocked(mediaService.create).mockResolvedValue(createMedia('new-key'))
     vi.mocked(em.flush).mockRejectedValue(persistenceError)
 
     await expect(service.updatePost('post-id', 'user-id', {}, imageUpload)).rejects.toMatchObject({
       constructor: InternalServerErrorException,
       cause: persistenceError,
     })
-    expect(storageService.delete).toHaveBeenCalledWith('new-key')
-    expect(storageService.delete).not.toHaveBeenCalledWith('old-key')
+    expect(mediaService.deleteObject).toHaveBeenCalledWith('new-key')
+    expect(mediaService.deleteObject).not.toHaveBeenCalledWith('old-key')
   })
 
   it('keeps a committed image removal successful when storage cleanup fails', async () => {
+    const previousMedia = createMedia('old-key')
     const post = Object.assign(new Post(), {
       id: 'post-id',
-      coverImageStorageKey: 'old-key',
-      coverImageFilename: 'cover.png',
-      coverImageMimeType: 'image/png',
-      coverImageSize: 11,
+      coverImage: previousMedia,
     })
     vi.mocked(em.findOne).mockResolvedValue(post as never)
     vi.mocked(em.flush).mockResolvedValue(undefined)
-    vi.mocked(storageService.delete).mockRejectedValue(new Error('storage unavailable'))
+    vi.mocked(mediaService.deleteObject).mockRejectedValue(new Error('storage unavailable'))
 
     await expect(service.removePostImage('post-id', 'user-id')).resolves.toBeUndefined()
 
+    expect(em.remove).toHaveBeenCalledWith(previousMedia)
     expect(em.flush).toHaveBeenCalled()
-    expect(storageService.delete).toHaveBeenCalledWith('old-key')
-    expect(post.coverImageStorageKey).toBeUndefined()
+    expect(mediaService.deleteObject).toHaveBeenCalledWith('old-key')
+    expect(post.coverImage).toBeUndefined()
   })
 })

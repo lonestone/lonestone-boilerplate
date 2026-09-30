@@ -358,7 +358,7 @@ export type UserPostSchema = {
     publishedAt?: string | null;
     type: 'published' | 'draft';
     commentCount?: number;
-    coverImage?: PostCoverImageSchema;
+    coverImage?: MediaSchema;
     tags: Array<TagSchema>;
 };
 
@@ -390,11 +390,12 @@ export type PostVersionSchema = {
 };
 
 /**
- * PostCoverImageSchema
+ * MediaSchema
  *
- * Public metadata for a post cover image. The storage key is never exposed.
+ * A stored file. The storage key is never exposed.
  */
-export type PostCoverImageSchema = {
+export type MediaSchema = {
+    id: string;
     filename: string;
     mimeType: string;
     size: number;
@@ -425,7 +426,7 @@ export type UserPostsSchema = {
         publishedAt?: string | null;
         type: 'published' | 'draft';
         commentCount?: number;
-        coverImage?: PostCoverImageSchema;
+        coverImage?: MediaSchema;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
     }>;
@@ -451,7 +452,7 @@ export type PublicPostSchema = {
     publishedAt: string;
     slug?: string;
     commentCount?: number;
-    coverImage?: PostCoverImageSchema;
+    coverImage?: MediaSchema;
     likesCount: number;
     tags: Array<TagSchema>;
 };
@@ -470,7 +471,7 @@ export type PublicPostsSchema = {
         publishedAt: string;
         slug?: string;
         commentCount?: number;
-        coverImage?: PostCoverImageSchema;
+        coverImage?: MediaSchema;
         likesCount: number;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
@@ -497,7 +498,7 @@ export type PublicAuthorPostsSchema = {
         publishedAt: string;
         slug?: string;
         commentCount?: number;
-        coverImage?: PostCoverImageSchema;
+        coverImage?: MediaSchema;
         likesCount: number;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;

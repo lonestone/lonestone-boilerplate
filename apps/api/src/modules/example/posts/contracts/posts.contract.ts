@@ -6,6 +6,7 @@ import {
 } from '@lonestone/nzoth/server'
 import { BadRequestException } from '@nestjs/common'
 import { z } from 'zod'
+import { mediaSchema } from '../../../media/contracts/media.contract'
 
 // 📖 See API Guidelines: Schema Definition Best Practices
 // https://github.com/lonestone/lonestone-boilerplate/blob/main/docs/api-guidelines.md#schema-definition-best-practices
@@ -78,19 +79,6 @@ export const postIdSchema = z.uuid().meta({
 export const postSlugSchema = z.string().min(1).meta({
   description: 'Public post slug',
 })
-
-export const postCoverImageSchema = z
-  .object({
-    filename: z.string(),
-    mimeType: z.string(),
-    size: z.number().int().nonnegative(),
-  })
-  .meta({
-    title: 'PostCoverImageSchema',
-    description: 'Public metadata for a post cover image. The storage key is never exposed.',
-  })
-
-export type PostCoverImage = z.infer<typeof postCoverImageSchema>
 
 export const postContentListSchema = z.array(postContentSchema)
 export const postTagNamesSchema = z.array(z.string())
@@ -189,7 +177,7 @@ export const userPostSchema = z
     publishedAt: z.date().nullish(),
     type: z.enum(['published', 'draft']),
     commentCount: z.number().optional(),
-    coverImage: postCoverImageSchema.optional(),
+    coverImage: mediaSchema.optional(),
     tags: z.array(tagSchema),
   })
   .meta({
@@ -228,7 +216,7 @@ export const publicPostSchema = z
     publishedAt: z.date(),
     slug: z.string().optional(),
     commentCount: z.number().optional(),
-    coverImage: postCoverImageSchema.optional(),
+    coverImage: mediaSchema.optional(),
     likesCount: z.number(),
     tags: z.array(tagSchema),
   })
