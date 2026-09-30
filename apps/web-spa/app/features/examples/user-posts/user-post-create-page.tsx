@@ -3,6 +3,8 @@ import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
+import { queryClient } from '@/lib/query-client'
+import { postKeys } from './post-keys'
 import UserPostForm, { type PostFormSubmitData } from './user-post-form'
 
 export default function UserPostCreatePage() {
@@ -10,23 +12,27 @@ export default function UserPostCreatePage() {
   const navigate = useNavigate()
 
   const { mutate: createPost, isPending } = useMutation({
-    mutationFn: (data: PostFormSubmitData) =>
-      postControllerCreatePost({
+    mutationFn: async (data: PostFormSubmitData) => {
+      const response = await postControllerCreatePost({
         body: {
           title: data.title,
           content: JSON.stringify(data.content),
           tags: data.tags ? JSON.stringify(data.tags) : undefined,
           coverImage: data.coverImage,
         },
-      }),
-    onSuccess: async (result) => {
-      if (!result.data) {
-        toast.error(t('toasts.postCreateError'))
-        return
+      })
+
+      if (response.error || !response.data) {
+        throw response.error ?? new Error(t('toasts.postCreateError'))
       }
+
+      return response.data
+    },
+    onSuccess: async (post) => {
       toast.success(t('toasts.postCreated'))
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
       await new Promise((resolve) => setTimeout(resolve, 800))
-      navigate(`/dashboard/posts/${result.data.id}/edit`)
+      navigate(`/dashboard/posts/${post.id}/edit`)
     },
     onError: (error) => {
       toast.error(error?.message || t('toasts.postCreateError'))

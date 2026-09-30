@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight, FileText, PlusCircle, SearchIcon } from 'luc
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { postKeys } from '@/features/examples/user-posts/post-keys'
 import { UserPostCard } from '@/features/examples/user-posts/user-post-card'
 
 const PAGE_SIZE = 12
@@ -42,7 +43,7 @@ export default function PostsListPage() {
   }
 
   const { data: posts, isLoading } = useQuery({
-    queryKey: ['posts', pageValue, searchValue],
+    queryKey: postKeys.list(pageValue, searchValue),
     queryFn: async () => {
       const response = await postControllerGetUserPosts({
         query: {

@@ -12,6 +12,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { queryClient } from '@/lib/query-client'
+import { postKeys } from './post-keys'
 import UserPostForm, { UserPostFormSkeleton, type PostFormSubmitData } from './user-post-form'
 
 export default function UserPostEditPage() {
@@ -19,7 +20,7 @@ export default function UserPostEditPage() {
   const { t } = useTranslation()
 
   const { data: post, isLoading } = useQuery({
-    queryKey: ['userPost', userPostId],
+    queryKey: postKeys.detail(userPostId),
     queryFn: async () => {
       const response = await postControllerGetUserPost({
         path: {
@@ -36,8 +37,8 @@ export default function UserPostEditPage() {
   })
 
   const { mutate: updatePost, isPending } = useMutation({
-    mutationFn: (data: PostFormSubmitData) =>
-      postControllerUpdatePost({
+    mutationFn: async (data: PostFormSubmitData) => {
+      const response = await postControllerUpdatePost({
         body: {
           title: data.title,
           content: JSON.stringify(data.content),
@@ -47,10 +48,15 @@ export default function UserPostEditPage() {
         path: {
           id: userPostId as string,
         },
-      }),
+      })
+
+      if (response.error) {
+        throw response.error
+      }
+    },
     onSuccess: () => {
       toast.success(t('toasts.postUpdated'))
-      queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
     },
     onError: () => {
       toast.error(t('toasts.postUpdateError'))
@@ -58,13 +64,18 @@ export default function UserPostEditPage() {
   })
 
   const { mutate: publishPost, isPending: isPublishing } = useMutation({
-    mutationFn: () =>
-      postControllerPublishPost({
+    mutationFn: async () => {
+      const response = await postControllerPublishPost({
         path: { id: userPostId as string },
-      }),
+      })
+
+      if (response.error) {
+        throw response.error
+      }
+    },
     onSuccess: () => {
       toast.success(t('toasts.postPublished'))
-      queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
     },
     onError: () => {
       toast.error(t('toasts.postPublishError'))
@@ -72,13 +83,18 @@ export default function UserPostEditPage() {
   })
 
   const { mutate: unpublishPost, isPending: isUnpublishing } = useMutation({
-    mutationFn: () =>
-      postControllerUnpublishPost({
+    mutationFn: async () => {
+      const response = await postControllerUnpublishPost({
         path: { id: userPostId as string },
-      }),
+      })
+
+      if (response.error) {
+        throw response.error
+      }
+    },
     onSuccess: () => {
       toast.success(t('toasts.postUnpublished'))
-      queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
     },
     onError: () => {
       toast.error(t('toasts.postPublishError'))
@@ -96,7 +112,7 @@ export default function UserPostEditPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
     },
     onError: () => {
       toast.error(t('toasts.postUpdateError'))
