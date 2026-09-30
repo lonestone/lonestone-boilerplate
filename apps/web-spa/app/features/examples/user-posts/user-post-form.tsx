@@ -140,6 +140,7 @@ export default function UserPostForm({
                       // The parent mutation reports the error.
                     }
                   }}
+                  aria-label={t('posts.form.clearImage')}
                 >
                   <X className="size-3.5" />
                 </Button>

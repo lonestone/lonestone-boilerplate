@@ -12,6 +12,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { queryClient } from '@/lib/query-client'
+import { postKeys } from './post-keys'
 import UserPostForm, { UserPostFormSkeleton, type PostFormSubmitData } from './user-post-form'
 
 export default function UserPostEditPage() {
@@ -23,7 +24,7 @@ export default function UserPostEditPage() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['userPost', userPostId],
+    queryKey: postKeys.detail(userPostId),
     queryFn: async () => {
       const response = await postControllerGetUserPost({
         path: {
@@ -61,8 +62,7 @@ export default function UserPostEditPage() {
     },
     onSuccess: () => {
       toast.success(t('toasts.postUpdated'))
-      queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
-      queryClient.invalidateQueries({ queryKey: ['posts'] })
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
     },
     onError: () => {
       toast.error(t('toasts.postUpdateError'))
@@ -83,8 +83,7 @@ export default function UserPostEditPage() {
     },
     onSuccess: () => {
       toast.success(t('toasts.postPublished'))
-      queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
-      queryClient.invalidateQueries({ queryKey: ['posts'] })
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
     },
     onError: () => {
       toast.error(t('toasts.postPublishError'))
@@ -105,8 +104,7 @@ export default function UserPostEditPage() {
     },
     onSuccess: () => {
       toast.success(t('toasts.postUnpublished'))
-      queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
-      queryClient.invalidateQueries({ queryKey: ['posts'] })
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
     },
     onError: () => {
       toast.error(t('toasts.postUnpublishError'))
@@ -124,7 +122,7 @@ export default function UserPostEditPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
     },
     onError: () => {
       toast.error(t('toasts.postUpdateError'))
