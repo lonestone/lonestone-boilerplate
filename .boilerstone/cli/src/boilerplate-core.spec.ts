@@ -59,7 +59,7 @@ import {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = resolve(__dirname, '../../..')
-const cliPath = join(projectRoot, '.boilerstone/cli/bin/lonestone.mjs')
+const cliPath = join(projectRoot, '.boilerstone/cli/bin/boilerstone-cli.mjs')
 
 function createIntentionContent(options: {
   id?: string
@@ -469,7 +469,9 @@ describe('boilerplate core', () => {
 
   it('wires the boilerplate script through pnpm dlx without a dependency, idempotently', () => {
     const first = ensurePackageJsonWiring({ name: 'app', scripts: { dev: 'vite' } })
-    expect(first.pkg.scripts?.[BOILERPLATE_SCRIPT_NAME]).toBe('pnpm dlx @lonestone/cli@latest')
+    expect(first.pkg.scripts?.[BOILERPLATE_SCRIPT_NAME]).toBe(
+      'pnpm dlx @lonestone/boilerstone-cli@latest',
+    )
     expect(first.pkg.scripts?.[BOILERPLATE_SCRIPT_NAME]).toBe(BOILERPLATE_SCRIPT_COMMAND)
     expect(first.pkg.scripts?.rock).toBeUndefined()
     expect(first.pkg.scripts?.dev).toBe('vite')
@@ -508,15 +510,15 @@ describe('boilerplate core', () => {
     const result = wireGeneratedPackageJson(
       {
         name: 'acme',
-        scripts: { rock: 'lonestone rock', boilerplate: 'lonestone', dev: 'vite' },
-        devDependencies: { '@lonestone/cli': 'workspace:*', tsx: '^4.0.0' },
+        scripts: { rock: 'boilerstone-cli rock', boilerplate: 'boilerstone-cli', dev: 'vite' },
+        devDependencies: { '@lonestone/boilerstone-cli': 'workspace:*', tsx: '^4.0.0' },
       },
       '1.2.0',
     )
 
     expect(result.scripts).toEqual({
-      rock: 'pnpm dlx @lonestone/cli@1.2.0 rock',
-      boilerplate: 'pnpm dlx @lonestone/cli@latest',
+      rock: 'pnpm dlx @lonestone/boilerstone-cli@1.2.0 rock',
+      boilerplate: 'pnpm dlx @lonestone/boilerstone-cli@latest',
       dev: 'vite',
     })
     expect(result.devDependencies).toEqual({ tsx: '^4.0.0' })
@@ -525,7 +527,9 @@ describe('boilerplate core', () => {
 
   it('moves only a pinned dlx rock script to another release', () => {
     const pinned = { scripts: { rock: getRockScriptCommand('1.2.0') } }
-    expect(pinRockScript(pinned, '1.3.0')?.scripts?.rock).toBe('pnpm dlx @lonestone/cli@1.3.0 rock')
+    expect(pinRockScript(pinned, '1.3.0')?.scripts?.rock).toBe(
+      'pnpm dlx @lonestone/boilerstone-cli@1.3.0 rock',
+    )
     expect(pinRockScript(pinned, '1.2.0')).toBeNull()
     expect(pinRockScript({ scripts: { rock: 'tsx ./cli/setup.ts' } }, '1.3.0')).toBeNull()
     expect(pinRockScript({ scripts: { rock: 'my-own-setup' } }, '1.3.0')).toBeNull()
@@ -1135,7 +1139,7 @@ describe('resolveUpgradePath', () => {
       writeProjectFile(
         projectPath,
         'package.json',
-        `${JSON.stringify({ scripts: { rock: 'pnpm dlx @lonestone/cli@0.0.0 rock' } })}\n`,
+        `${JSON.stringify({ scripts: { rock: 'pnpm dlx @lonestone/boilerstone-cli@0.0.0 rock' } })}\n`,
       )
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'boilerstone release'])
@@ -1145,7 +1149,7 @@ describe('resolveUpgradePath', () => {
         `  - ${intentionId}`,
       )
       expect(JSON.parse(readFileSync(statePath, 'utf-8')).source.currentVersion).toBe('0.0.0')
-      expect(readRockScript()).toBe('pnpm dlx @lonestone/cli@0.0.0 rock')
+      expect(readRockScript()).toBe('pnpm dlx @lonestone/boilerstone-cli@0.0.0 rock')
 
       state.intentions.applied.push({ id: intentionId, appliedAt: '2026-07-15' })
       writeFileSync(statePath, `${JSON.stringify(state)}\n`)
@@ -1162,7 +1166,7 @@ describe('resolveUpgradePath', () => {
       expect(actualResolution.targetReference).toEqual(expectedResolution.targetReference)
       expect(JSON.parse(readFileSync(statePath, 'utf-8')).source.currentVersion).toBe('1.0.0')
       // rock follows the release the project now tracks
-      expect(readRockScript()).toBe('pnpm dlx @lonestone/cli@1.0.0 rock')
+      expect(readRockScript()).toBe('pnpm dlx @lonestone/boilerstone-cli@1.0.0 rock')
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
@@ -1213,7 +1217,7 @@ describe('boilerplate CLI smoke', () => {
     const result = runCli([])
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain('Lonestone CLI')
+    expect(result.stdout).toContain('Boilerstone CLI')
   })
 
   it('lists versions without writing project state', () => {
@@ -2380,8 +2384,8 @@ describe('bootstrap command', () => {
 
       const pkg = JSON.parse(readFileSync(join(projectPath, 'package.json'), 'utf-8'))
       expect(pkg.scripts.rock).toBe('tsx ./cli/setup.ts')
-      expect(pkg.scripts.boilerplate).toBe('pnpm dlx @lonestone/cli@latest')
-      expect(pkg.devDependencies['@lonestone/cli']).toBeUndefined()
+      expect(pkg.scripts.boilerplate).toBe('pnpm dlx @lonestone/boilerstone-cli@latest')
+      expect(pkg.devDependencies['@lonestone/boilerstone-cli']).toBeUndefined()
       expect(pkg.devDependencies.enquirer).toBe('^2.4.1')
       expect(readFileSync(join(projectPath, '.gitignore'), 'utf-8')).toContain(
         '.boilerstone/upgrade/',
@@ -2451,11 +2455,11 @@ describe('project generation', () => {
           {
             name: 'boilerstone',
             scripts: {
-              rock: 'lonestone rock',
-              boilerplate: 'lonestone',
+              rock: 'boilerstone-cli rock',
+              boilerplate: 'boilerstone-cli',
               generate: 'pnpm --filter=@boilerstone/openapi-generator run generate',
             },
-            devDependencies: { '@lonestone/cli': 'workspace:*' },
+            devDependencies: { '@lonestone/boilerstone-cli': 'workspace:*' },
           },
           null,
           2,
@@ -2552,10 +2556,10 @@ describe('project generation', () => {
       expect(hasTemplateScope(projectPath)).toBe(false)
       const pkg = JSON.parse(readFileSync(join(projectPath, 'package.json'), 'utf-8'))
       expect(pkg.name).toBe('acme')
-      expect(pkg.scripts.rock).toBe('pnpm dlx @lonestone/cli@1.2.3 rock')
-      expect(pkg.scripts.boilerplate).toBe('pnpm dlx @lonestone/cli@latest')
+      expect(pkg.scripts.rock).toBe('pnpm dlx @lonestone/boilerstone-cli@1.2.3 rock')
+      expect(pkg.scripts.boilerplate).toBe('pnpm dlx @lonestone/boilerstone-cli@latest')
       expect(pkg.scripts.generate).toBe('pnpm --filter=@acme/openapi-generator run generate')
-      expect(pkg.devDependencies['@lonestone/cli']).toBeUndefined()
+      expect(pkg.devDependencies['@lonestone/boilerstone-cli']).toBeUndefined()
       expect(JSON.parse(readFileSync(join(projectPath, 'apps/api/package.json'), 'utf-8'))).toEqual(
         { name: '@acme/api', dependencies: { '@acme/i18n': 'workspace:*' } },
       )

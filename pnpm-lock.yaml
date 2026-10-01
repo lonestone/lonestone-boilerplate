@@ -103,7 +103,7 @@ importers:
       '@commitlint/types':
         specifier: ^21.2.0
         version: 21.2.0
-      '@lonestone/cli':
+      '@lonestone/boilerstone-cli':
         specifier: workspace:*
         version: link:.boilerstone/cli
       '@types/node':

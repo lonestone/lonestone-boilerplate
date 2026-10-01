@@ -1,4 +1,5 @@
 import process from 'node:process'
+import { CLI_BIN_NAME, CLI_PACKAGE_NAME } from './boilerplate-core.js'
 import { runBoilerplateCli } from './boilerplate.js'
 import { runInstaller, printInstallerUsage } from './install.js'
 import { runSetup } from './setup.js'
@@ -6,10 +7,10 @@ import { colorize } from './utils.js'
 
 function printRootUsage(): void {
   console.log(`
-${colorize('🪨  Lonestone CLI', 'bright')}
+${colorize('🪨  Boilerstone CLI', 'bright')}
 
 ${colorize('Usage:', 'cyan')}
-  lonestone <command> [args]
+  ${CLI_BIN_NAME} <command> [args]
 
 ${colorize('Project commands:', 'cyan')}
   ${colorize('init [dir]', 'bright')}              Create a new project from the release matching this CLI
@@ -31,11 +32,10 @@ ${colorize('Options:', 'cyan')}
   ${colorize('--project <path>', 'bright')}        Project root (default: current directory)
 
 ${colorize('Examples:', 'cyan')}
-  ${colorize('lonestone init my-app', 'dim')}
-  ${colorize('pnpm dlx @lonestone/cli@1.2.0 init my-app', 'dim')}   ${colorize('(pin the release by pinning the CLI)', 'dim')}
-  ${colorize('lonestone onboard', 'dim')}
-  ${colorize('lonestone upgrade', 'dim')}
-  ${colorize('pnpm dlx @lonestone/cli init my-app', 'dim')}
+  ${colorize(`pnpm dlx ${CLI_PACKAGE_NAME} init my-app`, 'dim')}
+  ${colorize(`pnpm dlx ${CLI_PACKAGE_NAME}@1.2.0 init my-app`, 'dim')}   ${colorize('(pin the release by pinning the CLI)', 'dim')}
+  ${colorize(`pnpm dlx ${CLI_PACKAGE_NAME} onboard`, 'dim')}
+  ${colorize('pnpm boilerplate upgrade', 'dim')}   ${colorize('(inside a project)', 'dim')}
 `)
 }
 

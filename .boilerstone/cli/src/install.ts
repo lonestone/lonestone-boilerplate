@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
+import { CLI_PACKAGE_NAME } from './boilerplate-core.js'
 import { bootstrapProject } from './boilerplate.js'
 import { generateProject, isPublishedCliTemplate, isValidProjectName } from './generate.js'
 import {
@@ -125,7 +126,7 @@ function getCliReleaseRef(requestedRef: string | undefined, retryCommand: string
   const ref = `v${getCliVersion()}`
   if (requestedRef !== undefined && requestedRef !== ref) {
     die(
-      `This CLI only works with its own release (${ref}). For ${requestedRef}, run: pnpm dlx @lonestone/cli@${requestedRef.replace(/^v/, '')} ${retryCommand}`,
+      `This CLI only works with its own release (${ref}). For ${requestedRef}, run: pnpm dlx ${CLI_PACKAGE_NAME}@${requestedRef.replace(/^v/, '')} ${retryCommand}`,
     )
   }
   return ref
@@ -207,7 +208,7 @@ function stageProject(repoUrl: string, ref: string, dir: string): void {
 
     if (!isPublishedCliTemplate(staging)) {
       throw new Error(
-        `${ref} at ${repoUrl} is not a template for @lonestone/cli: its pnpm rock does not run the published CLI`,
+        `${ref} at ${repoUrl} is not a template for ${CLI_PACKAGE_NAME}: its pnpm rock does not run the published CLI`,
       )
     }
     generateProject(staging, {
@@ -297,7 +298,7 @@ export function printInstallerUsage(): void {
 Lonestone boilerplate installer
 
 Usage:
-  pnpm dlx @lonestone/cli <command> [args]
+  pnpm dlx ${CLI_PACKAGE_NAME} <command> [args]
 
 Commands:
   init [dir]          Create a new project from the release matching this CLI (default dir: my-app)
@@ -305,7 +306,7 @@ Commands:
   upgrade [version]   Prepare a boilerplate upgrade in an already-wired project (default: latest)
 
 init and onboard use the release that has this CLI's version. Pin a release by
-pinning the CLI: pnpm dlx @lonestone/cli@1.2.0 init my-app
+pinning the CLI: pnpm dlx ${CLI_PACKAGE_NAME}@1.2.0 init my-app
 
 Environment:
   BOILERPLATE_REPO    Override the repository URL (e.g. an SSH URL for a private fork)

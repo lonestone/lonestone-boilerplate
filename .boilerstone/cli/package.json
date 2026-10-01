@@ -1,5 +1,5 @@
 {
-  "name": "@lonestone/cli",
+  "name": "@lonestone/boilerstone-cli",
   "version": "1.1.0",
   "description": "Lonestone boilerplate installer, project setup, and upgrade CLI",
   "keywords": [
@@ -15,7 +15,7 @@
     "directory": ".boilerstone/cli"
   },
   "bin": {
-    "lonestone": "./bin/lonestone.mjs"
+    "boilerstone-cli": "./bin/boilerstone-cli.mjs"
   },
   "files": [
     "bin",

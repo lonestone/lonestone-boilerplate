@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest'
 import { isWindows } from './utils'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
-const cliBin = join(projectRoot, '.boilerstone/cli/bin/lonestone.mjs')
+const cliBin = join(projectRoot, '.boilerstone/cli/bin/boilerstone-cli.mjs')
 
 function isolatedTestPath(binPath: string): string {
   const filtered = (process.env.PATH ?? '')
@@ -137,8 +137,8 @@ function createPublishedCliTemplate(): string {
     'package.json',
     `${JSON.stringify({
       name: 'boilerstone',
-      scripts: { rock: 'lonestone rock', boilerplate: 'lonestone' },
-      devDependencies: { '@lonestone/cli': 'workspace:*' },
+      scripts: { rock: 'boilerstone-cli rock', boilerplate: 'boilerstone-cli' },
+      devDependencies: { '@lonestone/boilerstone-cli': 'workspace:*' },
     })}\n`,
   )
   writeFixtureFile(templatePath, 'apps/api/package.json', '{"name":"@boilerstone/api"}\n')
@@ -147,7 +147,11 @@ function createPublishedCliTemplate(): string {
     'pnpm-workspace.yaml',
     'packages:\n  - apps/*\n  - .boilerstone/cli\n',
   )
-  writeFixtureFile(templatePath, '.boilerstone/cli/package.json', '{"name":"@lonestone/cli"}\n')
+  writeFixtureFile(
+    templatePath,
+    '.boilerstone/cli/package.json',
+    '{"name":"@lonestone/boilerstone-cli"}\n',
+  )
   writeFixtureFile(templatePath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
   writeFixtureFile(templatePath, '.boilerstone/docs/upgrade-runbook.md', '# Runbook')
   return templatePath
@@ -199,7 +203,9 @@ describe('onboard release reference', () => {
       try {
         expect(result.status).toBe(1)
         expect(result.stderr).toContain('This CLI only works with its own release')
-        expect(result.stderr).toContain(`pnpm dlx @lonestone/cli@${ref.replace(/^v/, '')} onboard`)
+        expect(result.stderr).toContain(
+          `pnpm dlx @lonestone/boilerstone-cli@${ref.replace(/^v/, '')} onboard`,
+        )
         expect(result.commandLog).not.toContain('git clone')
       } finally {
         result.cleanup()
@@ -271,9 +277,9 @@ describe('init project generation', () => {
       expect(pkg.name).toBe('app')
       // The project runs the CLI through pnpm dlx and never installs it;
       // rock stays on the release that generated the project.
-      expect(pkg.scripts.rock).toBe(`pnpm dlx @lonestone/cli@${cliVersion} rock`)
-      expect(pkg.scripts.boilerplate).toBe('pnpm dlx @lonestone/cli@latest')
-      expect(pkg.devDependencies['@lonestone/cli']).toBeUndefined()
+      expect(pkg.scripts.rock).toBe(`pnpm dlx @lonestone/boilerstone-cli@${cliVersion} rock`)
+      expect(pkg.scripts.boilerplate).toBe('pnpm dlx @lonestone/boilerstone-cli@latest')
+      expect(pkg.devDependencies['@lonestone/boilerstone-cli']).toBeUndefined()
       expect(JSON.parse(readFileSync(join(appPath, 'apps/api/package.json'), 'utf-8')).name).toBe(
         '@app/api',
       )
@@ -302,7 +308,7 @@ describe('init project generation', () => {
     try {
       expect(result.status).toBe(1)
       expect(result.stderr).toContain('This CLI only works with its own release')
-      expect(result.stderr).toContain('pnpm dlx @lonestone/cli@1.9.0 init app')
+      expect(result.stderr).toContain('pnpm dlx @lonestone/boilerstone-cli@1.9.0 init app')
       expect(result.commandLog).not.toContain('git clone')
     } finally {
       result.cleanup()
@@ -310,12 +316,12 @@ describe('init project generation', () => {
   })
 
   it('refuses a release that does not use the published CLI, leaving nothing behind', () => {
-    // An empty clone: no package.json, so no `lonestone rock` script.
+    // An empty clone: no package.json, so no `boilerstone-cli rock` script.
     const result = runInstaller(['init', 'app'])
 
     try {
       expect(result.status).toBe(1)
-      expect(result.stderr).toContain('is not a template for @lonestone/cli')
+      expect(result.stderr).toContain('is not a template for @lonestone/boilerstone-cli')
       expect(existsSync(join(result.fixturePath, 'app'))).toBe(false)
       expect(leftoverStagingDirs(result.fixturePath)).toEqual([])
       expect(result.commandLog).not.toContain('pnpm install')

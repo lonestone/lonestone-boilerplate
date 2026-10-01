@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import {
+  CLI_PACKAGE_NAME,
   type PackageJsonShape,
   PRODUCER_ARTIFACTS,
   TEMPLATE_ROCK_SCRIPT_COMMAND,
@@ -336,7 +337,7 @@ function wirePublishedCli(rootPath: string, version: string): void {
   const pkgPath = join(rootPath, 'package.json')
   writeJson(pkgPath, wireGeneratedPackageJson(readJson<PackageJsonShape>(pkgPath), version))
   console.log(
-    `  ${colorize('✓', 'green')} package.json: scripts run ${colorize(`@lonestone/cli`, 'dim')} through pnpm dlx (rock pinned to ${version}), no CLI dependency`,
+    `  ${colorize('✓', 'green')} package.json: scripts run ${colorize(CLI_PACKAGE_NAME, 'dim')} through pnpm dlx (rock pinned to ${version}), no CLI dependency`,
   )
 }
 

@@ -13,6 +13,7 @@ import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 import {
+  CLI_PACKAGE_NAME,
   compareVersions,
   computeUpgradePath,
   ensureGitignoreLine,
@@ -969,14 +970,14 @@ function finishUpgrade(options: UpgradeFinishCommandOptions): UpgradePathResolut
   trackingState.write(absolutePath, trackingState.finish(state, targetVersion))
   if (syncRockScriptPin(absolutePath, targetVersion)) {
     console.log(
-      `  ${colorize('✓', 'green')} package.json: rock now runs @lonestone/cli@${targetVersion}`,
+      `  ${colorize('✓', 'green')} package.json: rock now runs ${CLI_PACKAGE_NAME}@${targetVersion}`,
     )
   }
   return resolution
 }
 
 /**
- * Keeps a pinned `pnpm dlx @lonestone/cli@<version> rock` script on the
+ * Keeps a pinned `pnpm dlx @lonestone/boilerstone-cli@<version> rock` script on the
  * release the project now tracks. A custom or vendored `rock` is left alone.
  */
 function syncRockScriptPin(projectPath: string, version: string): boolean {

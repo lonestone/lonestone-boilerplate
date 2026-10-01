@@ -58,13 +58,13 @@ See the [Project Structure](apps/documentation/src/content/docs/explanations/1_a
 Create the project from the directory that should contain it:
 
 ```bash
-pnpm dlx @lonestone/cli init my-project
+pnpm dlx @lonestone/boilerstone-cli init my-project
 ```
 
-The CLI creates the project from the release that has its own version (`@lonestone/cli@X.Y.Z` creates `vX.Y.Z`), renames the workspace to `@my-project/*` (the directory name, so use lowercase letters, digits and dashes), installs dependencies, and runs the interactive `pnpm rock` setup. Without a version, `pnpm dlx` takes the latest CLI, so the latest release. Pin a specific release by pinning the CLI:
+The CLI creates the project from the release that has its own version (`@lonestone/boilerstone-cli@X.Y.Z` creates `vX.Y.Z`), renames the workspace to `@my-project/*` (the directory name, so use lowercase letters, digits and dashes), installs dependencies, and runs the interactive `pnpm rock` setup. Without a version, `pnpm dlx` takes the latest CLI, so the latest release. Pin a specific release by pinning the CLI:
 
 ```bash
-pnpm dlx @lonestone/cli@1.2.0 init my-project
+pnpm dlx @lonestone/boilerstone-cli@1.2.0 init my-project
 ```
 
 A CLI only generates its own release: each release's layout is what that CLI knows. Releases published before the CLI existed (v1.0.0, v1.1.0) cannot be used to create a new project.
@@ -74,7 +74,7 @@ A CLI only generates its own release: each release's layout is what that CLI kno
 Run this once at the root of a project originally generated from the boilerplate but not yet tracked by Boilerstone:
 
 ```bash
-pnpm dlx @lonestone/cli onboard
+pnpm dlx @lonestone/boilerstone-cli onboard
 ```
 
 Then inspect and prepare the latest applicable upgrade:

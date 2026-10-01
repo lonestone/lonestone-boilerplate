@@ -71,7 +71,7 @@ jobs:
   # second workflow). Split from release-please so a failed publish can be
   # retried without running release-please again.
   publish-cli:
-    name: Publish @lonestone/cli
+    name: Publish @lonestone/boilerstone-cli
     needs: release-please
     if: ${{ always() && !cancelled() && needs.release-please.outputs.release_created == 'true' && github.repository == 'lonestone/lonestone-boilerplate' }}
     runs-on: ubuntu-latest
@@ -110,8 +110,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build @lonestone/cli
-        run: pnpm --filter @lonestone/cli build
+      - name: Build @lonestone/boilerstone-cli
+        run: pnpm --filter @lonestone/boilerstone-cli build
 
-      - name: Publish @lonestone/cli
-        run: pnpm --filter @lonestone/cli publish --access public --no-git-checks
+      - name: Publish @lonestone/boilerstone-cli
+        run: pnpm --filter @lonestone/boilerstone-cli publish --access public --no-git-checks

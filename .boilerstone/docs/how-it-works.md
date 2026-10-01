@@ -25,30 +25,30 @@ That's also why the whole system is plain markdown and JSON. It works the same w
 
 - **`boilerplate.json`** — the only state committed to your repo. It records which boilerplate version you started from and which intentions you've applied or skipped.
 - **Migration intentions** — published per release, fetched from the boilerplate's git tags.
-- **The CLI** (`pnpm boilerplate …`, the `@lonestone/cli` package) — reads your state, computes what's left to do, and stages the work. It never edits your application code itself. Your project does not install it: its scripts call it with `pnpm dlx`.
+- **The CLI** (`pnpm boilerplate …`, the `@lonestone/boilerstone-cli` package) — reads your state, computes what's left to do, and stages the work. It never edits your application code itself. Your project does not install it: its scripts call it with `pnpm dlx`.
 
 A few state-file details that occasionally matter (skip this on first read): the CLI validates the file on every read and write, stores versions without a leading `v`, and stores intention IDs as `vX.Y.Z/slug` — old IDs without the `v` are migrated automatically. Fields and domains introduced by a newer release are kept with a warning rather than rejected, so an older CLI keeps working across version skew. The one hard compatibility gate is `schemaVersion`.
 
 ## Onboarding
 
-`@lonestone/cli` is the entry point. It needs `git` and `pnpm`, and it runs the same way on Windows, macOS, and Linux:
+`@lonestone/boilerstone-cli` is the entry point. It needs `git` and `pnpm`, and it runs the same way on Windows, macOS, and Linux:
 
 ```bash
-pnpm dlx @lonestone/cli init my-app
-pnpm dlx @lonestone/cli onboard
-pnpm dlx @lonestone/cli upgrade
-pnpm dlx @lonestone/cli upgrade 1.6.0
+pnpm dlx @lonestone/boilerstone-cli init my-app
+pnpm dlx @lonestone/boilerstone-cli onboard
+pnpm dlx @lonestone/boilerstone-cli upgrade
+pnpm dlx @lonestone/boilerstone-cli upgrade 1.6.0
 ```
 
-`init` always creates the release that has the CLI's own version: `@lonestone/cli@X.Y.Z` creates `vX.Y.Z`, because each release's layout is exactly what that CLI knows how to generate. To pin a release, pin the CLI (`pnpm dlx @lonestone/cli@1.2.0 init my-app`); without a version, `pnpm dlx` takes the latest CLI, so the latest release. Releases published before the CLI existed (v1.0.0, v1.1.0) cannot be used to create a project. `onboard` follows the same rule: it fetches a sparse checkout of `.boilerstone/` from the release that has the CLI's version, so the docs and the skills always match the CLI that fetched them.
+`init` always creates the release that has the CLI's own version: `@lonestone/boilerstone-cli@X.Y.Z` creates `vX.Y.Z`, because each release's layout is exactly what that CLI knows how to generate. To pin a release, pin the CLI (`pnpm dlx @lonestone/boilerstone-cli@1.2.0 init my-app`); without a version, `pnpm dlx` takes the latest CLI, so the latest release. Releases published before the CLI existed (v1.0.0, v1.1.0) cannot be used to create a project. `onboard` follows the same rule: it fetches a sparse checkout of `.boilerstone/` from the release that has the CLI's version, so the docs and the skills always match the CLI that fetched them.
 
-- **`init`** clones the release into a temporary directory and generates the project there: it renames the workspace after the directory, drops the producer-only files, writes the two scripts that call the published CLI (`"boilerplate": "pnpm dlx @lonestone/cli@latest"` and `"rock": "pnpm dlx @lonestone/cli@X.Y.Z rock"`, pinned to the release) without adding any dependency, and records the source release in `boilerplate.json`. It then moves the project into place, installs dependencies, and runs `pnpm rock`. The CLI never runs from inside the project it builds, and a failed generation leaves nothing behind.
+- **`init`** clones the release into a temporary directory and generates the project there: it renames the workspace after the directory, drops the producer-only files, writes the two scripts that call the published CLI (`"boilerplate": "pnpm dlx @lonestone/boilerstone-cli@latest"` and `"rock": "pnpm dlx @lonestone/boilerstone-cli@X.Y.Z rock"`, pinned to the release) without adding any dependency, and records the source release in `boilerplate.json`. It then moves the project into place, installs dependencies, and runs `pnpm rock`. The CLI never runs from inside the project it builds, and a failed generation leaves nothing behind.
 - **`onboard`** fetches `.boilerstone/` and the `boilerstone-upgrade` skills into an existing project, runs `bootstrap` (below), then offers to commit (`[Y/n]`, default yes).
 - **`upgrade [version]`** stages an upgrade workspace on a dedicated branch. It never edits your app code, commits, or pushes — applying intentions is a separate step ([runbook](./upgrade-runbook.md)).
 
-`--ref` is optional and must name that same release; anything else (another tag, `latest`, a branch like `main`) is refused with the `pnpm dlx @lonestone/cli@<version>` command to run instead, so a project never starts from or tracks unreleased code. For a fork or private mirror, set `BOILERPLATE_REPO=<url>` — that repository must publish compatible `vX.Y.Z` tags.
+`--ref` is optional and must name that same release; anything else (another tag, `latest`, a branch like `main`) is refused with the `pnpm dlx @lonestone/boilerstone-cli@<version>` command to run instead, so a project never starts from or tracks unreleased code. For a fork or private mirror, set `BOILERPLATE_REPO=<url>` — that repository must publish compatible `vX.Y.Z` tags.
 
-`bootstrap` adds the `boilerplate` script (`pnpm dlx @lonestone/cli@latest`, no dependency), gitignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It's idempotent, never overwrites what's already there, and never removes anything outside `.boilerstone/`. It leaves your `rock` script alone: an older project may still run a vendored `cli/setup.ts`, which renames packages and is destructive on a real project. The `adopt-published-cli` intention moves it to `pnpm dlx @lonestone/cli@X.Y.Z rock`, which only sets up the local environment (`.env` files, Docker, migrations) and is safe to re-run.
+`bootstrap` adds the `boilerplate` script (`pnpm dlx @lonestone/boilerstone-cli@latest`, no dependency), gitignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It's idempotent, never overwrites what's already there, and never removes anything outside `.boilerstone/`. It leaves your `rock` script alone: an older project may still run a vendored `cli/setup.ts`, which renames packages and is destructive on a real project. The `adopt-published-cli` intention moves it to `pnpm dlx @lonestone/boilerstone-cli@X.Y.Z rock`, which only sets up the local environment (`.env` files, Docker, migrations) and is safe to re-run.
 
 > **Heads-up on v1.0.0:** its intentions are baseline catch-ups ("align with the v1.0.0 …"), broader than the narrow deltas later releases ship. When onboarding an older project, budget roughly one working session per intention.
 
@@ -58,7 +58,7 @@ Everything travels over plain git, from a single URL: `source.remote` in your `b
 
 `upgrade prepare --fetch` pulls the boilerplate's release tags into a dedicated namespace, `refs/boilerstone/v*` — never into your own `refs/tags`. Your project stays free to tag its own releases `v1.2.3` with zero risk of collision, and plain application tags are never mistaken for boilerplate releases.
 
-From there everything is local: intentions are read from the fetched refs, and reference files are extracted with `git archive`. The CLI itself is the published `@lonestone/cli` package; intention content does not come from npm. If a release is missing, `upgrade status` prints the exact fetch command to run.
+From there everything is local: intentions are read from the fetched refs, and reference files are extracted with `git archive`. The CLI itself is the published `@lonestone/boilerstone-cli` package; intention content does not come from npm. If a release is missing, `upgrade status` prints the exact fetch command to run.
 
 ## The commands, in the order you meet them
 
@@ -87,7 +87,7 @@ After `prepare`, the actual work begins: applying the staged intentions one at a
 
 **`upgrade record`** — records a validated intention outcome in `boilerplate.json`, then ticks the matching checkbox in the session checklist. The JSON is the source of truth; if the checkbox update fails after the state was saved, the command still succeeds with a warning — don't record the same outcome twice.
 
-**`upgrade finish`** — bumps `source.currentVersion` once every intention in the prepared range is applied or skipped. It also moves a pinned `pnpm dlx @lonestone/cli@X.Y.Z rock` script to the new version, so local setup follows the release you now track; a custom `rock` script is left alone. It's the final commit of an upgrade, never an intermediate step: it works from local data only and refuses while anything in the range is still unresolved or the target release isn't available locally.
+**`upgrade finish`** — bumps `source.currentVersion` once every intention in the prepared range is applied or skipped. It also moves a pinned `pnpm dlx @lonestone/boilerstone-cli@X.Y.Z rock` script to the new version, so local setup follows the release you now track; a custom `rock` script is left alone. It's the final commit of an upgrade, never an intermediate step: it works from local data only and refuses while anything in the range is still unresolved or the target release isn't available locally.
 
 ## Tutorial: running an upgrade with an AI agent
 

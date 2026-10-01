@@ -11,6 +11,7 @@ import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import Enquirer from 'enquirer'
+import { CLI_PACKAGE_NAME } from './boilerplate-core.js'
 import { hasTemplateScope, isBoilerplateMaintainerCheckout } from './generate.js'
 import { colorize } from './utils.js'
 
@@ -640,7 +641,7 @@ async function confirmRawTemplateSetup(): Promise<boolean> {
     `  ${colorize('⚠', 'yellow')} This looks like the raw boilerplate template, not a generated project.`,
   )
   console.log(
-    `  ${colorize('→', 'cyan')} To start a new project, run: ${colorize('pnpm dlx @lonestone/cli init my-app', 'bright')}`,
+    `  ${colorize('→', 'cyan')} To start a new project, run: ${colorize(`pnpm dlx ${CLI_PACKAGE_NAME} init my-app`, 'bright')}`,
   )
   return confirm('Set up the local environment of this checkout anyway?')
 }

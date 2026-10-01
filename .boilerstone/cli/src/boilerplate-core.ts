@@ -261,16 +261,18 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
   }
 }
 
-const CLI_PACKAGE_NAME = '@lonestone/cli'
+const CLI_PACKAGE_NAME = '@lonestone/boilerstone-cli'
+// The command the package installs (its `bin`).
+const CLI_BIN_NAME = 'boilerstone-cli'
 const BOILERPLATE_SCRIPT_NAME = 'boilerplate'
 const ROCK_SCRIPT_NAME = 'rock'
 // Consumers never install the CLI: their scripts run it through `pnpm dlx`.
 // Upgrades always use the newest CLI; `rock` stays on the project's release.
 const BOILERPLATE_SCRIPT_COMMAND = `pnpm dlx ${CLI_PACKAGE_NAME}@latest`
-const PINNED_ROCK_SCRIPT_PATTERN = /^pnpm dlx @lonestone\/cli@\S+ rock$/
+const PINNED_ROCK_SCRIPT_PATTERN = /^pnpm dlx @lonestone\/boilerstone-cli@\S+ rock$/
 // The boilerplate repository itself runs its workspace copy of the CLI.
-const TEMPLATE_ROCK_SCRIPT_COMMAND = 'lonestone rock'
-const LEGACY_BOILERPLATE_SCRIPT_COMMANDS = ['tsx ./.boilerstone/cli/boilerplate.ts', 'lonestone']
+const TEMPLATE_ROCK_SCRIPT_COMMAND = `${CLI_BIN_NAME} rock`
+const LEGACY_BOILERPLATE_SCRIPT_COMMANDS = ['tsx ./.boilerstone/cli/boilerplate.ts', CLI_BIN_NAME]
 
 function getRockScriptCommand(version: string): string {
   return `pnpm dlx ${CLI_PACKAGE_NAME}@${version} rock`
@@ -354,7 +356,7 @@ function wireGeneratedPackageJson(pkg: PackageJsonShape, version: string): Packa
 }
 
 /**
- * Moves a pinned `pnpm dlx @lonestone/cli@<version> rock` script to another
+ * Moves a pinned `pnpm dlx @lonestone/boilerstone-cli@<version> rock` script to another
  * release. Returns null when `rock` is custom or still the vendored script:
  * those belong to the project.
  */
@@ -591,6 +593,8 @@ function promoteUnreleasedIntentions(
 export {
   BOILERPLATE_SCRIPT_COMMAND,
   BOILERPLATE_SCRIPT_NAME,
+  CLI_BIN_NAME,
+  CLI_PACKAGE_NAME,
   getRockScriptCommand,
   pinRockScript,
   TEMPLATE_ROCK_SCRIPT_COMMAND,

@@ -14,17 +14,17 @@ Everything lives here as markdown and JSON. Tool-specific skills (Claude Code, C
 
 ## Getting started
 
-`@lonestone/cli` is the entry point — needs `git` and `pnpm`:
+`@lonestone/boilerstone-cli` is the entry point — needs `git` and `pnpm`:
 
 ```bash
 # New project
-pnpm dlx @lonestone/cli init my-app
+pnpm dlx @lonestone/boilerstone-cli init my-app
 
 # Existing project
-pnpm dlx @lonestone/cli onboard
+pnpm dlx @lonestone/boilerstone-cli onboard
 
 # Stage an upgrade (does not edit app code)
-pnpm dlx @lonestone/cli upgrade
+pnpm dlx @lonestone/boilerstone-cli upgrade
 ```
 
 Pinning a version, forks, what `bootstrap` does, and the v1.0.0 catch-up caveat: [how-it-works.md](./docs/how-it-works.md#onboarding).
@@ -44,10 +44,10 @@ pnpm boilerplate upgrade finish --to <version>
 boilerplate.json          # Project state (version + applied/skipped intentions)
 docs/                     # How it works, upgrade runbook, release runbook
 migration-intentions/     # Published intentions + unreleased/ staging (boilerplate repo only)
-cli/                      # Published as @lonestone/cli (boilerplate repo only)
+cli/                      # Published as @lonestone/boilerstone-cli (boilerplate repo only)
 ```
 
-Generated projects call the published `@lonestone/cli` with `pnpm dlx` from two scripts: `pnpm boilerplate` (latest CLI) and `pnpm rock` (pinned to the project's release). They neither install it nor keep a copy of `cli/`.
+Generated projects call the published `@lonestone/boilerstone-cli` with `pnpm dlx` from two scripts: `pnpm boilerplate` (latest CLI) and `pnpm rock` (pinned to the project's release). They neither install it nor keep a copy of `cli/`.
 
 In a generated project, the producer side (`cli/`, `migration-intentions/`, release runbook, …) is stripped — intentions then come from git tags. That's expected.
 
