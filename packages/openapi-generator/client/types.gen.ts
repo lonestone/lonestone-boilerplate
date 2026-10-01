@@ -135,27 +135,12 @@ export type CreateCommentSchema = {
 };
 
 /**
- * CreatePostSchema
+ * UpdateCommentSchema
  *
- * Schema for creating/updating a post
+ * Schema for updating a comment
  */
-export type CreatePostSchema = {
-    title: string;
-    content: Array<PostContentSchema>;
-    coverImage?: string;
-    tags?: Array<string>;
-};
-
-/**
- * UpdatePostSchema
- *
- * Schema for updating a post
- */
-export type UpdatePostSchema = {
-    title?: string;
-    content?: Array<PostContentSchema>;
-    coverImage?: string;
-    tags?: Array<string>;
+export type UpdateCommentSchema = {
+    content: string;
 };
 
 /**
@@ -373,7 +358,7 @@ export type UserPostSchema = {
     publishedAt?: string | null;
     type: 'published' | 'draft';
     commentCount?: number;
-    coverImage?: string;
+    coverImage?: MediaSchema;
     tags: Array<TagSchema>;
 };
 
@@ -405,6 +390,20 @@ export type PostVersionSchema = {
 };
 
 /**
+ * MediaSchema
+ *
+ * A stored file. `url` is a short-lived signed download link that expires at `expiresAt`. The storage key is never returned as a field.
+ */
+export type MediaSchema = {
+    id: string;
+    filename: string;
+    mimeType: string;
+    size: number;
+    url: string;
+    expiresAt: string;
+};
+
+/**
  * TagSchema
  *
  * A tag attached to a post
@@ -429,7 +428,7 @@ export type UserPostsSchema = {
         publishedAt?: string | null;
         type: 'published' | 'draft';
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: MediaSchema;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
     }>;
@@ -455,7 +454,7 @@ export type PublicPostSchema = {
     publishedAt: string;
     slug?: string;
     commentCount?: number;
-    coverImage?: string;
+    coverImage?: MediaSchema;
     likesCount: number;
     tags: Array<TagSchema>;
 };
@@ -474,7 +473,7 @@ export type PublicPostsSchema = {
         publishedAt: string;
         slug?: string;
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: MediaSchema;
         likesCount: number;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
@@ -501,7 +500,7 @@ export type PublicAuthorPostsSchema = {
         publishedAt: string;
         slug?: string;
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: MediaSchema;
         likesCount: number;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
@@ -512,6 +511,28 @@ export type PublicAuthorPostsSchema = {
         itemCount: number;
         hasMore: boolean;
     };
+};
+
+/**
+ * CreatePostSchema
+ *
+ * Multipart fields for creating a post. Send content and tags as JSON strings.
+ */
+export type CreatePostSchema = {
+    title: string;
+    content: string;
+    tags?: string;
+};
+
+/**
+ * UpdatePostSchema
+ *
+ * Multipart fields for updating a post. Omit coverImage to keep the current one. Send content and tags as JSON strings.
+ */
+export type UpdatePostSchema = {
+    title?: string;
+    content?: string;
+    tags?: string;
 };
 
 /**
@@ -857,6 +878,46 @@ export type CommentsControllerCreateCommentResponses = {
 
 export type CommentsControllerCreateCommentResponse = CommentsControllerCreateCommentResponses[keyof CommentsControllerCreateCommentResponses];
 
+export type CommentsControllerDeleteCommentData = {
+    body?: never;
+    path: {
+        commentId: string;
+        postSlug: string;
+    };
+    query?: never;
+    url: '/api/posts/{postSlug}/comments/{commentId}';
+};
+
+export type CommentsControllerDeleteCommentResponses = {
+    200: unknown;
+};
+
+export type CommentsControllerUpdateCommentData = {
+    /**
+     * UpdateCommentSchema
+     *
+     * Schema for updating a comment
+     */
+    body: {
+        content: string;
+    };
+    path: {
+        commentId: string;
+        postSlug: string;
+    };
+    query?: never;
+    url: '/api/posts/{postSlug}/comments/{commentId}';
+};
+
+export type CommentsControllerUpdateCommentResponses = {
+    /**
+     * Schema for a comment
+     */
+    200: CommentSchema;
+};
+
+export type CommentsControllerUpdateCommentResponse = CommentsControllerUpdateCommentResponses[keyof CommentsControllerUpdateCommentResponses];
+
 export type CommentsControllerGetCommentCountData = {
     body?: never;
     path: {
@@ -902,20 +963,6 @@ export type CommentsControllerGetCommentRepliesResponses = {
 
 export type CommentsControllerGetCommentRepliesResponse = CommentsControllerGetCommentRepliesResponses[keyof CommentsControllerGetCommentRepliesResponses];
 
-export type CommentsControllerDeleteCommentData = {
-    body?: never;
-    path: {
-        commentId: string;
-        postSlug: string;
-    };
-    query?: never;
-    url: '/api/posts/{postSlug}/comments/{commentId}';
-};
-
-export type CommentsControllerDeleteCommentResponses = {
-    200: unknown;
-};
-
 export type PostControllerGetUserPostsData = {
     body?: never;
     path?: never;
@@ -952,30 +999,17 @@ export type PostControllerGetUserPostsResponses = {
 export type PostControllerGetUserPostsResponse = PostControllerGetUserPostsResponses[keyof PostControllerGetUserPostsResponses];
 
 export type PostControllerCreatePostData = {
-    /**
-     * CreatePostSchema
-     *
-     * Schema for creating/updating a post
-     */
     body: {
         title: string;
         /**
-         * PostContentSchema
-         *
-         * Schema for content items (text, image, video)
+         * JSON array of post content blocks
          */
-        content: Array<{
-            type: 'text';
-            data: string;
-        } | {
-            type: 'image';
-            data: string;
-        } | {
-            type: 'video';
-            data: string;
-        }>;
-        coverImage?: string;
-        tags?: Array<string>;
+        content: string;
+        /**
+         * JSON array of tag names
+         */
+        tags?: string;
+        coverImage?: Blob | File;
     };
     path?: never;
     query?: never;
@@ -986,7 +1020,7 @@ export type PostControllerCreatePostResponses = {
     /**
      * Schema for a user's post
      */
-    200: UserPostSchema;
+    201: UserPostSchema;
 };
 
 export type PostControllerCreatePostResponse = PostControllerCreatePostResponses[keyof PostControllerCreatePostResponses];
@@ -1010,30 +1044,17 @@ export type PostControllerGetUserPostResponses = {
 export type PostControllerGetUserPostResponse = PostControllerGetUserPostResponses[keyof PostControllerGetUserPostResponses];
 
 export type PostControllerUpdatePostData = {
-    /**
-     * UpdatePostSchema
-     *
-     * Schema for updating a post
-     */
     body: {
         title?: string;
         /**
-         * PostContentSchema
-         *
-         * Schema for content items (text, image, video)
+         * JSON array of post content blocks
          */
-        content?: Array<{
-            type: 'text';
-            data: string;
-        } | {
-            type: 'image';
-            data: string;
-        } | {
-            type: 'video';
-            data: string;
-        }>;
-        coverImage?: string;
-        tags?: Array<string>;
+        content?: string;
+        /**
+         * JSON array of tag names
+         */
+        tags?: string;
+        coverImage?: Blob | File;
     };
     path: {
         id: string;
@@ -1076,6 +1097,24 @@ export type PostControllerUnpublishPostData = {
 export type PostControllerUnpublishPostResponses = {
     200: unknown;
 };
+
+export type PostControllerRemoveUserPostImageData = {
+    body?: never;
+    path: {
+        /**
+         * Post identifier
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/admin/posts/{id}/cover-image';
+};
+
+export type PostControllerRemoveUserPostImageResponses = {
+    204: void;
+};
+
+export type PostControllerRemoveUserPostImageResponse = PostControllerRemoveUserPostImageResponses[keyof PostControllerRemoveUserPostImageResponses];
 
 export type PublicPostControllerGetRandomPostData = {
     body?: never;

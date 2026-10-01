@@ -4,7 +4,9 @@ import {
   createSortingQueryStringSchema,
   paginatedSchema,
 } from '@lonestone/nzoth/server'
+import { BadRequestException } from '@nestjs/common'
 import { z } from 'zod'
+import { mediaSchema } from '../../../media/contracts/media.contract'
 
 // 📖 See API Guidelines: Schema Definition Best Practices
 // https://github.com/lonestone/lonestone-boilerplate/blob/main/docs/api-guidelines.md#schema-definition-best-practices
@@ -70,38 +72,96 @@ export const tagSchema = z
 
 export type Tag = z.infer<typeof tagSchema>
 
+export const postIdSchema = z.uuid().meta({
+  description: 'Post identifier',
+})
+
+export const postContentListSchema = z.array(postContentSchema)
+export const postTagNamesSchema = z.array(z.string())
+
+export function parseJsonMultipartField<T>(
+  raw: string | undefined,
+  schema: z.ZodType<T>,
+  field: string,
+): T | undefined {
+  if (raw === undefined) return undefined
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new BadRequestException(`${field} must be valid JSON`)
+  }
+
+  const result = schema.safeParse(parsed)
+  if (!result.success) {
+    throw new BadRequestException(result.error.issues[0]?.message ?? `${field} is invalid`)
+  }
+
+  return result.data
+}
+
 // ----------------------------
 // Create/update post schemas //
 // ----------------------------
 
-// Schema for creating/updating a post
 export const createPostSchema = z
   .object({
     title: z.string().min(1),
-    content: z.array(postContentSchema),
-    coverImage: z.string().url().optional(),
-    tags: z.array(z.string()).optional(),
+    content: z.string().min(1),
+    tags: z.string().optional(),
   })
   .meta({
     title: 'CreatePostSchema',
-    description: 'Schema for creating/updating a post',
+    description: 'Multipart fields for creating a post. Send content and tags as JSON strings.',
   })
 
-export type CreatePostInput = z.infer<typeof createPostSchema>
+export type CreatePostMultipart = z.infer<typeof createPostSchema>
+
+export interface CreatePostInput {
+  title: string
+  content: z.infer<typeof postContentListSchema>
+  tags?: string[]
+}
+
+export function toCreatePostInput(body: CreatePostMultipart): CreatePostInput {
+  const content = parseJsonMultipartField(body.content, postContentListSchema, 'content')
+  if (!content) throw new BadRequestException('content is required')
+
+  return {
+    title: body.title,
+    content,
+    tags: parseJsonMultipartField(body.tags, postTagNamesSchema, 'tags'),
+  }
+}
 
 export const updatePostSchema = z
   .object({
     title: z.string().min(1).optional(),
-    content: z.array(postContentSchema).optional(),
-    coverImage: z.string().url().optional(),
-    tags: z.array(z.string()).optional(),
+    content: z.string().optional(),
+    tags: z.string().optional(),
   })
   .meta({
     title: 'UpdatePostSchema',
-    description: 'Schema for updating a post',
+    description:
+      'Multipart fields for updating a post. Omit coverImage to keep the current one. Send content and tags as JSON strings.',
   })
 
-export type UpdatePostInput = z.infer<typeof updatePostSchema>
+export type UpdatePostMultipart = z.infer<typeof updatePostSchema>
+
+export interface UpdatePostInput {
+  title?: string
+  content?: z.infer<typeof postContentListSchema>
+  tags?: string[]
+}
+
+export function toUpdatePostInput(body: UpdatePostMultipart): UpdatePostInput {
+  return {
+    title: body.title,
+    content: parseJsonMultipartField(body.content, postContentListSchema, 'content'),
+    tags: parseJsonMultipartField(body.tags, postTagNamesSchema, 'tags'),
+  }
+}
 
 export const userPostSchema = z
   .object({
@@ -113,7 +173,7 @@ export const userPostSchema = z
     publishedAt: z.date().nullish(),
     type: z.enum(['published', 'draft']),
     commentCount: z.number().optional(),
-    coverImage: z.string().url().optional(),
+    coverImage: mediaSchema.optional(),
     tags: z.array(tagSchema),
   })
   .meta({
@@ -152,7 +212,7 @@ export const publicPostSchema = z
     publishedAt: z.date(),
     slug: z.string().optional(),
     commentCount: z.number().optional(),
-    coverImage: z.string().url().optional(),
+    coverImage: mediaSchema.optional(),
     likesCount: z.number(),
     tags: z.array(tagSchema),
   })
