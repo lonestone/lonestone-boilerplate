@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import fetch from 'node-fetch'
+import { buildOpenApiDocsUrl } from './docs-url.js'
 
 /**
  * Preprocess the OpenAPI spec to add dynamic filter/sort arrays
@@ -10,7 +11,7 @@ import fetch from 'node-fetch'
  * Nzoth will handle the backend verification of the sort and filter strings
  */
 async function main() {
-  const url = `${process.env.API_URL}/docs.json`
+  const url = buildOpenApiDocsUrl(process.env.API_URL, process.env.API_PREFIX)
   const tmp = path.resolve('tmp', 'openapi.json')
   const res = await fetch(url)
   if (!res.ok) {

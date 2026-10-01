@@ -7,7 +7,7 @@ description: Generate types and SDKs from the OpenAPI schema
 
 For the types to be generated, you need to have the OpenAPI schema available. Which means your **API needs to be running without errors**.
 
-The generator fetches `${API_URL}/docs.json`. `API_URL` in `packages/openapi-generator/.env` must include the API global prefix, for example `http://localhost:3000/api`. Do not add a second `/api` in the fetch path.
+The generator fetches `${API_URL}${API_PREFIX}/docs.json`. `API_URL` is the host origin, the same shape as frontend `VITE_API_URL`. `API_PREFIX` is the Nest global prefix (default `/api`). Do not put the prefix inside `API_URL`.
 
 You can generate the types by running the following command (at root level):
 

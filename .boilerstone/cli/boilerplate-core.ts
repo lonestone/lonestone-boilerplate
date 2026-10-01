@@ -277,6 +277,7 @@ const PRODUCER_ARTIFACTS = [
   'cli/tracking-state.spec.ts',
   'cli/install.spec.ts',
   'cli/setup-rename.spec.ts',
+  'cli/setup-api-prefix.spec.ts',
   'cli/vitest.setup.ts',
   'vitest.config.ts',
 ]
