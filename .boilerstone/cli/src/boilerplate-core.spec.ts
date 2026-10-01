@@ -15,7 +15,12 @@ import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
-import { generateProject, PRODUCER_FILES_TO_REMOVE } from './generate'
+import {
+  generateProject,
+  hasTemplateScope,
+  isPublishedCliTemplate,
+  PRODUCER_FILES_TO_REMOVE,
+} from './generate'
 import { trackingState } from './tracking-state'
 import { isolatedGitEnv, spawnProcessSync } from './utils'
 import {
@@ -2518,10 +2523,25 @@ describe('project generation', () => {
           2,
         )}\n`,
       )
+      writeProjectFile(
+        projectPath,
+        'knip.json',
+        `${JSON.stringify(
+          {
+            workspaces: {
+              'apps/api': { entry: ['src/main.ts!'] },
+              '.boilerstone/cli': { entry: ['src/bin.ts!'] },
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      )
       writeProjectFile(projectPath, '.boilerstone/docs/upgrade-runbook.md', '# Runbook')
       writeProjectFile(projectPath, '.boilerstone/docs/ai-upgrades-implementation.md', '# Internal')
       writeProjectFile(projectPath, '.boilerstone/docs/pilot-rollout.md', '# Pilot')
       writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
+      expect(hasTemplateScope(projectPath)).toBe(true)
 
       generateProject(projectPath, {
         projectName: 'acme',
@@ -2529,6 +2549,7 @@ describe('project generation', () => {
         sourceCommit: 'abcdef1234567890',
       })
 
+      expect(hasTemplateScope(projectPath)).toBe(false)
       const pkg = JSON.parse(readFileSync(join(projectPath, 'package.json'), 'utf-8'))
       expect(pkg.name).toBe('acme')
       expect(pkg.scripts.rock).toBe('pnpm dlx @lonestone/cli@1.2.3 rock')
@@ -2570,6 +2591,9 @@ describe('project generation', () => {
           '.'
         ]['extra-files'],
       ).toBeUndefined()
+      expect(
+        Object.keys(JSON.parse(readFileSync(join(projectPath, 'knip.json'), 'utf-8')).workspaces),
+      ).toEqual(['apps/api'])
 
       expect(existsSync(join(projectPath, '.boilerstone/boilerplate.example.json'))).toBe(false)
       expect(existsSync(join(projectPath, '.boilerstone/migration-intentions'))).toBe(false)
@@ -2581,6 +2605,13 @@ describe('project generation', () => {
       logSpy.mockRestore()
       rmSync(projectPath, { recursive: true, force: true })
     }
+  })
+
+  // init refuses a release whose root `rock` is not the template command, and a
+  // published tag cannot be fixed: this repository must stay a valid template.
+  it('keeps this repository a template that init can generate and rock can detect', () => {
+    expect(isPublishedCliTemplate(projectRoot)).toBe(true)
+    expect(hasTemplateScope(projectRoot)).toBe(true)
   })
 
   it('keeps producer artifacts when bootstrapping the boilerplate maintainer checkout', () => {

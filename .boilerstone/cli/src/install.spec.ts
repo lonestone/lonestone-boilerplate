@@ -74,6 +74,10 @@ if (args[0] === '-C' && args[2] === 'describe') {
   process.stdout.write('v1.10.0\\n')
   process.exit(0)
 }
+if (args[0] === 'rev-parse' && args[1] === '--git-dir') {
+  // Not a git repository: onboard skips its interactive commit prompt.
+  process.exit(128)
+}
 process.exit(0)
 `,
   )
@@ -106,6 +110,12 @@ process.exit(0)
     fixturePath,
     cleanup: () => rmSync(fixturePath, { recursive: true, force: true }),
   }
+}
+
+function getPnpmCalls(commandLog: string): string[] {
+  return commandLog
+    .split('\n')
+    .filter((line) => line.startsWith('pnpm ') && line !== 'pnpm --version')
 }
 
 function cloneCommand(tag: string): RegExp {
@@ -198,6 +208,49 @@ describe('onboard release reference', () => {
   )
 })
 
+/** What onboard's sparse clone brings in from a release. */
+function createOnboardRelease(): string {
+  const releasePath = mkdtempSync(join(tmpdir(), 'boilerstone-release-'))
+  writeFixtureFile(releasePath, '.boilerstone/docs/upgrade-runbook.md', '# Runbook')
+  writeFixtureFile(releasePath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
+  writeFixtureFile(releasePath, '.claude/skills/boilerstone-upgrade/SKILL.md', '# Upgrade')
+  writeFixtureFile(releasePath, '.cursor/skills/boilerstone-upgrade/SKILL.md', '# Upgrade')
+  return releasePath
+}
+
+describe('onboard lockfile refresh', () => {
+  it.each([
+    {
+      label: 'leaves the lockfile alone when bootstrap keeps the workspace',
+      workspace: 'packages:\n  - apps/*\n',
+      pnpmCalls: [] as string[],
+    },
+    {
+      label: 'refreshes the lockfile when bootstrap drops a .boilerstone workspace entry',
+      workspace: 'packages:\n  - apps/*\n  - .boilerstone\n',
+      pnpmCalls: ['pnpm install'],
+    },
+  ])('$label', ({ workspace, pnpmCalls }) => {
+    const releasePath = createOnboardRelease()
+    const result = runInstaller(['onboard'], {
+      env: { TEMPLATE_FIXTURE: releasePath, BOILERPLATE_SOURCE_VERSION: '1.0.0' },
+      prepare: (fixturePath) => {
+        writeFixtureFile(fixturePath, 'package.json', '{"name":"client-app"}\n')
+        writeFixtureFile(fixturePath, 'pnpm-workspace.yaml', workspace)
+      },
+    })
+
+    try {
+      expect(result.status, result.stderr).toBe(0)
+      expect(existsSync(join(result.fixturePath, '.boilerstone/boilerplate.json'))).toBe(true)
+      expect(getPnpmCalls(result.commandLog)).toEqual(pnpmCalls)
+    } finally {
+      result.cleanup()
+      rmSync(releasePath, { recursive: true, force: true })
+    }
+  })
+})
+
 describe('init project generation', () => {
   it.each([
     ['without --ref', []],
@@ -235,10 +288,7 @@ describe('init project generation', () => {
           .currentVersion,
       ).toBe(cliVersion)
 
-      const pnpmCalls = result.commandLog
-        .split('\n')
-        .filter((line) => line.startsWith('pnpm ') && line !== 'pnpm --version')
-      expect(pnpmCalls).toEqual(['pnpm install', 'pnpm lint:fix', 'pnpm rock'])
+      expect(getPnpmCalls(result.commandLog)).toEqual(['pnpm install', 'pnpm fmt', 'pnpm rock'])
       expect(leftoverStagingDirs(result.fixturePath)).toEqual([])
     } finally {
       result.cleanup()

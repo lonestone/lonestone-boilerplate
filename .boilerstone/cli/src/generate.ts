@@ -79,10 +79,26 @@ export function isPublishedCliTemplate(rootPath: string): boolean {
   return readJson<PackageJsonShape>(pkgPath).scripts?.rock === TEMPLATE_ROCK_SCRIPT_COMMAND
 }
 
-/** True while the workspace still uses the template scope, i.e. was never generated. */
+/**
+ * True while a workspace manifest (root, `apps/*`, `packages/*`) still uses
+ * the template scope, i.e. the checkout was never generated. The root alone is
+ * not enough: it only mentions the scope inside `--filter=` scripts.
+ */
 export function hasTemplateScope(rootPath: string): boolean {
-  const pkgPath = join(rootPath, 'package.json')
-  return existsSync(pkgPath) && readFileSync(pkgPath, 'utf-8').includes(`"${TEMPLATE_SCOPE}/`)
+  const manifests = [
+    'package.json',
+    ...['apps', 'packages'].flatMap((parent) =>
+      existsSync(join(rootPath, parent))
+        ? readdirSync(join(rootPath, parent)).map((entry) => join(parent, entry, 'package.json'))
+        : [],
+    ),
+  ]
+  return manifests.some((manifest) => {
+    const manifestPath = join(rootPath, manifest)
+    return (
+      existsSync(manifestPath) && readFileSync(manifestPath, 'utf-8').includes(`${TEMPLATE_SCOPE}/`)
+    )
+  })
 }
 
 /** Lowercase letters, digits and dashes: valid as an npm scope and a Docker project name. */
@@ -153,17 +169,34 @@ function stripReleasePleaseCliExtraFile(rootPath: string): void {
   )
 }
 
+function stripKnipCliWorkspace(rootPath: string): void {
+  const configPath = join(rootPath, 'knip.json')
+  if (!existsSync(configPath)) {
+    return
+  }
+  const config = readJson<{ workspaces?: Record<string, unknown> }>(configPath)
+  if (!config.workspaces?.['.boilerstone/cli']) {
+    return
+  }
+  delete config.workspaces['.boilerstone/cli']
+  writeJson(configPath, config)
+  console.log(
+    `  ${colorize('✓', 'green')} Removed ${colorize('.boilerstone/cli', 'dim')} from ${colorize('knip.json', 'dim')}`,
+  )
+}
+
 /** Drop the references that point at the CLI sources once `.boilerstone/cli` is gone. */
 function stripCliPackageReferences(rootPath: string): void {
   stripPnpmWorkspaceEntry(rootPath, '.boilerstone')
   stripPnpmWorkspaceEntry(rootPath, '.boilerstone/cli')
   stripReleasePleaseCliExtraFile(rootPath)
+  stripKnipCliWorkspace(rootPath)
 }
 
 /**
  * Switch an existing project's `.boilerstone/` to consumer mode. Only touches
- * `.boilerstone/` and the workspace/release entries that point into it: this
- * runs on client code, so nothing else is ever removed.
+ * `.boilerstone/` and the workspace, release and knip entries that point into
+ * it: this runs on client code, so nothing else is ever removed.
  */
 export function stripBoilerstoneProducerArtifacts(rootPath: string): void {
   removePaths(

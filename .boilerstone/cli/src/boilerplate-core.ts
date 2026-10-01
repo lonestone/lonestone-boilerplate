@@ -591,7 +591,6 @@ function promoteUnreleasedIntentions(
 export {
   BOILERPLATE_SCRIPT_COMMAND,
   BOILERPLATE_SCRIPT_NAME,
-  CLI_PACKAGE_NAME,
   getRockScriptCommand,
   pinRockScript,
   TEMPLATE_ROCK_SCRIPT_COMMAND,

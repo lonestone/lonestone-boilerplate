@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import process from 'node:process'
@@ -225,7 +225,11 @@ function stageProject(repoUrl: string, ref: string, dir: string): void {
   }
 }
 
-async function offerOnboardCommit(cwd: string): Promise<void> {
+function readOptionalFile(filePath: string): string | undefined {
+  return existsSync(filePath) ? readFileSync(filePath, 'utf-8') : undefined
+}
+
+async function offerOnboardCommit(cwd: string, workspaceChanged: boolean): Promise<void> {
   try {
     runGit(['rev-parse', '--git-dir'], cwd)
   } catch {
@@ -241,19 +245,16 @@ async function offerOnboardCommit(cwd: string): Promise<void> {
     return
   }
 
-  spawnProcessSync(
-    'git',
-    [
-      'add',
-      '.boilerstone',
-      '.claude/skills/boilerstone-upgrade',
-      '.cursor/skills/boilerstone-upgrade',
-      'package.json',
-      '.gitignore',
-      'pnpm-lock.yaml',
-    ],
-    { cwd, env: gitEnv(), stdio: 'ignore' },
-  )
+  // git add stages nothing at all when one path is missing.
+  const paths = [
+    '.boilerstone',
+    '.claude/skills/boilerstone-upgrade',
+    '.cursor/skills/boilerstone-upgrade',
+    'package.json',
+    '.gitignore',
+    ...(workspaceChanged ? ['pnpm-workspace.yaml', 'pnpm-lock.yaml'] : []),
+  ].filter((path) => existsSync(join(cwd, path)))
+  spawnProcessSync('git', ['add', ...paths], { cwd, env: gitEnv(), stdio: 'ignore' })
 
   const staged = spawnProcessSync('git', ['diff', '--cached', '--quiet'], { cwd, env: gitEnv() })
   if (staged.status === 0) {
@@ -338,9 +339,10 @@ export async function runInstaller(argv: string[]): Promise<void> {
 
     runGit(['init', '--quiet'], dir)
     runPnpm(['install'], dir)
-    // The scope rename can reorder imports; the generated project must lint clean.
-    if (!tryRunPnpm(['lint:fix'], dir)) {
-      info('pnpm lint:fix failed — run it yourself before the first commit')
+    // The scope rename changes line lengths and package.json key order:
+    // format the new project so it starts clean.
+    if (!tryRunPnpm(['fmt'], dir)) {
+      info('pnpm fmt failed — run it yourself before the first commit')
     }
     runPnpm(['rock'], dir)
     ok(`Project ready in ${dir}`)
@@ -364,12 +366,18 @@ export async function runInstaller(argv: string[]): Promise<void> {
       cwd,
     )
     rmSync(join(cwd, '.boilerstone/boilerplate.json'), { force: true })
+    const workspacePath = join(cwd, 'pnpm-workspace.yaml')
+    const workspaceBefore = readOptionalFile(workspacePath)
     process.env.BOILERPLATE_INSTALLER_ONBOARD = '1'
     await bootstrapProject(cwd)
-    // No CLI dependency to install, but bootstrap may have dropped old
-    // `.boilerstone` workspace entries: keep the lockfile in sync.
-    runPnpm(['install'], cwd)
-    await offerOnboardCommit(cwd)
+    // There is no CLI dependency to install. Bootstrap only edits the workspace
+    // to drop old `.boilerstone` entries: refresh the lockfile then and only
+    // then, so the onboarding commit never carries unrelated lockfile changes.
+    const workspaceChanged = readOptionalFile(workspacePath) !== workspaceBefore
+    if (workspaceChanged) {
+      runPnpm(['install'], cwd)
+    }
+    await offerOnboardCommit(cwd, workspaceChanged)
     ok('Project onboarded')
     return
   }

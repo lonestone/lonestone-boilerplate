@@ -37,8 +37,8 @@
     "@commitlint/types": "^21.2.0",
     "@lonestone/cli": "workspace:*",
     "@types/node": "catalog:build",
-    "lefthook": "^2.1.10",
     "knip": "^6.31.0",
+    "lefthook": "^2.1.10",
     "oxfmt": "^0.57.0",
     "oxlint": "^1.77.0",
     "tsx": "^4.23.5"
