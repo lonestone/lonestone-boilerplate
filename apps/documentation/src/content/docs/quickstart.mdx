@@ -3,9 +3,15 @@ title: Quickstart
 description: Get started.
 ---
 
-You can use this template on Github and start coding immediately.
+Create a new project from the directory that should contain it:
 
-Once your project is created, follow these steps:
+```bash
+pnpm dlx @lonestone/boilerstone-cli init my-project
+```
+
+`init` creates the project from the release matching the CLI version (the latest, unless you pin the CLI: `pnpm dlx @lonestone/boilerstone-cli@1.2.0 init my-project`), renames the workspace to `@my-project/*`, installs dependencies, and runs the setup script below. The directory name becomes the package scope, so use lowercase letters, digits and dashes.
+
+When you join an existing project instead, follow these steps:
 
 ## 1. Prerequisites
 
@@ -30,29 +36,18 @@ pnpm install
 
 ## 3. Run the Setup Script
 
-The project includes an automated setup script that will:
-
-- Detect available applications (API, Web SPA, Web SSR, OpenAPI Generator)
-- Prompt you for database configuration (user, password, name, host, port)
-- Prompt you for application ports
-- Configure SMTP settings (MailDev)
-- Copy and configure all `.env` files automatically
-- Optionally start Docker services (database, MailDev)
-- Optionally run database migrations
-
-Run the setup script:
-
 ```bash
 pnpm rock
 ```
 
-The script will guide you through the configuration process interactively. It will:
+The setup script configures your local environment interactively. It will:
 
-- Ask for your project name
-- Rename workspace packages to `@your-project/*` and rewrite remaining `@boilerstone/` imports in apps, packages, docs, tsconfig, and CI
-- Check for existing `.env` files and only prompt for missing variables
-- Automatically update all `.env` files with your configuration
+- Create the missing `.env` files from every `.env.example` (root, `apps/*`, `packages/*`)
+- Prompt only for missing variables: database, application ports, SMTP (MailDev)
 - Set up proper API URLs and trusted origins across all applications
+- Optionally start Docker services (database, MailDev) and run database migrations
+
+It never renames packages or deletes files, so it is safe to re-run.
 
 ## 4. Start Development
 

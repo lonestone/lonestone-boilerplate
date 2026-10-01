@@ -261,23 +261,34 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
   }
 }
 
+const CLI_PACKAGE_NAME = '@lonestone/boilerstone-cli'
+// The command the package installs (its `bin`).
+const CLI_BIN_NAME = 'boilerstone-cli'
 const BOILERPLATE_SCRIPT_NAME = 'boilerplate'
-const BOILERPLATE_SCRIPT_COMMAND = 'tsx ./.boilerstone/cli/boilerplate.ts'
+const ROCK_SCRIPT_NAME = 'rock'
+// Consumers never install the CLI: their scripts run it through `pnpm dlx`.
+// Upgrades always use the newest CLI; `rock` stays on the project's release.
+const BOILERPLATE_SCRIPT_COMMAND = `pnpm dlx ${CLI_PACKAGE_NAME}@latest`
+const PINNED_ROCK_SCRIPT_PATTERN = /^pnpm dlx @lonestone\/boilerstone-cli@\S+ rock$/
+// The boilerplate repository itself runs its workspace copy of the CLI.
+const TEMPLATE_ROCK_SCRIPT_COMMAND = `${CLI_BIN_NAME} rock`
+const LEGACY_BOILERPLATE_SCRIPT_COMMANDS = ['tsx ./.boilerstone/cli/boilerplate.ts', CLI_BIN_NAME]
+
+function getRockScriptCommand(version: string): string {
+  return `pnpm dlx ${CLI_PACKAGE_NAME}@${version} rock`
+}
 
 // Producer-only artifacts that ship inside .boilerstone/ but are not maintained
-// in a consumer project. Mirrors the .boilerstone/ subset of cli/setup.ts's
-// cleanupBoilerplateFiles(). Paths are relative to the .boilerstone/ directory.
+// in a consumer project. Paths are relative to the .boilerstone/ directory.
 const PRODUCER_ARTIFACTS = [
   'migration-intentions',
   'boilerplate.example.json',
   'docs/pilot-rollout.md',
   'docs/ai-upgrades-implementation.md',
   'docs/release-maintainer-runbook.md',
-  'cli/boilerplate-core.spec.ts',
-  'cli/tracking-state.spec.ts',
-  'cli/install.spec.ts',
-  'cli/setup-rename.spec.ts',
-  'cli/vitest.setup.ts',
+  'cli',
+  'package.json',
+  'tsconfig.json',
   'vitest.config.ts',
 ]
 
@@ -294,56 +305,68 @@ interface PackageJsonWiring {
 }
 
 /**
- * Returns a copy of the root package.json wired for the boilerplate CLI:
- * adds the `boilerplate` script and a `tsx` devDependency when missing.
- * Idempotent — existing entries are never overwritten.
+ * Returns a copy of an existing project's root package.json with the
+ * `boilerplate` script running the published CLI through `pnpm dlx`. Replaces
+ * a missing or legacy vendored command, keeps a custom one. Leaves `rock` and
+ * every dependency alone: on an existing project those belong to the project
+ * (the adopt-published-cli intention migrates them with a human in the loop).
  */
-function ensurePackageJsonWiring(pkg: PackageJsonShape, tsxVersion: string): PackageJsonWiring {
-  const next: PackageJsonShape = { ...pkg }
-  const changes: string[] = []
-
-  const scripts = { ...next.scripts }
-  if (!scripts[BOILERPLATE_SCRIPT_NAME]) {
-    scripts[BOILERPLATE_SCRIPT_NAME] = BOILERPLATE_SCRIPT_COMMAND
-    changes.push(`added "${BOILERPLATE_SCRIPT_NAME}" script`)
+function ensurePackageJsonWiring(pkg: PackageJsonShape): PackageJsonWiring {
+  const scripts = { ...pkg.scripts }
+  const currentScript = scripts[BOILERPLATE_SCRIPT_NAME]
+  if (currentScript && !LEGACY_BOILERPLATE_SCRIPT_COMMANDS.includes(currentScript)) {
+    return { pkg, changes: [] }
   }
-  next.scripts = scripts
-
-  const hasTsx = Boolean(next.dependencies?.tsx) || Boolean(next.devDependencies?.tsx)
-  if (!hasTsx) {
-    next.devDependencies = { ...next.devDependencies, tsx: tsxVersion }
-    changes.push(`added "tsx" devDependency (${tsxVersion})`)
+  scripts[BOILERPLATE_SCRIPT_NAME] = BOILERPLATE_SCRIPT_COMMAND
+  return {
+    pkg: { ...pkg, scripts },
+    changes: [`set "${BOILERPLATE_SCRIPT_NAME}" script to ${BOILERPLATE_SCRIPT_COMMAND}`],
   }
+}
 
-  return { pkg: next, changes }
+function withoutCliDependency(
+  dependencies: Record<string, string> | undefined,
+): Record<string, string> | undefined {
+  if (!dependencies?.[CLI_PACKAGE_NAME]) {
+    return dependencies
+  }
+  const rest = { ...dependencies }
+  delete rest[CLI_PACKAGE_NAME]
+  return rest
 }
 
 /**
- * Strips producer-only test tooling from the vendored `.boilerstone/package.json`
- * so consumer workspaces do not run or depend on the boilerplate's own Vitest suite.
- * Idempotent.
+ * Returns a copy of a template's root package.json as a generated project
+ * needs it: both scripts run the published CLI through `pnpm dlx` (`rock`
+ * pinned to the release the project starts from), and the workspace
+ * dependency on the CLI sources is gone, so installing the project never
+ * needs the Lonestone package.
  */
-function ensureConsumerBoilerstonePackageJson(pkg: PackageJsonShape): PackageJsonWiring {
-  const next: PackageJsonShape = {
+function wireGeneratedPackageJson(pkg: PackageJsonShape, version: string): PackageJsonShape {
+  return {
     ...pkg,
-    scripts: { ...pkg.scripts },
-    devDependencies: { ...pkg.devDependencies },
+    scripts: {
+      ...pkg.scripts,
+      [BOILERPLATE_SCRIPT_NAME]: BOILERPLATE_SCRIPT_COMMAND,
+      [ROCK_SCRIPT_NAME]: getRockScriptCommand(version),
+    },
+    dependencies: withoutCliDependency(pkg.dependencies),
+    devDependencies: withoutCliDependency(pkg.devDependencies),
   }
-  const changes: string[] = []
+}
 
-  if (next.scripts?.test) {
-    const { test: _removed, ...scripts } = next.scripts
-    next.scripts = scripts
-    changes.push('removed "test" script')
+/**
+ * Moves a pinned `pnpm dlx @lonestone/boilerstone-cli@<version> rock` script to another
+ * release. Returns null when `rock` is custom or still the vendored script:
+ * those belong to the project.
+ */
+function pinRockScript(pkg: PackageJsonShape, version: string): PackageJsonShape | null {
+  const current = pkg.scripts?.[ROCK_SCRIPT_NAME]
+  const next = getRockScriptCommand(version)
+  if (!current || !PINNED_ROCK_SCRIPT_PATTERN.test(current) || current === next) {
+    return null
   }
-
-  if (next.devDependencies?.vitest) {
-    const { vitest: _removed, ...devDependencies } = next.devDependencies
-    next.devDependencies = devDependencies
-    changes.push('removed "vitest" devDependency')
-  }
-
-  return { pkg: next, changes }
+  return { ...pkg, scripts: { ...pkg.scripts, [ROCK_SCRIPT_NAME]: next } }
 }
 
 /**
@@ -570,12 +593,17 @@ function promoteUnreleasedIntentions(
 export {
   BOILERPLATE_SCRIPT_COMMAND,
   BOILERPLATE_SCRIPT_NAME,
+  CLI_BIN_NAME,
+  CLI_PACKAGE_NAME,
+  getRockScriptCommand,
+  pinRockScript,
+  TEMPLATE_ROCK_SCRIPT_COMMAND,
+  wireGeneratedPackageJson,
   compareVersions,
   computeUpgradePath,
   type ComputeUpgradePathOptions,
   ensureGitignoreLine,
   ensurePackageJsonWiring,
-  ensureConsumerBoilerstonePackageJson,
   getFallbackIntentionId,
   getIntentionOrderIssues,
   getUpgradeBranchName,
