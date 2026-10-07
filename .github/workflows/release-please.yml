@@ -127,6 +127,6 @@ jobs:
           # npm only accepts a trusted publisher on a package that already
           # exists, so the first release publishes with this token. After
           # that, npm uses trusted publishing (id-token above) and the secret
-          # can be deleted. See .boilerstone/docs/release-maintainer-runbook.md.
+          # can be deleted.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
