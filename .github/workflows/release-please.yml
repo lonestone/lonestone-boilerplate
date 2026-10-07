@@ -110,8 +110,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build @lonestone/boilerstone-cli
-        run: pnpm --filter @lonestone/boilerstone-cli build
+      # `pnpm install` runs the CLI's `prepare` script, which builds dist/.
+      - name: Check the CLI is built
+        run: test -f .boilerstone/cli/dist/bin.js
 
       - name: Publish @lonestone/boilerstone-cli
         run: pnpm --filter @lonestone/boilerstone-cli publish --access public --no-git-checks
