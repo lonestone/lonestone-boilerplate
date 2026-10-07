@@ -46,6 +46,8 @@ pnpm dlx @lonestone/boilerstone-cli upgrade 1.6.0
 - **`onboard`** fetches `.boilerstone/` and the `boilerstone-upgrade` skills into an existing project, runs `bootstrap` (below), then offers to commit (`[Y/n]`, default yes).
 - **`upgrade [version]`** stages an upgrade workspace on a dedicated branch. It never edits your app code, commits, or pushes — applying intentions is a separate step ([runbook](./upgrade-runbook.md)).
 
+Without a version, `pnpm dlx` may reuse a cached copy of the CLI for a while after a release. Every command prints the CLI version it runs on stderr; pin the version to be sure of the release.
+
 `--ref` is optional and must name that same release; anything else (another tag, `latest`, a branch like `main`) is refused with the `pnpm dlx @lonestone/boilerstone-cli@<version>` command to run instead, so a project never starts from or tracks unreleased code. For a fork or private mirror, set `BOILERPLATE_REPO=<url>` — that repository must publish compatible `vX.Y.Z` tags.
 
 `bootstrap` adds the `boilerplate` script (`pnpm dlx @lonestone/boilerstone-cli@latest`, no dependency), gitignores `.boilerstone/upgrade/`, switches `.boilerstone/` to consumer mode, and initializes tracking. It's idempotent, never overwrites what's already there, and never removes anything outside `.boilerstone/`. It leaves your `rock` script alone: an older project may still run a vendored `cli/setup.ts`, which renames packages and is destructive on a real project. The `adopt-published-cli` intention moves it to `pnpm dlx @lonestone/boilerstone-cli@X.Y.Z rock`, which only sets up the local environment (`.env` files, Docker, migrations) and is safe to re-run.

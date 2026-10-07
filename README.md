@@ -61,7 +61,7 @@ Create the project from the directory that should contain it:
 pnpm dlx @lonestone/boilerstone-cli init my-project
 ```
 
-The CLI creates the project from the release that has its own version (`@lonestone/boilerstone-cli@X.Y.Z` creates `vX.Y.Z`), renames the workspace to `@my-project/*` (the directory name, so use lowercase letters, digits and dashes), installs dependencies, and runs the interactive `pnpm rock` setup. Without a version, `pnpm dlx` takes the latest CLI, so the latest release. Pin a specific release by pinning the CLI:
+The CLI creates the project from the release that has its own version (`@lonestone/boilerstone-cli@X.Y.Z` creates `vX.Y.Z`), renames the workspace to `@my-project/*` (the directory name, so use lowercase letters, digits and dashes), installs dependencies, and runs the interactive `pnpm rock` setup. Without a version, `pnpm dlx` takes the latest CLI, so the latest release. It may reuse a cached copy for a while after a release: the CLI prints its version when it starts. Pin a specific release by pinning the CLI:
 
 ```bash
 pnpm dlx @lonestone/boilerstone-cli@1.2.0 init my-project

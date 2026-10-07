@@ -3,7 +3,7 @@ import { CLI_BIN_NAME, CLI_PACKAGE_NAME } from './boilerplate-core.js'
 import { runBoilerplateCli } from './boilerplate.js'
 import { runInstaller, printInstallerUsage } from './install.js'
 import { runSetup } from './setup.js'
-import { colorize } from './utils.js'
+import { colorize, getCliVersion } from './utils.js'
 
 function printRootUsage(): void {
   console.log(`
@@ -48,6 +48,10 @@ async function main(): Promise<void> {
     printInstallerUsage()
     process.exit(0)
   }
+
+  // pnpm dlx reuses a cached copy of `@latest` for a while after a release, so
+  // say which CLI is running. On stderr: `upgrade status --json` owns stdout.
+  console.error(colorize(`${CLI_PACKAGE_NAME}@${getCliVersion()}`, 'dim'))
 
   if (command === 'rock' || command === 'setup') {
     await runSetup()
