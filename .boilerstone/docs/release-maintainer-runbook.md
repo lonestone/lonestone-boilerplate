@@ -127,7 +127,12 @@ pnpm boilerplate upgrade prepare --to X.Y.Z --fetch
 
 Never move a published tag. If a pushed tag turns out to be wrong, publish a new patch version instead. Do not publish the CLI by hand as part of a normal release.
 
-One-time npm setup (before the first automated publish): on [npmjs.com](https://www.npmjs.com/) for `@lonestone/boilerstone-cli`, add a GitHub Actions trusted publisher. Organization `lonestone`, repository `lonestone-boilerplate`, workflow filename `release-please.yml` (filename only), and allow `npm publish`. No `NPM_TOKEN` secret. If that job fails, the fallback from the tagged commit is `pnpm --filter @lonestone/boilerstone-cli publish --access public`.
+One-time npm setup. npm only accepts a trusted publisher on a package that already exists, so the first release publishes with a token and every later release uses trusted publishing:
+
+1. Before the first release, create a granular npm token on [npmjs.com](https://www.npmjs.com/): read and write on the `@lonestone` scope, bypass 2FA, short expiry. Store it as the repository secret `NPM_TOKEN`. The `publish-cli` job passes it to npm.
+2. After the first publish succeeds, add a GitHub Actions trusted publisher to `@lonestone/boilerstone-cli` on npmjs.com. Organization `lonestone`, repository `lonestone-boilerplate`, workflow filename `release-please.yml` (filename only), no environment, and allow `npm publish`. Then delete the `NPM_TOKEN` secret and revoke the token. When trusted publishing works, npm uses it instead of the token.
+
+If `publish-cli` fails, re-run only that job. It is separate from release-please, so the tag is not touched. The manual fallback from the tagged commit is `pnpm --filter @lonestone/boilerstone-cli publish --access public --no-git-checks`.
 
 The package version is bumped with the boilerplate on the Release PR (`.boilerstone/cli/package.json`, via `extra-files` in `release-please-config.json`).
 

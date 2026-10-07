@@ -94,6 +94,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24.13.0
+          # Lets npm read NODE_AUTH_TOKEN from the generated .npmrc.
+          registry-url: https://registry.npmjs.org
 
       - name: Verify the CLI version matches the tag
         env:
@@ -116,3 +118,10 @@ jobs:
 
       - name: Publish @lonestone/boilerstone-cli
         run: pnpm --filter @lonestone/boilerstone-cli publish --access public --no-git-checks
+        env:
+          # npm only accepts a trusted publisher on a package that already
+          # exists, so the first release publishes with this token. After
+          # that, npm uses trusted publishing (id-token above) and the secret
+          # can be deleted. See .boilerstone/docs/release-maintainer-runbook.md.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
