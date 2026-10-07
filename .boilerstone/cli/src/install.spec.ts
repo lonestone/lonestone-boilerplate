@@ -7,6 +7,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -296,6 +297,24 @@ describe('init project generation', () => {
 
       expect(getPnpmCalls(result.commandLog)).toEqual(['pnpm install', 'pnpm fmt', 'pnpm rock'])
       expect(leftoverStagingDirs(result.fixturePath)).toEqual([])
+    } finally {
+      result.cleanup()
+      rmSync(templatePath, { recursive: true, force: true })
+    }
+  })
+
+  it.skipIf(isWindows)('creates the project directory with the default permissions', () => {
+    const templatePath = createPublishedCliTemplate()
+    const result = runInstaller(['init', 'app'], { env: { TEMPLATE_FIXTURE: templatePath } })
+
+    try {
+      expect(result.status, result.stderr).toBe(0)
+      // A directory made here follows the same umask as the CLI child process.
+      const probePath = join(result.fixturePath, 'probe')
+      mkdirSync(probePath)
+      expect(statSync(join(result.fixturePath, 'app')).mode & 0o777).toBe(
+        statSync(probePath).mode & 0o777,
+      )
     } finally {
       result.cleanup()
       rmSync(templatePath, { recursive: true, force: true })

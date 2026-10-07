@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -195,7 +196,10 @@ function stageProject(repoUrl: string, ref: string, dir: string): void {
   }
 
   mkdirSync(dirname(dir), { recursive: true })
-  const staging = mkdtempSync(join(dirname(dir), '.lonestone-init-'))
+  // Not mkdtemp: it creates the directory as 0700, and the project root keeps
+  // that mode once the staging directory is moved into place.
+  const staging = join(dirname(dir), `.lonestone-init-${randomBytes(4).toString('hex')}`)
+  mkdirSync(staging)
   try {
     cloneRelease(repoUrl, ref, staging)
     let sourceCommit = ''
