@@ -109,10 +109,15 @@ jobs:
             exit 1
           fi
 
+      # No lifecycle scripts: this job can mint an OIDC token that npm trusts,
+      # so no dependency may run code during the install.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      # `pnpm install` runs the CLI's `prepare` script, which builds dist/.
+      # `--ignore-scripts` skips the CLI's `prepare` script, so build dist/ here.
+      - name: Build the CLI
+        run: pnpm --filter @lonestone/boilerstone-cli run build
+
       - name: Check the CLI is built
         run: test -f .boilerstone/cli/dist/bin.js
 
