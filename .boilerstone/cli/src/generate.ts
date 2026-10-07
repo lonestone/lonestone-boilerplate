@@ -129,7 +129,8 @@ function stripPnpmWorkspaceEntry(rootPath: string, entry: string): void {
   }
   const content = readFileSync(workspacePath, 'utf-8')
   const escaped = entry.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const next = content.replace(new RegExp(`^\\s*-\\s+${escaped}\\s*$`, 'm'), '')
+  // Horizontal whitespace only: `\s` would also swallow the neighbouring lines.
+  const next = content.replace(new RegExp(`^[ \\t]*-[ \\t]+${escaped}[ \\t]*$\\r?\\n?`, 'm'), '')
   if (next !== content) {
     writeFileSync(workspacePath, next, 'utf-8')
     console.log(

@@ -20,6 +20,7 @@ import {
   hasTemplateScope,
   isPublishedCliTemplate,
   PRODUCER_FILES_TO_REMOVE,
+  stripBoilerstoneProducerArtifacts,
 } from './generate'
 import { trackingState } from './tracking-state'
 import { isolatedGitEnv, spawnProcessSync } from './utils'
@@ -2607,6 +2608,26 @@ describe('project generation', () => {
       expect(existsSync(join(projectPath, '.boilerstone/docs/pilot-rollout.md'))).toBe(false)
     } finally {
       logSpy.mockRestore()
+      rmSync(projectPath, { recursive: true, force: true })
+    }
+  })
+
+  it('removes only the .boilerstone workspace entries, keeping the neighbouring lines', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-strip-workspace-'))
+
+    try {
+      writeProjectFile(
+        projectPath,
+        'pnpm-workspace.yaml',
+        'packages:\n  - packages/*\n  - .boilerstone/cli\n  - apps/*\nstrictPeerDependencies: true\n',
+      )
+
+      stripBoilerstoneProducerArtifacts(projectPath)
+
+      expect(readFileSync(join(projectPath, 'pnpm-workspace.yaml'), 'utf-8')).toBe(
+        'packages:\n  - packages/*\n  - apps/*\nstrictPeerDependencies: true\n',
+      )
+    } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
   })
