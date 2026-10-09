@@ -39,10 +39,11 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     rolldownOptions: {
-      // Migrations are entries so the migrator finds them in dist/modules/db/migrations.
+      // The MikroORM CLI in the image loads dist/modules/db/db.config.js (MIKRO_ORM_CLI_CONFIG)
+      // and finds the migrations in dist/modules/db/migrations: as entries, they keep their exports.
       input: [
         resolve(apiRoot, 'src/main.ts'),
-        resolve(apiRoot, 'src/migrate.ts'),
+        resolve(apiRoot, 'src/modules/db/db.config.ts'),
         ...readdirSync(migrationsDir)
           .filter((file) => file.endsWith('.ts'))
           .map((file) => resolve(migrationsDir, file)),

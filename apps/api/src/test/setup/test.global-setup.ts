@@ -91,7 +91,7 @@ export default async function setup(project: TestProject) {
  * `up()` temporarily disables snapshot writes so a dedicated test DB cannot
  * rewrite `snapshot.json`. `checkSchema()` then uses that file (MikroORM
  * appends `.json` to `migrations.snapshotName`). This uses TypeScript sources,
- * not `dist/migrate.js`.
+ * not the compiled `dist/` migrations.
  */
 async function assertMigrationsMatchEntities(connection: {
   host: string
@@ -132,7 +132,7 @@ async function assertMigrationsMatchEntities(connection: {
     throw new MigrationSchemaCheckError(
       [
         'Entities and migrations have drifted: after applying all source migrations, MikroORM still reports a schema diff against snapshot.json.',
-        'pnpm test stops before the first test. This check uses TypeScript sources, not dist/migrate.js.',
+        'pnpm test stops before the first test. This check uses TypeScript sources, not the compiled dist/ migrations.',
         'Create a migration with `pnpm db:migrate:create`, commit the new file and snapshot.json, then re-run tests.',
       ].join('\n'),
     )
@@ -145,7 +145,7 @@ async function assertMigrationsMatchEntities(connection: {
     throw new MigrationSchemaCheckError(
       [
         'Failed to apply source migrations in test global setup. pnpm test stops before the first test.',
-        'This check uses TypeScript sources, not dist/migrate.js.',
+        'This check uses TypeScript sources, not the compiled dist/ migrations.',
         details,
       ].join('\n'),
       { cause: error },
