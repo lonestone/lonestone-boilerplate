@@ -12,11 +12,10 @@ import type {
   StreamTextRequest,
 } from './ai-example.contract'
 import { TypedBody, TypedController, TypedRoute } from '@lonestone/nzoth/server'
-import { Logger, MessageEvent, Sse, UseGuards } from '@nestjs/common'
+import { Logger, MessageEvent, Sse } from '@nestjs/common'
 import { Observable } from 'rxjs'
 import { AiService } from '../../ai/ai.service'
 import { LangfuseService } from '../../ai/langfuse.service'
-import { AuthGuard } from '../../auth/auth.guard'
 import {
   chatRequestSchema,
   chatResponseSchema,
@@ -31,7 +30,6 @@ import {
 } from './ai-example.contract'
 import { getCryptoPriceTool } from './tools/coingecko.tools'
 
-@UseGuards(AuthGuard)
 @TypedController('ai')
 export class AiExampleController {
   private readonly logger = new Logger(AiExampleController.name)

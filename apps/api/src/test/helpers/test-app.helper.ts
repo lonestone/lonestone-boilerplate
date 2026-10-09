@@ -14,9 +14,12 @@ import { INestApplication, ModuleMetadata } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import * as express from 'express'
 import { BetterAuthSession } from '../../modules/auth/auth.config'
-import { AuthModule } from '../../modules/auth/auth.module'
-import { AuthService } from '../../modules/auth/auth.service'
-import { createMockAuthService, testSessionMiddleware } from './test-auth.helper'
+import { Account, Session, User, Verification } from '../../modules/auth/auth.entity'
+import {
+  createMockAuthHandle,
+  createTestAuthModule,
+  testSessionMiddleware,
+} from './test-auth.helper'
 
 // ============================================================
 // Test App Context
@@ -25,7 +28,7 @@ import { createMockAuthService, testSessionMiddleware } from './test-auth.helper
 export interface TestAppContext {
   app: INestApplication
   orm: MikroORM
-  /** AuthService instance with mocked getSession/setSession - use setSession() to configure auth per test */
+  /** Configure auth session for tests that share one session on the mock handle */
   setSession: (session: BetterAuthSession) => void
   clearSession: () => void
 }
@@ -40,7 +43,8 @@ function registerMiddleware(app: INestApplication, middleware: express.RequestHa
 
 /**
  * Initializes a NestJS application with a new test container.
- * AuthService is mocked in test.e2e-setup (vi.mock) with getSession/setSession only.
+ * Auth uses @thallesp/nestjs-better-auth with a mocked auth.api.getSession
+ * (AuthGuard reads session from module options, not AuthService).
  *
  * @param options The options for the test application
  * @returns An object containing the app, ORM, and setSession/clearSession functions
@@ -62,13 +66,16 @@ export async function initializeTestApp(
       },
     }
     const mikroOrmModule = await MikroOrmModule.forRoot(testOrmOptions)
+    const mockAuth = createMockAuthHandle()
     const moduleBuilder = Test.createTestingModule({
-      imports: [mikroOrmModule, AuthModule, ...(metadata.imports ?? [])],
+      imports: [
+        mikroOrmModule,
+        MikroOrmModule.forFeature([User, Session, Account, Verification]),
+        createTestAuthModule(mockAuth),
+        ...(metadata.imports ?? []),
+      ],
       controllers: [...(metadata.controllers ?? [])],
     })
-
-    const mockAuthService = createMockAuthService()
-    moduleBuilder.overrideProvider(AuthService).useValue(mockAuthService)
 
     if (metadata.providers) {
       for (const provider of metadata.providers) {
@@ -85,7 +92,7 @@ export async function initializeTestApp(
 
     const moduleFixture = await moduleBuilder.compile()
 
-    const { setSession, clearSession } = mockAuthService
+    const { setSession, clearSession } = mockAuth
 
     // Create the application
     const app = moduleFixture.createNestApplication({
@@ -97,11 +104,10 @@ export async function initializeTestApp(
 
     registerMiddleware(app, testSessionMiddleware)
 
-    // Configure body parsing as in main.ts:
-    // - Skip JSON parsing for Better Auth routes (needs raw body)
-    // - Parse JSON for everything else
+    // Body parsing: AuthModule is disableControllers in tests (no lib parsers),
+    // so re-add JSON parsing here. Skip /api/auth if a real handler is ever mounted.
     const jsonBodyParser: express.RequestHandler = (req, res, next) => {
-      if (req.originalUrl.startsWith('/auth')) {
+      if (req.originalUrl.startsWith('/auth') || req.originalUrl.startsWith('/api/auth')) {
         return next()
       }
       express.json({ limit: '50mb' })(req, res, next)
