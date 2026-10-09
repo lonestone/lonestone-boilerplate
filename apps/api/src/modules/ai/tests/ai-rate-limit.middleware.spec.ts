@@ -42,6 +42,7 @@ describe('ai-rate-limit.middleware', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
   })
 
   describe('withRetryAfter - wrapGenerate', () => {
@@ -153,7 +154,9 @@ describe('ai-rate-limit.middleware', () => {
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
       // Should wait 5 seconds (5000ms) from retry-after header
-      await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(4999)
+      expect(mockDoGenerate).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
 
       const result = await resultPromise
 
@@ -192,6 +195,7 @@ describe('ai-rate-limit.middleware', () => {
     })
 
     it('should use exponential backoff when no retry-after header', async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0)
       const middleware = withRetryAfter({ maxRetries: 2, baseDelay: 100 }, mockLogger)
       const rateLimitError = { status: 429 }
       const mockDoGenerate = vi
@@ -202,10 +206,15 @@ describe('ai-rate-limit.middleware', () => {
 
       const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
 
-      // First retry: baseDelay * 2^0 = 100ms (plus jitter, but we'll advance more)
-      await vi.advanceTimersByTimeAsync(200)
-      // Second retry: baseDelay * 2^1 = 200ms (plus jitter)
-      await vi.advanceTimersByTimeAsync(300)
+      // First retry waits baseDelay * 2^0 = 100ms
+      await vi.advanceTimersByTimeAsync(99)
+      expect(mockDoGenerate).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(mockDoGenerate).toHaveBeenCalledTimes(2)
+      // Second retry waits baseDelay * 2^1 = 200ms
+      await vi.advanceTimersByTimeAsync(199)
+      expect(mockDoGenerate).toHaveBeenCalledTimes(2)
+      await vi.advanceTimersByTimeAsync(1)
 
       const result = await resultPromise
 
@@ -356,15 +365,28 @@ describe('ai-rate-limit.middleware', () => {
       expect(wrappedModel).not.toBe(mockModel)
     })
 
-    it('should use custom options', () => {
-      const mockModel = {
+    it('should use custom options', async () => {
+      const mockDoGenerate = vi.fn().mockRejectedValue({ status: 429 })
+      const model = {
+        specificationVersion: 'v3',
         provider: 'openai',
         modelId: 'gpt-4',
-      } as LanguageModel
+        doGenerate: mockDoGenerate,
+      } as unknown as LanguageModel
+      const wrappedModel = wrapWithRetryAfter(
+        model,
+        { maxRetries: 1, baseDelay: 100 },
+        mockLogger,
+      ) as unknown as { doGenerate: (params: object) => Promise<unknown> }
 
-      const wrappedModel = wrapWithRetryAfter(mockModel, { maxRetries: 5 }, mockLogger)
+      const resultPromise = wrappedModel.doGenerate({})
+      // Attach catch handler immediately to prevent unhandled rejection warning
+      Promise.resolve(resultPromise).catch(() => {})
 
-      expect(wrappedModel).toBeDefined()
+      await vi.advanceTimersByTimeAsync(200)
+
+      await expect(resultPromise).rejects.toEqual({ status: 429 })
+      expect(mockDoGenerate).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -402,6 +424,36 @@ describe('ai-rate-limit.middleware', () => {
 
       // Should fall back to exponential backoff
       await vi.advanceTimersByTimeAsync(200)
+
+      const result = await resultPromise
+
+      expect(result).toEqual({ text: 'success' })
+      expect(mockDoGenerate).toHaveBeenCalledTimes(2)
+    })
+
+    it('should cap a huge retry-after header at maxDelay', async () => {
+      const middleware = withRetryAfter(
+        { maxRetries: 1, baseDelay: 100, maxDelay: 1000 },
+        mockLogger,
+      )
+      const rateLimitError = {
+        status: 429,
+        response: {
+          headers: {
+            'retry-after': '999999',
+          },
+        },
+      }
+      const mockDoGenerate = vi
+        .fn()
+        .mockRejectedValueOnce(rateLimitError)
+        .mockResolvedValue({ text: 'success' })
+
+      const resultPromise = middleware.wrapGenerate!(createGenerateContext(mockDoGenerate))
+
+      await vi.advanceTimersByTimeAsync(999)
+      expect(mockDoGenerate).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
 
       const result = await resultPromise
 

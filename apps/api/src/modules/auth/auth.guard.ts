@@ -17,28 +17,23 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    try {
-      const request = context.switchToHttp().getRequest()
-      const session = await this.authService.api.getSession({
-        headers: fromNodeHeaders(request.headers),
-      })
+    const request = context.switchToHttp().getRequest()
+    const session = await this.authService.api.getSession({
+      headers: fromNodeHeaders(request.headers),
+    })
 
-      request.session = session
-      request.user = session?.user ?? null // useful for observability tools like Sentry
+    request.session = session
+    request.user = session?.user ?? null // useful for observability tools like Sentry
 
-      const isPublic = this.reflector.get('PUBLIC', context.getHandler())
+    const isPublic = this.reflector.get('PUBLIC', context.getHandler())
 
-      if (isPublic) return true
+    if (isPublic) return true
 
-      const isOptional = this.reflector.get('OPTIONAL', context.getHandler())
+    const isOptional = this.reflector.get('OPTIONAL', context.getHandler())
 
-      if (isOptional && !session) return true
+    if (isOptional && !session) return true
 
-      if (!session) throw new UnauthorizedException()
-      return true
-    } catch (error) {
-      console.error(error)
-      throw new UnauthorizedException()
-    }
+    if (!session) throw new UnauthorizedException()
+    return true
   }
 }

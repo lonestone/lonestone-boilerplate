@@ -81,11 +81,5 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic): BetterAuthT
     plugins: [openAPI()],
   } satisfies BetterAuthOptions
 
-  // We need to pass the options to the customSession plugin to infer the type correctly
-  // If you don't do this, you will not have the properties added by plugins (ex. session.activeOrganizationId for the organization plugin)
-  // See https://www.better-auth.com/docs/concepts/session-management#customizing-session-response
-  return betterAuth({
-    ...authOptions,
-    plugins: [...(authOptions.plugins ?? [])],
-  })
+  return betterAuth(authOptions)
 }

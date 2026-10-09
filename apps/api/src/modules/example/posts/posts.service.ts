@@ -1,4 +1,4 @@
-import { EntityManager, FilterQuery } from '@mikro-orm/core'
+import { EntityManager, FilterQuery, raw } from '@mikro-orm/core'
 import { Injectable, NotFoundException } from '@nestjs/common'
 import slugify from 'slugify'
 import { User } from '../../auth/auth.entity'
@@ -87,7 +87,7 @@ export class PostService {
       { id: postId, user: userId },
       { populate: ['versions', 'tags'] },
     )
-    if (!post) throw new Error('Post not found')
+    if (!post) throw new NotFoundException('Post not found')
 
     const latestVersion = await this.em.findOne(
       PostVersion,
@@ -124,6 +124,27 @@ export class PostService {
     return post
   }
 
+  // One query for all posts in a page, instead of one count query per post.
+  private async countCommentsByPostId(posts: Post[]): Promise<Map<string, number>> {
+    const commentCountByPostId = new Map<string, number>()
+    posts.forEach((post) => commentCountByPostId.set(post.id, 0))
+    if (posts.length === 0) return commentCountByPostId
+
+    const comments = await this.em.find(
+      Comment,
+      { post: { $in: posts.map((post) => post.id) } },
+      { fields: ['id', 'post'] },
+    )
+    for (const comment of comments) {
+      commentCountByPostId.set(
+        comment.post.id,
+        (commentCountByPostId.get(comment.post.id) ?? 0) + 1,
+      )
+    }
+
+    return commentCountByPostId
+  }
+
   async computeSlug(post: Post) {
     if (post.versions.length === 0) return
 
@@ -141,7 +162,7 @@ export class PostService {
       { id: postId, user: userId },
       { populate: ['versions', 'tags'] },
     )
-    if (!post) throw new Error('Post not found')
+    if (!post) throw new NotFoundException('Post not found')
 
     const latestVersion = await this.em.findOne(
       PostVersion,
@@ -175,7 +196,7 @@ export class PostService {
       { id: postId, user: userId },
       { populate: ['versions', 'tags'] },
     )
-    if (!post) throw new Error('Post not found')
+    if (!post) throw new NotFoundException('Post not found')
 
     post.publishedAt = undefined
     await this.em.flush()
@@ -190,7 +211,7 @@ export class PostService {
         populate: ['versions', 'user'],
       },
     )
-    if (!post) throw new Error('Post not found')
+    if (!post) throw new NotFoundException('Post not found')
 
     return post
   }
@@ -290,12 +311,7 @@ export class PostService {
       offset: pagination.offset,
     })
 
-    const commentCountsPromises = posts.map((post) => this.em.count(Comment, { post: post.id }))
-    const commentCounts = await Promise.all(commentCountsPromises)
-    const commentCountByPostId = new Map<string, number>()
-    posts.forEach((post, index) => {
-      commentCountByPostId.set(post.id, commentCounts[index])
-    })
+    const commentCountByPostId = await this.countCommentsByPostId(posts)
 
     return {
       posts,
@@ -332,17 +348,12 @@ export class PostService {
       offset: pagination.offset,
     })
 
-    const commentCountsPromises = posts.map((post) => this.em.count(Comment, { post: post.id }))
-    const commentCounts = await Promise.all(commentCountsPromises)
-    const commentCountByPostId = new Map<string, number>()
-    posts.forEach((post, index) => {
-      commentCountByPostId.set(post.id, commentCounts[index])
-    })
+    const commentCountByPostId = await this.countCommentsByPostId(posts)
 
     return { posts, total, pagination, commentCountByPostId }
   }
 
-  async likePost(slug: string): Promise<Post> {
+  async likePost(slug: string): Promise<PublicPostResult> {
     const post = await this.em.findOne(
       Post,
       { slug, publishedAt: { $ne: null } },
@@ -351,10 +362,12 @@ export class PostService {
 
     if (!post) throw new NotFoundException(`Post not found: ${slug}`)
 
-    post.likesCount += 1
-    await this.em.flush()
+    await this.em.nativeUpdate(Post, { id: post.id }, { likesCount: raw('"likesCount" + 1') })
+    await this.em.refresh(post, { populate: ['user', 'versions', 'tags'] })
 
-    return post
+    const commentCount = await this.em.count(Comment, { post: post.id })
+
+    return { post, commentCount }
   }
 
   async getPublicPost(slug: string): Promise<PublicPostResult> {
@@ -366,7 +379,7 @@ export class PostService {
       },
     )
 
-    if (!post) throw new Error('Post not found')
+    if (!post) throw new NotFoundException('Post not found')
 
     const commentCount = await this.em.count(Comment, {
       post: post.id,

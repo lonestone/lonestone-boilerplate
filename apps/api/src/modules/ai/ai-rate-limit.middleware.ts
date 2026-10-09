@@ -59,7 +59,7 @@ const DEFAULT_OPTIONS: Required<Omit<WithRetryAfterOptions, 'shouldRetry' | 'cal
     if (retryAfter) {
       const retryAfterSeconds = Number.parseInt(retryAfter, 10)
       if (!Number.isNaN(retryAfterSeconds)) {
-        return retryAfterSeconds * 1000
+        return Math.min(retryAfterSeconds * 1000, maxDelay)
       }
     }
 
@@ -102,14 +102,19 @@ function extractRetryAfter(error: RetryableError): string | undefined {
     return undefined
   }
 
-  const retryAfter =
-    getHeaderValue(headers, 'retry-after') ||
-    getHeaderValue(headers, 'Retry-After') ||
-    getHeaderValue(headers, 'retry-after-ms') ||
-    getHeaderValue(headers, 'Retry-After-Ms') ||
-    undefined
+  const seconds = getHeaderValue(headers, 'retry-after') || getHeaderValue(headers, 'Retry-After')
+  if (seconds) {
+    return seconds
+  }
 
-  return retryAfter
+  const milliseconds =
+    getHeaderValue(headers, 'retry-after-ms') || getHeaderValue(headers, 'Retry-After-Ms')
+  if (!milliseconds) {
+    return undefined
+  }
+
+  const parsedMilliseconds = Number.parseInt(milliseconds, 10)
+  return Number.isNaN(parsedMilliseconds) ? undefined : String(Math.ceil(parsedMilliseconds / 1000))
 }
 
 export function withRetryAfter(

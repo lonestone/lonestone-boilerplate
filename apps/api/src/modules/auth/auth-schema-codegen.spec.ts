@@ -28,7 +28,7 @@ describe('renderProperty', () => {
     expect(actualProperty.code).toContain("@Property({ type: 'text', nullable: true })")
   })
 
-  it('keeps type text when a string field has a default value', () => {
+  it('renders the default value and keeps type text for a string field with a default', () => {
     const inputField: AuthSchemaField = {
       field: 'role',
       attribute: { type: 'string', required: true, defaultValue: 'member' },
@@ -36,6 +36,7 @@ describe('renderProperty', () => {
 
     const actualProperty = renderProperty(inputField, unusedResolveEntity)
 
-    expect(actualProperty.code).toContain("type: 'text'")
+    expect(actualProperty.code).toContain("@Property({ type: 'text', default: 'member' })")
+    expect(actualProperty.code).toContain("role: string & Opt = 'member'")
   })
 })

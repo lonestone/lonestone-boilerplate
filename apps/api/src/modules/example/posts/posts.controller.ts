@@ -135,9 +135,8 @@ export class PublicPostController {
   @TypedRoute.Post(':slug/like', publicPostSchema)
   @HttpCode(200)
   async likePost(@TypedParam('slug', z.string()) slug: string) {
-    const post = await this.postService.likePost(slug)
-    const commentCount = 0
-    return this.postsMapper.toPublicPost({ post, commentCount })
+    const result = await this.postService.likePost(slug)
+    return this.postsMapper.toPublicPost(result)
   }
 }
 

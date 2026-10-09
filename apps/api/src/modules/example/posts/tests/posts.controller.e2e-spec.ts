@@ -175,13 +175,15 @@ describe('postController (e2e)', () => {
       const { em, request } = context
       // Arrange - User A creates a post
       const { session: sessionA } = await createUserWithSession(em, { name: 'Alice' })
-      await request
+      const createAlice = await request
         .withSession(sessionA)
         .post('/admin/posts')
         .send({
           title: 'Alice Post',
           content: [{ type: 'text', data: 'content' }],
         })
+      expect(createAlice.status).toBe(201)
+      expect(createAlice.body.id).toEqual(expect.any(String))
 
       // Arrange - User B
       const { session: sessionB } = await createUserWithSession(em, { name: 'Bob' })
@@ -190,11 +192,9 @@ describe('postController (e2e)', () => {
       const response = await request.withSession(sessionB).get('/admin/posts')
 
       // Assert - User B should not see User A's posts
-      const posts = response.body.data ?? response.body
-      const alicePosts = Array.isArray(posts)
-        ? posts.filter((p: { title: string }) => p.title === 'Alice Post')
-        : []
-      expect(alicePosts).toHaveLength(0)
+      expect(response.status).toBe(200)
+      expect(response.body.data).toEqual(expect.any(Array))
+      expect(response.body.data.map((p: { title: string }) => p.title)).not.toContain('Alice Post')
     })
   })
 })

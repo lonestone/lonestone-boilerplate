@@ -30,4 +30,27 @@ describe('better-auth schema drift', () => {
 
     expect(validateAuthSchema(orm, auth.options)).toEqual([])
   })
+
+  it('reports a better-auth field that has no MikroORM property', () => {
+    const auth = createBetterAuth({
+      baseUrl: 'http://localhost:3000',
+      orm,
+      secret: 'unit-test-secret-unit-test-secret',
+      trustedOrigins: ['http://localhost:5173'],
+    })
+
+    const actualProblems: string[] = validateAuthSchema(orm, {
+      ...auth.options,
+      user: {
+        ...auth.options.user,
+        additionalFields: {
+          ...auth.options.user?.additionalFields,
+          ghostField: { type: 'string', required: false },
+        },
+      },
+    })
+
+    expect(actualProblems).toHaveLength(1)
+    expect(actualProblems[0]).toContain('"ghostField"')
+  })
 })

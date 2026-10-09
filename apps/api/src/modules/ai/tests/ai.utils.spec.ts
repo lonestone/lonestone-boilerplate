@@ -107,9 +107,12 @@ describe('ai.utils', () => {
       vi.mocked(modelRegistry.get).mockReturnValue(mockModelConfig as unknown as ModelConfig)
       vi.mocked(providers.openai!).mockReturnValue(mockModelInstance as unknown as LanguageModel)
 
-      await getDefaultModel()
+      const model = await getDefaultModel()
 
       expect(mockModelRegistry.getDefault).toHaveBeenCalled()
+      expect(mockModelRegistry.get).toHaveBeenCalledWith('OPENAI_GPT_5_NANO')
+      expect(mockProviders.openai).toHaveBeenCalledWith('gpt-5-nano-2025-08-07')
+      expect(model).not.toBeNull()
     })
 
     it('should return null when no default model is configured', async () => {
