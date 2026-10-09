@@ -1,0 +1,44 @@
+---
+/**
+ * The flows of the CLI map as plain text: one numbered list per flow. The
+ * same words feed the side panel of the map. This list is what a search
+ * engine, a screen reader or an agent reading the page can use.
+ */
+import { Aside, Code, Steps } from '@astrojs/starlight/components'
+import { FLOWS, FLOW_IDS } from './layout'
+import { fmt } from './render'
+import { content } from './content'
+---
+
+{
+  FLOW_IDS.map((id) => {
+    const flow = FLOWS[id]
+    const text = content.flows[id]
+    return (
+      <section>
+        <h3 id={`flow-${id}`}>{text.title}</h3>
+        <Code code={flow.command} lang="sh" />
+        {text.note && (
+          <Aside type="caution">
+            <Fragment set:html={fmt(text.note)} />
+            {flow.noteFlow && (
+              <>
+                {' '}
+                <a href={`#flow-${flow.noteFlow}`}>{content.flows[flow.noteFlow].title}</a>
+              </>
+            )}
+          </Aside>
+        )}
+        <Steps>
+          <ol>
+            {text.steps.map(([, step]) => (
+              <li>
+                <Fragment set:html={fmt(step)} />
+              </li>
+            ))}
+          </ol>
+        </Steps>
+      </section>
+    )
+  })
+}

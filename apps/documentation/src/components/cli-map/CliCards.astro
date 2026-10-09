@@ -1,0 +1,16 @@
+---
+/** The "good to know" cards of the CLI map, as Starlight cards. */
+import { Card, CardGrid } from '@astrojs/starlight/components'
+import { fmt } from './render'
+import { content } from './content'
+---
+
+<CardGrid>
+  {
+    content.cards.map((card) => (
+      <Card title={card.title.replaceAll('`', '')}>
+        <Fragment set:html={fmt(card.text)} />
+      </Card>
+    ))
+  }
+</CardGrid>
