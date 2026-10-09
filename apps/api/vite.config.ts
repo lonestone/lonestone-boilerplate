@@ -1,9 +1,11 @@
+import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import dotenvx from '@dotenvx/dotenvx'
 import swc from 'unplugin-swc'
 import { defineConfig } from 'vitest/config'
 
 const apiRoot = import.meta.dirname
+const migrationsDir = resolve(apiRoot, 'src/modules/db/migrations')
 
 dotenvx.config({ path: resolve(apiRoot, '.env.example') })
 
@@ -36,13 +38,21 @@ export default defineConfig({
     target: 'node24',
     outDir: 'dist',
     emptyOutDir: true,
-    rollupOptions: {
-      input: {
-        main: resolve(apiRoot, 'src/main.ts'),
-        migrate: resolve(apiRoot, 'src/migrate.ts'),
-      },
+    rolldownOptions: {
+      // Migrations are entries so the migrator finds them in dist/modules/db/migrations.
+      input: [
+        resolve(apiRoot, 'src/main.ts'),
+        resolve(apiRoot, 'src/migrate.ts'),
+        ...readdirSync(migrationsDir)
+          .filter((file) => file.endsWith('.ts'))
+          .map((file) => resolve(migrationsDir, file)),
+      ],
       output: {
         format: 'es',
+        // One file per module: a bundle renames clashing class names (Post becomes Post$1),
+        // which would rename MikroORM entities and OpenAPI schemas.
+        preserveModules: true,
+        preserveModulesRoot: resolve(apiRoot, 'src'),
         entryFileNames: '[name].js',
       },
     },
