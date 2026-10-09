@@ -262,6 +262,8 @@ function computeUpgradePath(options: ComputeUpgradePathOptions): UpgradePath {
 }
 
 const CLI_PACKAGE_NAME = '@lonestone/boilerstone-cli'
+// The default source of boilerplate releases, used unless BOILERPLATE_REPO overrides it.
+const BOILERPLATE_REMOTE = 'https://github.com/lonestone/lonestone-boilerplate.git'
 // The command the package installs (its `bin`).
 const CLI_BIN_NAME = 'boilerstone-cli'
 const BOILERPLATE_SCRIPT_NAME = 'boilerplate'
@@ -591,6 +593,7 @@ function promoteUnreleasedIntentions(
 }
 
 export {
+  BOILERPLATE_REMOTE,
   BOILERPLATE_SCRIPT_COMMAND,
   BOILERPLATE_SCRIPT_NAME,
   CLI_BIN_NAME,

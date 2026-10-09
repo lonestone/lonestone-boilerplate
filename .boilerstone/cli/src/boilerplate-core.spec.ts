@@ -116,6 +116,16 @@ function runGit(cwd: string, args: string[]): void {
   }
 }
 
+function currentBranch(cwd: string): string {
+  return spawnProcessSync('git', ['branch', '--show-current'], {
+    cwd,
+    encoding: 'utf-8',
+    env: isolatedGitEnv(),
+  })
+    .stdout.toString()
+    .trim()
+}
+
 function createGitRepo(prefix: string): string {
   const repoDir = mkdtempSync(join(tmpdir(), prefix))
   runGit(repoDir, ['init'])
@@ -134,6 +144,29 @@ function writeProjectFile(projectPath: string, filePath: string, content: string
   const fullPath = join(projectPath, filePath)
   mkdirSync(dirname(fullPath), { recursive: true })
   writeFileSync(fullPath, content)
+}
+
+function writeTrackingStateFile(
+  projectPath: string,
+  options: { currentVersion: string; trackedDomains?: string[] },
+): void {
+  writeProjectFile(
+    projectPath,
+    '.boilerstone/boilerplate.json',
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        source: {
+          repository: 'lonestone/lonestone-boilerplate',
+          currentVersion: options.currentVersion,
+        },
+        trackedDomains: options.trackedDomains ?? [],
+        intentions: { applied: [], skipped: [] },
+      },
+      null,
+      2,
+    )}\n`,
+  )
 }
 
 describe('boilerplate core', () => {
@@ -1053,16 +1086,7 @@ describe('resolveUpgradePath', () => {
         '.boilerstone/migration-intentions/v1.0.0/README.md',
         '# v1.0.0\n',
       )
-      writeProjectFile(
-        projectPath,
-        '.boilerstone/boilerplate.json',
-        `${JSON.stringify({
-          schemaVersion: 1,
-          source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '2.0.0' },
-          trackedDomains: [],
-          intentions: { applied: [], skipped: [] },
-        })}\n`,
-      )
+      writeTrackingStateFile(projectPath, { currentVersion: '2.0.0' })
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'consumer project'])
       runGit(projectPath, ['tag', 'v1.0.0'])
@@ -1331,20 +1355,7 @@ describe('boilerplate CLI smoke', () => {
 
     try {
       writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
-      writeProjectFile(
-        projectPath,
-        '.boilerstone/boilerplate.json',
-        `${JSON.stringify(
-          {
-            schemaVersion: 1,
-            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
-            trackedDomains: [],
-            intentions: { applied: [], skipped: [] },
-          },
-          null,
-          2,
-        )}\n`,
-      )
+      writeTrackingStateFile(projectPath, { currentVersion: '1.0.0' })
       writeProjectFile(
         projectPath,
         '.boilerstone/migration-intentions/v1.1.0/README.md',
@@ -1398,16 +1409,7 @@ describe('boilerplate CLI smoke', () => {
     const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-record-session-warning-'))
 
     try {
-      writeProjectFile(
-        projectPath,
-        '.boilerstone/boilerplate.json',
-        `${JSON.stringify({
-          schemaVersion: 1,
-          source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
-          trackedDomains: [],
-          intentions: { applied: [], skipped: [] },
-        })}\n`,
-      )
+      writeTrackingStateFile(projectPath, { currentVersion: '1.0.0' })
       mkdirSync(join(projectPath, '.boilerstone/upgrade/upgrade-session.md'), { recursive: true })
 
       const result = runCli([
@@ -1437,20 +1439,7 @@ describe('boilerplate CLI smoke', () => {
     const projectPath = mkdtempSync(join(tmpdir(), 'boilerplate-finish-norelease-'))
 
     try {
-      writeProjectFile(
-        projectPath,
-        '.boilerstone/boilerplate.json',
-        `${JSON.stringify(
-          {
-            schemaVersion: 1,
-            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
-            trackedDomains: [],
-            intentions: { applied: [], skipped: [] },
-          },
-          null,
-          2,
-        )}\n`,
-      )
+      writeTrackingStateFile(projectPath, { currentVersion: '1.0.0' })
 
       const finish = runCli(['upgrade', 'finish', '--project', projectPath, '--to', '9.9.9'])
 
@@ -1525,13 +1514,7 @@ describe('boilerplate CLI smoke', () => {
       expect(sessionPrompt).toContain('**adapt**: compare project, source, and target')
       expect(sessionPrompt).toContain('- [ ] 1. `v1.0.0/standardize-oxlint-oxfmt` (migration)')
 
-      const branch = spawnProcessSync('git', ['branch', '--show-current'], {
-        cwd: projectPath,
-        encoding: 'utf-8',
-        env: isolatedGitEnv(),
-      })
-        .stdout.toString()
-        .trim()
+      const branch = currentBranch(projectPath)
       expect(branch).toBe('upgrade/v0.9.0-to-v1.0.0')
 
       const record = runCli([
@@ -1851,20 +1834,7 @@ describe('boilerplate CLI smoke', () => {
 
     try {
       writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
-      writeProjectFile(
-        projectPath,
-        '.boilerstone/boilerplate.json',
-        `${JSON.stringify(
-          {
-            schemaVersion: 1,
-            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
-            trackedDomains: [],
-            intentions: { applied: [], skipped: [] },
-          },
-          null,
-          2,
-        )}\n`,
-      )
+      writeTrackingStateFile(projectPath, { currentVersion: '1.0.0' })
       writeProjectFile(
         projectPath,
         '.boilerstone/migration-intentions/v1.0.0/README.md',
@@ -1937,16 +1907,7 @@ describe('boilerplate CLI smoke', () => {
     const producerPath = createGitRepo('boilerplate-prepare-draft-producer-')
 
     try {
-      writeProjectFile(
-        projectPath,
-        '.boilerstone/boilerplate.json',
-        `${JSON.stringify({
-          schemaVersion: 1,
-          source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
-          trackedDomains: ['tooling'],
-          intentions: { applied: [], skipped: [] },
-        })}\n`,
-      )
+      writeTrackingStateFile(projectPath, { currentVersion: '0.0.0', trackedDomains: ['tooling'] })
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'consumer project'])
 
@@ -2001,15 +1962,7 @@ describe('boilerplate CLI smoke', () => {
       expect(readFileSync(join(upgradeDir, 'reference/README.md'), 'utf-8')).toContain(
         'producer checkout HEAD is the temporary source of truth',
       )
-      expect(
-        spawnProcessSync('git', ['branch', '--show-current'], {
-          cwd: projectPath,
-          encoding: 'utf-8',
-          env: isolatedGitEnv(),
-        })
-          .stdout.toString()
-          .trim(),
-      ).toBe('upgrade/v0.0.0-to-v9.9.9')
+      expect(currentBranch(projectPath)).toBe('upgrade/v0.0.0-to-v9.9.9')
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
       rmSync(producerPath, { recursive: true, force: true })
@@ -2021,25 +1974,10 @@ describe('boilerplate CLI smoke', () => {
     const producerPath = createGitRepo('boilerplate-prepare-dirty-draft-producer-')
 
     try {
-      writeProjectFile(
-        projectPath,
-        '.boilerstone/boilerplate.json',
-        `${JSON.stringify({
-          schemaVersion: 1,
-          source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
-          trackedDomains: [],
-          intentions: { applied: [], skipped: [] },
-        })}\n`,
-      )
+      writeTrackingStateFile(projectPath, { currentVersion: '0.0.0' })
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'consumer project'])
-      const initialBranch = spawnProcessSync('git', ['branch', '--show-current'], {
-        cwd: projectPath,
-        encoding: 'utf-8',
-        env: isolatedGitEnv(),
-      })
-        .stdout.toString()
-        .trim()
+      const initialBranch = currentBranch(projectPath)
 
       writeProjectFile(
         producerPath,
@@ -2074,15 +2012,7 @@ describe('boilerplate CLI smoke', () => {
         }),
       ).rejects.toThrow('Producer .boilerstone/ has uncommitted changes')
       expect(existsSync(join(projectPath, '.boilerstone/upgrade'))).toBe(false)
-      expect(
-        spawnProcessSync('git', ['branch', '--show-current'], {
-          cwd: projectPath,
-          encoding: 'utf-8',
-          env: isolatedGitEnv(),
-        })
-          .stdout.toString()
-          .trim(),
-      ).toBe(initialBranch)
+      expect(currentBranch(projectPath)).toBe(initialBranch)
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
       rmSync(producerPath, { recursive: true, force: true })
@@ -2094,16 +2024,7 @@ describe('boilerplate CLI smoke', () => {
     const producerPath = createGitRepo('boilerplate-prepare-uncommitted-draft-producer-')
 
     try {
-      writeProjectFile(
-        projectPath,
-        '.boilerstone/boilerplate.json',
-        `${JSON.stringify({
-          schemaVersion: 1,
-          source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
-          trackedDomains: [],
-          intentions: { applied: [], skipped: [] },
-        })}\n`,
-      )
+      writeTrackingStateFile(projectPath, { currentVersion: '0.0.0' })
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'consumer project'])
       writeProjectFile(producerPath, 'README.md', '# producer\n')
@@ -2147,20 +2068,7 @@ describe('boilerplate CLI smoke', () => {
 
     try {
       writeProjectFile(projectPath, '.boilerstone/README.md', '# boilerstone\n')
-      writeProjectFile(
-        projectPath,
-        '.boilerstone/boilerplate.json',
-        `${JSON.stringify(
-          {
-            schemaVersion: 1,
-            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.0.0' },
-            trackedDomains: [],
-            intentions: { applied: [], skipped: [] },
-          },
-          null,
-          2,
-        )}\n`,
-      )
+      writeTrackingStateFile(projectPath, { currentVersion: '0.0.0' })
       writeProjectFile(
         projectPath,
         '.boilerstone/migration-intentions/v1.1.0/README.md',
@@ -2184,13 +2092,7 @@ describe('boilerplate CLI smoke', () => {
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'release with missing copy source'])
       runGit(projectPath, ['tag', 'v1.1.0'])
-      const initialBranch = spawnProcessSync('git', ['branch', '--show-current'], {
-        cwd: projectPath,
-        encoding: 'utf-8',
-        env: isolatedGitEnv(),
-      })
-        .stdout.toString()
-        .trim()
+      const initialBranch = currentBranch(projectPath)
 
       const result = runCli(['upgrade', 'prepare', '--project', projectPath, '--to', '1.1.0'])
 
@@ -2202,15 +2104,7 @@ describe('boilerplate CLI smoke', () => {
           file.startsWith('upgrade.tmp-'),
         ),
       ).toBe(false)
-      expect(
-        spawnProcessSync('git', ['branch', '--show-current'], {
-          cwd: projectPath,
-          encoding: 'utf-8',
-          env: isolatedGitEnv(),
-        })
-          .stdout.toString()
-          .trim(),
-      ).toBe(initialBranch)
+      expect(currentBranch(projectPath)).toBe(initialBranch)
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
@@ -2285,20 +2179,7 @@ describe('boilerplate CLI smoke', () => {
     const projectPath = createGitRepo('boilerplate-existing-workspace-')
 
     try {
-      writeProjectFile(
-        projectPath,
-        '.boilerstone/boilerplate.json',
-        `${JSON.stringify(
-          {
-            schemaVersion: 1,
-            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '0.9.0' },
-            trackedDomains: [],
-            intentions: { applied: [], skipped: [] },
-          },
-          null,
-          2,
-        )}\n`,
-      )
+      writeTrackingStateFile(projectPath, { currentVersion: '0.9.0' })
       writeProjectFile(projectPath, '.gitignore', '.boilerstone/upgrade/\n')
       runGit(projectPath, ['add', '-A'])
       runGit(projectPath, ['commit', '-m', 'init'])
@@ -2364,20 +2245,7 @@ describe('bootstrap command', () => {
       writeProjectFile(projectPath, 'cli/setup.ts', "const oldPrefix = '@boilerstone'\n")
       writeProjectFile(projectPath, 'packages/cli/package.json', '{"name":"@client/cli"}\n')
       writeProjectFile(projectPath, '.gitignore', 'node_modules\n')
-      writeProjectFile(
-        projectPath,
-        '.boilerstone/boilerplate.json',
-        `${JSON.stringify(
-          {
-            schemaVersion: 1,
-            source: { repository: 'lonestone/lonestone-boilerplate', currentVersion: '1.0.0' },
-            trackedDomains: [],
-            intentions: { applied: [], skipped: [] },
-          },
-          null,
-          2,
-        )}\n`,
-      )
+      writeTrackingStateFile(projectPath, { currentVersion: '1.0.0' })
       writeProjectFile(projectPath, '.boilerstone/boilerplate.example.json', '{}')
       writeProjectFile(projectPath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
       writeProjectFile(projectPath, '.boilerstone/cli/src/bin.ts', 'export {}')

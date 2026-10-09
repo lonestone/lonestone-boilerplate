@@ -13,6 +13,7 @@ import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 import {
+  BOILERPLATE_REMOTE,
   CLI_PACKAGE_NAME,
   compareVersions,
   computeUpgradePath,
@@ -56,7 +57,6 @@ function resolveDefaultProjectRoot(): string {
 
 const projectRoot = resolveDefaultProjectRoot()
 const boilerplateDir = join(projectRoot, '.boilerstone')
-const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
 
 async function prompt(message: string, initial: string): Promise<string> {
   // Without a terminal the question would never resolve and the process would
@@ -94,7 +94,7 @@ function runGitCommand(args: string[], cwd = projectRoot): string {
 }
 
 function getConfiguredBoilerplateRemote(): string {
-  return process.env.BOILERPLATE_REPO?.trim() || defaultBoilerplateRemote
+  return process.env.BOILERPLATE_REPO?.trim() || BOILERPLATE_REMOTE
 }
 
 function getBoilerplateRemote(state: TrackingState | null): string {
@@ -323,15 +323,11 @@ function gitFileExists(reference: string, filePath: string, cwd = projectRoot): 
 }
 
 function listGitMarkdownFiles(reference: string, directory: string, cwd = projectRoot): string[] {
-  try {
-    const output = runGitCommand(['ls-tree', '-r', '--name-only', reference, '--', directory], cwd)
-    return output
-      .split('\n')
-      .filter((file) => file.endsWith('.md'))
-      .sort()
-  } catch {
-    return []
-  }
+  const output = runGitCommand(['ls-tree', '-r', '--name-only', reference, '--', directory], cwd)
+  return output
+    .split('\n')
+    .filter((file) => file.endsWith('.md'))
+    .sort()
 }
 
 function readGitFile(reference: string, filePath: string, cwd = projectRoot): string {
@@ -341,7 +337,7 @@ function readGitFile(reference: string, filePath: string, cwd = projectRoot): st
   })
 }
 
-function listMarkdownFiles(directory: string, recursive = false): string[] {
+function listMarkdownFiles(directory: string): string[] {
   if (!existsSync(directory)) {
     return []
   }
@@ -349,8 +345,8 @@ function listMarkdownFiles(directory: string, recursive = false): string[] {
   const files: string[] = []
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const entryPath = join(directory, entry.name)
-    if (entry.isDirectory() && recursive) {
-      files.push(...listMarkdownFiles(entryPath, true))
+    if (entry.isDirectory()) {
+      files.push(...listMarkdownFiles(entryPath))
       continue
     }
     if (entry.isFile() && entry.name.endsWith('.md')) {
@@ -419,7 +415,7 @@ interface IntentionLintIssue {
 
 function getLocalIntentionMarkdownFiles(): string[] {
   const intentionsDir = join(boilerplateDir, 'migration-intentions')
-  return listMarkdownFiles(intentionsDir, true).filter((file) => {
+  return listMarkdownFiles(intentionsDir).filter((file) => {
     if (
       file.endsWith('README.md') ||
       file.endsWith('classification.md') ||
@@ -467,7 +463,7 @@ function getLocalReleaseIntentions(): LocalIntentionEntry[] {
 
   for (const release of releases) {
     const releaseDir = join(boilerplateDir, 'migration-intentions', release.tag)
-    const files = listMarkdownFiles(releaseDir, true).filter(
+    const files = listMarkdownFiles(releaseDir).filter(
       (file) => !file.endsWith('README.md') && !file.endsWith('classification.md'),
     )
     for (const file of files) {
@@ -783,7 +779,7 @@ function cmdVersionsList(): void {
   if (releases.length === 0) {
     console.log(`  ${colorize('⚠', 'yellow')} No releases found`)
     console.log(`  ${colorize('→', 'cyan')} Fetch the boilerplate releases first:`)
-    console.log(`    ${colorize(getFetchReleasesCommand(defaultBoilerplateRemote), 'bright')}`)
+    console.log(`    ${colorize(getFetchReleasesCommand(BOILERPLATE_REMOTE), 'bright')}`)
     return
   }
 
@@ -1345,7 +1341,7 @@ function getIntentionFiles(
       return []
     }
 
-    return listMarkdownFiles(releaseDir, true)
+    return listMarkdownFiles(releaseDir)
       .filter((file) => !file.endsWith('README.md') && !file.endsWith('classification.md'))
       .map((file) => ({
         releaseVersion: release.version,
@@ -1776,6 +1772,128 @@ function formatHealthIcon(status: HealthCheck['status']): string {
   return colorize('✗', 'red')
 }
 
+function assertIntentionDependencies(upgradePath: UpgradePath, state: TrackingState): void {
+  const stagedIds = new Set(upgradePath.intentions.map((intention) => intention.id))
+  const resolvedIds = new Set([
+    ...state.intentions.applied.map((intention) => intention.id),
+    ...state.intentions.skipped.map((intention) => intention.id),
+  ])
+  const missingDependencies: Array<{ id: string; requires: string }> = []
+  for (const intention of upgradePath.intentions) {
+    for (const requiredId of intention.requires) {
+      if (!stagedIds.has(requiredId) && !resolvedIds.has(requiredId)) {
+        missingDependencies.push({ id: intention.id, requires: requiredId })
+      }
+    }
+  }
+  if (missingDependencies.length > 0) {
+    throw new Error(
+      missingDependencies
+        .map(
+          ({ id, requires }) =>
+            `${id} requires ${requires} — include it in the selection or resolve it first.`,
+        )
+        .join('\n'),
+    )
+  }
+}
+
+interface StageUpgradeWorkspaceOptions {
+  temporaryUpgradeDir: string
+  upgradePath: UpgradePath
+  state: TrackingState
+  resolution: UpgradePathResolution
+  warnings: string[]
+}
+
+function stageUpgradeWorkspace(options: StageUpgradeWorkspaceOptions): void {
+  const { temporaryUpgradeDir, upgradePath, state, resolution, warnings } = options
+  const targetReference = resolution.targetReference
+
+  mkdirSync(join(temporaryUpgradeDir, 'reference', 'source'), { recursive: true })
+  mkdirSync(join(temporaryUpgradeDir, 'reference', 'target'), { recursive: true })
+  mkdirSync(join(temporaryUpgradeDir, 'intentions'), { recursive: true })
+
+  const orderWidth = Math.max(2, String(upgradePath.intentions.length).length)
+  for (const [index, intention] of upgradePath.intentions.entries()) {
+    // Content was resolved from the release git tag (or disk fallback); write it
+    // instead of copying, since the source may not exist as a local file
+    const order = String(index + 1).padStart(orderWidth, '0')
+    const destFile = join(
+      temporaryUpgradeDir,
+      'intentions',
+      `${order}-${intention.id.replace(/\//g, '-')}.md`,
+    )
+    writeFileSync(destFile, intention.content, 'utf-8')
+  }
+
+  // Source and target are independent: a 0.0.0 project has no source ref, but
+  // the complete target remains mandatory.
+  const referenceDeclarations = getReferencePathDeclarations(upgradePath.intentions)
+  let stagedSourceReferencePaths: string[] = []
+  const sourceReference = resolution.sourceReference
+  const sourceRef = sourceReference?.ref ?? upgradePath.sourceTag
+  if (sourceReference) {
+    archiveGitReference(
+      sourceReference.ref,
+      join(temporaryUpgradeDir, 'reference', 'source'),
+      sourceReference.cwd,
+    )
+    stagedSourceReferencePaths = extractIntentionReferencePaths(
+      upgradePath.intentions,
+      sourceReference.ref,
+      join(temporaryUpgradeDir, 'reference', 'source'),
+      sourceReference.cwd,
+    )
+  } else {
+    writeFileSync(
+      join(temporaryUpgradeDir, 'reference', 'source', 'NO-SOURCE-REFERENCE.md'),
+      `Release ${upgradePath.sourceTag} does not exist locally — the project predates the first tracked release. Compare against reference/target/ only.\n`,
+      'utf-8',
+    )
+    warnings.push(
+      `No source reference for ${upgradePath.sourceTag} (release not found) — comparing against the target only`,
+    )
+  }
+
+  archiveGitReference(
+    targetReference.ref,
+    join(temporaryUpgradeDir, 'reference', 'target'),
+    targetReference.cwd,
+  )
+  const stagedTargetReferencePaths = extractIntentionReferencePaths(
+    upgradePath.intentions,
+    targetReference.ref,
+    join(temporaryUpgradeDir, 'reference', 'target'),
+    targetReference.cwd,
+  )
+  const stagedTargetPaths = new Set(stagedTargetReferencePaths)
+  const missingCopyPath = referenceDeclarations.find(
+    (declaration) => declaration.mode === 'copy' && !stagedTargetPaths.has(declaration.path),
+  )
+  if (missingCopyPath) {
+    throw new Error(`copy reference path is missing from the target ref: ${missingCopyPath.path}`)
+  }
+
+  const referenceContext: SessionReferenceContext = {
+    declarations: referenceDeclarations,
+    sourceRef,
+    targetRef: targetReference.ref,
+    targetCwd: targetReference.cwd,
+    targetLabel: targetReference.label,
+    isTargetDraft: targetReference.isDraft,
+    stagedSourcePaths: stagedSourceReferencePaths,
+    stagedTargetPaths: stagedTargetReferencePaths,
+  }
+  writeFileSync(
+    join(temporaryUpgradeDir, 'reference', 'README.md'),
+    generateReferenceReadme(referenceContext),
+    'utf-8',
+  )
+  const sessionPrompt = generateSessionPrompt(upgradePath, state, referenceContext)
+  writeFileSync(join(temporaryUpgradeDir, 'upgrade-session.md'), sessionPrompt, 'utf-8')
+}
+
 async function prepareUpgrade(options: PrepareUpgradeRequest): Promise<PreparedUpgrade> {
   const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
   const state = trackingState.read(absolutePath)
@@ -1837,30 +1955,7 @@ async function prepareUpgrade(options: PrepareUpgradeRequest): Promise<PreparedU
     options.excludeIds,
   )
   const upgradePath = await options.selectIntentions(filteredPath)
-
-  const stagedIds = new Set(upgradePath.intentions.map((intention) => intention.id))
-  const resolvedIds = new Set([
-    ...state.intentions.applied.map((intention) => intention.id),
-    ...state.intentions.skipped.map((intention) => intention.id),
-  ])
-  const missingDependencies: Array<{ id: string; requires: string }> = []
-  for (const intention of upgradePath.intentions) {
-    for (const requiredId of intention.requires) {
-      if (!stagedIds.has(requiredId) && !resolvedIds.has(requiredId)) {
-        missingDependencies.push({ id: intention.id, requires: requiredId })
-      }
-    }
-  }
-  if (missingDependencies.length > 0) {
-    throw new Error(
-      missingDependencies
-        .map(
-          ({ id, requires }) =>
-            `${id} requires ${requires} — include it in the selection or resolve it first.`,
-        )
-        .join('\n'),
-    )
-  }
+  assertIntentionDependencies(upgradePath, state)
 
   const branchName = resolution.branchName
   const targetReference = resolution.targetReference
@@ -1872,89 +1967,7 @@ async function prepareUpgrade(options: PrepareUpgradeRequest): Promise<PreparedU
   let isPublished = false
 
   try {
-    mkdirSync(join(temporaryUpgradeDir, 'reference', 'source'), { recursive: true })
-    mkdirSync(join(temporaryUpgradeDir, 'reference', 'target'), { recursive: true })
-    mkdirSync(join(temporaryUpgradeDir, 'intentions'), { recursive: true })
-
-    const orderWidth = Math.max(2, String(upgradePath.intentions.length).length)
-    for (const [index, intention] of upgradePath.intentions.entries()) {
-      // Content was resolved from the release git tag (or disk fallback); write it
-      // instead of copying, since the source may not exist as a local file
-      const order = String(index + 1).padStart(orderWidth, '0')
-      const destFile = join(
-        temporaryUpgradeDir,
-        'intentions',
-        `${order}-${intention.id.replace(/\//g, '-')}.md`,
-      )
-      writeFileSync(destFile, intention.content, 'utf-8')
-    }
-
-    // Source and target are independent: a 0.0.0 project has no source ref, but
-    // the complete target remains mandatory.
-    const referenceDeclarations = getReferencePathDeclarations(upgradePath.intentions)
-    let stagedSourceReferencePaths: string[] = []
-    const sourceReference = resolution.sourceReference
-    const sourceRef = sourceReference?.ref ?? upgradePath.sourceTag
-    if (sourceReference) {
-      archiveGitReference(
-        sourceReference.ref,
-        join(temporaryUpgradeDir, 'reference', 'source'),
-        sourceReference.cwd,
-      )
-      stagedSourceReferencePaths = extractIntentionReferencePaths(
-        upgradePath.intentions,
-        sourceReference.ref,
-        join(temporaryUpgradeDir, 'reference', 'source'),
-        sourceReference.cwd,
-      )
-    } else {
-      writeFileSync(
-        join(temporaryUpgradeDir, 'reference', 'source', 'NO-SOURCE-REFERENCE.md'),
-        `Release ${upgradePath.sourceTag} does not exist locally — the project predates the first tracked release. Compare against reference/target/ only.\n`,
-        'utf-8',
-      )
-      warnings.push(
-        `No source reference for ${upgradePath.sourceTag} (release not found) — comparing against the target only`,
-      )
-    }
-
-    archiveGitReference(
-      targetReference.ref,
-      join(temporaryUpgradeDir, 'reference', 'target'),
-      targetReference.cwd,
-    )
-    const stagedTargetReferencePaths = extractIntentionReferencePaths(
-      upgradePath.intentions,
-      targetReference.ref,
-      join(temporaryUpgradeDir, 'reference', 'target'),
-      targetReference.cwd,
-    )
-    const stagedTargetPaths = new Set(stagedTargetReferencePaths)
-    const missingCopyPath = referenceDeclarations.find(
-      (declaration) => declaration.mode === 'copy' && !stagedTargetPaths.has(declaration.path),
-    )
-    if (missingCopyPath) {
-      throw new Error(`copy reference path is missing from the target ref: ${missingCopyPath.path}`)
-    }
-
-    const referenceContext: SessionReferenceContext = {
-      declarations: referenceDeclarations,
-      sourceRef,
-      targetRef: targetReference.ref,
-      targetCwd: targetReference.cwd,
-      targetLabel: targetReference.label,
-      isTargetDraft: targetReference.isDraft,
-      stagedSourcePaths: stagedSourceReferencePaths,
-      stagedTargetPaths: stagedTargetReferencePaths,
-    }
-    writeFileSync(
-      join(temporaryUpgradeDir, 'reference', 'README.md'),
-      generateReferenceReadme(referenceContext),
-      'utf-8',
-    )
-    const sessionPrompt = generateSessionPrompt(upgradePath, state, referenceContext)
-    writeFileSync(join(temporaryUpgradeDir, 'upgrade-session.md'), sessionPrompt, 'utf-8')
-
+    stageUpgradeWorkspace({ temporaryUpgradeDir, upgradePath, state, resolution, warnings })
     ensureUpgradeBranch(absolutePath, branchName)
     movePath(temporaryUpgradeDir, upgradeDir)
     isPublished = true

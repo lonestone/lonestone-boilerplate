@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { BOILERPLATE_REMOTE } from './boilerplate-core.js'
 
 interface AppliedIntention {
   id: string
@@ -242,7 +243,7 @@ function create(input: CreateTrackingStateInput): TrackingState {
       schemaVersion: 1,
       source: {
         repository: input.repository ?? 'lonestone/lonestone-boilerplate',
-        remote: input.remote ?? 'https://github.com/lonestone/lonestone-boilerplate.git',
+        remote: input.remote ?? BOILERPLATE_REMOTE,
         currentVersion: input.currentVersion,
         ...(input.commit !== undefined ? { commit: input.commit } : {}),
       },

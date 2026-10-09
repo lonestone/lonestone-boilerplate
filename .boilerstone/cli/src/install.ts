@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
-import { CLI_PACKAGE_NAME } from './boilerplate-core.js'
+import { BOILERPLATE_REMOTE, CLI_PACKAGE_NAME } from './boilerplate-core.js'
 import { bootstrapProject } from './boilerplate.js'
 import { generateProject, isPublishedCliTemplate, isValidProjectName } from './generate.js'
 import {
@@ -16,8 +16,6 @@ import {
   runFileSync,
   spawnProcessSync,
 } from './utils.js'
-
-const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate'
 
 interface InstallerOptions {
   mode: string
@@ -81,8 +79,11 @@ function cloneRelease(
 ): void {
   try {
     runGit(['clone', '--quiet', '--depth', '1', ...extraArgs, '--branch', ref, repoUrl, target])
-  } catch {
-    throw new Error(`git clone failed (ref: ${ref})`)
+  } catch (error) {
+    throw new Error(
+      `git clone failed (ref: ${ref}): ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
+    )
   }
 }
 
@@ -259,7 +260,13 @@ async function offerOnboardCommit(cwd: string, workspaceChanged: boolean): Promi
     '.gitignore',
     ...(workspaceChanged ? ['pnpm-workspace.yaml', 'pnpm-lock.yaml'] : []),
   ].filter((path) => existsSync(join(cwd, path)))
-  spawnProcessSync('git', ['add', ...paths], { cwd, env: gitEnv(), stdio: 'ignore' })
+  const add = spawnProcessSync('git', ['add', ...paths], { cwd, env: gitEnv(), stdio: 'inherit' })
+  if (add.error || add.status !== 0) {
+    info(
+      'git add failed - stage .boilerstone/ and the other onboarding files yourself, then commit',
+    )
+    return
+  }
 
   const staged = spawnProcessSync('git', ['diff', '--cached', '--quiet'], { cwd, env: gitEnv() })
   if (staged.status === 0) {
@@ -317,9 +324,67 @@ Environment:
 `)
 }
 
+async function runInit(options: InstallerOptions, repoUrl: string, cwd: string): Promise<void> {
+  if (options.positionals.length > 1) {
+    die('init accepts at most one directory argument')
+  }
+  const dirInput = options.positionals[0] || 'my-app'
+  const ref = getCliReleaseRef(options.ref, `init ${dirInput}`)
+  need('git')
+  need('pnpm')
+  const dir = resolve(cwd, dirInput)
+  if (existsSync(dir)) {
+    die(`Directory '${dirInput}' already exists`)
+  }
+  info(`Creating new project in ${dir} from ${repoUrl}@${ref}`)
+  stageProject(repoUrl, ref, dir)
+
+  runGit(['init', '--quiet'], dir)
+  runPnpm(['install'], dir)
+  // The scope rename changes line lengths and package.json key order:
+  // format the new project so it starts clean.
+  if (!tryRunPnpm(['fmt'], dir)) {
+    info('pnpm fmt failed — run it yourself before the first commit')
+  }
+  runPnpm(['rock'], dir)
+  ok(`Project ready in ${dir}`)
+}
+
+async function runOnboard(options: InstallerOptions, repoUrl: string, cwd: string): Promise<void> {
+  if (options.positionals.length > 0) {
+    die('onboard does not accept positional arguments')
+  }
+  const ref = getCliReleaseRef(options.ref, 'onboard')
+  need('git')
+  need('pnpm')
+  if (!existsSync(join(cwd, 'package.json'))) {
+    die('Run this at the root of an existing project (package.json not found)')
+  }
+  fetchSubdirs(
+    repoUrl,
+    ref,
+    ['.boilerstone', '.claude/skills/boilerstone-upgrade', '.cursor/skills/boilerstone-upgrade'],
+    cwd,
+  )
+  rmSync(join(cwd, '.boilerstone/boilerplate.json'), { force: true })
+  const workspacePath = join(cwd, 'pnpm-workspace.yaml')
+  const workspaceBefore = readOptionalFile(workspacePath)
+  process.env.BOILERPLATE_INSTALLER_ONBOARD = '1'
+  await bootstrapProject(cwd)
+  // There is no CLI dependency to install. Bootstrap only edits the workspace
+  // to drop old `.boilerstone` entries: refresh the lockfile then and only
+  // then, so the onboarding commit never carries unrelated lockfile changes.
+  const workspaceChanged = readOptionalFile(workspacePath) !== workspaceBefore
+  if (workspaceChanged) {
+    runPnpm(['install'], cwd)
+  }
+  await offerOnboardCommit(cwd, workspaceChanged)
+  ok('Project onboarded')
+}
+
 export async function runInstaller(argv: string[]): Promise<void> {
   const options = parseArgs(argv)
-  const repoUrl = process.env.BOILERPLATE_REPO?.trim() || defaultBoilerplateRemote
+  const repoUrl = process.env.BOILERPLATE_REPO?.trim() || BOILERPLATE_REMOTE
   const cwd = process.cwd()
 
   if (options.mode === 'help' || options.mode === '-h' || options.mode === '--help') {
@@ -328,62 +393,12 @@ export async function runInstaller(argv: string[]): Promise<void> {
   }
 
   if (options.mode === 'init') {
-    if (options.positionals.length > 1) {
-      die('init accepts at most one directory argument')
-    }
-    const dirInput = options.positionals[0] || 'my-app'
-    const ref = getCliReleaseRef(options.ref, `init ${dirInput}`)
-    need('git')
-    need('pnpm')
-    const dir = resolve(cwd, dirInput)
-    if (existsSync(dir)) {
-      die(`Directory '${dirInput}' already exists`)
-    }
-    info(`Creating new project in ${dir} from ${repoUrl}@${ref}`)
-    stageProject(repoUrl, ref, dir)
-
-    runGit(['init', '--quiet'], dir)
-    runPnpm(['install'], dir)
-    // The scope rename changes line lengths and package.json key order:
-    // format the new project so it starts clean.
-    if (!tryRunPnpm(['fmt'], dir)) {
-      info('pnpm fmt failed — run it yourself before the first commit')
-    }
-    runPnpm(['rock'], dir)
-    ok(`Project ready in ${dir}`)
+    await runInit(options, repoUrl, cwd)
     return
   }
 
   if (options.mode === 'onboard') {
-    if (options.positionals.length > 0) {
-      die('onboard does not accept positional arguments')
-    }
-    const ref = getCliReleaseRef(options.ref, 'onboard')
-    need('git')
-    need('pnpm')
-    if (!existsSync(join(cwd, 'package.json'))) {
-      die('Run this at the root of an existing project (package.json not found)')
-    }
-    fetchSubdirs(
-      repoUrl,
-      ref,
-      ['.boilerstone', '.claude/skills/boilerstone-upgrade', '.cursor/skills/boilerstone-upgrade'],
-      cwd,
-    )
-    rmSync(join(cwd, '.boilerstone/boilerplate.json'), { force: true })
-    const workspacePath = join(cwd, 'pnpm-workspace.yaml')
-    const workspaceBefore = readOptionalFile(workspacePath)
-    process.env.BOILERPLATE_INSTALLER_ONBOARD = '1'
-    await bootstrapProject(cwd)
-    // There is no CLI dependency to install. Bootstrap only edits the workspace
-    // to drop old `.boilerstone` entries: refresh the lockfile then and only
-    // then, so the onboarding commit never carries unrelated lockfile changes.
-    const workspaceChanged = readOptionalFile(workspacePath) !== workspaceBefore
-    if (workspaceChanged) {
-      runPnpm(['install'], cwd)
-    }
-    await offerOnboardCommit(cwd, workspaceChanged)
-    ok('Project onboarded')
+    await runOnboard(options, repoUrl, cwd)
     return
   }
 
