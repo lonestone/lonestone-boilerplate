@@ -2,7 +2,7 @@
  * Makes the server-rendered CLI map interactive: pick a flow, click a node,
  * read the details in the side panel. Without this script the map still shows.
  */
-import { EDGES, FLOWS, LAYOUT, nodeDef, type FlowId, type NodeId } from './layout'
+import { EDGES, FLOWS, FLOW_IDS, LAYOUT, nodeDef, type FlowId, type NodeId } from './layout'
 import { esc, fmt, nodeName, renderFlow, renderNode, renderOverview } from './render'
 import { content } from './content'
 
@@ -10,6 +10,10 @@ interface State {
   flow: FlowId | ''
   sel: NodeId | ''
   dimMaintainer: boolean
+}
+
+function isFlowId(id: string): id is FlowId {
+  return FLOW_IDS.includes(id as FlowId)
 }
 
 function setup(root: HTMLElement): void {
@@ -31,17 +35,8 @@ function setup(root: HTMLElement): void {
 
   const state: State = { flow: '', sel: '', dimMaintainer: false }
 
-  // The board is drawn at a fixed size, then scaled down to the width of the page.
-  // On a phone it stops at 75%: smaller than that the labels cannot be read, so it scrolls sideways.
-  function fit(): void {
-    const floor = scroller.clientWidth < 700 ? 0.75 : 0.62
-    const scale = Math.max(floor, Math.min(1, (scroller.clientWidth - 16) / LAYOUT.width))
-    board.style.transform = `scale(${scale})`
-    frame.style.width = `${LAYOUT.width * scale}px`
-    frame.style.height = `${LAYOUT.height * scale}px`
-  }
-  new ResizeObserver(fit).observe(scroller)
-  fit()
+  new ResizeObserver(() => fitBoard(board, frame, scroller)).observe(scroller)
+  fitBoard(board, frame, scroller)
   // Start on the middle of the board, where the commands are.
   scroller.scrollLeft = Math.max(0, (frame.offsetWidth - scroller.clientWidth) / 2)
 
@@ -116,21 +111,22 @@ function setup(root: HTMLElement): void {
 
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  function select(id: NodeId | '', reveal: boolean): void {
+  function select(id: NodeId | ''): void {
     state.sel = id
     update()
     if (id && phone.matches) setCollapsed(false)
-    if (reveal && id) {
-      nodeEls[id]?.scrollIntoView({
-        block: 'nearest',
-        inline: 'nearest',
-        behavior: reduceMotion ? 'auto' : 'smooth',
-      })
-    }
+  }
+
+  function revealNode(id: NodeId): void {
+    nodeEls[id]?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+      behavior: reduceMotion ? 'auto' : 'smooth',
+    })
   }
 
   function setFlow(id: string): void {
-    state.flow = id in FLOWS ? (id as FlowId) : ''
+    state.flow = isFlowId(id) ? id : ''
     state.sel = ''
     update()
     if (state.flow && phone.matches) setCollapsed(false)
@@ -145,26 +141,9 @@ function setup(root: HTMLElement): void {
     }
   }
 
-  async function copy(button: HTMLElement): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(button.dataset.copy!)
-      button.textContent = content.ui.copied
-    } catch {
-      const range = document.createRange()
-      range.selectNodeContents(button.parentElement!.querySelector('code')!)
-      const selection = getSelection()!
-      selection.removeAllRanges()
-      selection.addRange(range)
-      button.textContent = content.ui.selected
-    }
-    setTimeout(() => {
-      button.textContent = content.ui.copy
-    }, 1500)
-  }
-
   for (const el of Object.values(nodeEls)) {
     el.addEventListener('click', () =>
-      select(state.sel === el.dataset.id ? '' : (el.dataset.id as NodeId), false),
+      select(state.sel === el.dataset.id ? '' : (el.dataset.id as NodeId)),
     )
   }
   $('.cm-flows').addEventListener('click', (event) => {
@@ -176,9 +155,11 @@ function setup(root: HTMLElement): void {
       '[data-copy], [data-select], [data-back], [data-flow-reset], [data-flow-go]',
     )
     if (!target) return
-    if (target.hasAttribute('data-copy')) void copy(target)
-    else if (target.hasAttribute('data-select')) select(target.dataset.select as NodeId, true)
-    else if (target.hasAttribute('data-back')) select('', false)
+    if (target.hasAttribute('data-copy')) void copyText(target)
+    else if (target.hasAttribute('data-select')) {
+      select(target.dataset.select as NodeId)
+      revealNode(target.dataset.select as NodeId)
+    } else if (target.hasAttribute('data-back')) select('')
     else if (target.hasAttribute('data-flow-go')) setFlow(target.dataset.flowGo!)
     else setFlow('')
   })
@@ -189,11 +170,46 @@ function setup(root: HTMLElement): void {
   collapse.addEventListener('click', () => setCollapsed(!panel.classList.contains('is-collapsed')))
   root.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return
-    if (state.sel) select('', false)
+    if (state.sel) select('')
     else if (state.flow) setFlow('')
   })
 
   // Wire tooltips: what travels along the wire.
+  bindWireTooltips(edgeEls, tip)
+
+  const initial = location.hash.replace(/^#/, '')
+  if (isFlowId(initial)) state.flow = initial
+  update()
+}
+
+// The board is drawn at a fixed size, then scaled down to the width of the page.
+// On a phone it stops at 75%: smaller than that the labels cannot be read, so it scrolls sideways.
+function fitBoard(board: HTMLElement, frame: HTMLElement, scroller: HTMLElement): void {
+  const floor = scroller.clientWidth < 700 ? 0.75 : 0.62
+  const scale = Math.max(floor, Math.min(1, (scroller.clientWidth - 16) / LAYOUT.width))
+  board.style.transform = `scale(${scale})`
+  frame.style.width = `${LAYOUT.width * scale}px`
+  frame.style.height = `${LAYOUT.height * scale}px`
+}
+
+async function copyText(button: HTMLElement): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(button.dataset.copy!)
+    button.textContent = content.ui.copied
+  } catch {
+    const range = document.createRange()
+    range.selectNodeContents(button.parentElement!.querySelector('code')!)
+    const selection = getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+    button.textContent = content.ui.selected
+  }
+  setTimeout(() => {
+    button.textContent = content.ui.copy
+  }, 1500)
+}
+
+function bindWireTooltips(edgeEls: Record<string, SVGGElement>, tip: HTMLElement): void {
   for (const edge of EDGES) {
     const hit = edgeEls[edge.id]?.querySelector('.cm-hit')
     if (!hit) continue
@@ -214,10 +230,6 @@ function setup(root: HTMLElement): void {
       tip.hidden = true
     })
   }
-
-  const initial = location.hash.replace(/^#/, '')
-  if (initial in FLOWS) state.flow = initial as FlowId
-  update()
 }
 
 for (const root of document.querySelectorAll<HTMLElement>('[data-cli-map]')) setup(root)
