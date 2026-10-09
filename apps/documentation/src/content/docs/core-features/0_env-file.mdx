@@ -21,16 +21,12 @@ However, dotenvx allows you to store secrets within the codebase, which:
 
 Vite automatically loads the .env files when you run `pnpm dev` or `pnpm build`.
 
-For the API, we use the `dotenvx/dotenvx` library to load the .env files.
+For the API, `dotenvx run` injects variables into the process before Nest starts (same pattern as the OpenAPI generator). Encrypted `.env` files are decrypted by that CLI, not by the Vite bundle.
 
-```typescript
-import dotenvx from '@dotenvx/dotenvx'
-
-dotenvx.config()
+```bash
+dotenvx run -- vite-node --watch src/main.ts
 ```
 
-The .env files are managed automatically when you run `pnpm dev` or `pnpm build`.
-
-You can also use the `dotenvx` command to manage your .env files.
+`env.config.ts` only validates `process.env` with Zod. Vitest loads `.env.example` from `vite.config.ts`.
 
 To use dotenvx encryption, see the guide [here](/lonestone-boilerplate/guides/encrypt-env).

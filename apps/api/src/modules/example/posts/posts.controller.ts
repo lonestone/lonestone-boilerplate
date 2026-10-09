@@ -1,41 +1,46 @@
+import type { LoggedInBetterAuthSession } from '../../auth/auth.config'
+import type {
+  CreatePostInput,
+  PostFiltering,
+  PostPagination,
+  PostSorting,
+  UpdatePostInput,
+  UserPost,
+} from './contracts/posts.contract'
 import {
-  FilteringParams,
-  PaginationParams,
-  SortingParams,
-  TypedBody,
-  TypedController,
-  TypedParam,
-  TypedRoute,
-} from '@lonestone/nzoth/server'
-import { HttpCode, Param, UseGuards } from '@nestjs/common'
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Patch,
+  Query,
+  SerializeOptions,
+  UseGuards,
+} from '@nestjs/common'
+import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
-import { LoggedInBetterAuthSession } from '../../auth/auth.config'
 import { Session } from '../../auth/auth.decorator'
 import { AuthGuard } from '../../auth/auth.guard'
 import {
-  CreatePostInput,
   createPostSchema,
-  PostFiltering,
   postFilteringSchema,
-  PostPagination,
   postPaginationSchema,
-  PostSorting,
   postSortingSchema,
   publicAuthorPostsSchema,
   publicPostSchema,
   publicPostsSchema,
-  UpdatePostInput,
   updatePostSchema,
-  UserPost,
   userPostSchema,
   userPostsSchema,
 } from './contracts/posts.contract'
 import { PostsMapper } from './posts.mapper'
 import { PostService } from './posts.service'
 
-@TypedController('admin/posts', undefined, {
-  tags: ['Admin Posts'],
-})
+@ApiTags('Admin Posts')
+@Controller('admin/posts')
 @UseGuards(AuthGuard)
 export class PostController {
   constructor(
@@ -43,26 +48,32 @@ export class PostController {
     private readonly postsMapper: PostsMapper,
   ) {}
 
-  @TypedRoute.Post('', userPostSchema)
+  @Post()
+  @SerializeOptions({ schema: userPostSchema })
+  @ApiCreatedResponse({ standardSchema: userPostSchema })
   async createPost(
     @Session() session: LoggedInBetterAuthSession,
-    @TypedBody(createPostSchema) body: CreatePostInput,
+    @Body({ schema: createPostSchema }) body: CreatePostInput,
   ): Promise<UserPost> {
     const post = await this.postService.createPost(session.user.id, body)
     return this.postsMapper.toUserPost(post)
   }
 
-  @TypedRoute.Put(':id', userPostSchema)
+  @Put(':id')
+  @SerializeOptions({ schema: userPostSchema })
+  @ApiOkResponse({ standardSchema: userPostSchema })
   async updatePost(
     @Session() session: LoggedInBetterAuthSession,
-    @TypedParam('id', z.string()) id: string,
-    @TypedBody(updatePostSchema) body: UpdatePostInput,
+    @Param('id', { schema: z.string() }) id: string,
+    @Body({ schema: updatePostSchema }) body: UpdatePostInput,
   ): Promise<UserPost> {
     const post = await this.postService.updatePost(id, session.user.id, body)
     return this.postsMapper.toUserPost(post)
   }
 
-  @TypedRoute.Patch(':id/publish')
+  @Patch(':id/publish')
+  @SerializeOptions({ schema: userPostSchema })
+  @ApiOkResponse({ standardSchema: userPostSchema })
   async publishPost(
     @Session() session: LoggedInBetterAuthSession,
     @Param('id') id: string,
@@ -71,7 +82,9 @@ export class PostController {
     return this.postsMapper.toUserPost(post)
   }
 
-  @TypedRoute.Patch(':id/unpublish')
+  @Patch(':id/unpublish')
+  @SerializeOptions({ schema: userPostSchema })
+  @ApiOkResponse({ standardSchema: userPostSchema })
   async unpublishPost(
     @Session() session: LoggedInBetterAuthSession,
     @Param('id') id: string,
@@ -80,18 +93,22 @@ export class PostController {
     return this.postsMapper.toUserPost(post)
   }
 
-  @TypedRoute.Get('', userPostsSchema)
+  @Get()
+  @SerializeOptions({ schema: userPostsSchema })
+  @ApiOkResponse({ standardSchema: userPostsSchema })
   async getUserPosts(
     @Session() session: LoggedInBetterAuthSession,
-    @PaginationParams(postPaginationSchema) pagination: PostPagination,
-    @SortingParams(postSortingSchema) sort?: PostSorting,
-    @FilteringParams(postFilteringSchema) filter?: PostFiltering,
+    @Query({ schema: postPaginationSchema }) pagination: PostPagination,
+    @Query('sort', { schema: postSortingSchema }) sort?: PostSorting,
+    @Query('filter', { schema: postFilteringSchema }) filter?: PostFiltering,
   ) {
     const result = await this.postService.getUserPosts(session.user.id, pagination, sort, filter)
     return this.postsMapper.toUserPosts(result)
   }
 
-  @TypedRoute.Get(':id', userPostSchema)
+  @Get(':id')
+  @SerializeOptions({ schema: userPostSchema })
+  @ApiOkResponse({ standardSchema: userPostSchema })
   async getUserPost(
     @Session() session: LoggedInBetterAuthSession,
     @Param('id') id: string,
@@ -101,60 +118,68 @@ export class PostController {
   }
 }
 
-@TypedController('public/posts', undefined, {
-  tags: ['Public Posts'],
-})
+@ApiTags('Public Posts')
+@Controller('public/posts')
 export class PublicPostController {
   constructor(
     private readonly postService: PostService,
     private readonly postsMapper: PostsMapper,
   ) {}
 
-  @TypedRoute.Get('random', publicPostSchema)
+  @Get('random')
+  @SerializeOptions({ schema: publicPostSchema })
+  @ApiOkResponse({ standardSchema: publicPostSchema })
   async getRandomPost() {
     const result = await this.postService.getRandomPublicPost()
     return this.postsMapper.toPublicPost(result)
   }
 
-  @TypedRoute.Get(':slug', publicPostSchema)
-  async getPost(@TypedParam('slug', z.string()) slug: string) {
+  @Get(':slug')
+  @SerializeOptions({ schema: publicPostSchema })
+  @ApiOkResponse({ standardSchema: publicPostSchema })
+  async getPost(@Param('slug', { schema: z.string() }) slug: string) {
     const result = await this.postService.getPublicPost(slug)
     return this.postsMapper.toPublicPost(result)
   }
 
-  @TypedRoute.Get('', publicPostsSchema)
+  @Get()
+  @SerializeOptions({ schema: publicPostsSchema })
+  @ApiOkResponse({ standardSchema: publicPostsSchema })
   async getPosts(
-    @PaginationParams(postPaginationSchema) pagination: PostPagination,
-    @SortingParams(postSortingSchema) sort?: PostSorting,
-    @FilteringParams(postFilteringSchema) filter?: PostFiltering,
+    @Query({ schema: postPaginationSchema }) pagination: PostPagination,
+    @Query('sort', { schema: postSortingSchema }) sort?: PostSorting,
+    @Query('filter', { schema: postFilteringSchema }) filter?: PostFiltering,
   ) {
     const result = await this.postService.getPublicPosts(pagination, sort, filter)
     return this.postsMapper.toPublicPosts(result)
   }
 
-  @TypedRoute.Post(':slug/like', publicPostSchema)
+  @Post(':slug/like')
   @HttpCode(200)
-  async likePost(@TypedParam('slug', z.string()) slug: string) {
+  @SerializeOptions({ schema: publicPostSchema })
+  @ApiOkResponse({ standardSchema: publicPostSchema })
+  async likePost(@Param('slug', { schema: z.string() }) slug: string) {
     const post = await this.postService.likePost(slug)
     const commentCount = 0
     return this.postsMapper.toPublicPost({ post, commentCount })
   }
 }
 
-@TypedController('public/authors', undefined, {
-  tags: ['Public Authors'],
-})
+@ApiTags('Public Authors')
+@Controller('public/authors')
 export class PublicAuthorController {
   constructor(
     private readonly postService: PostService,
     private readonly postsMapper: PostsMapper,
   ) {}
 
-  @TypedRoute.Get(':slug/posts', publicAuthorPostsSchema)
+  @Get(':slug/posts')
+  @SerializeOptions({ schema: publicAuthorPostsSchema })
+  @ApiOkResponse({ standardSchema: publicAuthorPostsSchema })
   async getAuthorPosts(
-    @TypedParam('slug', z.string()) slug: string,
-    @PaginationParams(postPaginationSchema) pagination: PostPagination,
-    @SortingParams(postSortingSchema) sort?: PostSorting,
+    @Param('slug', { schema: z.string() }) slug: string,
+    @Query({ schema: postPaginationSchema }) pagination: PostPagination,
+    @Query('sort', { schema: postSortingSchema }) sort?: PostSorting,
   ) {
     const result = await this.postService.getPublicPostsByAuthor(slug, pagination, sort)
     return this.postsMapper.toPublicAuthorPosts(result)

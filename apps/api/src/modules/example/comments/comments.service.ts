@@ -1,16 +1,17 @@
-import { EntityManager, FilterQuery, QueryOrderMap, wrap } from '@mikro-orm/core'
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
-import { User } from '../../auth/auth.entity'
-import { buildOrderBy } from '../../db/query-order.util'
-import { Post } from '../../example/posts/posts.entity'
-import { Comment } from './comments.entity'
-import {
+import type { FilterQuery, QueryOrderMap } from '@mikro-orm/core'
+import type {
   CommentFiltering,
   CommentPagination,
   CommentSorting,
   CreateCommentInput,
   UpdateCommentInput,
 } from './contracts/comments.contract'
+import { EntityManager, wrap } from '@mikro-orm/core'
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { User } from '../../auth/auth.entity'
+import { buildOrderBy } from '../../db/query-order.util'
+import { Post } from '../../example/posts/posts.entity'
+import { Comment } from './comments.entity'
 
 export interface CommentsResult {
   comments: Comment[]

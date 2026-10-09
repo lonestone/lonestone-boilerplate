@@ -1,6 +1,6 @@
+import type { Auth } from 'better-auth'
 import type { NextFunction, Request, Response } from 'express'
 import { ConfigurableModuleBuilder } from '@nestjs/common'
-import { Auth } from 'better-auth'
 
 export interface AuthModuleOptions<A = Auth> {
   auth: A

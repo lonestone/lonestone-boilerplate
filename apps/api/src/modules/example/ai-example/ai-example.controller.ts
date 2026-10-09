@@ -11,8 +11,8 @@ import type {
   StreamObjectRequest,
   StreamTextRequest,
 } from './ai-example.contract'
-import { TypedBody, TypedController, TypedRoute } from '@lonestone/nzoth/server'
-import { Logger, MessageEvent, Sse, UseGuards } from '@nestjs/common'
+import { Body, Controller, Logger, Post, SerializeOptions, Sse, UseGuards } from '@nestjs/common'
+import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger'
 import { Observable } from 'rxjs'
 import { AiService } from '../../ai/ai.service'
 import { LangfuseService } from '../../ai/langfuse.service'
@@ -32,7 +32,8 @@ import {
 import { getCryptoPriceTool } from './tools/coingecko.tools'
 
 @UseGuards(AuthGuard)
-@TypedController('ai')
+@ApiTags('AI')
+@Controller('ai')
 export class AiExampleController {
   private readonly logger = new Logger(AiExampleController.name)
   constructor(
@@ -49,9 +50,11 @@ export class AiExampleController {
    * @param body
    * @returns GenerateTextResponse
    */
-  @TypedRoute.Post('generate-text', generateTextResponseSchema)
+  @Post('generate-text')
+  @SerializeOptions({ schema: generateTextResponseSchema })
+  @ApiCreatedResponse({ standardSchema: generateTextResponseSchema })
   async generateText(
-    @TypedBody(generateTextRequestSchema) body: GenerateTextRequest,
+    @Body({ schema: generateTextRequestSchema }) body: GenerateTextRequest,
   ): Promise<GenerateTextResponse> {
     const prompt = await this.langfuseService.getLangfusePrompt('Boilerplate tests')
 
@@ -82,9 +85,11 @@ export class AiExampleController {
    * @param body
    * @returns GenerateObjectResponse
    */
-  @TypedRoute.Post('generate-object', generateObjectResponseSchema)
+  @Post('generate-object')
+  @SerializeOptions({ schema: generateObjectResponseSchema })
+  @ApiCreatedResponse({ standardSchema: generateObjectResponseSchema })
   async generateObject(
-    @TypedBody(generateObjectRequestSchema) body: GenerateObjectRequest,
+    @Body({ schema: generateObjectRequestSchema }) body: GenerateObjectRequest,
   ): Promise<GenerateObjectResponse> {
     const schema = chatSchemas[body.schemaType]
     const prompt = await this.langfuseService.getLangfusePrompt('Boilerplate tests')
@@ -120,8 +125,10 @@ export class AiExampleController {
    * @param body
    * @returns ChatResponse
    */
-  @TypedRoute.Post('chat', chatResponseSchema)
-  async chat(@TypedBody(chatRequestSchema) body: ChatRequest): Promise<ChatResponse> {
+  @Post('chat')
+  @SerializeOptions({ schema: chatResponseSchema })
+  @ApiCreatedResponse({ standardSchema: chatResponseSchema })
+  async chat(@Body({ schema: chatRequestSchema }) body: ChatRequest): Promise<ChatResponse> {
     const schema =
       body.schemaType && body.schemaType !== 'none' ? chatSchemas[body.schemaType] : undefined
 
@@ -182,26 +189,26 @@ export class AiExampleController {
   // Streaming Routes
   // ============================================================================
 
-  @TypedRoute.Post('stream-text')
+  @Post('stream-text')
   @Sse('stream-text')
   streamText(
-    @TypedBody(streamTextRequestSchema) body: StreamTextRequest,
+    @Body({ schema: streamTextRequestSchema }) body: StreamTextRequest,
   ): Observable<MessageEvent> {
     return this.createStreamObservable(body, 'stream-text')
   }
 
-  @TypedRoute.Post('stream-object')
+  @Post('stream-object')
   @Sse('stream-object')
   streamObject(
-    @TypedBody(streamObjectRequestSchema) body: StreamObjectRequest,
+    @Body({ schema: streamObjectRequestSchema }) body: StreamObjectRequest,
   ): Observable<MessageEvent> {
     return this.createStreamObservable(body, 'stream-object')
   }
 
-  @TypedRoute.Post('stream-chat')
+  @Post('stream-chat')
   @Sse('stream-chat')
   streamChat(
-    @TypedBody(streamChatRequestSchema) body: StreamChatRequest,
+    @Body({ schema: streamChatRequestSchema }) body: StreamChatRequest,
   ): Observable<MessageEvent> {
     return this.createStreamObservable(body, 'stream-chat')
   }

@@ -1,15 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import dotenvx from '@dotenvx/dotenvx'
 import { z } from 'zod'
-
-// Load environment variables
-const nodeEnv = process.env.NODE_ENV || 'development'
-if (nodeEnv === 'test') {
-  dotenvx.config({ path: join(process.cwd(), '.env.example') })
-} else {
-  dotenvx.config()
-}
 
 function getVersion() {
   const packageJson = readFileSync(join(process.cwd(), 'package.json'), 'utf8')
@@ -147,3 +138,5 @@ export const config = {
     tracesSampleRate: configParsed.data.TRACES_SAMPLE_RATE,
   },
 } as const
+
+export type AppConfig = typeof config

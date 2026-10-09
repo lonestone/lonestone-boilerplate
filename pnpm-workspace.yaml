@@ -4,9 +4,12 @@ packages:
   - .boilerstone/cli
 strictPeerDependencies: true
 # Several packages still declare typescript@^5; TS 6 is compatible here
+# @sentry/nestjs 10 peers on Nest <=11; Nest 12 support starts at @sentry/nestjs 11
 peerDependencyRules:
   allowedVersions:
     typescript: '6'
+    '@sentry/nestjs>@nestjs/common': '12'
+    '@sentry/nestjs>@nestjs/core': '12'
 # cookie@1 keeps Express (parse/serialize) and Astro <=7.1.1 (parseCookie) compatible under shamefully-hoist
 overrides:
   cookie: 1.1.1

@@ -3,7 +3,6 @@ import { EmptyState } from '@boilerstone/ui/components/app'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import { FilterRule } from '@lonestone/nzoth/client'
 import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'motion/react'
 import { ChevronLeft, ChevronRight, FileText, PlusCircle, SearchIcon } from 'lucide-react'
@@ -48,9 +47,7 @@ export default function PostsListPage() {
         query: {
           offset: (pageValue - 1) * PAGE_SIZE,
           pageSize: PAGE_SIZE,
-          filter: searchValue
-            ? [{ property: 'title', rule: FilterRule.LIKE, value: searchValue }]
-            : [],
+          filter: searchValue ? [{ property: 'title', rule: 'like', value: searchValue }] : [],
         },
       })
 

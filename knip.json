@@ -22,6 +22,7 @@
         "src/main.ts!",
         "src/modules/auth/auth.cli.mts!",
         "src/modules/db/db.config.ts!",
+        "src/migrate.ts!",
         "src/modules/db/migrations/**/*.ts!",
         "src/seeders/**/*.ts!",
         "src/**/*.contract.ts!",
@@ -42,11 +43,14 @@
       "ignoreDependencies": [
         "pino-pretty",
         "ts-node",
+        "@swc-node/register",
         "source-map-support",
         "test",
         "kysely",
         "@better-fetch/fetch",
-        "better-call"
+        "better-call",
+        "@nestjs/cli",
+        "@nestjs/schematics"
       ]
     },
     "apps/web-spa": {

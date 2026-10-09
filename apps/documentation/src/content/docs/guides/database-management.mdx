@@ -56,7 +56,9 @@ pnpm --filter=api db:migration:init
 ```
 
 3. Clean your production database: MikroORM will need an empty database to apply the initial migration. You may also want to do that for you pre-production environment.
-4. Set up your infrastructure to run `pnpm --filter=api db:migrate:up` on startup (instead of `pnpm --filter=api db:sync` or other)
+4. Locally and in CI, apply migrations with `pnpm --filter=api db:migrate:up` (MikroORM CLI). Do not use `pnpm --filter=api db:sync` in production. The production image has no TypeScript sources: the build emits `dist/modules/db/migrations/*.js` plus `dist/migrate.js`, and the container runs `pnpm db:migrate:prod` before starting the API ([MikroORM: using the Migrator programmatically](https://mikro-orm.io/docs/migrations#using-the-migrator-programmatically)).
+
+   `dist/migrate.js` is a standalone entrypoint: as soon as you run more than one replica, run it as a deploy job or an init container instead of on every container start, so a single process applies the migrations.
 
 And... that's it! You can deploy this version.
 
@@ -84,12 +86,14 @@ Then, you can run the migration to test it:
 pnpm --filter=api db:migrate:up
 ```
 
+`pnpm test` also applies source migrations once in global setup, then fails the suite if entities have drifted from `snapshot.json` (`orm.migrator.checkSchema()`). That check does not cover `dist/migrate.js`.
+
 #### Deploying a new migration
 
 Migrations are tricky because they order of execution matters. If another developer made some changes to the database, remember to pull their changes and **apply their migrations first**.
 
 When several PRs are opened and are making changes to the database, it's a good practise to synchronize between developers to ensure migrations are runned in a correct order.
 
-When you are ready to deploy your changes, just push your changes and your container / launch command should run the migrations via `pnpm --filter=api db:migrate:up`.
+When you are ready to deploy your changes, push them. Apply them locally first with `pnpm --filter=api db:migrate:up`. The production container runs `pnpm db:migrate:prod` (`dist/migrate.js`) then starts the API.
 
 Remember to respect the production safety rules described in the [Database Migrations](/lonestone-boilerplate/explanations/6_database-migrations) page.

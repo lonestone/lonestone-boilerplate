@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { Transporter } from 'nodemailer'
+import type { Transporter } from 'nodemailer'
 import { EmailService } from './email.service'
 
 describe('emailService', () => {

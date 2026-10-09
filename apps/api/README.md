@@ -56,7 +56,7 @@ pnpm run dev
 
 # Run the API in production
 pnpm run build
-node dist/main.js
+pnpm run start
 ```
 
 ## OpenAPI documentation
@@ -135,7 +135,7 @@ docker run -p 3000:3000 \
 
 ### Running with Migrations (if applicable)
 
-If you use database migrations, you can run them when starting the container by uncommenting the appropriate line in the Dockerfile or using a custom command:
+Locally, use `pnpm db:migrate:up`. The production image runs `dist/migrate.js`, which applies the compiled files in `dist/modules/db/migrations/`. The Dockerfile already does that. To do the same with a custom command:
 
 ```bash
 docker run -p 3000:3000 \
@@ -146,5 +146,5 @@ docker run -p 3000:3000 \
   -e DATABASE_PORT=5432 \
   -e BETTER_AUTH_SECRET=secret \
   -e API_PORT=3000 \
-  lonestone/api sh -c "pnpm db:migrate:up && node dist/main.js"
+  lonestone/api sh -c "pnpm db:migrate:prod && pnpm run start"
 ```
