@@ -542,6 +542,11 @@ function buildTrustedOrigins(config: EnvConfig, apiEnvPath: string): string {
 }
 
 function updateViteConfigPorts(config: EnvConfig, availableApps: AvailableApps): void {
+  // A project without a web app has no Vite config to update, so say nothing.
+  if (!availableApps.webSpa && !availableApps.webSsr) {
+    return
+  }
+
   console.log(`\n${colorize('⚙️  Updating Vite dev server ports', 'cyan')}\n`)
 
   if (availableApps.webSpa && config.ports.webSpa) {
