@@ -1,0 +1,71 @@
+name: Init combos
+
+# Producer-only: generates a project for each `init --apps` choice from this
+# checkout and checks that it installs, lints, typechecks and builds. The job
+# only runs in the boilerplate repository.
+on:
+  pull_request:
+    paths:
+      - .boilerstone/cli/**
+      - apps/**
+      - packages/**
+      - package.json
+      - pnpm-workspace.yaml
+      - pnpm-lock.yaml
+      - knip.json
+      - .github/workflows/init-combos.yml
+  push:
+    branches: [main]
+    paths:
+      - .boilerstone/cli/**
+      - apps/**
+      - packages/**
+      - package.json
+      - pnpm-workspace.yaml
+      - pnpm-lock.yaml
+      - knip.json
+      - .github/workflows/init-combos.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  combo:
+    name: 🧩 Init with ${{ matrix.apps }}
+    if: ${{ github.repository == 'lonestone/lonestone-boilerplate' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        apps:
+          - web-spa,web-ssr
+          - web-spa
+          - web-ssr
+          - none
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.13.0
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🧩 Generate and check a project with --apps ${{ matrix.apps }}
+        env:
+          APPS: ${{ matrix.apps }}
+        run: pnpm exec tsx .boilerstone/cli/scripts/check-combo.ts --apps "$APPS"
