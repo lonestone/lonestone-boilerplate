@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { initializeTestApp } from '../../../../test/helpers/test-app.helper'
 import { createRequest } from '../../../../test/helpers/test-auth.helper'
 import { createUserWithSession } from '../../../../test/helpers/test-user.helpers'
-import { CreatePostInput } from '../contracts/posts.contract'
+import type { CreatePostInput } from '../contracts/posts.contract'
 import { PostModule } from '../posts.module'
 
 describe('postController (e2e)', () => {

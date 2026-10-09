@@ -3,55 +3,6 @@
 import { z } from 'zod';
 
 /**
- * UseCase2GroupedCallsRequest
- *
- * Multiple LLM calls in one request; one trace in Langfuse, finalized at end
- */
-export const zUseCase2GroupedCallsRequest = z.object({
-    prompts: z.array(z.string().min(1)).min(1).max(5),
-    model: z.optional(z.enum([
-        'OPENAI_GPT_5_NANO',
-        'GOOGLE_GEMINI_3_FLASH',
-        'CLAUDE_HAIKU_3_5',
-        'CLAUDE_OPUS_4_5',
-        'MISTRAL_SMALL'
-    ]))
-});
-
-/**
- * UseCase3LogicalUnitsRequest
- *
- * Multiple workflows; each workflow gets its own Langfuse trace (split per unit)
- */
-export const zUseCase3LogicalUnitsRequest = z.object({
-    workflowPrompts: z.array(z.string().min(1)).min(1).max(5),
-    model: z.optional(z.enum([
-        'OPENAI_GPT_5_NANO',
-        'GOOGLE_GEMINI_3_FLASH',
-        'CLAUDE_HAIKU_3_5',
-        'CLAUDE_OPUS_4_5',
-        'MISTRAL_SMALL'
-    ]))
-});
-
-/**
- * UseCase4ChatSessionRequest
- *
- * Simple generateText with sessionId for grouping traces across requests
- */
-export const zUseCase4ChatSessionRequest = z.object({
-    prompt: z.string().min(1),
-    sessionId: z.string().min(1),
-    model: z.optional(z.enum([
-        'OPENAI_GPT_5_NANO',
-        'GOOGLE_GEMINI_3_FLASH',
-        'CLAUDE_HAIKU_3_5',
-        'CLAUDE_OPUS_4_5',
-        'MISTRAL_SMALL'
-    ]))
-});
-
-/**
  * CreateCommentSchema
  *
  * Schema for creating a comment
@@ -60,154 +11,6 @@ export const zCreateCommentSchema = z.object({
     content: z.string().min(1).max(1000),
     parentId: z.optional(z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/))
 });
-
-/**
- * TokenUsage
- *
- * Token usage information for an AI generation
- */
-export const zTokenUsage = z.object({
-    promptTokens: z.number(),
-    completionTokens: z.number(),
-    totalTokens: z.number()
-});
-
-/**
- * ToolCall
- *
- * A tool call made by the AI
- */
-export const zToolCall = z.object({
-    toolCallId: z.string(),
-    toolName: z.string(),
-    args: z.record(z.string(), z.unknown())
-});
-
-/**
- * ToolResult
- *
- * The result of a tool call
- */
-export const zToolResult = z.object({
-    toolCallId: z.string(),
-    toolName: z.string(),
-    result: z.unknown()
-});
-
-/**
- * GenerateTextResponse
- *
- * Response from text generation
- */
-export const zGenerateTextResponse = z.object({
-    usage: z.optional(zTokenUsage),
-    finishReason: z.optional(z.string()),
-    toolCalls: z.optional(z.array(zToolCall)),
-    toolResults: z.optional(z.array(zToolResult)),
-    result: z.string()
-});
-
-/**
- * UseCase2GroupedCallsResponse
- *
- * Combined results from grouped LLM calls
- */
-export const zUseCase2GroupedCallsResponse = z.object({
-    traceName: z.string(),
-    results: z.array(z.string()),
-    usage: z.optional(zTokenUsage)
-});
-
-/**
- * UseCase3LogicalUnitsResponse
- *
- * One result per workflow (each in its own trace)
- */
-export const zUseCase3LogicalUnitsResponse = z.object({
-    workflows: z.array(z.object({
-        index: z.number(),
-        result: z.string(),
-        usage: z.optional(zTokenUsage)
-    }))
-});
-
-/**
- * GenerateObjectResponse
- *
- * Response from structured object generation
- */
-export const zGenerateObjectResponse = z.object({
-    usage: z.optional(zTokenUsage),
-    finishReason: z.optional(z.string()),
-    toolCalls: z.optional(z.array(zToolCall)),
-    toolResults: z.optional(z.array(zToolResult)),
-    result: z.unknown()
-});
-
-/**
- * ChatMessageWithSchemaType
- *
- * A message with optional schemaType metadata for identifying structured output
- */
-export const zChatMessageWithSchemaType = z.object({
-    role: z.enum([
-        'user',
-        'assistant',
-        'system',
-        'tool'
-    ]),
-    content: z.string(),
-    metadata: z.optional(z.object({
-        isConsideredSystemMessage: z.optional(z.boolean()),
-        usage: z.optional(z.object({
-            promptTokens: z.number(),
-            completionTokens: z.number(),
-            totalTokens: z.number()
-        })),
-        finishReason: z.optional(z.string()),
-        timestamp: z.optional(z.iso.datetime().regex(/^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/)),
-        toolCalls: z.optional(z.array(z.object({
-            toolCallId: z.string(),
-            toolName: z.string(),
-            args: z.record(z.string(), z.unknown())
-        }))),
-        reasonning: z.optional(z.string()),
-        schemaType: z.optional(z.enum([
-            'userProfile',
-            'task',
-            'product',
-            'recipe',
-            'none'
-        ]))
-    }))
-});
-
-/**
- * ChatResponse
- *
- * Response from AI chat conversation
- */
-export const zChatResponse = z.object({
-    usage: z.optional(zTokenUsage),
-    finishReason: z.optional(z.string()),
-    toolCalls: z.optional(z.array(zToolCall)),
-    toolResults: z.optional(z.array(zToolResult)),
-    result: z.string(),
-    messages: z.array(zChatMessageWithSchemaType)
-});
-
-/**
- * ChatSchemaType
- *
- * Predefined schema types for testing structured output
- */
-export const zChatSchemaType = z.enum([
-    'userProfile',
-    'task',
-    'product',
-    'recipe',
-    'none'
-]);
 
 /**
  * CommentSchema
@@ -238,6 +41,41 @@ export const zCommentSchema = z.object({
 });
 
 /**
+ * UpdateCommentSchema
+ *
+ * Schema for updating a comment
+ */
+export const zUpdateCommentSchema = z.object({
+    content: z.string().min(1).max(1000)
+});
+
+/**
+ * PaginationQuerySchema
+ *
+ * Schema for pagination query
+ */
+export const zPaginationQuerySchema = z.object({
+    offset: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+    pageSize: z.optional(z.int().gte(1).lte(100)).default(20)
+});
+
+/**
+ * SortingQueryStringSchema
+ *
+ * Schema for sorting items
+ */
+export const zSortingQueryStringSchema = z.string();
+
+/**
+ * FilterQueryStringSchema
+ *
+ * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
+ * Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
+ * Available properties: title, tag
+ */
+export const zFilterQueryStringSchema = z.string();
+
+/**
  * CommentsSchema
  *
  * Schema for a paginated list of comments
@@ -259,15 +97,15 @@ export const zCommentsSchema = z.object({
  */
 export const zPostContentSchema = z.union([
     z.object({
-        type: z.literal('text'),
+        type: z.enum(['text']),
         data: z.string()
     }),
     z.object({
-        type: z.literal('image'),
+        type: z.enum(['image']),
         data: z.string()
     }),
     z.object({
-        type: z.literal('video'),
+        type: z.enum(['video']),
         data: z.string()
     })
 ]);
@@ -280,18 +118,6 @@ export const zPostContentSchema = z.union([
 export const zCreatePostSchema = z.object({
     title: z.string().min(1),
     content: z.array(zPostContentSchema),
-    coverImage: z.optional(z.url()),
-    tags: z.optional(z.array(z.string()))
-});
-
-/**
- * UpdatePostSchema
- *
- * Schema for updating a post
- */
-export const zUpdatePostSchema = z.object({
-    title: z.optional(z.string().min(1)),
-    content: z.optional(z.array(zPostContentSchema)),
     coverImage: z.optional(z.url()),
     tags: z.optional(z.array(z.string()))
 });
@@ -340,6 +166,18 @@ export const zUserPostSchema = z.object({
     commentCount: z.optional(z.number()),
     coverImage: z.optional(z.url()),
     tags: z.array(zTagSchema)
+});
+
+/**
+ * UpdatePostSchema
+ *
+ * Schema for updating a post
+ */
+export const zUpdatePostSchema = z.object({
+    title: z.optional(z.string().min(1)),
+    content: z.optional(z.array(zPostContentSchema)),
+    coverImage: z.optional(z.url()),
+    tags: z.optional(z.array(z.string()))
 });
 
 /**
@@ -448,6 +286,346 @@ export const zPublicAuthorPostsSchema = z.object({
 });
 
 /**
+ * AiGenerateOptions
+ *
+ * Options for an AI generation
+ */
+export const zAiGenerateOptions = z.object({
+    temperature: z.optional(z.number().gte(0).lte(2)),
+    maxTokens: z.optional(z.number().gt(0)),
+    topP: z.optional(z.number().gte(0).lte(1)),
+    frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
+    presencePenalty: z.optional(z.number().gte(-2).lte(2)),
+    maxSteps: z.optional(z.number().gt(0)),
+    stopWhen: z.optional(z.number().gt(0)),
+    telemetry: z.optional(z.object({
+        traceMode: z.optional(z.enum(['inherit', 'split'])),
+        traceId: z.optional(z.string()),
+        traceName: z.optional(z.string()),
+        spanName: z.optional(z.string()),
+        sessionId: z.optional(z.string()),
+        metadata: z.optional(z.record(z.string(), z.unknown())),
+        langfuseOriginalPrompt: z.optional(z.string())
+    })),
+    metadata: z.optional(z.record(z.string(), z.unknown()))
+});
+
+/**
+ * GenerateTextRequest
+ *
+ * Request for simple text generation with a single prompt
+ */
+export const zGenerateTextRequest = z.object({
+    prompt: z.string().min(1),
+    model: z.optional(z.enum([
+        'OPENAI_GPT_5_NANO',
+        'GOOGLE_GEMINI_3_FLASH',
+        'CLAUDE_HAIKU_3_5',
+        'CLAUDE_OPUS_4_5',
+        'MISTRAL_SMALL'
+    ])),
+    options: z.optional(zAiGenerateOptions)
+});
+
+/**
+ * TokenUsage
+ *
+ * Token usage information for an AI generation
+ */
+export const zTokenUsage = z.object({
+    promptTokens: z.number(),
+    completionTokens: z.number(),
+    totalTokens: z.number()
+});
+
+/**
+ * ToolCall
+ *
+ * A tool call made by the AI
+ */
+export const zToolCall = z.object({
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.record(z.string(), z.unknown())
+});
+
+/**
+ * ToolResult
+ *
+ * The result of a tool call
+ */
+export const zToolResult = z.object({
+    toolCallId: z.string(),
+    toolName: z.string(),
+    result: z.unknown()
+});
+
+/**
+ * GenerateTextResponse
+ *
+ * Response from text generation
+ */
+export const zGenerateTextResponse = z.object({
+    usage: z.optional(zTokenUsage),
+    finishReason: z.optional(z.string()),
+    toolCalls: z.optional(z.array(zToolCall)),
+    toolResults: z.optional(z.array(zToolResult)),
+    result: z.string()
+});
+
+/**
+ * GenerateObjectRequest
+ *
+ * Request for structured object generation with a predefined schema type
+ */
+export const zGenerateObjectRequest = z.object({
+    prompt: z.string().min(1),
+    schemaType: z.enum([
+        'userProfile',
+        'task',
+        'product',
+        'recipe'
+    ]),
+    model: z.optional(z.enum([
+        'OPENAI_GPT_5_NANO',
+        'GOOGLE_GEMINI_3_FLASH',
+        'CLAUDE_HAIKU_3_5',
+        'CLAUDE_OPUS_4_5',
+        'MISTRAL_SMALL'
+    ])),
+    options: z.optional(zAiGenerateOptions)
+});
+
+/**
+ * GenerateObjectResponse
+ *
+ * Response from structured object generation
+ */
+export const zGenerateObjectResponse = z.object({
+    usage: z.optional(zTokenUsage),
+    finishReason: z.optional(z.string()),
+    toolCalls: z.optional(z.array(zToolCall)),
+    toolResults: z.optional(z.array(zToolResult)),
+    result: z.unknown()
+});
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing structured output
+ */
+export const zChatSchemaType = z.enum([
+    'userProfile',
+    'task',
+    'product',
+    'recipe',
+    'none'
+]);
+
+/**
+ * ChatMessageWithSchemaType
+ *
+ * A message with optional schemaType metadata for identifying structured output
+ */
+export const zChatMessageWithSchemaType = z.object({
+    role: z.enum([
+        'user',
+        'assistant',
+        'system',
+        'tool'
+    ]),
+    content: z.string(),
+    metadata: z.optional(z.object({
+        isConsideredSystemMessage: z.optional(z.boolean()),
+        usage: z.optional(zTokenUsage),
+        finishReason: z.optional(z.string()),
+        timestamp: z.optional(z.iso.datetime().regex(/^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/)),
+        toolCalls: z.optional(z.array(zToolCall)),
+        reasonning: z.optional(z.string()),
+        schemaType: z.optional(zChatSchemaType)
+    }))
+});
+
+/**
+ * ChatRequest
+ *
+ * Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.
+ */
+export const zChatRequest = z.object({
+    messages: z.array(zChatMessageWithSchemaType).min(1),
+    model: z.optional(z.enum([
+        'OPENAI_GPT_5_NANO',
+        'GOOGLE_GEMINI_3_FLASH',
+        'CLAUDE_HAIKU_3_5',
+        'CLAUDE_OPUS_4_5',
+        'MISTRAL_SMALL'
+    ])),
+    options: z.optional(zAiGenerateOptions),
+    schemaType: z.optional(zChatSchemaType)
+});
+
+/**
+ * ChatResponse
+ *
+ * Response from AI chat conversation
+ */
+export const zChatResponse = z.object({
+    usage: z.optional(zTokenUsage),
+    finishReason: z.optional(z.string()),
+    toolCalls: z.optional(z.array(zToolCall)),
+    toolResults: z.optional(z.array(zToolResult)),
+    result: z.string(),
+    messages: z.array(zChatMessageWithSchemaType)
+});
+
+/**
+ * StreamTextRequest
+ *
+ * Request for streaming text generation with a single prompt
+ */
+export const zStreamTextRequest = z.object({
+    prompt: z.string().min(1),
+    model: z.optional(z.enum([
+        'OPENAI_GPT_5_NANO',
+        'GOOGLE_GEMINI_3_FLASH',
+        'CLAUDE_HAIKU_3_5',
+        'CLAUDE_OPUS_4_5',
+        'MISTRAL_SMALL'
+    ])),
+    options: z.optional(zAiGenerateOptions)
+});
+
+/**
+ * StreamObjectRequest
+ *
+ * Request for streaming structured object generation
+ */
+export const zStreamObjectRequest = z.object({
+    prompt: z.string().min(1),
+    schemaType: z.enum([
+        'userProfile',
+        'task',
+        'product',
+        'recipe'
+    ]),
+    model: z.optional(z.enum([
+        'OPENAI_GPT_5_NANO',
+        'GOOGLE_GEMINI_3_FLASH',
+        'CLAUDE_HAIKU_3_5',
+        'CLAUDE_OPUS_4_5',
+        'MISTRAL_SMALL'
+    ])),
+    options: z.optional(zAiGenerateOptions)
+});
+
+/**
+ * StreamChatRequest
+ *
+ * Request for streaming multi-turn AI conversation
+ */
+export const zStreamChatRequest = z.object({
+    messages: z.array(zChatMessageWithSchemaType).min(1),
+    model: z.optional(z.enum([
+        'OPENAI_GPT_5_NANO',
+        'GOOGLE_GEMINI_3_FLASH',
+        'CLAUDE_HAIKU_3_5',
+        'CLAUDE_OPUS_4_5',
+        'MISTRAL_SMALL'
+    ])),
+    options: z.optional(zAiGenerateOptions)
+});
+
+/**
+ * UseCase1SingleGenerationRequest
+ *
+ * Single generation; trace is finalized with name/output so Langfuse shows them
+ */
+export const zUseCase1SingleGenerationRequest = z.object({
+    prompt: z.string().min(1),
+    model: z.optional(z.enum([
+        'OPENAI_GPT_5_NANO',
+        'GOOGLE_GEMINI_3_FLASH',
+        'CLAUDE_HAIKU_3_5',
+        'CLAUDE_OPUS_4_5',
+        'MISTRAL_SMALL'
+    ])),
+    options: z.optional(zAiGenerateOptions)
+});
+
+/**
+ * UseCase2GroupedCallsRequest
+ *
+ * Multiple LLM calls in one request; one trace in Langfuse, finalized at end
+ */
+export const zUseCase2GroupedCallsRequest = z.object({
+    prompts: z.array(z.string().min(1)).min(1).max(5),
+    model: z.optional(z.enum([
+        'OPENAI_GPT_5_NANO',
+        'GOOGLE_GEMINI_3_FLASH',
+        'CLAUDE_HAIKU_3_5',
+        'CLAUDE_OPUS_4_5',
+        'MISTRAL_SMALL'
+    ]))
+});
+
+/**
+ * UseCase2GroupedCallsResponse
+ *
+ * Combined results from grouped LLM calls
+ */
+export const zUseCase2GroupedCallsResponse = z.object({
+    traceName: z.string(),
+    results: z.array(z.string()),
+    usage: z.optional(zTokenUsage)
+});
+
+/**
+ * UseCase3LogicalUnitsRequest
+ *
+ * Multiple workflows; each workflow gets its own Langfuse trace (split per unit)
+ */
+export const zUseCase3LogicalUnitsRequest = z.object({
+    workflowPrompts: z.array(z.string().min(1)).min(1).max(5),
+    model: z.optional(z.enum([
+        'OPENAI_GPT_5_NANO',
+        'GOOGLE_GEMINI_3_FLASH',
+        'CLAUDE_HAIKU_3_5',
+        'CLAUDE_OPUS_4_5',
+        'MISTRAL_SMALL'
+    ]))
+});
+
+/**
+ * UseCase3LogicalUnitsResponse
+ *
+ * One result per workflow (each in its own trace)
+ */
+export const zUseCase3LogicalUnitsResponse = z.object({
+    workflows: z.array(z.object({
+        index: z.number(),
+        result: z.string(),
+        usage: z.optional(zTokenUsage)
+    }))
+});
+
+/**
+ * UseCase4ChatSessionRequest
+ *
+ * Simple generateText with sessionId for grouping traces across requests
+ */
+export const zUseCase4ChatSessionRequest = z.object({
+    prompt: z.string().min(1),
+    sessionId: z.string().min(1),
+    model: z.optional(z.enum([
+        'OPENAI_GPT_5_NANO',
+        'GOOGLE_GEMINI_3_FLASH',
+        'CLAUDE_HAIKU_3_5',
+        'CLAUDE_OPUS_4_5',
+        'MISTRAL_SMALL'
+    ]))
+});
+
+/**
  * AiCoreMessage
  *
  * A message in the conversation history following Vercel AI SDK patterns
@@ -471,41 +649,83 @@ export const zAiCoreMessage = z.object({
 });
 
 /**
+ * AiStreamTextChunkEvent
+ *
+ * A text chunk event during streaming
+ */
+export const zAiStreamTextChunkEvent = z.object({
+    type: z.literal('chunk'),
+    text: z.string()
+});
+
+/**
+ * AiStreamToolCallEvent
+ *
+ * Event when a tool is being called during streaming
+ */
+export const zAiStreamToolCallEvent = z.object({
+    type: z.literal('tool-call'),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.record(z.string(), z.unknown())
+});
+
+/**
+ * AiStreamToolResultEvent
+ *
+ * Event when a tool returns a result during streaming
+ */
+export const zAiStreamToolResultEvent = z.object({
+    type: z.literal('tool-result'),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    result: z.unknown()
+});
+
+/**
+ * AiStreamUsage
+ *
+ * Token usage information for the stream
+ */
+export const zAiStreamUsage = z.object({
+    promptTokens: z.number(),
+    completionTokens: z.number(),
+    totalTokens: z.number()
+});
+
+/**
+ * AiStreamDoneEvent
+ *
+ * Final event when streaming is complete
+ */
+export const zAiStreamDoneEvent = z.object({
+    type: z.literal('done'),
+    fullText: z.string(),
+    usage: z.optional(zAiStreamUsage),
+    finishReason: z.optional(z.string())
+});
+
+/**
+ * AiStreamErrorEvent
+ *
+ * Error event during streaming
+ */
+export const zAiStreamErrorEvent = z.object({
+    type: z.literal('error'),
+    message: z.string()
+});
+
+/**
  * AiStreamEvent
  *
  * SSE event for AI text streaming with tool support
  */
 export const zAiStreamEvent = z.union([
-    z.object({
-        type: z.literal('chunk'),
-        text: z.string()
-    }),
-    z.object({
-        type: z.literal('tool-call'),
-        toolCallId: z.string(),
-        toolName: z.string(),
-        args: z.record(z.string(), z.unknown())
-    }),
-    z.object({
-        type: z.literal('tool-result'),
-        toolCallId: z.string(),
-        toolName: z.string(),
-        result: z.unknown()
-    }),
-    z.object({
-        type: z.literal('done'),
-        fullText: z.string(),
-        usage: z.optional(z.object({
-            promptTokens: z.number(),
-            completionTokens: z.number(),
-            totalTokens: z.number()
-        })),
-        finishReason: z.optional(z.string())
-    }),
-    z.object({
-        type: z.literal('error'),
-        message: z.string()
-    })
+    zAiStreamTextChunkEvent,
+    zAiStreamToolCallEvent,
+    zAiStreamToolResultEvent,
+    zAiStreamDoneEvent,
+    zAiStreamErrorEvent
 ]);
 
 /**
@@ -576,193 +796,15 @@ export const zUserProfile = z.object({
     skills: z.optional(z.array(z.string()))
 });
 
-/**
- * AiGenerateOptions
- *
- * Options for an AI generation
- */
-export const zAiGenerateOptions = z.object({
-    temperature: z.optional(z.number().gte(0).lte(2)),
-    maxTokens: z.optional(z.number().gt(0)),
-    topP: z.optional(z.number().gte(0).lte(1)),
-    frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
-    presencePenalty: z.optional(z.number().gte(-2).lte(2)),
-    maxSteps: z.optional(z.number().gt(0)),
-    stopWhen: z.optional(z.number().gt(0)),
-    telemetry: z.optional(z.object({
-        traceMode: z.optional(z.enum(['inherit', 'split'])),
-        traceId: z.optional(z.string()),
-        traceName: z.optional(z.string()),
-        spanName: z.optional(z.string()),
-        sessionId: z.optional(z.string()),
-        metadata: z.optional(z.record(z.string(), z.unknown())),
-        langfuseOriginalPrompt: z.optional(z.string())
-    })),
-    metadata: z.optional(z.record(z.string(), z.unknown()))
+export const zCommentsControllerGetCommentsSortItem = z.object({
+    property: z.enum(['createdAt', 'authorName']),
+    direction: z.enum(['asc', 'desc'])
 });
 
-/**
- * UseCase1SingleGenerationRequest
- *
- * Single generation; trace is finalized with name/output so Langfuse shows them
- */
-export const zUseCase1SingleGenerationRequest = z.object({
-    prompt: z.string().min(1),
-    model: z.optional(z.enum([
-        'OPENAI_GPT_5_NANO',
-        'GOOGLE_GEMINI_3_FLASH',
-        'CLAUDE_HAIKU_3_5',
-        'CLAUDE_OPUS_4_5',
-        'MISTRAL_SMALL'
-    ])),
-    options: z.optional(zAiGenerateOptions)
-});
-
-/**
- * GenerateTextRequest
- *
- * Request for simple text generation with a single prompt
- */
-export const zGenerateTextRequest = z.object({
-    prompt: z.string().min(1),
-    model: z.optional(z.enum([
-        'OPENAI_GPT_5_NANO',
-        'GOOGLE_GEMINI_3_FLASH',
-        'CLAUDE_HAIKU_3_5',
-        'CLAUDE_OPUS_4_5',
-        'MISTRAL_SMALL'
-    ])),
-    options: z.optional(zAiGenerateOptions)
-});
-
-/**
- * GenerateObjectRequest
- *
- * Request for structured object generation with a predefined schema type
- */
-export const zGenerateObjectRequest = z.object({
-    prompt: z.string().min(1),
-    schemaType: z.enum([
-        'userProfile',
-        'task',
-        'product',
-        'recipe'
-    ]),
-    model: z.optional(z.enum([
-        'OPENAI_GPT_5_NANO',
-        'GOOGLE_GEMINI_3_FLASH',
-        'CLAUDE_HAIKU_3_5',
-        'CLAUDE_OPUS_4_5',
-        'MISTRAL_SMALL'
-    ])),
-    options: z.optional(zAiGenerateOptions)
-});
-
-/**
- * ChatRequest
- *
- * Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.
- */
-export const zChatRequest = z.object({
-    messages: z.array(zChatMessageWithSchemaType).min(1),
-    model: z.optional(z.enum([
-        'OPENAI_GPT_5_NANO',
-        'GOOGLE_GEMINI_3_FLASH',
-        'CLAUDE_HAIKU_3_5',
-        'CLAUDE_OPUS_4_5',
-        'MISTRAL_SMALL'
-    ])),
-    options: z.optional(zAiGenerateOptions),
-    schemaType: z.optional(zChatSchemaType)
-});
-
-/**
- * StreamTextRequest
- *
- * Request for streaming text generation with a single prompt
- */
-export const zStreamTextRequest = z.object({
-    prompt: z.string().min(1),
-    model: z.optional(z.enum([
-        'OPENAI_GPT_5_NANO',
-        'GOOGLE_GEMINI_3_FLASH',
-        'CLAUDE_HAIKU_3_5',
-        'CLAUDE_OPUS_4_5',
-        'MISTRAL_SMALL'
-    ])),
-    options: z.optional(zAiGenerateOptions)
-});
-
-/**
- * StreamObjectRequest
- *
- * Request for streaming structured object generation
- */
-export const zStreamObjectRequest = z.object({
-    prompt: z.string().min(1),
-    schemaType: z.enum([
-        'userProfile',
-        'task',
-        'product',
-        'recipe'
-    ]),
-    model: z.optional(z.enum([
-        'OPENAI_GPT_5_NANO',
-        'GOOGLE_GEMINI_3_FLASH',
-        'CLAUDE_HAIKU_3_5',
-        'CLAUDE_OPUS_4_5',
-        'MISTRAL_SMALL'
-    ])),
-    options: z.optional(zAiGenerateOptions)
-});
-
-/**
- * StreamChatRequest
- *
- * Request for streaming multi-turn AI conversation
- */
-export const zStreamChatRequest = z.object({
-    messages: z.array(zChatMessageWithSchemaType).min(1),
-    model: z.optional(z.enum([
-        'OPENAI_GPT_5_NANO',
-        'GOOGLE_GEMINI_3_FLASH',
-        'CLAUDE_HAIKU_3_5',
-        'CLAUDE_OPUS_4_5',
-        'MISTRAL_SMALL'
-    ])),
-    options: z.optional(zAiGenerateOptions)
-});
-
-/**
- * PaginationQuerySchema
- *
- * Schema for pagination query
- */
-export const zPaginationQuerySchema = z.object({
-    offset: z.int().gte(0).lte(9007199254740991).default(0),
-    pageSize: z.int().gte(1).lte(100).default(20)
-});
-
-/**
- * SortingQueryStringSchema
- *
- * Schema for sorting items
- */
-export const zSortingQueryStringSchema = z.string();
-
-/**
- * FilterQueryStringSchema
- *
- * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
- * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
- * <br> Available properties: title, tag
- */
-export const zFilterQueryStringSchema = z.string();
-
-export const zCommentsControllerPostSlug = z.string();
+export const zCommentsControllerGetCommentsSortArray = z.array(zCommentsControllerGetCommentsSortItem);
 
 export const zCommentsControllerGetCommentsFilterItem = z.object({
-    property: z.literal('content'),
+    property: z.enum(['content']),
     rule: z.enum([
         'eq',
         'neq',
@@ -782,31 +824,22 @@ export const zCommentsControllerGetCommentsFilterItem = z.object({
 
 export const zCommentsControllerGetCommentsFilterArray = z.array(zCommentsControllerGetCommentsFilterItem);
 
-export const zCommentsControllerGetCommentsSortItem = z.object({
-    property: z.union([
-        z.literal('createdAt'),
-        z.literal('authorName')
-    ]),
-    direction: z.enum(['asc', 'desc'])
-});
-
-export const zCommentsControllerGetCommentsSortArray = z.array(zCommentsControllerGetCommentsSortItem);
-
 export const zCommentsControllerGetCommentRepliesSortItem = z.object({
-    property: z.union([
-        z.literal('createdAt'),
-        z.literal('authorName')
-    ]),
+    property: z.enum(['createdAt', 'authorName']),
     direction: z.enum(['asc', 'desc'])
 });
 
 export const zCommentsControllerGetCommentRepliesSortArray = z.array(zCommentsControllerGetCommentRepliesSortItem);
 
+export const zPostControllerGetUserPostsSortItem = z.object({
+    property: z.enum(['title', 'createdAt']),
+    direction: z.enum(['asc', 'desc'])
+});
+
+export const zPostControllerGetUserPostsSortArray = z.array(zPostControllerGetUserPostsSortItem);
+
 export const zPostControllerGetUserPostsFilterItem = z.object({
-    property: z.union([
-        z.literal('title'),
-        z.literal('tag')
-    ]),
+    property: z.enum(['title', 'tag']),
     rule: z.enum([
         'eq',
         'neq',
@@ -826,21 +859,15 @@ export const zPostControllerGetUserPostsFilterItem = z.object({
 
 export const zPostControllerGetUserPostsFilterArray = z.array(zPostControllerGetUserPostsFilterItem);
 
-export const zPostControllerGetUserPostsSortItem = z.object({
-    property: z.union([
-        z.literal('title'),
-        z.literal('createdAt')
-    ]),
+export const zPublicPostControllerGetPostsSortItem = z.object({
+    property: z.enum(['title', 'createdAt']),
     direction: z.enum(['asc', 'desc'])
 });
 
-export const zPostControllerGetUserPostsSortArray = z.array(zPostControllerGetUserPostsSortItem);
+export const zPublicPostControllerGetPostsSortArray = z.array(zPublicPostControllerGetPostsSortItem);
 
 export const zPublicPostControllerGetPostsFilterItem = z.object({
-    property: z.union([
-        z.literal('title'),
-        z.literal('tag')
-    ]),
+    property: z.enum(['title', 'tag']),
     rule: z.enum([
         'eq',
         'neq',
@@ -860,21 +887,8 @@ export const zPublicPostControllerGetPostsFilterItem = z.object({
 
 export const zPublicPostControllerGetPostsFilterArray = z.array(zPublicPostControllerGetPostsFilterItem);
 
-export const zPublicPostControllerGetPostsSortItem = z.object({
-    property: z.union([
-        z.literal('title'),
-        z.literal('createdAt')
-    ]),
-    direction: z.enum(['asc', 'desc'])
-});
-
-export const zPublicPostControllerGetPostsSortArray = z.array(zPublicPostControllerGetPostsSortItem);
-
 export const zPublicAuthorControllerGetAuthorPostsSortItem = z.object({
-    property: z.union([
-        z.literal('title'),
-        z.literal('createdAt')
-    ]),
+    property: z.enum(['title', 'createdAt']),
     direction: z.enum(['asc', 'desc'])
 });
 
@@ -891,17 +905,14 @@ export const zCommentsControllerGetCommentsData = z.object({
     path: z.object({
         postSlug: z.string()
     }),
-    query: z.object({
-        filter: z.optional(zCommentsControllerGetCommentsFilterArray),
+    query: z.optional(z.object({
+        offset: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+        pageSize: z.optional(z.int().gte(1).lte(100)).default(20),
         sort: z.optional(zCommentsControllerGetCommentsSortArray),
-        offset: z.int().gte(0).lte(9007199254740991).default(0),
-        pageSize: z.int().gte(1).lte(100).default(20)
-    })
+        filter: z.optional(zCommentsControllerGetCommentsFilterArray)
+    }))
 });
 
-/**
- * Schema for a paginated list of comments
- */
 export const zCommentsControllerGetCommentsResponse = zCommentsSchema;
 
 export const zCommentsControllerCreateCommentData = z.object({
@@ -915,10 +926,29 @@ export const zCommentsControllerCreateCommentData = z.object({
     query: z.optional(z.never())
 });
 
-/**
- * Schema for a comment
- */
 export const zCommentsControllerCreateCommentResponse = zCommentSchema;
+
+export const zCommentsControllerDeleteCommentData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        commentId: z.string(),
+        postSlug: z.string()
+    }),
+    query: z.optional(z.never())
+});
+
+export const zCommentsControllerUpdateCommentData = z.object({
+    body: z.object({
+        content: z.string().min(1).max(1000)
+    }),
+    path: z.object({
+        postSlug: z.string(),
+        commentId: z.string()
+    }),
+    query: z.optional(z.never())
+});
+
+export const zCommentsControllerUpdateCommentResponse = zCommentSchema;
 
 export const zCommentsControllerGetCommentCountData = z.object({
     body: z.optional(z.never()),
@@ -934,60 +964,32 @@ export const zCommentsControllerGetCommentRepliesData = z.object({
         commentId: z.string(),
         postSlug: z.string()
     }),
-    query: z.object({
-        sort: z.optional(zCommentsControllerGetCommentRepliesSortArray),
-        offset: z.int().gte(0).lte(9007199254740991).default(0),
-        pageSize: z.int().gte(1).lte(100).default(20)
-    })
+    query: z.optional(z.object({
+        offset: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+        pageSize: z.optional(z.int().gte(1).lte(100)).default(20),
+        sort: z.optional(zCommentsControllerGetCommentRepliesSortArray)
+    }))
 });
 
-/**
- * Schema for a paginated list of comments
- */
 export const zCommentsControllerGetCommentRepliesResponse = zCommentsSchema;
-
-export const zCommentsControllerDeleteCommentData = z.object({
-    body: z.optional(z.never()),
-    path: z.object({
-        commentId: z.string(),
-        postSlug: z.string()
-    }),
-    query: z.optional(z.never())
-});
 
 export const zPostControllerGetUserPostsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
-    query: z.object({
-        filter: z.optional(zPostControllerGetUserPostsFilterArray),
+    query: z.optional(z.object({
+        offset: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+        pageSize: z.optional(z.int().gte(1).lte(100)).default(20),
         sort: z.optional(zPostControllerGetUserPostsSortArray),
-        offset: z.int().gte(0).lte(9007199254740991).default(0),
-        pageSize: z.int().gte(1).lte(100).default(20)
-    })
+        filter: z.optional(zPostControllerGetUserPostsFilterArray)
+    }))
 });
 
-/**
- * Schema for a list of user's posts
- */
 export const zPostControllerGetUserPostsResponse = zUserPostsSchema;
 
 export const zPostControllerCreatePostData = z.object({
     body: z.object({
         title: z.string().min(1),
-        content: z.array(z.union([
-            z.object({
-                type: z.literal('text'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('image'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('video'),
-                data: z.string()
-            })
-        ])),
+        content: z.array(zPostContentSchema),
         coverImage: z.optional(z.url()),
         tags: z.optional(z.array(z.string()))
     }),
@@ -995,9 +997,6 @@ export const zPostControllerCreatePostData = z.object({
     query: z.optional(z.never())
 });
 
-/**
- * Schema for a user's post
- */
 export const zPostControllerCreatePostResponse = zUserPostSchema;
 
 export const zPostControllerGetUserPostData = z.object({
@@ -1008,28 +1007,12 @@ export const zPostControllerGetUserPostData = z.object({
     query: z.optional(z.never())
 });
 
-/**
- * Schema for a user's post
- */
 export const zPostControllerGetUserPostResponse = zUserPostSchema;
 
 export const zPostControllerUpdatePostData = z.object({
     body: z.object({
         title: z.optional(z.string().min(1)),
-        content: z.optional(z.array(z.union([
-            z.object({
-                type: z.literal('text'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('image'),
-                data: z.string()
-            }),
-            z.object({
-                type: z.literal('video'),
-                data: z.string()
-            })
-        ]))),
+        content: z.optional(z.array(zPostContentSchema)),
         coverImage: z.optional(z.url()),
         tags: z.optional(z.array(z.string()))
     }),
@@ -1039,9 +1022,6 @@ export const zPostControllerUpdatePostData = z.object({
     query: z.optional(z.never())
 });
 
-/**
- * Schema for a user's post
- */
 export const zPostControllerUpdatePostResponse = zUserPostSchema;
 
 export const zPostControllerPublishPostData = z.object({
@@ -1052,6 +1032,8 @@ export const zPostControllerPublishPostData = z.object({
     query: z.optional(z.never())
 });
 
+export const zPostControllerPublishPostResponse = zUserPostSchema;
+
 export const zPostControllerUnpublishPostData = z.object({
     body: z.optional(z.never()),
     path: z.object({
@@ -1060,15 +1042,14 @@ export const zPostControllerUnpublishPostData = z.object({
     query: z.optional(z.never())
 });
 
+export const zPostControllerUnpublishPostResponse = zUserPostSchema;
+
 export const zPublicPostControllerGetRandomPostData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
 
-/**
- * A public post
- */
 export const zPublicPostControllerGetRandomPostResponse = zPublicPostSchema;
 
 export const zPublicPostControllerGetPostData = z.object({
@@ -1079,25 +1060,19 @@ export const zPublicPostControllerGetPostData = z.object({
     query: z.optional(z.never())
 });
 
-/**
- * A public post
- */
 export const zPublicPostControllerGetPostResponse = zPublicPostSchema;
 
 export const zPublicPostControllerGetPostsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
-    query: z.object({
-        filter: z.optional(zPublicPostControllerGetPostsFilterArray),
+    query: z.optional(z.object({
+        offset: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+        pageSize: z.optional(z.int().gte(1).lte(100)).default(20),
         sort: z.optional(zPublicPostControllerGetPostsSortArray),
-        offset: z.int().gte(0).lte(9007199254740991).default(0),
-        pageSize: z.int().gte(1).lte(100).default(20)
-    })
+        filter: z.optional(zPublicPostControllerGetPostsFilterArray)
+    }))
 });
 
-/**
- * A list of public posts
- */
 export const zPublicPostControllerGetPostsResponse = zPublicPostsSchema;
 
 export const zPublicPostControllerLikePostData = z.object({
@@ -1108,9 +1083,6 @@ export const zPublicPostControllerLikePostData = z.object({
     query: z.optional(z.never())
 });
 
-/**
- * A public post
- */
 export const zPublicPostControllerLikePostResponse = zPublicPostSchema;
 
 export const zPublicAuthorControllerGetAuthorPostsData = z.object({
@@ -1118,16 +1090,13 @@ export const zPublicAuthorControllerGetAuthorPostsData = z.object({
     path: z.object({
         slug: z.string()
     }),
-    query: z.object({
-        sort: z.optional(zPublicAuthorControllerGetAuthorPostsSortArray),
-        offset: z.int().gte(0).lte(9007199254740991).default(0),
-        pageSize: z.int().gte(1).lte(100).default(20)
-    })
+    query: z.optional(z.object({
+        offset: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+        pageSize: z.optional(z.int().gte(1).lte(100)).default(20),
+        sort: z.optional(zPublicAuthorControllerGetAuthorPostsSortArray)
+    }))
 });
 
-/**
- * A list of posts from a specific author
- */
 export const zPublicAuthorControllerGetAuthorPostsResponse = zPublicAuthorPostsSchema;
 
 export const zAiExampleControllerGenerateTextData = z.object({
@@ -1140,33 +1109,12 @@ export const zAiExampleControllerGenerateTextData = z.object({
             'CLAUDE_OPUS_4_5',
             'MISTRAL_SMALL'
         ])),
-        options: z.optional(z.object({
-            temperature: z.optional(z.number().gte(0).lte(2)),
-            maxTokens: z.optional(z.number().gt(0)),
-            topP: z.optional(z.number().gte(0).lte(1)),
-            frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
-            presencePenalty: z.optional(z.number().gte(-2).lte(2)),
-            maxSteps: z.optional(z.number().gt(0)),
-            stopWhen: z.optional(z.number().gt(0)),
-            telemetry: z.optional(z.object({
-                traceMode: z.optional(z.enum(['inherit', 'split'])),
-                traceId: z.optional(z.string()),
-                traceName: z.optional(z.string()),
-                spanName: z.optional(z.string()),
-                sessionId: z.optional(z.string()),
-                metadata: z.optional(z.record(z.string(), z.unknown())),
-                langfuseOriginalPrompt: z.optional(z.string())
-            })),
-            metadata: z.optional(z.record(z.string(), z.unknown()))
-        }))
+        options: z.optional(zAiGenerateOptions)
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
 
-/**
- * Response from text generation
- */
 export const zAiExampleControllerGenerateTextResponse = zGenerateTextResponse;
 
 export const zAiExampleControllerGenerateObjectData = z.object({
@@ -1185,69 +1133,17 @@ export const zAiExampleControllerGenerateObjectData = z.object({
             'CLAUDE_OPUS_4_5',
             'MISTRAL_SMALL'
         ])),
-        options: z.optional(z.object({
-            temperature: z.optional(z.number().gte(0).lte(2)),
-            maxTokens: z.optional(z.number().gt(0)),
-            topP: z.optional(z.number().gte(0).lte(1)),
-            frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
-            presencePenalty: z.optional(z.number().gte(-2).lte(2)),
-            maxSteps: z.optional(z.number().gt(0)),
-            stopWhen: z.optional(z.number().gt(0)),
-            telemetry: z.optional(z.object({
-                traceMode: z.optional(z.enum(['inherit', 'split'])),
-                traceId: z.optional(z.string()),
-                traceName: z.optional(z.string()),
-                spanName: z.optional(z.string()),
-                sessionId: z.optional(z.string()),
-                metadata: z.optional(z.record(z.string(), z.unknown())),
-                langfuseOriginalPrompt: z.optional(z.string())
-            })),
-            metadata: z.optional(z.record(z.string(), z.unknown()))
-        }))
+        options: z.optional(zAiGenerateOptions)
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
 
-/**
- * Response from structured object generation
- */
 export const zAiExampleControllerGenerateObjectResponse = zGenerateObjectResponse;
 
 export const zAiExampleControllerChatData = z.object({
     body: z.object({
-        messages: z.array(z.object({
-            role: z.enum([
-                'user',
-                'assistant',
-                'system',
-                'tool'
-            ]),
-            content: z.string(),
-            metadata: z.optional(z.object({
-                isConsideredSystemMessage: z.optional(z.boolean()),
-                usage: z.optional(z.object({
-                    promptTokens: z.number(),
-                    completionTokens: z.number(),
-                    totalTokens: z.number()
-                })),
-                finishReason: z.optional(z.string()),
-                timestamp: z.optional(z.iso.datetime().regex(/^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/)),
-                toolCalls: z.optional(z.array(z.object({
-                    toolCallId: z.string(),
-                    toolName: z.string(),
-                    args: z.record(z.string(), z.unknown())
-                }))),
-                reasonning: z.optional(z.string()),
-                schemaType: z.optional(z.enum([
-                    'userProfile',
-                    'task',
-                    'product',
-                    'recipe',
-                    'none'
-                ]))
-            }))
-        })).min(1),
+        messages: z.array(zChatMessageWithSchemaType).min(1),
         model: z.optional(z.enum([
             'OPENAI_GPT_5_NANO',
             'GOOGLE_GEMINI_3_FLASH',
@@ -1255,40 +1151,13 @@ export const zAiExampleControllerChatData = z.object({
             'CLAUDE_OPUS_4_5',
             'MISTRAL_SMALL'
         ])),
-        options: z.optional(z.object({
-            temperature: z.optional(z.number().gte(0).lte(2)),
-            maxTokens: z.optional(z.number().gt(0)),
-            topP: z.optional(z.number().gte(0).lte(1)),
-            frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
-            presencePenalty: z.optional(z.number().gte(-2).lte(2)),
-            maxSteps: z.optional(z.number().gt(0)),
-            stopWhen: z.optional(z.number().gt(0)),
-            telemetry: z.optional(z.object({
-                traceMode: z.optional(z.enum(['inherit', 'split'])),
-                traceId: z.optional(z.string()),
-                traceName: z.optional(z.string()),
-                spanName: z.optional(z.string()),
-                sessionId: z.optional(z.string()),
-                metadata: z.optional(z.record(z.string(), z.unknown())),
-                langfuseOriginalPrompt: z.optional(z.string())
-            })),
-            metadata: z.optional(z.record(z.string(), z.unknown()))
-        })),
-        schemaType: z.optional(z.enum([
-            'userProfile',
-            'task',
-            'product',
-            'recipe',
-            'none'
-        ]))
+        options: z.optional(zAiGenerateOptions),
+        schemaType: z.optional(zChatSchemaType)
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
 
-/**
- * Response from AI chat conversation
- */
 export const zAiExampleControllerChatResponse = zChatResponse;
 
 export const zAiExampleControllerStreamTextData = z.object({
@@ -1301,25 +1170,7 @@ export const zAiExampleControllerStreamTextData = z.object({
             'CLAUDE_OPUS_4_5',
             'MISTRAL_SMALL'
         ])),
-        options: z.optional(z.object({
-            temperature: z.optional(z.number().gte(0).lte(2)),
-            maxTokens: z.optional(z.number().gt(0)),
-            topP: z.optional(z.number().gte(0).lte(1)),
-            frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
-            presencePenalty: z.optional(z.number().gte(-2).lte(2)),
-            maxSteps: z.optional(z.number().gt(0)),
-            stopWhen: z.optional(z.number().gt(0)),
-            telemetry: z.optional(z.object({
-                traceMode: z.optional(z.enum(['inherit', 'split'])),
-                traceId: z.optional(z.string()),
-                traceName: z.optional(z.string()),
-                spanName: z.optional(z.string()),
-                sessionId: z.optional(z.string()),
-                metadata: z.optional(z.record(z.string(), z.unknown())),
-                langfuseOriginalPrompt: z.optional(z.string())
-            })),
-            metadata: z.optional(z.record(z.string(), z.unknown()))
-        }))
+        options: z.optional(zAiGenerateOptions)
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
@@ -1341,25 +1192,7 @@ export const zAiExampleControllerStreamObjectData = z.object({
             'CLAUDE_OPUS_4_5',
             'MISTRAL_SMALL'
         ])),
-        options: z.optional(z.object({
-            temperature: z.optional(z.number().gte(0).lte(2)),
-            maxTokens: z.optional(z.number().gt(0)),
-            topP: z.optional(z.number().gte(0).lte(1)),
-            frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
-            presencePenalty: z.optional(z.number().gte(-2).lte(2)),
-            maxSteps: z.optional(z.number().gt(0)),
-            stopWhen: z.optional(z.number().gt(0)),
-            telemetry: z.optional(z.object({
-                traceMode: z.optional(z.enum(['inherit', 'split'])),
-                traceId: z.optional(z.string()),
-                traceName: z.optional(z.string()),
-                spanName: z.optional(z.string()),
-                sessionId: z.optional(z.string()),
-                metadata: z.optional(z.record(z.string(), z.unknown())),
-                langfuseOriginalPrompt: z.optional(z.string())
-            })),
-            metadata: z.optional(z.record(z.string(), z.unknown()))
-        }))
+        options: z.optional(zAiGenerateOptions)
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
@@ -1367,38 +1200,7 @@ export const zAiExampleControllerStreamObjectData = z.object({
 
 export const zAiExampleControllerStreamChatData = z.object({
     body: z.object({
-        messages: z.array(z.object({
-            role: z.enum([
-                'user',
-                'assistant',
-                'system',
-                'tool'
-            ]),
-            content: z.string(),
-            metadata: z.optional(z.object({
-                isConsideredSystemMessage: z.optional(z.boolean()),
-                usage: z.optional(z.object({
-                    promptTokens: z.number(),
-                    completionTokens: z.number(),
-                    totalTokens: z.number()
-                })),
-                finishReason: z.optional(z.string()),
-                timestamp: z.optional(z.iso.datetime().regex(/^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/)),
-                toolCalls: z.optional(z.array(z.object({
-                    toolCallId: z.string(),
-                    toolName: z.string(),
-                    args: z.record(z.string(), z.unknown())
-                }))),
-                reasonning: z.optional(z.string()),
-                schemaType: z.optional(z.enum([
-                    'userProfile',
-                    'task',
-                    'product',
-                    'recipe',
-                    'none'
-                ]))
-            }))
-        })).min(1),
+        messages: z.array(zChatMessageWithSchemaType).min(1),
         model: z.optional(z.enum([
             'OPENAI_GPT_5_NANO',
             'GOOGLE_GEMINI_3_FLASH',
@@ -1406,25 +1208,7 @@ export const zAiExampleControllerStreamChatData = z.object({
             'CLAUDE_OPUS_4_5',
             'MISTRAL_SMALL'
         ])),
-        options: z.optional(z.object({
-            temperature: z.optional(z.number().gte(0).lte(2)),
-            maxTokens: z.optional(z.number().gt(0)),
-            topP: z.optional(z.number().gte(0).lte(1)),
-            frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
-            presencePenalty: z.optional(z.number().gte(-2).lte(2)),
-            maxSteps: z.optional(z.number().gt(0)),
-            stopWhen: z.optional(z.number().gt(0)),
-            telemetry: z.optional(z.object({
-                traceMode: z.optional(z.enum(['inherit', 'split'])),
-                traceId: z.optional(z.string()),
-                traceName: z.optional(z.string()),
-                spanName: z.optional(z.string()),
-                sessionId: z.optional(z.string()),
-                metadata: z.optional(z.record(z.string(), z.unknown())),
-                langfuseOriginalPrompt: z.optional(z.string())
-            })),
-            metadata: z.optional(z.record(z.string(), z.unknown()))
-        }))
+        options: z.optional(zAiGenerateOptions)
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
@@ -1440,33 +1224,12 @@ export const zAiExampleUseCasesControllerUseCase1SingleGenerationData = z.object
             'CLAUDE_OPUS_4_5',
             'MISTRAL_SMALL'
         ])),
-        options: z.optional(z.object({
-            temperature: z.optional(z.number().gte(0).lte(2)),
-            maxTokens: z.optional(z.number().gt(0)),
-            topP: z.optional(z.number().gte(0).lte(1)),
-            frequencyPenalty: z.optional(z.number().gte(-2).lte(2)),
-            presencePenalty: z.optional(z.number().gte(-2).lte(2)),
-            maxSteps: z.optional(z.number().gt(0)),
-            stopWhen: z.optional(z.number().gt(0)),
-            telemetry: z.optional(z.object({
-                traceMode: z.optional(z.enum(['inherit', 'split'])),
-                traceId: z.optional(z.string()),
-                traceName: z.optional(z.string()),
-                spanName: z.optional(z.string()),
-                sessionId: z.optional(z.string()),
-                metadata: z.optional(z.record(z.string(), z.unknown())),
-                langfuseOriginalPrompt: z.optional(z.string())
-            })),
-            metadata: z.optional(z.record(z.string(), z.unknown()))
-        }))
+        options: z.optional(zAiGenerateOptions)
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
 });
 
-/**
- * Response from text generation
- */
 export const zAiExampleUseCasesControllerUseCase1SingleGenerationResponse = zGenerateTextResponse;
 
 export const zAiExampleUseCasesControllerUseCase2GroupedCallsData = z.object({
@@ -1484,9 +1247,6 @@ export const zAiExampleUseCasesControllerUseCase2GroupedCallsData = z.object({
     query: z.optional(z.never())
 });
 
-/**
- * Combined results from grouped LLM calls
- */
 export const zAiExampleUseCasesControllerUseCase2GroupedCallsResponse = zUseCase2GroupedCallsResponse;
 
 export const zAiExampleUseCasesControllerUseCase3LogicalUnitsData = z.object({
@@ -1504,9 +1264,6 @@ export const zAiExampleUseCasesControllerUseCase3LogicalUnitsData = z.object({
     query: z.optional(z.never())
 });
 
-/**
- * One result per workflow (each in its own trace)
- */
 export const zAiExampleUseCasesControllerUseCase3LogicalUnitsResponse = zUseCase3LogicalUnitsResponse;
 
 export const zAiExampleUseCasesControllerUseCase4ChatSessionData = z.object({
@@ -1525,9 +1282,6 @@ export const zAiExampleUseCasesControllerUseCase4ChatSessionData = z.object({
     query: z.optional(z.never())
 });
 
-/**
- * Response from text generation
- */
 export const zAiExampleUseCasesControllerUseCase4ChatSessionResponse = zGenerateTextResponse;
 
 export const zAiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedData = z.object({
@@ -1546,7 +1300,4 @@ export const zAiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedData 
     query: z.optional(z.never())
 });
 
-/**
- * Response from text generation
- */
 export const zAiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponse = zGenerateTextResponse;

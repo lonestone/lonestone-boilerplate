@@ -1,51 +1,55 @@
 import {
-  FilteringParams,
-  PaginationParams,
-  SortingParams,
-  TypedBody,
-  TypedController,
-  TypedParam,
-  TypedRoute,
-} from '@lonestone/nzoth/server'
-import { Optional, UseGuards } from '@nestjs/common'
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Optional,
+  Param,
+  Patch,
+  Post,
+  Query,
+  SerializeOptions,
+  UseGuards,
+} from '@nestjs/common'
+import { ApiCreatedResponse, ApiOkResponse, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 import { Session } from '../../auth/auth.decorator'
 import { AuthGuard } from '../../auth/auth.guard'
 import { CommentsMapper } from './comments.mapper'
 import { CommentsService } from './comments.service'
-import {
+import type {
   CommentFiltering,
-  commentFilteringSchema,
   CommentPagination,
-  commentPaginationSchema,
   CommentResponse,
-  commentSchema,
   CommentSorting,
-  commentSortingSchema,
   CommentsResponse,
-  commentsSchema,
   CreateCommentInput,
-  createCommentSchema,
   UpdateCommentInput,
+} from './contracts/comments.contract'
+import {
+  commentFilteringSchema,
+  commentPaginationSchema,
+  commentSchema,
+  commentSortingSchema,
+  commentsSchema,
+  createCommentSchema,
   updateCommentSchema,
 } from './contracts/comments.contract'
 
-@TypedController(
-  'posts/:postSlug/comments',
-  z.object({
-    postSlug: z.string(),
-  }),
-)
+@ApiTags('Comments')
+@Controller('posts/:postSlug/comments')
 export class CommentsController {
   constructor(
     private readonly commentsService: CommentsService,
     private readonly commentsMapper: CommentsMapper,
   ) {}
 
-  @TypedRoute.Post('', commentSchema)
+  @Post()
+  @SerializeOptions({ schema: commentSchema })
+  @ApiCreatedResponse({ standardSchema: commentSchema })
   async createComment(
-    @TypedParam('postSlug', z.string()) postSlug: string,
-    @TypedBody(createCommentSchema) body: CreateCommentInput,
+    @Param('postSlug', { schema: z.string() }) postSlug: string,
+    @Body({ schema: createCommentSchema }) body: CreateCommentInput,
     @Optional() @Session() session?: { user: { id: string } },
   ): Promise<CommentResponse> {
     const userId = session?.user?.id
@@ -53,12 +57,14 @@ export class CommentsController {
     return this.commentsMapper.toComment(comment)
   }
 
-  @TypedRoute.Patch(':commentId', commentSchema)
+  @Patch(':commentId')
   @UseGuards(AuthGuard)
+  @SerializeOptions({ schema: commentSchema })
+  @ApiOkResponse({ standardSchema: commentSchema })
   async updateComment(
-    @TypedParam('postSlug', z.string()) postSlug: string,
-    @TypedParam('commentId', z.string()) commentId: string,
-    @TypedBody(updateCommentSchema) body: UpdateCommentInput,
+    @Param('postSlug', { schema: z.string() }) postSlug: string,
+    @Param('commentId', { schema: z.string() }) commentId: string,
+    @Body({ schema: updateCommentSchema }) body: UpdateCommentInput,
     @Session() session: { user: { id: string } },
   ): Promise<CommentResponse> {
     const comment = await this.commentsService.updateComment(
@@ -70,37 +76,46 @@ export class CommentsController {
     return this.commentsMapper.toComment(comment)
   }
 
-  @TypedRoute.Get('', commentsSchema)
+  @Get()
+  @SerializeOptions({ schema: commentsSchema })
+  @ApiOkResponse({ standardSchema: commentsSchema })
+  @ApiQuery({ name: 'sort', required: false })
+  @ApiQuery({ name: 'filter', required: false })
   async getComments(
-    @TypedParam('postSlug', z.string()) postSlug: string,
-    @PaginationParams(commentPaginationSchema) pagination: CommentPagination,
-    @SortingParams(commentSortingSchema) sort?: CommentSorting,
-    @FilteringParams(commentFilteringSchema) filter?: CommentFiltering,
+    @Param('postSlug', { schema: z.string() }) postSlug: string,
+    @Query({ schema: commentPaginationSchema }) pagination: CommentPagination,
+    @Query('sort', { schema: commentSortingSchema }) sort?: CommentSorting,
+    @Query('filter', { schema: commentFilteringSchema }) filter?: CommentFiltering,
   ): Promise<CommentsResponse> {
     const result = await this.commentsService.getCommentsByPost(postSlug, pagination, sort, filter)
     return this.commentsMapper.toCommentsResponse(result)
   }
 
-  @TypedRoute.Get('count')
-  async getCommentCount(@TypedParam('postSlug', z.string()) postSlug: string) {
+  @Get('count')
+  async getCommentCount(@Param('postSlug', { schema: z.string() }) postSlug: string) {
     const count = await this.commentsService.getCommentCount(postSlug)
     return { count }
   }
 
-  @TypedRoute.Get(':commentId/replies', commentsSchema)
+  @Get(':commentId/replies')
+  @SerializeOptions({ schema: commentsSchema })
+  @ApiOkResponse({ standardSchema: commentsSchema })
+  @ApiParam({ name: 'postSlug', type: String })
+  @ApiQuery({ name: 'sort', required: false })
   async getCommentReplies(
-    @TypedParam('commentId', z.string()) commentId: string,
-    @PaginationParams(commentPaginationSchema) pagination: CommentPagination,
-    @SortingParams(commentSortingSchema) sort?: CommentSorting,
+    @Param('commentId', { schema: z.string() }) commentId: string,
+    @Query({ schema: commentPaginationSchema }) pagination: CommentPagination,
+    @Query('sort', { schema: commentSortingSchema }) sort?: CommentSorting,
   ): Promise<CommentsResponse> {
     const result = await this.commentsService.getCommentReplies(commentId, pagination, sort)
     return this.commentsMapper.toCommentsResponse(result)
   }
 
-  @TypedRoute.Delete(':commentId')
+  @Delete(':commentId')
   @UseGuards(AuthGuard)
+  @ApiParam({ name: 'postSlug', type: String })
   async deleteComment(
-    @TypedParam('commentId', z.string()) commentId: string,
+    @Param('commentId', { schema: z.string() }) commentId: string,
     @Session() session: { user: { id: string } },
   ) {
     await this.commentsService.deleteComment(commentId, session.user.id)

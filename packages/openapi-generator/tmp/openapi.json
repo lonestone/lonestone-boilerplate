@@ -1,35 +1,21 @@
 {
   "openapi": "3.1.0",
-  "info": {
-    "title": "Lonestone API",
-    "description": "The Lonestone API description",
-    "version": "1.0",
-    "contact": {}
-  },
-  "tags": [
-    {
-      "name": "@lonestone",
-      "description": ""
-    }
-  ],
-  "servers": [],
   "paths": {
     "/api": {
       "get": {
         "operationId": "AppController_getHello",
-        "tags": ["App"],
         "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": ["App"]
       }
     },
     "/api/posts/{postSlug}/comments": {
       "post": {
         "operationId": "CommentsController_createComment",
-        "tags": ["Comments"],
         "parameters": [
           {
             "name": "postSlug",
@@ -42,7 +28,6 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Schema for creating a comment",
           "content": {
             "application/json": {
               "schema": {
@@ -60,7 +45,6 @@
                   }
                 },
                 "required": ["content"],
-                "additionalProperties": false,
                 "title": "CreateCommentSchema",
                 "description": "Schema for creating a comment"
               }
@@ -68,8 +52,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Schema for a comment",
+          "201": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -78,38 +62,25 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Comments"]
       },
       "get": {
         "operationId": "CommentsController_getComments",
-        "tags": ["Comments"],
         "parameters": [
           {
-            "name": "filter",
-            "required": false,
-            "in": "query",
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
             "schema": {
-              "$ref": "#/components/schemas/CommentsController_getComments_filterArray"
-            },
-            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: content",
-            "style": "form",
-            "explode": false
-          },
-          {
-            "name": "sort",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/CommentsController_getComments_sortArray"
-            },
-            "description": "Schema for sorting items",
-            "style": "form",
-            "explode": false
+              "type": "string"
+            }
           },
           {
             "name": "offset",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Starting position of the query",
             "schema": {
               "default": 0,
               "description": "Starting position of the query",
@@ -120,14 +91,119 @@
           },
           {
             "name": "pageSize",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Number of items to return",
             "schema": {
               "default": 20,
               "description": "Number of items to return",
               "type": "integer",
               "minimum": 1,
               "maximum": 100
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Schema for sorting items",
+            "schema": {
+              "$ref": "#/components/schemas/CommentsController_getComments_sortArray"
+            },
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\nAvailable rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \nAvailable properties: content",
+            "schema": {
+              "$ref": "#/components/schemas/CommentsController_getComments_filterArray"
+            },
+            "style": "form",
+            "explode": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentsSchema"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Comments"]
+      }
+    },
+    "/api/posts/{postSlug}/comments/{commentId}": {
+      "patch": {
+        "operationId": "CommentsController_updateComment",
+        "parameters": [
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "required": ["content"],
+                "title": "UpdateCommentSchema",
+                "description": "Schema for updating a comment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentSchema"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Comments"]
+      },
+      "delete": {
+        "operationId": "CommentsController_deleteComment",
+        "parameters": [
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -141,22 +217,15 @@
         ],
         "responses": {
           "200": {
-            "description": "Schema for a paginated list of comments",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CommentsSchema"
-                }
-              }
-            }
+            "description": ""
           }
-        }
+        },
+        "tags": ["Comments"]
       }
     },
     "/api/posts/{postSlug}/comments/count": {
       "get": {
         "operationId": "CommentsController_getCommentCount",
-        "tags": ["Comments"],
         "parameters": [
           {
             "name": "postSlug",
@@ -171,29 +240,27 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": ["Comments"]
       }
     },
     "/api/posts/{postSlug}/comments/{commentId}/replies": {
       "get": {
         "operationId": "CommentsController_getCommentReplies",
-        "tags": ["Comments"],
         "parameters": [
           {
-            "name": "sort",
-            "required": false,
-            "in": "query",
+            "name": "commentId",
+            "required": true,
+            "in": "path",
             "schema": {
-              "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortArray"
-            },
-            "description": "Schema for sorting items",
-            "style": "form",
-            "explode": false
+              "type": "string"
+            }
           },
           {
             "name": "offset",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Starting position of the query",
             "schema": {
               "default": 0,
               "description": "Starting position of the query",
@@ -204,8 +271,9 @@
           },
           {
             "name": "pageSize",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Number of items to return",
             "schema": {
               "default": 20,
               "description": "Number of items to return",
@@ -215,12 +283,15 @@
             }
           },
           {
-            "name": "commentId",
-            "required": true,
-            "in": "path",
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Schema for sorting items",
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortArray"
+            },
+            "style": "form",
+            "explode": false
           },
           {
             "name": "postSlug",
@@ -233,7 +304,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Schema for a paginated list of comments",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -242,46 +313,16 @@
               }
             }
           }
-        }
-      }
-    },
-    "/api/posts/{postSlug}/comments/{commentId}": {
-      "delete": {
-        "operationId": "CommentsController_deleteComment",
-        "tags": ["Comments"],
-        "parameters": [
-          {
-            "name": "commentId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
+        },
+        "tags": ["Comments"]
       }
     },
     "/api/admin/posts": {
       "post": {
         "operationId": "PostController_createPost",
-        "tags": ["Admin Posts"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Schema for creating/updating a post",
           "content": {
             "application/json": {
               "schema": {
@@ -294,53 +335,7 @@
                   "content": {
                     "type": "array",
                     "items": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "text"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "image"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "video"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        }
-                      ],
-                      "title": "PostContentSchema",
-                      "description": "Schema for content items (text, image, video)",
-                      "type": "object"
+                      "$ref": "#/components/schemas/PostContentSchema"
                     }
                   },
                   "coverImage": {
@@ -355,7 +350,6 @@
                   }
                 },
                 "required": ["title", "content"],
-                "additionalProperties": false,
                 "title": "CreatePostSchema",
                 "description": "Schema for creating/updating a post"
               }
@@ -363,8 +357,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Schema for a user's post",
+          "201": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -373,38 +367,17 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Admin Posts"]
       },
       "get": {
         "operationId": "PostController_getUserPosts",
-        "tags": ["Admin Posts"],
         "parameters": [
           {
-            "name": "filter",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/PostController_getUserPosts_filterArray"
-            },
-            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title, tag",
-            "style": "form",
-            "explode": false
-          },
-          {
-            "name": "sort",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/PostController_getUserPosts_sortArray"
-            },
-            "description": "Schema for sorting items",
-            "style": "form",
-            "explode": false
-          },
-          {
             "name": "offset",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Starting position of the query",
             "schema": {
               "default": 0,
               "description": "Starting position of the query",
@@ -415,8 +388,9 @@
           },
           {
             "name": "pageSize",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Number of items to return",
             "schema": {
               "default": 20,
               "description": "Number of items to return",
@@ -424,11 +398,33 @@
               "minimum": 1,
               "maximum": 100
             }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Schema for sorting items",
+            "schema": {
+              "$ref": "#/components/schemas/PostController_getUserPosts_sortArray"
+            },
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\nAvailable rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \nAvailable properties: title, tag",
+            "schema": {
+              "$ref": "#/components/schemas/PostController_getUserPosts_filterArray"
+            },
+            "style": "form",
+            "explode": false
           }
         ],
         "responses": {
           "200": {
-            "description": "Schema for a list of user's posts",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -437,13 +433,13 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Admin Posts"]
       }
     },
     "/api/admin/posts/{id}": {
       "put": {
         "operationId": "PostController_updatePost",
-        "tags": ["Admin Posts"],
         "parameters": [
           {
             "name": "id",
@@ -456,7 +452,6 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Schema for updating a post",
           "content": {
             "application/json": {
               "schema": {
@@ -469,53 +464,7 @@
                   "content": {
                     "type": "array",
                     "items": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "text"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "image"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "video"
-                            },
-                            "data": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["type", "data"],
-                          "additionalProperties": false
-                        }
-                      ],
-                      "title": "PostContentSchema",
-                      "description": "Schema for content items (text, image, video)",
-                      "type": "object"
+                      "$ref": "#/components/schemas/PostContentSchema"
                     }
                   },
                   "coverImage": {
@@ -529,7 +478,6 @@
                     }
                   }
                 },
-                "additionalProperties": false,
                 "title": "UpdatePostSchema",
                 "description": "Schema for updating a post"
               }
@@ -538,7 +486,7 @@
         },
         "responses": {
           "200": {
-            "description": "Schema for a user's post",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -547,11 +495,11 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Admin Posts"]
       },
       "get": {
         "operationId": "PostController_getUserPost",
-        "tags": ["Admin Posts"],
         "parameters": [
           {
             "name": "id",
@@ -564,7 +512,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Schema for a user's post",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -573,13 +521,13 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Admin Posts"]
       }
     },
     "/api/admin/posts/{id}/publish": {
       "patch": {
         "operationId": "PostController_publishPost",
-        "tags": ["Admin Posts"],
         "parameters": [
           {
             "name": "id",
@@ -592,15 +540,22 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPostSchema"
+                }
+              }
+            }
           }
-        }
+        },
+        "tags": ["Admin Posts"]
       }
     },
     "/api/admin/posts/{id}/unpublish": {
       "patch": {
         "operationId": "PostController_unpublishPost",
-        "tags": ["Admin Posts"],
         "parameters": [
           {
             "name": "id",
@@ -613,19 +568,26 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPostSchema"
+                }
+              }
+            }
           }
-        }
+        },
+        "tags": ["Admin Posts"]
       }
     },
     "/api/public/posts/random": {
       "get": {
         "operationId": "PublicPostController_getRandomPost",
-        "tags": ["Public Posts"],
         "parameters": [],
         "responses": {
           "200": {
-            "description": "A public post",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -634,13 +596,13 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Public Posts"]
       }
     },
     "/api/public/posts/{slug}": {
       "get": {
         "operationId": "PublicPostController_getPost",
-        "tags": ["Public Posts"],
         "parameters": [
           {
             "name": "slug",
@@ -653,7 +615,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A public post",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -662,40 +624,19 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Public Posts"]
       }
     },
     "/api/public/posts": {
       "get": {
         "operationId": "PublicPostController_getPosts",
-        "tags": ["Public Posts"],
         "parameters": [
           {
-            "name": "filter",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/PublicPostController_getPosts_filterArray"
-            },
-            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title, tag",
-            "style": "form",
-            "explode": false
-          },
-          {
-            "name": "sort",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/PublicPostController_getPosts_sortArray"
-            },
-            "description": "Schema for sorting items",
-            "style": "form",
-            "explode": false
-          },
-          {
             "name": "offset",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Starting position of the query",
             "schema": {
               "default": 0,
               "description": "Starting position of the query",
@@ -706,8 +647,9 @@
           },
           {
             "name": "pageSize",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Number of items to return",
             "schema": {
               "default": 20,
               "description": "Number of items to return",
@@ -715,11 +657,33 @@
               "minimum": 1,
               "maximum": 100
             }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Schema for sorting items",
+            "schema": {
+              "$ref": "#/components/schemas/PublicPostController_getPosts_sortArray"
+            },
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\nAvailable rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \nAvailable properties: title, tag",
+            "schema": {
+              "$ref": "#/components/schemas/PublicPostController_getPosts_filterArray"
+            },
+            "style": "form",
+            "explode": false
           }
         ],
         "responses": {
           "200": {
-            "description": "A list of public posts",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -728,13 +692,13 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Public Posts"]
       }
     },
     "/api/public/posts/{slug}/like": {
       "post": {
         "operationId": "PublicPostController_likePost",
-        "tags": ["Public Posts"],
         "parameters": [
           {
             "name": "slug",
@@ -747,7 +711,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A public post",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -756,29 +720,27 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Public Posts"]
       }
     },
     "/api/public/authors/{slug}/posts": {
       "get": {
         "operationId": "PublicAuthorController_getAuthorPosts",
-        "tags": ["Public Authors"],
         "parameters": [
           {
-            "name": "sort",
-            "required": false,
-            "in": "query",
+            "name": "slug",
+            "required": true,
+            "in": "path",
             "schema": {
-              "$ref": "#/components/schemas/PublicAuthorController_getAuthorPosts_sortArray"
-            },
-            "description": "Schema for sorting items",
-            "style": "form",
-            "explode": false
+              "type": "string"
+            }
           },
           {
             "name": "offset",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Starting position of the query",
             "schema": {
               "default": 0,
               "description": "Starting position of the query",
@@ -789,8 +751,9 @@
           },
           {
             "name": "pageSize",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Number of items to return",
             "schema": {
               "default": 20,
               "description": "Number of items to return",
@@ -800,17 +763,20 @@
             }
           },
           {
-            "name": "slug",
-            "required": true,
-            "in": "path",
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Schema for sorting items",
             "schema": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/PublicAuthorController_getAuthorPosts_sortArray"
+            },
+            "style": "form",
+            "explode": false
           }
         ],
         "responses": {
           "200": {
-            "description": "A list of posts from a specific author",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -819,17 +785,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Public Authors"]
       }
     },
     "/api/ai/generate-text": {
       "post": {
         "operationId": "AiExampleController_generateText",
-        "tags": ["AiExample"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Request for simple text generation with a single prompt",
           "content": {
             "application/json": {
               "schema": {
@@ -850,94 +815,10 @@
                     ]
                   },
                   "options": {
-                    "type": "object",
-                    "properties": {
-                      "temperature": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 2
-                      },
-                      "maxTokens": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "topP": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "frequencyPenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "presencePenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "maxSteps": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "stopWhen": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "telemetry": {
-                        "type": "object",
-                        "properties": {
-                          "traceMode": {
-                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
-                            "type": "string",
-                            "enum": ["inherit", "split"]
-                          },
-                          "traceId": {
-                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
-                            "type": "string"
-                          },
-                          "traceName": {
-                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
-                            "type": "string"
-                          },
-                          "spanName": {
-                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
-                            "type": "string"
-                          },
-                          "sessionId": {
-                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
-                            "type": "object",
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "additionalProperties": {}
-                          },
-                          "langfuseOriginalPrompt": {
-                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
-                            "type": "string"
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      "metadata": {
-                        "type": "object",
-                        "propertyNames": {
-                          "type": "string"
-                        },
-                        "additionalProperties": {}
-                      }
-                    },
-                    "additionalProperties": false,
-                    "title": "AiGenerateOptions",
-                    "description": "Options for an AI generation"
+                    "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
                 "required": ["prompt"],
-                "additionalProperties": false,
                 "title": "GenerateTextRequest",
                 "description": "Request for simple text generation with a single prompt"
               }
@@ -945,8 +826,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Response from text generation",
+          "201": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -955,17 +836,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["AI"]
       }
     },
     "/api/ai/generate-object": {
       "post": {
         "operationId": "AiExampleController_generateObject",
-        "tags": ["AiExample"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Request for structured object generation with a predefined schema type",
           "content": {
             "application/json": {
               "schema": {
@@ -990,94 +870,10 @@
                     ]
                   },
                   "options": {
-                    "type": "object",
-                    "properties": {
-                      "temperature": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 2
-                      },
-                      "maxTokens": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "topP": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "frequencyPenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "presencePenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "maxSteps": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "stopWhen": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "telemetry": {
-                        "type": "object",
-                        "properties": {
-                          "traceMode": {
-                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
-                            "type": "string",
-                            "enum": ["inherit", "split"]
-                          },
-                          "traceId": {
-                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
-                            "type": "string"
-                          },
-                          "traceName": {
-                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
-                            "type": "string"
-                          },
-                          "spanName": {
-                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
-                            "type": "string"
-                          },
-                          "sessionId": {
-                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
-                            "type": "object",
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "additionalProperties": {}
-                          },
-                          "langfuseOriginalPrompt": {
-                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
-                            "type": "string"
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      "metadata": {
-                        "type": "object",
-                        "propertyNames": {
-                          "type": "string"
-                        },
-                        "additionalProperties": {}
-                      }
-                    },
-                    "additionalProperties": false,
-                    "title": "AiGenerateOptions",
-                    "description": "Options for an AI generation"
+                    "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
                 "required": ["prompt", "schemaType"],
-                "additionalProperties": false,
                 "title": "GenerateObjectRequest",
                 "description": "Request for structured object generation with a predefined schema type"
               }
@@ -1085,8 +881,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Response from structured object generation",
+          "201": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -1095,17 +891,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["AI"]
       }
     },
     "/api/ai/chat": {
       "post": {
         "operationId": "AiExampleController_chat",
-        "tags": ["AiExample"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.",
           "content": {
             "application/json": {
               "schema": {
@@ -1115,92 +910,7 @@
                     "minItems": 1,
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "role": {
-                          "type": "string",
-                          "enum": ["user", "assistant", "system", "tool"]
-                        },
-                        "content": {
-                          "type": "string"
-                        },
-                        "metadata": {
-                          "type": "object",
-                          "properties": {
-                            "isConsideredSystemMessage": {
-                              "type": "boolean"
-                            },
-                            "usage": {
-                              "description": "Total token usage for the message, including tools calls and reasoning steps",
-                              "type": "object",
-                              "properties": {
-                                "promptTokens": {
-                                  "type": "number"
-                                },
-                                "completionTokens": {
-                                  "type": "number"
-                                },
-                                "totalTokens": {
-                                  "type": "number"
-                                }
-                              },
-                              "required": ["promptTokens", "completionTokens", "totalTokens"],
-                              "additionalProperties": false,
-                              "title": "TokenUsage"
-                            },
-                            "finishReason": {
-                              "type": "string"
-                            },
-                            "timestamp": {
-                              "description": "ISO 8601 timestamp when the message was created",
-                              "type": "string",
-                              "format": "date-time",
-                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                            },
-                            "toolCalls": {
-                              "description": "Tool calls made to generate the message",
-                              "type": "array",
-                              "items": {
-                                "type": "object",
-                                "properties": {
-                                  "toolCallId": {
-                                    "type": "string"
-                                  },
-                                  "toolName": {
-                                    "type": "string"
-                                  },
-                                  "args": {
-                                    "type": "object",
-                                    "propertyNames": {
-                                      "type": "string"
-                                    },
-                                    "additionalProperties": {}
-                                  }
-                                },
-                                "required": ["toolCallId", "toolName", "args"],
-                                "additionalProperties": false,
-                                "title": "ToolCall",
-                                "description": "A tool call made by the AI"
-                              }
-                            },
-                            "reasonning": {
-                              "description": "Reasoning text for the message",
-                              "type": "string"
-                            },
-                            "schemaType": {
-                              "type": "string",
-                              "enum": ["userProfile", "task", "product", "recipe", "none"],
-                              "title": "ChatSchemaType",
-                              "description": "Predefined schema types for testing structured output"
-                            }
-                          },
-                          "additionalProperties": false
-                        }
-                      },
-                      "required": ["role", "content"],
-                      "additionalProperties": false,
-                      "title": "ChatMessageWithSchemaType",
-                      "description": "A message with optional schemaType metadata for identifying structured output"
+                      "$ref": "#/components/schemas/ChatMessageWithSchemaType"
                     }
                   },
                   "model": {
@@ -1214,100 +924,13 @@
                     ]
                   },
                   "options": {
-                    "type": "object",
-                    "properties": {
-                      "temperature": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 2
-                      },
-                      "maxTokens": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "topP": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "frequencyPenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "presencePenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "maxSteps": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "stopWhen": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "telemetry": {
-                        "type": "object",
-                        "properties": {
-                          "traceMode": {
-                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
-                            "type": "string",
-                            "enum": ["inherit", "split"]
-                          },
-                          "traceId": {
-                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
-                            "type": "string"
-                          },
-                          "traceName": {
-                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
-                            "type": "string"
-                          },
-                          "spanName": {
-                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
-                            "type": "string"
-                          },
-                          "sessionId": {
-                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
-                            "type": "object",
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "additionalProperties": {}
-                          },
-                          "langfuseOriginalPrompt": {
-                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
-                            "type": "string"
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      "metadata": {
-                        "type": "object",
-                        "propertyNames": {
-                          "type": "string"
-                        },
-                        "additionalProperties": {}
-                      }
-                    },
-                    "additionalProperties": false,
-                    "title": "AiGenerateOptions",
-                    "description": "Options for an AI generation"
+                    "$ref": "#/components/schemas/AiGenerateOptions"
                   },
                   "schemaType": {
-                    "type": "string",
-                    "enum": ["userProfile", "task", "product", "recipe", "none"],
-                    "title": "ChatSchemaType",
-                    "description": "Predefined schema types for testing structured output"
+                    "$ref": "#/components/schemas/ChatSchemaType"
                   }
                 },
                 "required": ["messages"],
-                "additionalProperties": false,
                 "title": "ChatRequest",
                 "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output."
               }
@@ -1315,8 +938,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Response from AI chat conversation",
+          "201": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -1325,17 +948,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["AI"]
       }
     },
     "/api/ai/stream-text": {
       "post": {
         "operationId": "AiExampleController_streamText",
-        "tags": ["AiExample"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Request for streaming text generation with a single prompt",
           "content": {
             "application/json": {
               "schema": {
@@ -1356,94 +978,10 @@
                     ]
                   },
                   "options": {
-                    "type": "object",
-                    "properties": {
-                      "temperature": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 2
-                      },
-                      "maxTokens": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "topP": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "frequencyPenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "presencePenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "maxSteps": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "stopWhen": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "telemetry": {
-                        "type": "object",
-                        "properties": {
-                          "traceMode": {
-                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
-                            "type": "string",
-                            "enum": ["inherit", "split"]
-                          },
-                          "traceId": {
-                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
-                            "type": "string"
-                          },
-                          "traceName": {
-                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
-                            "type": "string"
-                          },
-                          "spanName": {
-                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
-                            "type": "string"
-                          },
-                          "sessionId": {
-                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
-                            "type": "object",
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "additionalProperties": {}
-                          },
-                          "langfuseOriginalPrompt": {
-                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
-                            "type": "string"
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      "metadata": {
-                        "type": "object",
-                        "propertyNames": {
-                          "type": "string"
-                        },
-                        "additionalProperties": {}
-                      }
-                    },
-                    "additionalProperties": false,
-                    "title": "AiGenerateOptions",
-                    "description": "Options for an AI generation"
+                    "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
                 "required": ["prompt"],
-                "additionalProperties": false,
                 "title": "StreamTextRequest",
                 "description": "Request for streaming text generation with a single prompt"
               }
@@ -1454,17 +992,16 @@
           "201": {
             "description": ""
           }
-        }
+        },
+        "tags": ["AI"]
       }
     },
     "/api/ai/stream-object": {
       "post": {
         "operationId": "AiExampleController_streamObject",
-        "tags": ["AiExample"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Request for streaming structured object generation",
           "content": {
             "application/json": {
               "schema": {
@@ -1489,94 +1026,10 @@
                     ]
                   },
                   "options": {
-                    "type": "object",
-                    "properties": {
-                      "temperature": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 2
-                      },
-                      "maxTokens": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "topP": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "frequencyPenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "presencePenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "maxSteps": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "stopWhen": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "telemetry": {
-                        "type": "object",
-                        "properties": {
-                          "traceMode": {
-                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
-                            "type": "string",
-                            "enum": ["inherit", "split"]
-                          },
-                          "traceId": {
-                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
-                            "type": "string"
-                          },
-                          "traceName": {
-                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
-                            "type": "string"
-                          },
-                          "spanName": {
-                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
-                            "type": "string"
-                          },
-                          "sessionId": {
-                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
-                            "type": "object",
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "additionalProperties": {}
-                          },
-                          "langfuseOriginalPrompt": {
-                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
-                            "type": "string"
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      "metadata": {
-                        "type": "object",
-                        "propertyNames": {
-                          "type": "string"
-                        },
-                        "additionalProperties": {}
-                      }
-                    },
-                    "additionalProperties": false,
-                    "title": "AiGenerateOptions",
-                    "description": "Options for an AI generation"
+                    "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
                 "required": ["prompt", "schemaType"],
-                "additionalProperties": false,
                 "title": "StreamObjectRequest",
                 "description": "Request for streaming structured object generation"
               }
@@ -1587,17 +1040,16 @@
           "201": {
             "description": ""
           }
-        }
+        },
+        "tags": ["AI"]
       }
     },
     "/api/ai/stream-chat": {
       "post": {
         "operationId": "AiExampleController_streamChat",
-        "tags": ["AiExample"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Request for streaming multi-turn AI conversation",
           "content": {
             "application/json": {
               "schema": {
@@ -1607,92 +1059,7 @@
                     "minItems": 1,
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "role": {
-                          "type": "string",
-                          "enum": ["user", "assistant", "system", "tool"]
-                        },
-                        "content": {
-                          "type": "string"
-                        },
-                        "metadata": {
-                          "type": "object",
-                          "properties": {
-                            "isConsideredSystemMessage": {
-                              "type": "boolean"
-                            },
-                            "usage": {
-                              "description": "Total token usage for the message, including tools calls and reasoning steps",
-                              "type": "object",
-                              "properties": {
-                                "promptTokens": {
-                                  "type": "number"
-                                },
-                                "completionTokens": {
-                                  "type": "number"
-                                },
-                                "totalTokens": {
-                                  "type": "number"
-                                }
-                              },
-                              "required": ["promptTokens", "completionTokens", "totalTokens"],
-                              "additionalProperties": false,
-                              "title": "TokenUsage"
-                            },
-                            "finishReason": {
-                              "type": "string"
-                            },
-                            "timestamp": {
-                              "description": "ISO 8601 timestamp when the message was created",
-                              "type": "string",
-                              "format": "date-time",
-                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                            },
-                            "toolCalls": {
-                              "description": "Tool calls made to generate the message",
-                              "type": "array",
-                              "items": {
-                                "type": "object",
-                                "properties": {
-                                  "toolCallId": {
-                                    "type": "string"
-                                  },
-                                  "toolName": {
-                                    "type": "string"
-                                  },
-                                  "args": {
-                                    "type": "object",
-                                    "propertyNames": {
-                                      "type": "string"
-                                    },
-                                    "additionalProperties": {}
-                                  }
-                                },
-                                "required": ["toolCallId", "toolName", "args"],
-                                "additionalProperties": false,
-                                "title": "ToolCall",
-                                "description": "A tool call made by the AI"
-                              }
-                            },
-                            "reasonning": {
-                              "description": "Reasoning text for the message",
-                              "type": "string"
-                            },
-                            "schemaType": {
-                              "type": "string",
-                              "enum": ["userProfile", "task", "product", "recipe", "none"],
-                              "title": "ChatSchemaType",
-                              "description": "Predefined schema types for testing structured output"
-                            }
-                          },
-                          "additionalProperties": false
-                        }
-                      },
-                      "required": ["role", "content"],
-                      "additionalProperties": false,
-                      "title": "ChatMessageWithSchemaType",
-                      "description": "A message with optional schemaType metadata for identifying structured output"
+                      "$ref": "#/components/schemas/ChatMessageWithSchemaType"
                     }
                   },
                   "model": {
@@ -1706,94 +1073,10 @@
                     ]
                   },
                   "options": {
-                    "type": "object",
-                    "properties": {
-                      "temperature": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 2
-                      },
-                      "maxTokens": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "topP": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "frequencyPenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "presencePenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "maxSteps": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "stopWhen": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "telemetry": {
-                        "type": "object",
-                        "properties": {
-                          "traceMode": {
-                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
-                            "type": "string",
-                            "enum": ["inherit", "split"]
-                          },
-                          "traceId": {
-                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
-                            "type": "string"
-                          },
-                          "traceName": {
-                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
-                            "type": "string"
-                          },
-                          "spanName": {
-                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
-                            "type": "string"
-                          },
-                          "sessionId": {
-                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
-                            "type": "object",
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "additionalProperties": {}
-                          },
-                          "langfuseOriginalPrompt": {
-                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
-                            "type": "string"
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      "metadata": {
-                        "type": "object",
-                        "propertyNames": {
-                          "type": "string"
-                        },
-                        "additionalProperties": {}
-                      }
-                    },
-                    "additionalProperties": false,
-                    "title": "AiGenerateOptions",
-                    "description": "Options for an AI generation"
+                    "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
                 "required": ["messages"],
-                "additionalProperties": false,
                 "title": "StreamChatRequest",
                 "description": "Request for streaming multi-turn AI conversation"
               }
@@ -1804,17 +1087,16 @@
           "201": {
             "description": ""
           }
-        }
+        },
+        "tags": ["AI"]
       }
     },
     "/api/ai/examples/use-case-1-single-generation": {
       "post": {
         "operationId": "AiExampleUseCasesController_useCase1SingleGeneration",
-        "tags": ["AiExampleUseCases"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Single generation; trace is finalized with name/output so Langfuse shows them",
           "content": {
             "application/json": {
               "schema": {
@@ -1835,94 +1117,10 @@
                     ]
                   },
                   "options": {
-                    "type": "object",
-                    "properties": {
-                      "temperature": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 2
-                      },
-                      "maxTokens": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "topP": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "frequencyPenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "presencePenalty": {
-                        "type": "number",
-                        "minimum": -2,
-                        "maximum": 2
-                      },
-                      "maxSteps": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "stopWhen": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      "telemetry": {
-                        "type": "object",
-                        "properties": {
-                          "traceMode": {
-                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
-                            "type": "string",
-                            "enum": ["inherit", "split"]
-                          },
-                          "traceId": {
-                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
-                            "type": "string"
-                          },
-                          "traceName": {
-                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
-                            "type": "string"
-                          },
-                          "spanName": {
-                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
-                            "type": "string"
-                          },
-                          "sessionId": {
-                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
-                            "type": "object",
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "additionalProperties": {}
-                          },
-                          "langfuseOriginalPrompt": {
-                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
-                            "type": "string"
-                          }
-                        },
-                        "additionalProperties": false
-                      },
-                      "metadata": {
-                        "type": "object",
-                        "propertyNames": {
-                          "type": "string"
-                        },
-                        "additionalProperties": {}
-                      }
-                    },
-                    "additionalProperties": false,
-                    "title": "AiGenerateOptions",
-                    "description": "Options for an AI generation"
+                    "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
                 "required": ["prompt"],
-                "additionalProperties": false,
                 "title": "UseCase1SingleGenerationRequest",
                 "description": "Single generation; trace is finalized with name/output so Langfuse shows them"
               }
@@ -1930,8 +1128,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Response from text generation",
+          "201": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -1940,17 +1138,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["AI Examples"]
       }
     },
     "/api/ai/examples/use-case-2-grouped-calls": {
       "post": {
         "operationId": "AiExampleUseCasesController_useCase2GroupedCalls",
-        "tags": ["AiExampleUseCases"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end",
           "content": {
             "application/json": {
               "schema": {
@@ -1978,7 +1175,6 @@
                   }
                 },
                 "required": ["prompts"],
-                "additionalProperties": false,
                 "title": "UseCase2GroupedCallsRequest",
                 "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end"
               }
@@ -1986,8 +1182,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Combined results from grouped LLM calls",
+          "201": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -1996,17 +1192,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["AI Examples"]
       }
     },
     "/api/ai/examples/use-case-3-logical-units": {
       "post": {
         "operationId": "AiExampleUseCasesController_useCase3LogicalUnits",
-        "tags": ["AiExampleUseCases"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)",
           "content": {
             "application/json": {
               "schema": {
@@ -2034,7 +1229,6 @@
                   }
                 },
                 "required": ["workflowPrompts"],
-                "additionalProperties": false,
                 "title": "UseCase3LogicalUnitsRequest",
                 "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)"
               }
@@ -2042,8 +1236,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "One result per workflow (each in its own trace)",
+          "201": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -2052,17 +1246,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["AI Examples"]
       }
     },
     "/api/ai/examples/use-case-4-chat-session": {
       "post": {
         "operationId": "AiExampleUseCasesController_useCase4ChatSession",
-        "tags": ["AiExampleUseCases"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Simple generateText with sessionId for grouping traces across requests",
           "content": {
             "application/json": {
               "schema": {
@@ -2089,7 +1282,6 @@
                   }
                 },
                 "required": ["prompt", "sessionId"],
-                "additionalProperties": false,
                 "title": "UseCase4ChatSessionRequest",
                 "description": "Simple generateText with sessionId for grouping traces across requests"
               }
@@ -2097,8 +1289,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Response from text generation",
+          "201": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -2107,17 +1299,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["AI Examples"]
       }
     },
     "/api/ai/examples/use-case-5-chat-session-with-turns-merged": {
       "post": {
         "operationId": "AiExampleUseCasesController_useCase5ChatSessionWithTurnsMerged",
-        "tags": ["AiExampleUseCases"],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Simple generateText with sessionId for grouping traces across requests",
           "content": {
             "application/json": {
               "schema": {
@@ -2144,7 +1335,6 @@
                   }
                 },
                 "required": ["prompt", "sessionId"],
-                "additionalProperties": false,
                 "title": "UseCase4ChatSessionRequest",
                 "description": "Simple generateText with sessionId for grouping traces across requests"
               }
@@ -2152,8 +1342,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Response from text generation",
+          "201": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -2162,297 +1352,26 @@
               }
             }
           }
-        }
+        },
+        "tags": ["AI Examples"]
       }
     }
   },
+  "info": {
+    "title": "Lonestone API",
+    "description": "The Lonestone API description",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "@lonestone",
+      "description": ""
+    }
+  ],
+  "servers": [],
   "components": {
     "schemas": {
-      "UseCase1SingleGenerationRequest": {
-        "type": "object",
-        "properties": {
-          "prompt": {
-            "type": "string",
-            "minLength": 1
-          },
-          "model": {
-            "type": "string",
-            "enum": [
-              "OPENAI_GPT_5_NANO",
-              "GOOGLE_GEMINI_3_FLASH",
-              "CLAUDE_HAIKU_3_5",
-              "CLAUDE_OPUS_4_5",
-              "MISTRAL_SMALL"
-            ]
-          },
-          "options": {
-            "$ref": "#/components/schemas/AiGenerateOptions"
-          }
-        },
-        "required": ["prompt"],
-        "additionalProperties": false,
-        "title": "UseCase1SingleGenerationRequest",
-        "description": "Single generation; trace is finalized with name/output so Langfuse shows them"
-      },
-      "UseCase2GroupedCallsRequest": {
-        "type": "object",
-        "properties": {
-          "prompts": {
-            "minItems": 1,
-            "maxItems": 5,
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            },
-            "description": "Prompts for each step (same trace)"
-          },
-          "model": {
-            "type": "string",
-            "enum": [
-              "OPENAI_GPT_5_NANO",
-              "GOOGLE_GEMINI_3_FLASH",
-              "CLAUDE_HAIKU_3_5",
-              "CLAUDE_OPUS_4_5",
-              "MISTRAL_SMALL"
-            ]
-          }
-        },
-        "required": ["prompts"],
-        "additionalProperties": false,
-        "title": "UseCase2GroupedCallsRequest",
-        "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end"
-      },
-      "UseCase3LogicalUnitsRequest": {
-        "type": "object",
-        "properties": {
-          "workflowPrompts": {
-            "minItems": 1,
-            "maxItems": 5,
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            },
-            "description": "One prompt per logical workflow; each gets its own trace"
-          },
-          "model": {
-            "type": "string",
-            "enum": [
-              "OPENAI_GPT_5_NANO",
-              "GOOGLE_GEMINI_3_FLASH",
-              "CLAUDE_HAIKU_3_5",
-              "CLAUDE_OPUS_4_5",
-              "MISTRAL_SMALL"
-            ]
-          }
-        },
-        "required": ["workflowPrompts"],
-        "additionalProperties": false,
-        "title": "UseCase3LogicalUnitsRequest",
-        "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)"
-      },
-      "UseCase4ChatSessionRequest": {
-        "type": "object",
-        "properties": {
-          "prompt": {
-            "type": "string",
-            "minLength": 1
-          },
-          "sessionId": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Session ID to group traces in Langfuse (e.g. conversation or thread)"
-          },
-          "model": {
-            "type": "string",
-            "enum": [
-              "OPENAI_GPT_5_NANO",
-              "GOOGLE_GEMINI_3_FLASH",
-              "CLAUDE_HAIKU_3_5",
-              "CLAUDE_OPUS_4_5",
-              "MISTRAL_SMALL"
-            ]
-          }
-        },
-        "required": ["prompt", "sessionId"],
-        "additionalProperties": false,
-        "title": "UseCase4ChatSessionRequest",
-        "description": "Simple generateText with sessionId for grouping traces across requests"
-      },
-      "GenerateTextRequest": {
-        "type": "object",
-        "properties": {
-          "prompt": {
-            "type": "string",
-            "minLength": 1
-          },
-          "model": {
-            "type": "string",
-            "enum": [
-              "OPENAI_GPT_5_NANO",
-              "GOOGLE_GEMINI_3_FLASH",
-              "CLAUDE_HAIKU_3_5",
-              "CLAUDE_OPUS_4_5",
-              "MISTRAL_SMALL"
-            ]
-          },
-          "options": {
-            "$ref": "#/components/schemas/AiGenerateOptions"
-          }
-        },
-        "required": ["prompt"],
-        "additionalProperties": false,
-        "title": "GenerateTextRequest",
-        "description": "Request for simple text generation with a single prompt"
-      },
-      "GenerateObjectRequest": {
-        "type": "object",
-        "properties": {
-          "prompt": {
-            "type": "string",
-            "minLength": 1
-          },
-          "schemaType": {
-            "type": "string",
-            "enum": ["userProfile", "task", "product", "recipe"]
-          },
-          "model": {
-            "type": "string",
-            "enum": [
-              "OPENAI_GPT_5_NANO",
-              "GOOGLE_GEMINI_3_FLASH",
-              "CLAUDE_HAIKU_3_5",
-              "CLAUDE_OPUS_4_5",
-              "MISTRAL_SMALL"
-            ]
-          },
-          "options": {
-            "$ref": "#/components/schemas/AiGenerateOptions"
-          }
-        },
-        "required": ["prompt", "schemaType"],
-        "additionalProperties": false,
-        "title": "GenerateObjectRequest",
-        "description": "Request for structured object generation with a predefined schema type"
-      },
-      "ChatRequest": {
-        "type": "object",
-        "properties": {
-          "messages": {
-            "minItems": 1,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
-            }
-          },
-          "model": {
-            "type": "string",
-            "enum": [
-              "OPENAI_GPT_5_NANO",
-              "GOOGLE_GEMINI_3_FLASH",
-              "CLAUDE_HAIKU_3_5",
-              "CLAUDE_OPUS_4_5",
-              "MISTRAL_SMALL"
-            ]
-          },
-          "options": {
-            "$ref": "#/components/schemas/AiGenerateOptions"
-          },
-          "schemaType": {
-            "$ref": "#/components/schemas/ChatSchemaType"
-          }
-        },
-        "required": ["messages"],
-        "additionalProperties": false,
-        "title": "ChatRequest",
-        "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output."
-      },
-      "StreamTextRequest": {
-        "type": "object",
-        "properties": {
-          "prompt": {
-            "type": "string",
-            "minLength": 1
-          },
-          "model": {
-            "type": "string",
-            "enum": [
-              "OPENAI_GPT_5_NANO",
-              "GOOGLE_GEMINI_3_FLASH",
-              "CLAUDE_HAIKU_3_5",
-              "CLAUDE_OPUS_4_5",
-              "MISTRAL_SMALL"
-            ]
-          },
-          "options": {
-            "$ref": "#/components/schemas/AiGenerateOptions"
-          }
-        },
-        "required": ["prompt"],
-        "additionalProperties": false,
-        "title": "StreamTextRequest",
-        "description": "Request for streaming text generation with a single prompt"
-      },
-      "StreamObjectRequest": {
-        "type": "object",
-        "properties": {
-          "prompt": {
-            "type": "string",
-            "minLength": 1
-          },
-          "schemaType": {
-            "type": "string",
-            "enum": ["userProfile", "task", "product", "recipe"]
-          },
-          "model": {
-            "type": "string",
-            "enum": [
-              "OPENAI_GPT_5_NANO",
-              "GOOGLE_GEMINI_3_FLASH",
-              "CLAUDE_HAIKU_3_5",
-              "CLAUDE_OPUS_4_5",
-              "MISTRAL_SMALL"
-            ]
-          },
-          "options": {
-            "$ref": "#/components/schemas/AiGenerateOptions"
-          }
-        },
-        "required": ["prompt", "schemaType"],
-        "additionalProperties": false,
-        "title": "StreamObjectRequest",
-        "description": "Request for streaming structured object generation"
-      },
-      "StreamChatRequest": {
-        "type": "object",
-        "properties": {
-          "messages": {
-            "minItems": 1,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
-            }
-          },
-          "model": {
-            "type": "string",
-            "enum": [
-              "OPENAI_GPT_5_NANO",
-              "GOOGLE_GEMINI_3_FLASH",
-              "CLAUDE_HAIKU_3_5",
-              "CLAUDE_OPUS_4_5",
-              "MISTRAL_SMALL"
-            ]
-          },
-          "options": {
-            "$ref": "#/components/schemas/AiGenerateOptions"
-          }
-        },
-        "required": ["messages"],
-        "additionalProperties": false,
-        "title": "StreamChatRequest",
-        "description": "Request for streaming multi-turn AI conversation"
-      },
       "CreateCommentSchema": {
         "type": "object",
         "properties": {
@@ -2468,359 +1387,8 @@
           }
         },
         "required": ["content"],
-        "additionalProperties": false,
         "title": "CreateCommentSchema",
         "description": "Schema for creating a comment"
-      },
-      "CreatePostSchema": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PostContentSchema"
-            }
-          },
-          "coverImage": {
-            "type": "string",
-            "format": "uri"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": ["title", "content"],
-        "additionalProperties": false,
-        "title": "CreatePostSchema",
-        "description": "Schema for creating/updating a post"
-      },
-      "UpdatePostSchema": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PostContentSchema"
-            }
-          },
-          "coverImage": {
-            "type": "string",
-            "format": "uri"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdatePostSchema",
-        "description": "Schema for updating a post"
-      },
-      "GenerateTextResponse": {
-        "type": "object",
-        "properties": {
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "finishReason": {
-            "type": "string"
-          },
-          "toolCalls": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ToolCall"
-            }
-          },
-          "toolResults": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ToolResult"
-            }
-          },
-          "result": {
-            "type": "string"
-          }
-        },
-        "required": ["result"],
-        "additionalProperties": false,
-        "title": "GenerateTextResponse",
-        "description": "Response from text generation"
-      },
-      "TokenUsage": {
-        "type": "object",
-        "properties": {
-          "promptTokens": {
-            "type": "number"
-          },
-          "completionTokens": {
-            "type": "number"
-          },
-          "totalTokens": {
-            "type": "number"
-          }
-        },
-        "required": ["promptTokens", "completionTokens", "totalTokens"],
-        "additionalProperties": false,
-        "title": "TokenUsage",
-        "description": "Token usage information for an AI generation"
-      },
-      "ToolCall": {
-        "type": "object",
-        "properties": {
-          "toolCallId": {
-            "type": "string"
-          },
-          "toolName": {
-            "type": "string"
-          },
-          "args": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {}
-          }
-        },
-        "required": ["toolCallId", "toolName", "args"],
-        "additionalProperties": false,
-        "title": "ToolCall",
-        "description": "A tool call made by the AI"
-      },
-      "ToolResult": {
-        "type": "object",
-        "properties": {
-          "toolCallId": {
-            "type": "string"
-          },
-          "toolName": {
-            "type": "string"
-          },
-          "result": {}
-        },
-        "required": ["toolCallId", "toolName", "result"],
-        "additionalProperties": false,
-        "title": "ToolResult",
-        "description": "The result of a tool call"
-      },
-      "UseCase2GroupedCallsResponse": {
-        "type": "object",
-        "properties": {
-          "traceName": {
-            "type": "string"
-          },
-          "results": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          }
-        },
-        "required": ["traceName", "results"],
-        "additionalProperties": false,
-        "title": "UseCase2GroupedCallsResponse",
-        "description": "Combined results from grouped LLM calls"
-      },
-      "UseCase3LogicalUnitsResponse": {
-        "type": "object",
-        "properties": {
-          "workflows": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "index": {
-                  "type": "number"
-                },
-                "result": {
-                  "type": "string"
-                },
-                "usage": {
-                  "$ref": "#/components/schemas/TokenUsage"
-                }
-              },
-              "required": ["index", "result"],
-              "additionalProperties": false
-            }
-          }
-        },
-        "required": ["workflows"],
-        "additionalProperties": false,
-        "title": "UseCase3LogicalUnitsResponse",
-        "description": "One result per workflow (each in its own trace)"
-      },
-      "GenerateObjectResponse": {
-        "type": "object",
-        "properties": {
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "finishReason": {
-            "type": "string"
-          },
-          "toolCalls": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ToolCall"
-            }
-          },
-          "toolResults": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ToolResult"
-            }
-          },
-          "result": {}
-        },
-        "required": ["result"],
-        "additionalProperties": false,
-        "title": "GenerateObjectResponse",
-        "description": "Response from structured object generation"
-      },
-      "ChatResponse": {
-        "type": "object",
-        "properties": {
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "finishReason": {
-            "type": "string"
-          },
-          "toolCalls": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ToolCall"
-            }
-          },
-          "toolResults": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ToolResult"
-            }
-          },
-          "result": {
-            "type": "string"
-          },
-          "messages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
-            }
-          }
-        },
-        "required": ["result", "messages"],
-        "additionalProperties": false,
-        "title": "ChatResponse",
-        "description": "Response from AI chat conversation"
-      },
-      "ChatMessageWithSchemaType": {
-        "type": "object",
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": ["user", "assistant", "system", "tool"]
-          },
-          "content": {
-            "type": "string"
-          },
-          "metadata": {
-            "type": "object",
-            "properties": {
-              "isConsideredSystemMessage": {
-                "type": "boolean"
-              },
-              "usage": {
-                "description": "Total token usage for the message, including tools calls and reasoning steps",
-                "type": "object",
-                "properties": {
-                  "promptTokens": {
-                    "type": "number"
-                  },
-                  "completionTokens": {
-                    "type": "number"
-                  },
-                  "totalTokens": {
-                    "type": "number"
-                  }
-                },
-                "required": ["promptTokens", "completionTokens", "totalTokens"],
-                "additionalProperties": false,
-                "title": "TokenUsage"
-              },
-              "finishReason": {
-                "type": "string"
-              },
-              "timestamp": {
-                "description": "ISO 8601 timestamp when the message was created",
-                "type": "string",
-                "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-              },
-              "toolCalls": {
-                "description": "Tool calls made to generate the message",
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "toolCallId": {
-                      "type": "string"
-                    },
-                    "toolName": {
-                      "type": "string"
-                    },
-                    "args": {
-                      "type": "object",
-                      "propertyNames": {
-                        "type": "string"
-                      },
-                      "additionalProperties": {}
-                    }
-                  },
-                  "required": ["toolCallId", "toolName", "args"],
-                  "additionalProperties": false,
-                  "title": "ToolCall",
-                  "description": "A tool call made by the AI"
-                }
-              },
-              "reasonning": {
-                "description": "Reasoning text for the message",
-                "type": "string"
-              },
-              "schemaType": {
-                "type": "string",
-                "enum": ["userProfile", "task", "product", "recipe", "none"],
-                "title": "ChatSchemaType",
-                "description": "Predefined schema types for testing structured output"
-              }
-            },
-            "additionalProperties": false
-          }
-        },
-        "required": ["role", "content"],
-        "additionalProperties": false,
-        "title": "ChatMessageWithSchemaType",
-        "description": "A message with optional schemaType metadata for identifying structured output"
-      },
-      "ChatSchemaType": {
-        "type": "string",
-        "enum": ["userProfile", "task", "product", "recipe", "none"],
-        "title": "ChatSchemaType",
-        "description": "Predefined schema types for testing structured output"
       },
       "CommentSchema": {
         "type": "object",
@@ -2897,6 +1465,102 @@
         "title": "CommentSchema",
         "description": "Schema for a comment"
       },
+      "UpdateCommentSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": ["content"],
+        "title": "UpdateCommentSchema",
+        "description": "Schema for updating a comment"
+      },
+      "PaginationQuerySchema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "default": 0,
+            "description": "Starting position of the query",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pageSize": {
+            "default": 20,
+            "description": "Number of items to return",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "title": "PaginationQuerySchema",
+        "description": "Schema for pagination query"
+      },
+      "SortingQueryStringSchema": {
+        "title": "SortingQueryStringSchema",
+        "description": "Schema for sorting items",
+        "example": "name:asc,age:desc",
+        "type": "string",
+        "format": "sort",
+        "items": {
+          "type": "object",
+          "properties": {
+            "property": {
+              "type": "string",
+              "enum": ["title", "createdAt"]
+            },
+            "direction": {
+              "type": "string",
+              "enum": ["asc", "desc"]
+            }
+          },
+          "required": ["property", "direction"],
+          "additionalProperties": false,
+          "description": "Schema for sorting items"
+        }
+      },
+      "FilterQueryStringSchema": {
+        "title": "FilterQueryStringSchema",
+        "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\nAvailable rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \nAvailable properties: title, tag",
+        "example": "name:eq:John;age:gt:30",
+        "type": "string",
+        "format": "filter",
+        "items": {
+          "type": "object",
+          "properties": {
+            "property": {
+              "type": "string",
+              "enum": ["title", "tag"]
+            },
+            "rule": {
+              "type": "string",
+              "enum": [
+                "eq",
+                "neq",
+                "gt",
+                "gte",
+                "lt",
+                "lte",
+                "like",
+                "nlike",
+                "in",
+                "nin",
+                "isnull",
+                "isnotnull"
+              ]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["property", "rule"],
+          "additionalProperties": false,
+          "description": "Schema for a single filtering item"
+        }
+      },
       "CommentsSchema": {
         "type": "object",
         "properties": {
@@ -2930,6 +1594,123 @@
         "additionalProperties": false,
         "title": "CommentsSchema",
         "description": "Schema for a paginated list of comments"
+      },
+      "PostContentSchema": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["text"]
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": ["type", "data"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["image"]
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": ["type", "data"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["video"]
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": ["type", "data"],
+            "additionalProperties": false
+          }
+        ],
+        "title": "PostContentSchema",
+        "description": "Schema for content items (text, image, video)",
+        "type": "object"
+      },
+      "CreatePostSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostContentSchema"
+            }
+          },
+          "coverImage": {
+            "type": "string",
+            "format": "uri"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["title", "content"],
+        "title": "CreatePostSchema",
+        "description": "Schema for creating/updating a post"
+      },
+      "PostVersionSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "title", "createdAt"],
+        "additionalProperties": false,
+        "title": "PostVersionSchema",
+        "description": "Schema for a post version"
+      },
+      "TagSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "name", "slug"],
+        "additionalProperties": false,
+        "title": "TagSchema",
+        "description": "A tag attached to a post"
       },
       "UserPostSchema": {
         "type": "object",
@@ -2997,94 +1778,32 @@
         "title": "UserPostSchema",
         "description": "Schema for a user's post"
       },
-      "PostContentSchema": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "text"
-              },
-              "data": {
-                "type": "string"
-              }
-            },
-            "required": ["type", "data"],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "image"
-              },
-              "data": {
-                "type": "string"
-              }
-            },
-            "required": ["type", "data"],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "video"
-              },
-              "data": {
-                "type": "string"
-              }
-            },
-            "required": ["type", "data"],
-            "additionalProperties": false
-          }
-        ],
-        "title": "PostContentSchema",
-        "description": "Schema for content items (text, image, video)",
-        "type": "object"
-      },
-      "PostVersionSchema": {
+      "UpdatePostSchema": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
           "title": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string"
-          }
-        },
-        "required": ["id", "title", "createdAt"],
-        "additionalProperties": false,
-        "title": "PostVersionSchema",
-        "description": "Schema for a post version"
-      },
-      "TagSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
             "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            "minLength": 1
           },
-          "name": {
-            "type": "string"
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostContentSchema"
+            }
           },
-          "slug": {
-            "type": "string"
+          "coverImage": {
+            "type": "string",
+            "format": "uri"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
-        "required": ["id", "name", "slug"],
-        "additionalProperties": false,
-        "title": "TagSchema",
-        "description": "A tag attached to a post"
+        "title": "UpdatePostSchema",
+        "description": "Schema for updating a post"
       },
       "UserPostsSchema": {
         "type": "object",
@@ -3394,6 +2113,619 @@
         "title": "PublicAuthorPostsSchema",
         "description": "A list of posts from a specific author"
       },
+      "AiGenerateOptions": {
+        "type": "object",
+        "properties": {
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "maxTokens": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "topP": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "frequencyPenalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "presencePenalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "maxSteps": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "stopWhen": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "telemetry": {
+            "type": "object",
+            "properties": {
+              "traceMode": {
+                "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
+                "type": "string",
+                "enum": ["inherit", "split"]
+              },
+              "traceId": {
+                "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                "type": "string"
+              },
+              "traceName": {
+                "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                "type": "string"
+              },
+              "spanName": {
+                "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                "type": "string"
+              },
+              "sessionId": {
+                "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                "type": "string"
+              },
+              "metadata": {
+                "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "langfuseOriginalPrompt": {
+                "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                "type": "string"
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "title": "AiGenerateOptions",
+        "description": "Options for an AI generation"
+      },
+      "GenerateTextRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": ["prompt"],
+        "title": "GenerateTextRequest",
+        "description": "Request for simple text generation with a single prompt"
+      },
+      "TokenUsage": {
+        "type": "object",
+        "properties": {
+          "promptTokens": {
+            "type": "number"
+          },
+          "completionTokens": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": ["promptTokens", "completionTokens", "totalTokens"],
+        "additionalProperties": false,
+        "title": "TokenUsage",
+        "description": "Token usage information for an AI generation"
+      },
+      "ToolCall": {
+        "type": "object",
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "args": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": ["toolCallId", "toolName", "args"],
+        "additionalProperties": false,
+        "title": "ToolCall",
+        "description": "A tool call made by the AI"
+      },
+      "ToolResult": {
+        "type": "object",
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "result": {}
+        },
+        "required": ["toolCallId", "toolName", "result"],
+        "additionalProperties": false,
+        "title": "ToolResult",
+        "description": "The result of a tool call"
+      },
+      "GenerateTextResponse": {
+        "type": "object",
+        "properties": {
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "finishReason": {
+            "type": "string"
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "toolResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolResult"
+            }
+          },
+          "result": {
+            "type": "string"
+          }
+        },
+        "required": ["result"],
+        "additionalProperties": false,
+        "title": "GenerateTextResponse",
+        "description": "Response from text generation"
+      },
+      "GenerateObjectRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schemaType": {
+            "type": "string",
+            "enum": ["userProfile", "task", "product", "recipe"]
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": ["prompt", "schemaType"],
+        "title": "GenerateObjectRequest",
+        "description": "Request for structured object generation with a predefined schema type"
+      },
+      "GenerateObjectResponse": {
+        "type": "object",
+        "properties": {
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "finishReason": {
+            "type": "string"
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "toolResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolResult"
+            }
+          },
+          "result": {}
+        },
+        "required": ["result"],
+        "additionalProperties": false,
+        "title": "GenerateObjectResponse",
+        "description": "Response from structured object generation"
+      },
+      "ChatSchemaType": {
+        "type": "string",
+        "enum": ["userProfile", "task", "product", "recipe", "none"],
+        "title": "ChatSchemaType",
+        "description": "Predefined schema types for testing structured output"
+      },
+      "ChatMessageWithSchemaType": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["user", "assistant", "system", "tool"]
+          },
+          "content": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "isConsideredSystemMessage": {
+                "type": "boolean"
+              },
+              "usage": {
+                "$ref": "#/components/schemas/TokenUsage"
+              },
+              "finishReason": {
+                "type": "string"
+              },
+              "timestamp": {
+                "description": "ISO 8601 timestamp when the message was created",
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "toolCalls": {
+                "description": "Tool calls made to generate the message",
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ToolCall"
+                }
+              },
+              "reasonning": {
+                "description": "Reasoning text for the message",
+                "type": "string"
+              },
+              "schemaType": {
+                "$ref": "#/components/schemas/ChatSchemaType"
+              }
+            }
+          }
+        },
+        "required": ["role", "content"],
+        "title": "ChatMessageWithSchemaType",
+        "description": "A message with optional schemaType metadata for identifying structured output"
+      },
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
+            }
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          },
+          "schemaType": {
+            "$ref": "#/components/schemas/ChatSchemaType"
+          }
+        },
+        "required": ["messages"],
+        "title": "ChatRequest",
+        "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output."
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "finishReason": {
+            "type": "string"
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "toolResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolResult"
+            }
+          },
+          "result": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
+            }
+          }
+        },
+        "required": ["result", "messages"],
+        "additionalProperties": false,
+        "title": "ChatResponse",
+        "description": "Response from AI chat conversation"
+      },
+      "StreamTextRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": ["prompt"],
+        "title": "StreamTextRequest",
+        "description": "Request for streaming text generation with a single prompt"
+      },
+      "StreamObjectRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schemaType": {
+            "type": "string",
+            "enum": ["userProfile", "task", "product", "recipe"]
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": ["prompt", "schemaType"],
+        "title": "StreamObjectRequest",
+        "description": "Request for streaming structured object generation"
+      },
+      "StreamChatRequest": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
+            }
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": ["messages"],
+        "title": "StreamChatRequest",
+        "description": "Request for streaming multi-turn AI conversation"
+      },
+      "UseCase1SingleGenerationRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": ["prompt"],
+        "title": "UseCase1SingleGenerationRequest",
+        "description": "Single generation; trace is finalized with name/output so Langfuse shows them"
+      },
+      "UseCase2GroupedCallsRequest": {
+        "type": "object",
+        "properties": {
+          "prompts": {
+            "minItems": 1,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Prompts for each step (same trace)"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          }
+        },
+        "required": ["prompts"],
+        "title": "UseCase2GroupedCallsRequest",
+        "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end"
+      },
+      "UseCase2GroupedCallsResponse": {
+        "type": "object",
+        "properties": {
+          "traceName": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          }
+        },
+        "required": ["traceName", "results"],
+        "additionalProperties": false,
+        "title": "UseCase2GroupedCallsResponse",
+        "description": "Combined results from grouped LLM calls"
+      },
+      "UseCase3LogicalUnitsRequest": {
+        "type": "object",
+        "properties": {
+          "workflowPrompts": {
+            "minItems": 1,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "One prompt per logical workflow; each gets its own trace"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          }
+        },
+        "required": ["workflowPrompts"],
+        "title": "UseCase3LogicalUnitsRequest",
+        "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)"
+      },
+      "UseCase3LogicalUnitsResponse": {
+        "type": "object",
+        "properties": {
+          "workflows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "number"
+                },
+                "result": {
+                  "type": "string"
+                },
+                "usage": {
+                  "$ref": "#/components/schemas/TokenUsage"
+                }
+              },
+              "required": ["index", "result"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["workflows"],
+        "additionalProperties": false,
+        "title": "UseCase3LogicalUnitsResponse",
+        "description": "One result per workflow (each in its own trace)"
+      },
+      "UseCase4ChatSessionRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sessionId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Session ID to group traces in Langfuse (e.g. conversation or thread)"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          }
+        },
+        "required": ["prompt", "sessionId"],
+        "title": "UseCase4ChatSessionRequest",
+        "description": "Simple generateText with sessionId for grouping traces across requests"
+      },
       "AiCoreMessage": {
         "type": "object",
         "properties": {
@@ -3442,122 +2774,140 @@
         "title": "AiCoreMessage",
         "description": "A message in the conversation history following Vercel AI SDK patterns"
       },
+      "AiStreamTextChunkEvent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "chunk"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["type", "text"],
+        "additionalProperties": false,
+        "title": "AiStreamTextChunkEvent",
+        "description": "A text chunk event during streaming"
+      },
+      "AiStreamToolCallEvent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tool-call"
+          },
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "args": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": ["type", "toolCallId", "toolName", "args"],
+        "additionalProperties": false,
+        "title": "AiStreamToolCallEvent",
+        "description": "Event when a tool is being called during streaming"
+      },
+      "AiStreamToolResultEvent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tool-result"
+          },
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "result": {}
+        },
+        "required": ["type", "toolCallId", "toolName", "result"],
+        "additionalProperties": false,
+        "title": "AiStreamToolResultEvent",
+        "description": "Event when a tool returns a result during streaming"
+      },
+      "AiStreamUsage": {
+        "type": "object",
+        "properties": {
+          "promptTokens": {
+            "type": "number"
+          },
+          "completionTokens": {
+            "type": "number"
+          },
+          "totalTokens": {
+            "type": "number"
+          }
+        },
+        "required": ["promptTokens", "completionTokens", "totalTokens"],
+        "additionalProperties": false,
+        "title": "AiStreamUsage",
+        "description": "Token usage information for the stream"
+      },
+      "AiStreamDoneEvent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "done"
+          },
+          "fullText": {
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/AiStreamUsage"
+          },
+          "finishReason": {
+            "type": "string"
+          }
+        },
+        "required": ["type", "fullText"],
+        "additionalProperties": false,
+        "title": "AiStreamDoneEvent",
+        "description": "Final event when streaming is complete"
+      },
+      "AiStreamErrorEvent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "error"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["type", "message"],
+        "additionalProperties": false,
+        "title": "AiStreamErrorEvent",
+        "description": "Error event during streaming"
+      },
       "AiStreamEvent": {
         "oneOf": [
           {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "chunk"
-              },
-              "text": {
-                "type": "string"
-              }
-            },
-            "required": ["type", "text"],
-            "additionalProperties": false,
-            "title": "AiStreamTextChunkEvent",
-            "description": "A text chunk event during streaming"
+            "$ref": "#/components/schemas/AiStreamTextChunkEvent"
           },
           {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "tool-call"
-              },
-              "toolCallId": {
-                "type": "string"
-              },
-              "toolName": {
-                "type": "string"
-              },
-              "args": {
-                "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
-                "additionalProperties": {}
-              }
-            },
-            "required": ["type", "toolCallId", "toolName", "args"],
-            "additionalProperties": false,
-            "title": "AiStreamToolCallEvent",
-            "description": "Event when a tool is being called during streaming"
+            "$ref": "#/components/schemas/AiStreamToolCallEvent"
           },
           {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "tool-result"
-              },
-              "toolCallId": {
-                "type": "string"
-              },
-              "toolName": {
-                "type": "string"
-              },
-              "result": {}
-            },
-            "required": ["type", "toolCallId", "toolName", "result"],
-            "additionalProperties": false,
-            "title": "AiStreamToolResultEvent",
-            "description": "Event when a tool returns a result during streaming"
+            "$ref": "#/components/schemas/AiStreamToolResultEvent"
           },
           {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "done"
-              },
-              "fullText": {
-                "type": "string"
-              },
-              "usage": {
-                "type": "object",
-                "properties": {
-                  "promptTokens": {
-                    "type": "number"
-                  },
-                  "completionTokens": {
-                    "type": "number"
-                  },
-                  "totalTokens": {
-                    "type": "number"
-                  }
-                },
-                "required": ["promptTokens", "completionTokens", "totalTokens"],
-                "additionalProperties": false,
-                "title": "AiStreamUsage",
-                "description": "Token usage information for the stream"
-              },
-              "finishReason": {
-                "type": "string"
-              }
-            },
-            "required": ["type", "fullText"],
-            "additionalProperties": false,
-            "title": "AiStreamDoneEvent",
-            "description": "Final event when streaming is complete"
+            "$ref": "#/components/schemas/AiStreamDoneEvent"
           },
           {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "error"
-              },
-              "message": {
-                "type": "string"
-              }
-            },
-            "required": ["type", "message"],
-            "additionalProperties": false,
-            "title": "AiStreamErrorEvent",
-            "description": "Error event during streaming"
+            "$ref": "#/components/schemas/AiStreamErrorEvent"
           }
         ],
         "title": "AiStreamEvent",
@@ -3716,208 +3066,33 @@
         "title": "UserProfile",
         "description": "A user profile"
       },
-      "AiGenerateOptions": {
+      "CommentsController_getComments_sortItem": {
         "type": "object",
         "properties": {
-          "temperature": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 2
+          "property": {
+            "type": "string",
+            "enum": ["createdAt", "authorName"]
           },
-          "maxTokens": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          },
-          "topP": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          },
-          "frequencyPenalty": {
-            "type": "number",
-            "minimum": -2,
-            "maximum": 2
-          },
-          "presencePenalty": {
-            "type": "number",
-            "minimum": -2,
-            "maximum": 2
-          },
-          "maxSteps": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          },
-          "stopWhen": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          },
-          "telemetry": {
-            "type": "object",
-            "properties": {
-              "traceMode": {
-                "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
-                "type": "string",
-                "enum": ["inherit", "split"]
-              },
-              "traceId": {
-                "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
-                "type": "string"
-              },
-              "traceName": {
-                "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
-                "type": "string"
-              },
-              "spanName": {
-                "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
-                "type": "string"
-              },
-              "sessionId": {
-                "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
-                "type": "string"
-              },
-              "metadata": {
-                "description": "Telemetry metadata attached to (Langfuse) trace/span.",
-                "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
-                "additionalProperties": {}
-              },
-              "langfuseOriginalPrompt": {
-                "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
-          },
-          "metadata": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {}
+          "direction": {
+            "type": "string",
+            "enum": ["asc", "desc"]
           }
         },
-        "additionalProperties": false,
-        "title": "AiGenerateOptions",
-        "description": "Options for an AI generation"
+        "required": ["property", "direction"],
+        "additionalProperties": false
       },
-      "PaginationQuerySchema": {
-        "type": "object",
-        "properties": {
-          "offset": {
-            "default": 0,
-            "description": "Starting position of the query",
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "pageSize": {
-            "default": 20,
-            "description": "Number of items to return",
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 100
-          }
-        },
-        "required": ["offset", "pageSize"],
-        "additionalProperties": false,
-        "title": "PaginationQuerySchema",
-        "description": "Schema for pagination query"
-      },
-      "SortingQueryStringSchema": {
-        "title": "SortingQueryStringSchema",
-        "description": "Schema for sorting items",
-        "example": "name:asc,age:desc",
-        "type": "string",
+      "CommentsController_getComments_sortArray": {
+        "type": "array",
         "items": {
-          "title": "SortingStringSchema",
-          "description": "Schema for sorting items",
-          "type": "object",
-          "properties": {
-            "property": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "const": "title"
-                },
-                {
-                  "type": "string",
-                  "const": "createdAt"
-                }
-              ]
-            },
-            "direction": {
-              "type": "string",
-              "enum": ["asc", "desc"]
-            }
-          },
-          "required": ["property", "direction"],
-          "additionalProperties": false
-        },
-        "format": "sort"
-      },
-      "FilterQueryStringSchema": {
-        "title": "FilterQueryStringSchema",
-        "description": "Filtering query string, in the format of \"property:rule[:value];property:rule[:value];...\"\n    <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull \n    <br> Available properties: title, tag",
-        "example": "name:eq:John;age:gt:30",
-        "type": "string",
-        "items": {
-          "type": "object",
-          "properties": {
-            "property": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "const": "title"
-                },
-                {
-                  "type": "string",
-                  "const": "tag"
-                }
-              ]
-            },
-            "rule": {
-              "type": "string",
-              "enum": [
-                "eq",
-                "neq",
-                "gt",
-                "gte",
-                "lt",
-                "lte",
-                "like",
-                "nlike",
-                "in",
-                "nin",
-                "isnull",
-                "isnotnull"
-              ]
-            },
-            "value": {
-              "type": "string"
-            }
-          },
-          "required": ["property", "rule"],
-          "additionalProperties": false,
-          "title": "FilteringSchema",
-          "description": "Schema for a single filtering item"
-        },
-        "format": "filter"
-      },
-      "CommentsController_postSlug": {
-        "type": "string"
+          "$ref": "#/components/schemas/CommentsController_getComments_sortItem"
+        }
       },
       "CommentsController_getComments_filterItem": {
         "type": "object",
         "properties": {
           "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "content"
-              }
-            ]
+            "type": "string",
+            "enum": ["content"]
           },
           "rule": {
             "type": "string",
@@ -3949,49 +3124,12 @@
           "$ref": "#/components/schemas/CommentsController_getComments_filterItem"
         }
       },
-      "CommentsController_getComments_sortItem": {
-        "type": "object",
-        "properties": {
-          "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "createdAt"
-              },
-              {
-                "type": "string",
-                "const": "authorName"
-              }
-            ]
-          },
-          "direction": {
-            "type": "string",
-            "enum": ["asc", "desc"]
-          }
-        },
-        "required": ["property", "direction"],
-        "additionalProperties": false
-      },
-      "CommentsController_getComments_sortArray": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/CommentsController_getComments_sortItem"
-        }
-      },
       "CommentsController_getCommentReplies_sortItem": {
         "type": "object",
         "properties": {
           "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "createdAt"
-              },
-              {
-                "type": "string",
-                "const": "authorName"
-              }
-            ]
+            "type": "string",
+            "enum": ["createdAt", "authorName"]
           },
           "direction": {
             "type": "string",
@@ -4007,20 +3145,33 @@
           "$ref": "#/components/schemas/CommentsController_getCommentReplies_sortItem"
         }
       },
+      "PostController_getUserPosts_sortItem": {
+        "type": "object",
+        "properties": {
+          "property": {
+            "type": "string",
+            "enum": ["title", "createdAt"]
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["asc", "desc"]
+          }
+        },
+        "required": ["property", "direction"],
+        "additionalProperties": false
+      },
+      "PostController_getUserPosts_sortArray": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PostController_getUserPosts_sortItem"
+        }
+      },
       "PostController_getUserPosts_filterItem": {
         "type": "object",
         "properties": {
           "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "title"
-              },
-              {
-                "type": "string",
-                "const": "tag"
-              }
-            ]
+            "type": "string",
+            "enum": ["title", "tag"]
           },
           "rule": {
             "type": "string",
@@ -4052,20 +3203,12 @@
           "$ref": "#/components/schemas/PostController_getUserPosts_filterItem"
         }
       },
-      "PostController_getUserPosts_sortItem": {
+      "PublicPostController_getPosts_sortItem": {
         "type": "object",
         "properties": {
           "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "title"
-              },
-              {
-                "type": "string",
-                "const": "createdAt"
-              }
-            ]
+            "type": "string",
+            "enum": ["title", "createdAt"]
           },
           "direction": {
             "type": "string",
@@ -4075,26 +3218,18 @@
         "required": ["property", "direction"],
         "additionalProperties": false
       },
-      "PostController_getUserPosts_sortArray": {
+      "PublicPostController_getPosts_sortArray": {
         "type": "array",
         "items": {
-          "$ref": "#/components/schemas/PostController_getUserPosts_sortItem"
+          "$ref": "#/components/schemas/PublicPostController_getPosts_sortItem"
         }
       },
       "PublicPostController_getPosts_filterItem": {
         "type": "object",
         "properties": {
           "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "title"
-              },
-              {
-                "type": "string",
-                "const": "tag"
-              }
-            ]
+            "type": "string",
+            "enum": ["title", "tag"]
           },
           "rule": {
             "type": "string",
@@ -4126,49 +3261,12 @@
           "$ref": "#/components/schemas/PublicPostController_getPosts_filterItem"
         }
       },
-      "PublicPostController_getPosts_sortItem": {
-        "type": "object",
-        "properties": {
-          "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "title"
-              },
-              {
-                "type": "string",
-                "const": "createdAt"
-              }
-            ]
-          },
-          "direction": {
-            "type": "string",
-            "enum": ["asc", "desc"]
-          }
-        },
-        "required": ["property", "direction"],
-        "additionalProperties": false
-      },
-      "PublicPostController_getPosts_sortArray": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/PublicPostController_getPosts_sortItem"
-        }
-      },
       "PublicAuthorController_getAuthorPosts_sortItem": {
         "type": "object",
         "properties": {
           "property": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "title"
-              },
-              {
-                "type": "string",
-                "const": "createdAt"
-              }
-            ]
+            "type": "string",
+            "enum": ["title", "createdAt"]
           },
           "direction": {
             "type": "string",

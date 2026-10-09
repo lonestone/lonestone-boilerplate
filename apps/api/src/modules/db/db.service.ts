@@ -1,5 +1,5 @@
+import type { MikroOrmOptionsFactory } from '@mikro-orm/nestjs'
 import type { Options } from '@mikro-orm/postgresql'
-import { MikroOrmOptionsFactory } from '@mikro-orm/nestjs'
 import { Injectable } from '@nestjs/common'
 import { createMikroOrmOptions } from './db.config'
 

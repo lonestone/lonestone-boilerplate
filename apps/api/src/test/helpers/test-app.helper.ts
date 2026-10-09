@@ -4,16 +4,15 @@
 // These helpers are for app setup/teardown and request helpers only.
 // Arrange-Act-Assert pattern should be followed in all test files.
 
-import {
-  ZodSerializationExceptionFilter,
-  ZodValidationExceptionFilter,
-} from '@lonestone/nzoth/server'
+import type { INestApplication, ModuleMetadata } from '@nestjs/common'
+import type { NestExpressApplication } from '@nestjs/platform-express'
+import type { BetterAuthSession } from '../../modules/auth/auth.config'
 import { MikroORM } from '@mikro-orm/core'
 import { MikroOrmModule } from '@mikro-orm/nestjs'
-import { INestApplication, ModuleMetadata } from '@nestjs/common'
+import { StandardSchemaSerializerInterceptor, StandardSchemaValidationPipe } from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
 import { Test } from '@nestjs/testing'
-import * as express from 'express'
-import { BetterAuthSession } from '../../modules/auth/auth.config'
+import express from 'express'
 import { AuthModule } from '../../modules/auth/auth.module'
 import { AuthService } from '../../modules/auth/auth.service'
 import { createMockAuthService, testSessionMiddleware } from './test-auth.helper'
@@ -88,12 +87,13 @@ export async function initializeTestApp(
     const { setSession, clearSession } = mockAuthService
 
     // Create the application
-    const app = moduleFixture.createNestApplication({
+    const app = moduleFixture.createNestApplication<NestExpressApplication>({
       bodyParser: false,
     })
+    app.set('query parser', 'extended')
 
-    // Add global filters for Zod error handling (as in main.ts)
-    app.useGlobalFilters(new ZodValidationExceptionFilter(), new ZodSerializationExceptionFilter())
+    app.useGlobalPipes(new StandardSchemaValidationPipe())
+    app.useGlobalInterceptors(new StandardSchemaSerializerInterceptor(app.get(Reflector)))
 
     registerMiddleware(app, testSessionMiddleware)
 

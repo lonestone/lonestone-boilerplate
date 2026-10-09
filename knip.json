@@ -42,11 +42,14 @@
       "ignoreDependencies": [
         "pino-pretty",
         "ts-node",
+        "@swc-node/register",
         "source-map-support",
         "test",
         "kysely",
         "@better-fetch/fetch",
-        "better-call"
+        "better-call",
+        "@nestjs/cli",
+        "@nestjs/schematics"
       ]
     },
     "apps/web-spa": {

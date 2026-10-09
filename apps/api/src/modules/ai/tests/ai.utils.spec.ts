@@ -1,7 +1,8 @@
+import type { LanguageModel } from 'ai'
 import type { Mock } from 'vitest'
-import { LanguageModel } from 'ai'
+import type { ModelConfig, ModelId } from '../ai.config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ModelConfig, ModelId, modelRegistry, providers } from '../ai.config'
+import { modelRegistry, providers } from '../ai.config'
 import { getDefaultModel, getModel, sanitizeAiJson } from '../ai.utils'
 
 vi.mock('../ai.config', () => {

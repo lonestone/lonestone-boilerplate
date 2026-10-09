@@ -1,14 +1,21 @@
 {
   "compilerOptions": {
     "incremental": true,
-    "target": "esnext",
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "src/*": ["./src/*"]
+    },
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "baseUrl": "./",
-    "ignoreDeprecations": "6.0",
-    "moduleResolution": "nodenext",
     "resolveJsonModule": true,
-    "types": ["node", "vitest/globals"],
+    "types": ["node", "vitest/globals", "vite/client"],
     "strict": true,
     "strictBindCallApply": false,
     "strictNullChecks": true,
@@ -20,14 +27,10 @@
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    // Changes to allow importing the shared ESM packages (which are also built for CJS, but TS needs to find the right version)
-    "module": "nodenext",
     "preserveWatchOutput": true
   },
-  // For ts-node to resolve the paths correctly (like from root src/...)
   "ts-node": {
     "require": ["tsconfig-paths/register"]
   },
