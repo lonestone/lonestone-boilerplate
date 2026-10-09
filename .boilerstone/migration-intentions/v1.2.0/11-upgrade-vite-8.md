@@ -1,5 +1,5 @@
 ---
-id: unreleased/upgrade-vite-8
+id: v1.2.0/upgrade-vite-8
 domain: frontend
 classification: migration
 pr: 134

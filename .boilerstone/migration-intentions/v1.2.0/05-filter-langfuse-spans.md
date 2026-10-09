@@ -1,5 +1,5 @@
 ---
-id: unreleased/filter-langfuse-spans
+id: v1.2.0/filter-langfuse-spans
 domain: ai
 classification: migration
 pr: 133

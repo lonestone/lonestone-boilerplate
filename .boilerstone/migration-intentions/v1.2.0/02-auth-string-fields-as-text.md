@@ -1,5 +1,5 @@
 ---
-id: unreleased/auth-string-fields-as-text
+id: v1.2.0/auth-string-fields-as-text
 domain: auth
 classification: migration
 ---
@@ -53,7 +53,7 @@ Drizzle and Prisma adapters store these fields as unbounded text. A per-field he
 
 - `apps/api/src/modules/auth/auth-schema-codegen.ts` — **adapt**
 - `apps/api/src/modules/auth/auth-schema-codegen.spec.ts` — **adapt**
-- `apps/api/src/modules/auth/entities/jwks.entity.ts` — **adapt** (only if the consumer already generated it)
+- `apps/api/src/modules/auth/entities/jwks.entity.ts` — **adapt**
 
 ## Validation
 

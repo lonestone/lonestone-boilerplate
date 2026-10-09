@@ -55,6 +55,7 @@
 - [index.mdx](./src/content/docs/releases/index.mdx) - Why each release exists — the human story, not the changelog
 - [v1.0.0.mdx](./src/content/docs/releases/v1.0.0.mdx) - First public release of the Lonestone boilerplate
 - [v1.1.0.mdx](./src/content/docs/releases/v1.1.0.mdx) - From writing a commit to deploying in production — one squash message, and everything else derives from it
+- [v1.2.0.mdx](./src/content/docs/releases/v1.2.0.mdx) - The installer and upgrade tool become one published CLI, and existing projects get a first bundle of fixes
 
 ## Root
 

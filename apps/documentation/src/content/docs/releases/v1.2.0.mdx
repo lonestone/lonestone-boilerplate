@@ -1,0 +1,27 @@
+---
+title: 1.2.0
+description: The installer and upgrade tool become one published CLI, and existing projects get a first bundle of fixes
+---
+
+This release exists to move the installer and the upgrade tool out of every project and into one published package, `@lonestone/boilerstone-cli`. Until now, each generated project carried its own copy of that code. The copies went stale with every fix, and `install.sh` repeated the installer in shell.
+
+A new project now starts with one command:
+
+```bash
+pnpm dlx @lonestone/boilerstone-cli init my-project
+```
+
+A CLI only creates the release that has its own version. `@lonestone/boilerstone-cli@1.2.0` creates `v1.2.0`, so pinning a release means pinning the CLI. Releases published before the CLI (v1.0.0 and v1.1.0) can no longer be used to create a project.
+
+The generated list of changes is in [`CHANGELOG.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CHANGELOG.md). The reasons behind the CLI design are in the body of its squash commit (#159).
+
+## What this means for consumer projects
+
+- **Nothing breaks.** An existing project keeps working as it is.
+- **The CLI becomes a command, not a dependency.** The `adopt-published-cli` intention switches the `boilerplate` and `rock` scripts to `pnpm dlx`. `boilerplate` always runs the newest CLI, because the newest CLI does the upgrade. `rock` is pinned to the release the project tracks. Apply this intention first: it comes first in the release order.
+- **`pnpm rock` does less.** It only sets up the local environment: `.env` files, ports, Docker and migrations. It no longer renames packages or deletes files, so it is safe to re-run. The rename happens once, in `init`.
+- **Three other intentions change behavior.** Read them before you apply them:
+  - `sentry-traces-sample-rate`: Sentry traces are off unless `TRACES_SAMPLE_RATE` is set. Before, a DSN turned them on at 100% in development and 10% in production.
+  - `upgrade-vite-8`: the SPA and SSR apps move from Vite 7 to Vite 8.
+  - `auth-string-fields-as-text`: Better Auth string fields are generated as PostgreSQL `text`, and an existing `jwks` table is patched too. Long JWKS keys no longer fail to insert.
+- **The other intentions are smaller fixes and documentation updates.**

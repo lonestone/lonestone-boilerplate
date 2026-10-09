@@ -1,5 +1,5 @@
 ---
-id: unreleased/api-image-mikro-orm-prefer-ts
+id: v1.2.0/api-image-mikro-orm-prefer-ts
 domain: docker-env
 classification: migration
 ---

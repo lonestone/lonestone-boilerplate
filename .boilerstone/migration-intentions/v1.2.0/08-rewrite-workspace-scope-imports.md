@@ -1,5 +1,5 @@
 ---
-id: unreleased/rewrite-workspace-scope-imports
+id: v1.2.0/rewrite-workspace-scope-imports
 domain: tooling
 classification: migration
 pr: 146
@@ -52,13 +52,12 @@ After a project rename, workspace imports, tsconfig paths, shadcn aliases, docs,
 ## Out of Scope
 
 - Re-running `pnpm rock`.
-- `.boilerstone/` (the upgrade CLI stays `@boilerstone/boilerplate`).
+- `.boilerstone/` (upgrade state and tooling keep their own names).
 - `CHANGELOG.md` and lockfiles.
 - Root package name, docker-compose service names, and env files — those were already handled by rock.
 
 ## Reference Paths
 
-- `cli/setup.ts` — **adapt**
 - `packages/ui/tsconfig.json` — **adapt**
 - `packages/ui/components.json` — **adapt**
 - `tsconfig.base.json` — **adapt**

@@ -1,5 +1,5 @@
 ---
-id: unreleased/openapi-generator-docs-url
+id: v1.2.0/openapi-generator-docs-url
 domain: tooling
 classification: migration
 pr: 147
@@ -40,9 +40,9 @@ Issue 94 already moved the `/api` prefix into `API_URL` and left the fetch path 
    Keep `${process.env.API_URL}/docs.json` and throw if `!res.ok`, matching the staged reference. Do not add `/api` to the path.
    Done when: the fetch URL is `${process.env.API_URL}/docs.json` and a non-OK response throws before writing `tmp/openapi.json`.
 
-4. **rock overwrite** — signal: `cli/setup.ts` writes OpenAPI `API_URL` as `http://localhost:${config.ports.api}` with no `/api`.
-   Append `/api` when writing `packages/openapi-generator/.env`, matching the staged reference. Leave web-spa and web-ssr `VITE_API_URL` without the prefix.
-   Done when: the OpenAPI generator branch of `cli/setup.ts` writes a URL ending in `/api`.
+4. **rock overwrite** — signal: the project still has a vendored `cli/setup.ts` that writes OpenAPI `API_URL` as `http://localhost:${config.ports.api}` with no `/api`.
+   Append `/api` when writing `packages/openapi-generator/.env`. Leave web-spa and web-ssr `VITE_API_URL` without the prefix. Skip this gap when `rock` runs the published CLI (`adopt-published-cli`): that `rock` already writes the prefix, and `cli/setup.ts` is not in the staged references.
+   Done when: the OpenAPI generator branch of `cli/setup.ts` writes a URL ending in `/api`, or `cli/setup.ts` is gone because `rock` runs the published CLI.
 
 5. **Generator docs** — signal: `packages/openapi-generator/README.md` or `apps/documentation/src/content/docs/guides/generating-types.mdx` still mentions `/docs-json`, or they do not say that `API_URL` already includes `/api`.
    Adapt the short URL notes from the staged references. Do not rewrite the rest of those pages.
@@ -60,7 +60,6 @@ Issue 94 already moved the `/api` prefix into `API_URL` and left the fetch path 
 - `packages/openapi-generator/.env.example` — **copy**
 - `packages/openapi-generator/package.json` — **adapt**
 - `packages/openapi-generator/preprocess/index.js` — **adapt**
-- `cli/setup.ts` — **adapt**
 - `packages/openapi-generator/README.md` — **adapt**
 - `apps/documentation/src/content/docs/guides/generating-types.mdx` — **adapt**
 
