@@ -14,7 +14,9 @@ The API runs on stable NestJS 12.1 as an ES module, validates and documents rout
 
 NestJS 12 packages are ESM-only, so the API package becomes `"type": "module"`. Nest 12 also ships Standard Schema support: a validation pipe, a serializer interceptor, a `schema` option on `@Body` / `@Param` / `@Query`, and `standardSchema` on Swagger response decorators. That covers what `@lonestone/nzoth` provided, so the API drops it.
 
-Build, dev and tests share one Vite + SWC config. SWC keeps decorator metadata, Vite bundles `main.js` and `migrate.js`, and Vitest already depended on Vite. A Nest CLI Rspack build was tried first and dropped: it needed custom externals for the hoisted pnpm layout and a hand-built migrations list.
+Build, dev and tests share one Vite + SWC config. SWC keeps decorator metadata, and Vitest already depended on Vite. Vite emits one file per module (`preserveModules`), migrations included: a single bundle would rename clashing class names (`Post` becomes `Post$1`), which renames MikroORM entities and OpenAPI schemas. A Nest CLI Rspack build was tried first and dropped: it needed custom externals for the hoisted pnpm layout and a hand-built migrations list.
+
+In dev, `vite-node --watch` re-runs `main.ts` in the same process instead of restarting it. `main.ts` therefore closes the app before each re-run and initializes telemetry only once. Without that, the dev server keeps serving the old code and logs `EADDRINUSE`.
 
 The image ships no `src/`, so the MikroORM CLI cannot run there. `dist/migrate.js` calls the migrator directly, which makes the `MIKRO_ORM_CLI_*` variables from `v1.2.0/api-image-mikro-orm-prefer-ts` unnecessary.
 
@@ -47,12 +49,12 @@ Work gap by gap. Skip example modules the project removed. Keep business logic a
    Done when: `rg @lonestone/nzoth apps/api/src` returns nothing, and after `pnpm generate` against the dev server the frontend apps typecheck with no change to their imports.
 
 4. **Static entity list** — signal: `apps/api/src/modules/db/db.config.ts` discovers entities through a glob.
-   Run `pnpm --filter=api db:entities` (script from the staged reference) and point `entities` / `entitiesTs` to `entities.generated.ts`. Bundled ESM code has no entity files left to scan.
+   Run `pnpm --filter=api db:entities` (script from the staged reference) and point `entities` / `entitiesTs` to `entities.generated.ts`. The list does not depend on the build layout, and it types the `EntityManager`.
    Done when: `db.config.ts` imports `./entities.generated` and the API boots against an empty database.
 
 5. **Build, dev and tests on Vite** — signal: `apps/api/package.json` runs `nest build` / `nest start`, or `apps/api/vitest.config.ts` exists.
-   Replace it with the staged `apps/api/vite.config.ts`. Adopt the `build`, `dev` and `test` scripts. Remove the Nest CLI builder options from `nest-cli.json`, but keep the CLI for schematics. Set `module.type: es6` in `.swcrc`.
-   Done when: `pnpm --filter=api build` emits `dist/main.js`, `dist/migrate.js` and `dist/modules/db/migrations/*.js`, and `pnpm --filter=api test` passes.
+   Replace it with the staged `apps/api/vite.config.ts`. Adopt the `build`, `start`, `dev` and `test` scripts. Copy the reload hook and the one-time telemetry guard from the staged `main.ts`. Remove the Nest CLI builder options from `nest-cli.json`, but keep the CLI for schematics. Set `module.type: es6` in `.swcrc`. Remove `@swc/cli` if the project lists it.
+   Done when: `pnpm --filter=api build` emits one file per module, including `dist/main.js`, `dist/migrate.js` and `dist/modules/db/migrations/*.js`; `pnpm --filter=api test` passes; and editing a controller twice while `pnpm --filter=api dev` runs serves the new code both times without `EADDRINUSE`.
 
 6. **Production migrations** — signal: `apps/api/Dockerfile` runs `db:migrate:up`, or sets `MIKRO_ORM_CLI_PREFER_TS` / `MIKRO_ORM_CLI_CONFIG`.
    Copy `apps/api/src/migrate.ts`, add the `db:migrate:prod` script, change the image `CMD` to `pnpm db:migrate:prod && pnpm run start`, and remove both `MIKRO_ORM_CLI_*` lines.

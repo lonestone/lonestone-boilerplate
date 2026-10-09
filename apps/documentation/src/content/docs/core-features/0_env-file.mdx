@@ -21,7 +21,7 @@ However, dotenvx allows you to store secrets within the codebase, which:
 
 Vite automatically loads the .env files when you run `pnpm dev` or `pnpm build`.
 
-For the API, `dotenvx run` injects variables into the process before Nest starts (same pattern as the OpenAPI generator). Encrypted `.env` files are decrypted by that CLI, not by the Vite bundle.
+For the API, `dotenvx run` injects variables into the process before Nest starts (same pattern as the OpenAPI generator). Encrypted `.env` files are decrypted by that CLI, not by the Vite build.
 
 ```bash
 dotenvx run -- vite-node --watch src/main.ts

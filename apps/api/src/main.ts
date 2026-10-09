@@ -13,14 +13,20 @@ import { initialiazeTelemetry } from './instrument'
 const PREFIX = '/api'
 
 async function bootstrap() {
-  // Initialize telemetry
-  initialiazeTelemetry()
+  // Initialize telemetry once: in dev, vite-node re-runs this file in the same process
+  // on every change, and Sentry and OpenTelemetry register global state.
+  if (!import.meta.hot?.data.telemetryInitialized) {
+    initialiazeTelemetry()
+    if (import.meta.hot) import.meta.hot.data.telemetryInitialized = true
+  }
 
   // bodyParser must be false so Better Auth (@thallesp/nestjs-better-auth) can
   // handle the raw body on /api/auth and re-add JSON parsers for other routes.
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bodyParser: false,
   })
+  // Free the port and the database pool before vite-node re-runs this file.
+  import.meta.hot?.on('vite:beforeFullReload', () => app.close())
   // Express 5's default query parser does not expand nested keys.
   app.set('query parser', 'extended')
 
