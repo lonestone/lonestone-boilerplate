@@ -101,20 +101,17 @@ function TeaserCard({ post, index }: { post: TeaserPost; index: number }) {
 }
 
 export async function loader() {
-  try {
-    const result = await publicPostControllerGetPosts({
-      query: { offset: 0, pageSize: 3, filter: [] },
-    })
+  const result = await publicPostControllerGetPosts({
+    query: { offset: 0, pageSize: 3, filter: [] },
+  })
 
-    return {
-      latestPosts: result.data?.data ?? [],
-      totalPosts: result.data?.meta.itemCount ?? 0,
-    }
-  } catch {
-    return {
-      latestPosts: [],
-      totalPosts: 0,
-    }
+  if (result.error) {
+    throw result.error
+  }
+
+  return {
+    latestPosts: result.data?.data ?? [],
+    totalPosts: result.data?.meta.itemCount ?? 0,
   }
 }
 

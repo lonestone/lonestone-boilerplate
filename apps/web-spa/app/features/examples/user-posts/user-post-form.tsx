@@ -32,6 +32,7 @@ export default function UserPostForm({
 }: UserPostFormProps) {
   const { t } = useTranslation()
   const [activeContentType, setActiveContentType] = useState<'text' | 'image' | 'video'>('text')
+  const [tagsText, setTagsText] = useState<string>((initialData?.tags ?? []).join(', '))
 
   const {
     register,
@@ -115,15 +116,16 @@ export default function UserPostForm({
                 id="tags"
                 placeholder={t('posts.form.tagsPlaceholder')}
                 className="w-full"
-                value={(field.value ?? []).join(', ')}
-                onChange={(event) =>
+                value={tagsText}
+                onChange={(event) => {
+                  setTagsText(event.target.value)
                   field.onChange(
                     event.target.value
                       .split(',')
                       .map((tag) => tag.trim())
                       .filter(Boolean),
                   )
-                }
+                }}
               />
             )}
           />
@@ -137,6 +139,8 @@ export default function UserPostForm({
                 <button
                   type="button"
                   onClick={() => setActiveContentType('text')}
+                  aria-label={t('posts.form.contentTypeText')}
+                  aria-pressed={activeContentType === 'text'}
                   className={cn(
                     'p-1.5 rounded-md flex items-center justify-center',
                     activeContentType === 'text'
@@ -149,6 +153,8 @@ export default function UserPostForm({
                 <button
                   type="button"
                   onClick={() => setActiveContentType('image')}
+                  aria-label={t('posts.form.contentTypeImage')}
+                  aria-pressed={activeContentType === 'image'}
                   className={cn(
                     'p-1.5 rounded-md flex items-center justify-center',
                     activeContentType === 'image'
@@ -161,6 +167,8 @@ export default function UserPostForm({
                 <button
                   type="button"
                   onClick={() => setActiveContentType('video')}
+                  aria-label={t('posts.form.contentTypeVideo')}
+                  aria-pressed={activeContentType === 'video'}
                   className={cn(
                     'p-1.5 rounded-md flex items-center justify-center',
                     activeContentType === 'video'
@@ -200,6 +208,7 @@ export default function UserPostForm({
                       variant="ghost"
                       size="icon"
                       onClick={() => move(index, index - 1)}
+                      aria-label={t('posts.form.moveUp')}
                       className="size-7"
                     >
                       <MoveUp className="size-3.5" />
@@ -211,6 +220,7 @@ export default function UserPostForm({
                       variant="ghost"
                       size="icon"
                       onClick={() => move(index, index + 1)}
+                      aria-label={t('posts.form.moveDown')}
                       className="size-7"
                     >
                       <MoveDown className="size-3.5" />
@@ -221,6 +231,7 @@ export default function UserPostForm({
                     variant="ghost"
                     size="icon"
                     onClick={() => remove(index)}
+                    aria-label={t('posts.form.remove')}
                     className="size-7 text-destructive hover:text-destructive/90"
                   >
                     <Trash2 className="size-3.5" />
@@ -295,6 +306,7 @@ export default function UserPostForm({
                                 size="icon"
                                 className="absolute top-2 right-2 size-7 opacity-80 hover:opacity-100"
                                 onClick={() => controllerField.onChange('')}
+                                aria-label={t('posts.form.clearImage')}
                               >
                                 <X className="size-3.5" />
                               </Button>

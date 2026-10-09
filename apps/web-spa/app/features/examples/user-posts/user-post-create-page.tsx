@@ -4,6 +4,7 @@ import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
+import { queryClient } from '@/lib/query-client'
 import UserPostForm from './user-post-form'
 
 export default function UserPostCreatePage() {
@@ -20,6 +21,7 @@ export default function UserPostCreatePage() {
         toast.error(t('toasts.postCreateError'))
         return
       }
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
       toast.success(t('toasts.postCreated'))
       await new Promise((resolve) => setTimeout(resolve, 800))
       navigate(`/dashboard/posts/${result.data.id}/edit`)

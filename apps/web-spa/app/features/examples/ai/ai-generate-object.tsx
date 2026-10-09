@@ -20,6 +20,7 @@ import {
 } from '@boilerstone/ui/components/primitives/select'
 import { Switch } from '@boilerstone/ui/components/primitives/switch'
 import * as React from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface StreamingState {
   text: string
@@ -38,6 +39,7 @@ interface StreamingState {
  * @returns JSX.Element
  */
 export function AiGenerateObject() {
+  const { t } = useTranslation()
   const [prompt, setPrompt] = React.useState('')
   const [response, setResponse] = React.useState<GenerateObjectResponse | null>(null)
   const [streamingState, setStreamingState] = React.useState<StreamingState | null>(null)
@@ -49,12 +51,14 @@ export function AiGenerateObject() {
     )
   const [useStreaming, setUseStreaming] = React.useState(false)
   const [showJson, setShowJson] = React.useState(false)
-  const [abortController, setAbortController] = React.useState<AbortController | null>(null)
+  const abortControllerRef = React.useRef<AbortController | null>(null)
+
+  React.useEffect(() => () => abortControllerRef.current?.abort(), [])
 
   // Core logic for streaming the response
   const handleStreamingSubmit = async (promptText: string) => {
     const controller = new AbortController()
-    setAbortController(controller)
+    abortControllerRef.current = controller
 
     setStreamingState({ text: '', isStreaming: true })
 
@@ -97,12 +101,12 @@ export function AiGenerateObject() {
       if (err instanceof Error && err.name === 'AbortError') {
         setStreamingState(null)
       } else {
-        setError(err instanceof Error ? err.message : 'An error occurred')
+        setError(err instanceof Error ? err.message : t('ai.generateObject.unknownError'))
         setStreamingState(null)
       }
     } finally {
       setIsLoading(false)
-      setAbortController(null)
+      abortControllerRef.current = null
     }
   }
 
@@ -118,12 +122,12 @@ export function AiGenerateObject() {
       })
 
       if (apiError) {
-        throw new Error('Request failed')
+        throw new Error(t('ai.generateObject.requestFailed'))
       }
 
       setResponse(data ?? null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : t('ai.generateObject.unknownError'))
     } finally {
       setIsLoading(false)
     }
@@ -151,9 +155,10 @@ export function AiGenerateObject() {
   }
 
   const handleStop = () => {
-    if (abortController) {
-      abortController.abort()
-      setAbortController(null)
+    const controller = abortControllerRef.current
+    if (controller) {
+      controller.abort()
+      abortControllerRef.current = null
       setIsLoading(false)
     }
   }
@@ -164,29 +169,21 @@ export function AiGenerateObject() {
     setStreamingState(null)
     setError(null)
     setShowJson(false)
-    if (abortController) {
-      abortController.abort()
-      setAbortController(null)
+    const controller = abortControllerRef.current
+    if (controller) {
+      controller.abort()
+      abortControllerRef.current = null
     }
   }
 
-  const parseStreamingResult = (): Recipe | null => {
-    if (!streamingState?.text) return null
-    try {
-      // oxlint-disable-next-line regexp/no-super-linear-backtracking
-      const jsonMatch = streamingState.text.match(/```json\s*([\s\S]*?)\s*```/)
-      const jsonText = jsonMatch ? jsonMatch[1] : streamingState.text
-      return JSON.parse(jsonText)
-    } catch {
-      return null
-    }
-  }
+  const streamedText =
+    useStreaming && streamingState && !streamingState.isStreaming ? streamingState.text : ''
+  const parsedRecipe = streamedText ? parseRecipe(streamedText) : null
+  const isStreamedReplyInvalid = Boolean(streamedText) && !parsedRecipe
 
-  const recipe = useStreaming
-    ? streamingState && !streamingState.isStreaming
-      ? parseStreamingResult()
-      : null
-    : (response?.result as Recipe | undefined)
+  const recipe = useStreaming ? parsedRecipe : (response?.result as Recipe | undefined)
+  const displayError =
+    error ?? (isStreamedReplyInvalid ? t('ai.generateObject.invalidRecipe') : null)
 
   const displayUsage = streamingState?.usage ?? response?.usage
   const displayFinishReason = streamingState?.finishReason ?? response?.finishReason
@@ -197,17 +194,17 @@ export function AiGenerateObject() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Generate Object (Recipe)</CardTitle>
-            <CardDescription>Structured output generation with a predefined schema</CardDescription>
+            <CardTitle>{t('ai.generateObject.title')}</CardTitle>
+            <CardDescription>{t('ai.generateObject.description')}</CardDescription>
           </div>
-          {(hasResult || error) && (
+          {(hasResult || displayError) && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleClear}
               disabled={isLoading && !streamingState?.isStreaming}
             >
-              Clear
+              {t('ai.generateObject.clear')}
             </Button>
           )}
         </div>
@@ -216,7 +213,7 @@ export function AiGenerateObject() {
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="flex gap-4">
             <div className="flex-1 space-y-1">
-              <Label htmlFor="model-select-object">Model</Label>
+              <Label htmlFor="model-select-object">{t('ai.generateObject.model')}</Label>
               <Select
                 value={model}
                 onValueChange={(value) =>
@@ -228,7 +225,7 @@ export function AiGenerateObject() {
                 }
               >
                 <SelectTrigger id="model-select-object" className="w-full">
-                  <SelectValue placeholder="Select a model" />
+                  <SelectValue placeholder={t('ai.generateObject.modelPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="OPENAI_GPT_5_NANO">OpenAI GPT-5 Nano</SelectItem>
@@ -246,7 +243,7 @@ export function AiGenerateObject() {
                 disabled={isLoading}
               />
               <Label htmlFor="streaming-toggle-object" className="text-sm cursor-pointer">
-                Stream
+                {t('ai.generateObject.stream')}
               </Label>
             </div>
           </div>
@@ -254,35 +251,35 @@ export function AiGenerateObject() {
             <Input
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Give me a recipe for chocolate chip cookies..."
+              placeholder={t('ai.generateObject.promptPlaceholder')}
               disabled={isLoading}
               className="flex-1"
             />
             {streamingState?.isStreaming ? (
               <Button type="button" onClick={handleStop} variant="destructive">
-                Stop
+                {t('ai.generateObject.stop')}
               </Button>
             ) : (
               <Button type="submit" disabled={!prompt.trim() || isLoading}>
-                {isLoading ? 'Generating...' : 'Generate'}
+                {isLoading ? t('ai.generateObject.generating') : t('ai.generateObject.generate')}
               </Button>
             )}
           </div>
         </form>
 
-        {error && (
+        {displayError && (
           <div className="border rounded-lg p-4 bg-destructive/10 text-destructive">
-            <p className="font-medium">Error</p>
-            <p className="text-sm">{error}</p>
+            <p className="font-medium">{t('ai.generateObject.error')}</p>
+            <p className="text-sm">{displayError}</p>
           </div>
         )}
 
         {streamingState?.isStreaming && (
           <div className="border rounded-lg p-4 bg-muted/50 space-y-3">
             <div className="flex items-center gap-2">
-              <Badge variant="secondary">Streaming</Badge>
+              <Badge variant="secondary">{t('ai.generateObject.streaming')}</Badge>
               <Badge variant="outline" className="animate-pulse">
-                Generating recipe...
+                {t('ai.generateObject.generatingRecipe')}
               </Badge>
             </div>
             <div className="text-sm whitespace-pre-wrap font-mono text-xs max-h-[300px] overflow-y-auto">
@@ -315,7 +312,7 @@ export function AiGenerateObject() {
                 onClick={() => setShowJson(!showJson)}
                 className="text-xs"
               >
-                {showJson ? 'Hide JSON' : 'Show JSON'}
+                {showJson ? t('ai.generateObject.hideJson') : t('ai.generateObject.showJson')}
               </Button>
             </div>
 
@@ -329,21 +326,21 @@ export function AiGenerateObject() {
 
                 <div className="flex gap-4 text-sm">
                   <div className="flex items-center gap-1">
-                    <span className="font-medium">Prep:</span>
+                    <span className="font-medium">{t('ai.generateObject.prep')}</span>
                     {recipe.prepTime}
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="font-medium">Cook:</span>
+                    <span className="font-medium">{t('ai.generateObject.cook')}</span>
                     {recipe.cookTime}
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="font-medium">Servings:</span>
+                    <span className="font-medium">{t('ai.generateObject.servings')}</span>
                     {recipe.servings}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-medium">Ingredients</h4>
+                  <h4 className="font-medium">{t('ai.generateObject.ingredients')}</h4>
                   <ul className="list-disc list-inside text-sm space-y-1">
                     {recipe.ingredients.map((ing) => (
                       <li key={`${ing.name}-${ing.quantity}`}>
@@ -354,7 +351,7 @@ export function AiGenerateObject() {
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-medium">Instructions</h4>
+                  <h4 className="font-medium">{t('ai.generateObject.instructions')}</h4>
                   <ol className="list-decimal list-inside text-sm space-y-2">
                     {recipe.instructions.map((step) => (
                       <li key={step}>{step}</li>
@@ -364,7 +361,7 @@ export function AiGenerateObject() {
 
                 {recipe.tips && recipe.tips.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="font-medium">Tips</h4>
+                    <h4 className="font-medium">{t('ai.generateObject.tips')}</h4>
                     <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
                       {recipe.tips.map((tip) => (
                         <li key={tip}>{tip}</li>
@@ -378,10 +375,18 @@ export function AiGenerateObject() {
             {displayUsage && (
               <div className="pt-2 border-t border-muted">
                 <div className="text-xs text-muted-foreground flex gap-4">
-                  <span>Total: {displayUsage.totalTokens} tokens</span>
-                  <span>Prompt: {displayUsage.promptTokens}</span>
-                  <span>Completion: {displayUsage.completionTokens}</span>
-                  {displayFinishReason && <span>Finish: {displayFinishReason}</span>}
+                  <span>{t('ai.generateObject.total', { count: displayUsage.totalTokens })}</span>
+                  <span>
+                    {t('ai.generateObject.prompt')} {displayUsage.promptTokens}
+                  </span>
+                  <span>
+                    {t('ai.generateObject.completion')} {displayUsage.completionTokens}
+                  </span>
+                  {displayFinishReason && (
+                    <span>
+                      {t('ai.generateObject.finish')} {displayFinishReason}
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -389,5 +394,35 @@ export function AiGenerateObject() {
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * Pulls the recipe JSON out of the model reply and checks its shape.
+ * Returns null when the reply is not a usable recipe, so the UI can show an error instead of crashing.
+ */
+function parseRecipe(text: string): Recipe | null {
+  try {
+    // oxlint-disable-next-line regexp/no-super-linear-backtracking
+    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/)
+    const jsonText = jsonMatch ? jsonMatch[1] : text
+    const parsed: unknown = JSON.parse(jsonText)
+    return isRecipeShape(parsed) ? (parsed as Recipe) : null
+  } catch {
+    return null
+  }
+}
+
+function isRecipeShape(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
+  return (
+    'name' in value &&
+    typeof value.name === 'string' &&
+    'ingredients' in value &&
+    Array.isArray(value.ingredients) &&
+    'instructions' in value &&
+    Array.isArray(value.instructions)
   )
 }

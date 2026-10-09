@@ -7,7 +7,7 @@ import { FilterRule } from '@lonestone/nzoth/client'
 import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'motion/react'
 import { ChevronLeft, ChevronRight, FileText, PlusCircle, SearchIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { UserPostCard } from '@/features/examples/user-posts/user-post-card'
@@ -18,12 +18,12 @@ export default function PostsListPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [searchValue, setSearchValue] = useState(searchParams.get('search') || '')
-  const [pageValue, setPageValue] = useState(1)
+  const searchValue: string = searchParams.get('search') ?? ''
+  const rawPage: number = Number(searchParams.get('page') ?? 1)
+  const pageValue: number = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1
   const reduced = useReducedMotion()
 
   const handleSearch = (value: string) => {
-    setSearchValue(value)
     const newParams = new URLSearchParams(searchParams)
     if (value) {
       newParams.set('search', value)
@@ -35,7 +35,6 @@ export default function PostsListPage() {
   }
 
   const handlePageChange = (newPage: number) => {
-    setPageValue(newPage)
     const newParams = new URLSearchParams(searchParams)
     newParams.set('page', newPage.toString())
     setSearchParams(newParams)

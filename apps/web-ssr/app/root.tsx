@@ -1,8 +1,9 @@
 import type { Route } from './+types/root'
 import process from 'node:process'
 import { client } from '@boilerstone/openapi-generator'
+import type { QueryClient } from '@tanstack/react-query'
 import { HydrationBoundary, QueryClientProvider } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   isRouteErrorResponse,
   Links,
@@ -14,7 +15,7 @@ import {
 } from 'react-router'
 import { useDehydratedState } from '@/hooks/use-dehydrated-state'
 import { useTheme } from '@/hooks/use-theme'
-import { queryClient } from '@/lib/query-client'
+import { createQueryClient } from '@/lib/query-client'
 import '@boilerstone/ui/globals.css'
 
 client.setConfig({
@@ -91,6 +92,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const dehydratedState = useDehydratedState()
+  const [queryClient] = useState<QueryClient>(() => createQueryClient())
 
   return (
     <QueryClientProvider client={queryClient}>

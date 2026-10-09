@@ -5,7 +5,7 @@ import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { ChevronLeft, ChevronRight, FileText, Search, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 
 import PostCard from './post-card'
@@ -49,17 +49,23 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
   const { posts, search, tag, page } = loaderData
   const [searchParams, setSearchParams] = useSearchParams()
   const [searchValue, setSearchValue] = useState(search || '')
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => () => clearTimeout(timerRef.current), [])
 
   const handleSearch = (value: string) => {
     setSearchValue(value)
-    const newParams = new URLSearchParams(searchParams)
-    if (value) {
-      newParams.set('search', value)
-    } else {
-      newParams.delete('search')
-    }
-    newParams.set('page', '1')
-    setSearchParams(newParams)
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
+      const newParams = new URLSearchParams(searchParams)
+      if (value) {
+        newParams.set('search', value)
+      } else {
+        newParams.delete('search')
+      }
+      newParams.set('page', '1')
+      setSearchParams(newParams, { replace: true })
+    }, 300)
   }
 
   const handleClearTag = () => {
