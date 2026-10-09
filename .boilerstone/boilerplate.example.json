@@ -5,6 +5,7 @@
     "remote": "https://github.com/lonestone/lonestone-boilerplate.git",
     "currentVersion": "1.2.0"
   },
+  "apps": ["web-spa", "web-ssr"],
   "trackedDomains": [
     "tooling",
     "api",
