@@ -1768,8 +1768,13 @@ describe('boilerplate CLI smoke', () => {
 
       expect(result.status).toBe(0)
       const payload = JSON.parse(result.stdout)
-      // latest must resolve to the boilerplate's release, not the app's v5.0.0
-      expect(payload.targetVersion).toBe('1.1.0')
+      // latest must resolve to the boilerplate's newest release, not the app's v5.0.0.
+      // Read it from the release folders so the test does not need an edit at every release.
+      const releaseVersions = readdirSync(join(projectRoot, '.boilerstone/migration-intentions'))
+        .filter((name) => /^v\d+\.\d+\.\d+$/.test(name))
+        .map((name) => name.slice(1))
+        .sort(compareVersions)
+      expect(payload.targetVersion).toBe(releaseVersions.at(-1))
     } finally {
       rmSync(projectPath, { recursive: true, force: true })
     }
