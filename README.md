@@ -199,6 +199,7 @@ cd apps/api && pnpm dev
 ### Shared Packages
 
 - UI -> Reusable UI components built with shadcn/ui.
+- i18n -> Shared frontend internationalization.
 - OpenAPI Generator -> contains the generator plus the generated types, validators and sdk for frontend-backend communication. Imported by the frontend apps.
 
 ## 🔄 Continuous Integration (CI)

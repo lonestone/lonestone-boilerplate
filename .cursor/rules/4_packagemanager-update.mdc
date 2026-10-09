@@ -19,7 +19,7 @@ Package.json files:
 - ./packages/openapi-generator/package.json
 - ./packages/ui/package.json
 - ./packages/i18n/package.json
-- ./.boilerstone/package.json
+- ./.boilerstone/cli/package.json
 
 Actions and workflows:
 - ./.github/actions/setup-node-pnpm/action.yml
