@@ -1,5 +1,5 @@
 ---
-id: unreleased/slim-lefthook-pre-push
+id: v1.2.0/slim-lefthook-pre-push
 domain: ci
 classification: migration
 ---

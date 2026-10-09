@@ -1,5 +1,5 @@
 ---
-id: unreleased/contribution-paragraphs-and-coauthors
+id: v1.2.0/contribution-paragraphs-and-coauthors
 domain: tooling
 classification: migration
 ---

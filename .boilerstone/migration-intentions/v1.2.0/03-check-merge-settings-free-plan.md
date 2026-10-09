@@ -1,5 +1,5 @@
 ---
-id: unreleased/check-merge-settings-free-plan
+id: v1.2.0/check-merge-settings-free-plan
 domain: tooling
 classification: migration
 ---

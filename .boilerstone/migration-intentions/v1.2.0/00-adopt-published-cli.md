@@ -1,5 +1,5 @@
 ---
-id: unreleased/adopt-published-cli
+id: v1.2.0/adopt-published-cli
 domain: tooling
 classification: migration
 ---

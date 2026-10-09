@@ -1,5 +1,5 @@
 ---
-id: unreleased/pre-bundle-lazy-route-deps
+id: v1.2.0/pre-bundle-lazy-route-deps
 domain: frontend
 classification: migration
 pr: 152

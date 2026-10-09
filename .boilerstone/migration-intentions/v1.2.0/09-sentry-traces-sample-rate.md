@@ -1,5 +1,5 @@
 ---
-id: unreleased/sentry-traces-sample-rate
+id: v1.2.0/sentry-traces-sample-rate
 domain: monitoring
 classification: migration
 pr: 156
