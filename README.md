@@ -67,6 +67,16 @@ The CLI creates the project from the release that has its own version (`@lonesto
 pnpm dlx @lonestone/boilerstone-cli@1.2.0 init my-project
 ```
 
+A new project has the API, the documentation and both web apps (`web-spa` and `web-ssr`). Leave web apps out with `--apps`. It takes `web-spa`, `web-ssr`, both separated by a comma, or `none` for an API-only project:
+
+```bash
+pnpm dlx @lonestone/boilerstone-cli init my-project --apps web-ssr
+pnpm dlx @lonestone/boilerstone-cli init my-project --apps web-spa,web-ssr
+pnpm dlx @lonestone/boilerstone-cli init my-project --apps none
+```
+
+Without `--apps`, the CLI asks one yes/no question per web app. If it cannot ask (no terminal), it keeps both. The API and the documentation are always included. A shared package under `packages/` (`ui`, `i18n`, `openapi-generator`) is removed when no remaining app uses it, so `--apps none` removes all three. The choice is saved in `.boilerstone/boilerplate.json`.
+
 A CLI only generates its own release: each release's layout is what that CLI knows. Releases published before the CLI existed (v1.0.0, v1.1.0) cannot be used to create a new project.
 
 ### Onboard an existing project
