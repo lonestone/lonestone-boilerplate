@@ -206,80 +206,6 @@ export default function ComponentsPage() {
   const [multiSelectValues, setMultiSelectValues] = useState<string[]>([])
   const [loaderVisible, setLoaderVisible] = useState(false)
 
-  // ── Data table state ────────────────────────────────────────────────────
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [globalFilter, setGlobalFilter] = useState('')
-
-  const allTableData: ComponentRow[] = useMemo(
-    () => [
-      { name: 'Button', category: 'Action', status: 'Stable', version: '1.0' },
-      { name: 'Badge', category: 'Display', status: 'Stable', version: '1.0' },
-      { name: 'Input', category: 'Form', status: 'Stable', version: '1.0' },
-      { name: 'Sidebar', category: 'Layout', status: 'Stable', version: '1.0' },
-      { name: 'DataTable', category: 'Data', status: 'Beta', version: '0.9' },
-      { name: 'Command', category: 'Overlay', status: 'Stable', version: '1.0' },
-      { name: 'Dialog', category: 'Overlay', status: 'Stable', version: '1.0' },
-      { name: 'Tabs', category: 'Layout', status: 'Stable', version: '1.0' },
-      { name: 'Accordion', category: 'Layout', status: 'Stable', version: '1.0' },
-      { name: 'Progress', category: 'Display', status: 'Beta', version: '0.8' },
-    ],
-    [],
-  )
-
-  const columns = useMemo<ColumnDef<ComponentRow>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: ({ column }) => <SortableHeader column={column} label="Component" />,
-        cell: (info) => (
-          <span className="font-medium text-foreground text-sm">{info.getValue() as string}</span>
-        ),
-      },
-      {
-        accessorKey: 'category',
-        header: ({ column }) => <SortableHeader column={column} label="Category" />,
-        cell: (info) => (
-          <Badge variant="outline" className="text-[10px]">
-            {info.getValue() as string}
-          </Badge>
-        ),
-      },
-      {
-        accessorKey: 'status',
-        header: ({ column }) => <SortableHeader column={column} label="Status" />,
-        cell: (info) => {
-          const value = info.getValue() as string
-          return (
-            <Badge variant={value === 'Stable' ? 'default' : 'secondary'} className="text-[10px]">
-              {value}
-            </Badge>
-          )
-        },
-      },
-      {
-        accessorKey: 'version',
-        header: ({ column }) => <SortableHeader column={column} label="Version" />,
-        cell: (info) => (
-          <span className="font-mono text-xs text-muted-foreground">
-            {info.getValue() as string}
-          </span>
-        ),
-      },
-    ],
-    [],
-  )
-
-  const table = useReactTable({
-    data: allTableData,
-    columns,
-    state: { sorting, globalFilter },
-    onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-  })
-
   return (
     <TooltipProvider>
       <div className="flex gap-8">
@@ -706,80 +632,7 @@ export default function ComponentsPage() {
             title={t('components.sections.dataDisplay')}
             description="Interactive table with TanStack sorting and global filter. Click column headers to sort; type to filter."
           >
-            <div className="space-y-3">
-              {/* Toolbar: filter input */}
-              <div className="flex items-center gap-3">
-                <div className="relative flex-1 max-w-xs">
-                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                  <Input
-                    placeholder="Filter components…"
-                    value={globalFilter}
-                    onChange={(e) => setGlobalFilter(e.target.value)}
-                    className="pl-8 h-8 text-sm"
-                    aria-label="Filter table rows"
-                  />
-                </div>
-                {sorting.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSorting([])}
-                    className="text-xs text-muted-foreground h-8"
-                  >
-                    Reset sort
-                  </Button>
-                )}
-                <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                  {table.getRowModel().rows.length} / {allTableData.length} rows
-                </span>
-              </div>
-
-              {/* Table */}
-              <div className="border border-border rounded-lg overflow-hidden bg-card">
-                <Table>
-                  <TableHeader>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <TableHead key={header.id}>
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(header.column.columnDef.header, header.getContext())}
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableHeader>
-                  <TableBody>
-                    {table.getRowModel().rows.length > 0 ? (
-                      table.getRowModel().rows.map((row) => (
-                        <TableRow key={row.id}>
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id}>
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell
-                          colSpan={columns.length}
-                          className="h-20 text-center text-sm text-muted-foreground"
-                        >
-                          No components match your filter.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <p className="text-[10px] text-muted-foreground">
-                Click any column header to sort ascending / descending. Type in the filter to narrow
-                rows by any field.
-              </p>
-            </div>
+            <ComponentsDataTable />
           </Section>
 
           {/* ── Overlays (Tooltip, Popover, Separator) ──────────────────── */}
@@ -839,5 +692,157 @@ export default function ComponentsPage() {
         </div>
       </div>
     </TooltipProvider>
+  )
+}
+
+function ComponentsDataTable() {
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [globalFilter, setGlobalFilter] = useState('')
+
+  const allTableData: ComponentRow[] = useMemo(
+    () => [
+      { name: 'Button', category: 'Action', status: 'Stable', version: '1.0' },
+      { name: 'Badge', category: 'Display', status: 'Stable', version: '1.0' },
+      { name: 'Input', category: 'Form', status: 'Stable', version: '1.0' },
+      { name: 'Sidebar', category: 'Layout', status: 'Stable', version: '1.0' },
+      { name: 'DataTable', category: 'Data', status: 'Beta', version: '0.9' },
+      { name: 'Command', category: 'Overlay', status: 'Stable', version: '1.0' },
+      { name: 'Dialog', category: 'Overlay', status: 'Stable', version: '1.0' },
+      { name: 'Tabs', category: 'Layout', status: 'Stable', version: '1.0' },
+      { name: 'Accordion', category: 'Layout', status: 'Stable', version: '1.0' },
+      { name: 'Progress', category: 'Display', status: 'Beta', version: '0.8' },
+    ],
+    [],
+  )
+
+  const columns = useMemo<ColumnDef<ComponentRow>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: ({ column }) => <SortableHeader column={column} label="Component" />,
+        cell: (info) => (
+          <span className="font-medium text-foreground text-sm">{info.getValue() as string}</span>
+        ),
+      },
+      {
+        accessorKey: 'category',
+        header: ({ column }) => <SortableHeader column={column} label="Category" />,
+        cell: (info) => (
+          <Badge variant="outline" className="text-[10px]">
+            {info.getValue() as string}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: ({ column }) => <SortableHeader column={column} label="Status" />,
+        cell: (info) => {
+          const value = info.getValue() as string
+          return (
+            <Badge variant={value === 'Stable' ? 'default' : 'secondary'} className="text-[10px]">
+              {value}
+            </Badge>
+          )
+        },
+      },
+      {
+        accessorKey: 'version',
+        header: ({ column }) => <SortableHeader column={column} label="Version" />,
+        cell: (info) => (
+          <span className="font-mono text-xs text-muted-foreground">
+            {info.getValue() as string}
+          </span>
+        ),
+      },
+    ],
+    [],
+  )
+
+  const table = useReactTable({
+    data: allTableData,
+    columns,
+    state: { sorting, globalFilter },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  })
+
+  return (
+    <div className="space-y-3">
+      {/* Toolbar: filter input */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Filter components…"
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="pl-8 h-8 text-sm"
+            aria-label="Filter table rows"
+          />
+        </div>
+        {sorting.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSorting([])}
+            className="text-xs text-muted-foreground h-8"
+          >
+            Reset sort
+          </Button>
+        )}
+        <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+          {table.getRowModel().rows.length} / {allTableData.length} rows
+        </span>
+      </div>
+
+      {/* Table */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length > 0 ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-20 text-center text-sm text-muted-foreground"
+                >
+                  No components match your filter.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <p className="text-[10px] text-muted-foreground">
+        Click any column header to sort ascending / descending. Type in the filter to narrow rows by
+        any field.
+      </p>
+    </div>
   )
 }

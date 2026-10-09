@@ -18,7 +18,11 @@ export default function UserPostEditPage() {
   const { userPostId } = useParams()
   const { t } = useTranslation()
 
-  const { data: post, isLoading } = useQuery({
+  const {
+    data: post,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ['userPost', userPostId],
     queryFn: async () => {
       const response = await postControllerGetUserPost({
@@ -36,16 +40,24 @@ export default function UserPostEditPage() {
   })
 
   const { mutate: updatePost, isPending } = useMutation({
-    mutationFn: (data: UpdatePostSchema) =>
-      postControllerUpdatePost({
+    mutationFn: async (data: UpdatePostSchema) => {
+      const response = await postControllerUpdatePost({
         body: data,
         path: {
           id: userPostId as string,
         },
-      }),
+      })
+
+      if (response.error) {
+        throw response.error
+      }
+
+      return response.data
+    },
     onSuccess: () => {
       toast.success(t('toasts.postUpdated'))
       queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
     },
     onError: () => {
       toast.error(t('toasts.postUpdateError'))
@@ -53,13 +65,21 @@ export default function UserPostEditPage() {
   })
 
   const { mutate: publishPost, isPending: isPublishing } = useMutation({
-    mutationFn: () =>
-      postControllerPublishPost({
+    mutationFn: async () => {
+      const response = await postControllerPublishPost({
         path: { id: userPostId as string },
-      }),
+      })
+
+      if (response.error) {
+        throw response.error
+      }
+
+      return response.data
+    },
     onSuccess: () => {
       toast.success(t('toasts.postPublished'))
       queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
     },
     onError: () => {
       toast.error(t('toasts.postPublishError'))
@@ -67,16 +87,24 @@ export default function UserPostEditPage() {
   })
 
   const { mutate: unpublishPost, isPending: isUnpublishing } = useMutation({
-    mutationFn: () =>
-      postControllerUnpublishPost({
+    mutationFn: async () => {
+      const response = await postControllerUnpublishPost({
         path: { id: userPostId as string },
-      }),
+      })
+
+      if (response.error) {
+        throw response.error
+      }
+
+      return response.data
+    },
     onSuccess: () => {
       toast.success(t('toasts.postUnpublished'))
       queryClient.invalidateQueries({ queryKey: ['userPost', userPostId] })
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
     },
     onError: () => {
-      toast.error(t('toasts.postPublishError'))
+      toast.error(t('toasts.postUnpublishError'))
     },
   })
 
@@ -104,6 +132,10 @@ export default function UserPostEditPage() {
     return <UserPostFormSkeleton />
   }
 
+  if (isError || !post) {
+    return <p className="text-sm text-destructive">{t('posts.edit.loadError')}</p>
+  }
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-end justify-between border-b border-border pb-6">
@@ -112,11 +144,9 @@ export default function UserPostEditPage() {
             {t('posts.title')}
           </p>
           <h1 className="font-sans text-3xl font-black tracking-tight text-foreground">
-            Edit Post
+            {t('posts.edit.title')}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Share your thoughts, images, and videos with the world.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{t('posts.edit.description')}</p>
         </div>
         <Button
           size="sm"
@@ -124,7 +154,7 @@ export default function UserPostEditPage() {
           disabled={isPublishing || isUnpublishing || isPending}
         >
           <SendIcon className="size-4" />
-          {post?.publishedAt ? 'Unpublish' : 'Publish'}
+          {post?.publishedAt ? t('posts.edit.unpublish') : t('posts.edit.publish')}
         </Button>
       </div>
       <UserPostForm

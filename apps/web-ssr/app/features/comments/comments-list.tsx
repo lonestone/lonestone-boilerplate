@@ -1,20 +1,18 @@
 import type { CreateCommentSchema } from '@boilerstone/openapi-generator'
-import {
-  commentsControllerCreateComment,
-  commentsControllerDeleteComment,
-  commentsControllerGetComments,
-} from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Alert, AlertDescription } from '@boilerstone/ui/components/primitives/alert'
 import { Card, CardContent } from '@boilerstone/ui/components/primitives/card'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { useInView } from '@boilerstone/ui/hooks/use-in-view'
 import { cn } from '@boilerstone/ui/lib/utils'
-import { useInfiniteQuery, useMutation } from '@tanstack/react-query'
 import { Loader2, MessageSquare } from 'lucide-react'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { CommentItem } from '@/features/comments/comment-item'
-import { queryClient } from '@/lib/query-client'
+import {
+  useAddComment,
+  useCommentsQuery,
+  useDeleteComment,
+} from '@/features/comments/utils/comments-queries'
 import { CommentForm } from './comment-form'
 
 interface CommentsListProps {
@@ -26,40 +24,12 @@ interface CommentsListProps {
 export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsListProps) {
   const { ref, inView } = useInView()
 
-  // Add comment mutation
-  const { mutateAsync: addComment, isPending: isAddingComment } = useMutation({
-    mutationFn: async (data: CreateCommentSchema & { parentId?: string }) => {
-      return commentsControllerCreateComment({
-        body: data,
-        path: {
-          postSlug: postId,
-        },
-      })
-    },
-    onSuccess: (result) => {
-      // Invalidate comments query to refetch
-      queryClient.invalidateQueries({ queryKey: ['comments', postId] })
+  const { mutateAsync: addComment, isPending: isAddingComment } = useAddComment({ postId })
 
-      if (result.data?.parentId) {
-        queryClient.invalidateQueries({
-          queryKey: ['replies', result.data.parentId],
-        })
-      }
-    },
-  })
-
-  const onSubmit = async (data: CreateCommentSchema) => {
-    try {
-      await addComment({
-        ...data,
-        parentId: data.parentId,
-      })
-    } catch (error) {
-      console.error('Error adding comment:', error)
-    }
+  const onSubmit = async (data: CreateCommentSchema): Promise<void> => {
+    await addComment(data)
   }
 
-  // Fetch comments with infinite scroll
   const {
     data: commentsPages,
     isLoading,
@@ -67,63 +37,20 @@ export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsLi
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: ['comments', postId],
-    queryFn: async ({ pageParam = 0 }) => {
-      const res = await commentsControllerGetComments({
-        path: {
-          postSlug: postId,
-        },
-        query: {
-          offset: pageParam as number,
-          pageSize: 10,
-        },
-      })
+  } = useCommentsQuery({ postId })
 
-      if (res.error) {
-        throw res.error
-      }
-
-      return res.data
-    },
-    getNextPageParam: (lastPage) => {
-      if (
-        lastPage?.meta?.hasMore &&
-        lastPage.meta.offset + lastPage.meta.pageSize < lastPage.meta.itemCount
-      ) {
-        return lastPage.meta.offset + lastPage.meta.pageSize
-      }
-      return undefined
-    },
-    initialPageParam: 0,
-  })
-
-  // Delete comment mutation
-  const deleteCommentMutation = useMutation({
-    mutationFn: async (commentId: string) => {
-      return commentsControllerDeleteComment({
-        path: {
-          commentId,
-          postSlug: postId,
-        },
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', postId] })
-    },
-    onError: (error) => {
-      console.error('Error deleting comment:', error)
-    },
-  })
+  const deleteCommentMutation = useDeleteComment({ postId })
 
   const allComments = useMemo(() => {
     return commentsPages?.pages.flatMap((page) => page?.data || []) || []
   }, [commentsPages])
 
-  // Check if we need to load more comments when scrolling
-  if (inView && hasNextPage && !isFetchingNextPage) {
-    fetchNextPage()
-  }
+  // Load the next page when the sentinel scrolls into view
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   if (error) {
     return (
@@ -145,13 +72,7 @@ export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsLi
         )}
       </div>
 
-      <CommentForm
-        initialData={{
-          content: '',
-        }}
-        onSubmit={onSubmit}
-        isPending={isAddingComment}
-      />
+      <CommentForm initialData={EMPTY_COMMENT} onSubmit={onSubmit} isPending={isAddingComment} />
 
       <Separator className="my-6" />
 
@@ -167,6 +88,7 @@ export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsLi
             <CommentItem
               key={comment.id}
               comment={comment}
+              postSlug={postId}
               currentUserId={currentUserId}
               postAuthorId={postAuthorId}
               isAddingComment={isAddingComment}
@@ -235,3 +157,5 @@ function CommentSkeleton() {
     </Card>
   )
 }
+
+const EMPTY_COMMENT: CreateCommentSchema = { content: '' }

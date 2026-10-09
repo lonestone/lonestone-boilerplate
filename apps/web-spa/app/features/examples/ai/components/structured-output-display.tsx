@@ -1,4 +1,5 @@
-import type { ChatSchemaType, Product, Recipe } from '@boilerstone/openapi-generator'
+import type { ChatSchemaType } from '@boilerstone/openapi-generator'
+import { zProduct, zRecipe } from '@boilerstone/openapi-generator/client/zod.gen'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import * as React from 'react'
 import { ProductDisplay } from './product-display'
@@ -17,9 +18,9 @@ interface StructuredOutputDisplayProps {
   schemaType: string
 }
 
-function parseContent<T>(content: string): T | null {
+function parseJson(content: string): unknown {
   try {
-    return JSON.parse(content) as T
+    return JSON.parse(content)
   } catch {
     return null
   }
@@ -39,18 +40,30 @@ function FallbackDisplay({ content, schemaType }: StructuredOutputDisplayProps) 
 }
 
 export function StructuredOutputDisplay({ content, schemaType }: StructuredOutputDisplayProps) {
-  const parsedContent = React.useMemo(() => parseContent(content), [content])
+  const parsedContent = React.useMemo(() => parseJson(content), [content])
 
   if (!parsedContent) {
     return <FallbackDisplay content={content} schemaType={schemaType} />
   }
 
   switch (schemaType) {
-    case 'recipe':
-      return <RecipeDisplay recipe={parsedContent as Recipe} />
+    case 'recipe': {
+      const result = zRecipe.safeParse(parsedContent)
+      return result.success ? (
+        <RecipeDisplay recipe={result.data} />
+      ) : (
+        <FallbackDisplay content={content} schemaType={schemaType} />
+      )
+    }
 
-    case 'product':
-      return <ProductDisplay product={parsedContent as Product} />
+    case 'product': {
+      const result = zProduct.safeParse(parsedContent)
+      return result.success ? (
+        <ProductDisplay product={result.data} />
+      ) : (
+        <FallbackDisplay content={content} schemaType={schemaType} />
+      )
+    }
 
     case 'userProfile':
     case 'task':

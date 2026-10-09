@@ -2,6 +2,7 @@ import type { ChatMessageWithSchemaType } from '@boilerstone/openapi-generator'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import * as React from 'react'
+import { useTranslation } from 'react-i18next'
 import { StructuredOutputDisplay } from './structured-output-display'
 
 interface ToolUsage {
@@ -23,6 +24,7 @@ interface ChatBubbleProps {
 }
 
 export function ChatBubble({ message }: ChatBubbleProps) {
+  const { t } = useTranslation()
   const [showMetadata, setShowMetadata] = React.useState(false)
   const isUser = message.role === 'user'
   const isSystem = message.role === 'system' || message.metadata?.isConsideredSystemMessage
@@ -41,7 +43,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
       >
         {isSystem && (
           <Badge variant="secondary" className="mb-2 text-[10px]">
-            System
+            {t('ai.chat.system')}
           </Badge>
         )}
 
@@ -70,7 +72,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
             className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
             onClick={() => setShowMetadata(!showMetadata)}
           >
-            {showMetadata ? 'Hide metadata' : 'Show metadata'}
+            {showMetadata ? t('ai.chat.hideMetadata') : t('ai.chat.showMetadata')}
           </Button>
           {showMetadata && <MetadataDisplay message={message} />}
         </div>
@@ -84,15 +86,16 @@ interface StreamingIndicatorProps {
 }
 
 function StreamingIndicator({ isUsingTool }: StreamingIndicatorProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="mb-2 flex gap-2">
       <Badge variant="secondary" className="animate-pulse">
-        Streaming...
+        {t('ai.chat.streaming')}
       </Badge>
       {isUsingTool && (
         <Badge variant="outline" className="animate-pulse">
-          Using {isUsingTool}
-          ...
+          {t('ai.chat.usingTool', { tool: isUsingTool })}
         </Badge>
       )}
     </div>
@@ -104,9 +107,11 @@ interface ToolUsageDisplayProps {
 }
 
 function ToolUsageDisplay({ toolUsages }: ToolUsageDisplayProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="mb-2 text-xs text-muted-foreground border rounded p-2 bg-muted/30">
-      <div className="font-medium mb-1">Tools used:</div>
+      <div className="font-medium mb-1">{t('ai.chat.toolsUsed')}</div>
       {toolUsages.map((tu) => (
         <div key={tu.toolCallId} className="ml-2">
           • {tu.toolName}
@@ -141,27 +146,25 @@ interface UsageStatsProps {
 }
 
 function UsageStats({ usage, finishReason }: UsageStatsProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="mt-2 pt-2 border-t border-muted">
       <div className="text-xs text-muted-foreground space-y-1">
         <div className="flex gap-4">
           <span>
-            Tokens:
-            {usage.totalTokens}
+            {t('ai.chat.tokens')} {usage.totalTokens}
           </span>
           <span>
-            Prompt:
-            {usage.promptTokens}
+            {t('ai.chat.prompt')} {usage.promptTokens}
           </span>
           <span>
-            Completion:
-            {usage.completionTokens}
+            {t('ai.chat.completion')} {usage.completionTokens}
           </span>
         </div>
         {finishReason && (
           <div>
-            Finish reason:
-            {finishReason}
+            {t('ai.chat.finishReason')} {finishReason}
           </div>
         )}
       </div>

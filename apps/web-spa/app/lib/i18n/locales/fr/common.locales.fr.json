@@ -54,7 +54,8 @@
       "password": "Nouveau mot de passe",
       "confirmPassword": "Confirmer le nouveau mot de passe",
       "reset": "Réinitialiser",
-      "backToLogin": "Retour à la connexion"
+      "backToLogin": "Retour à la connexion",
+      "failedToReset": "Impossible de réinitialiser votre mot de passe. Le lien a peut-être expiré."
     },
     "verifyEmail": {
       "title": "Vérification de l'email",
@@ -119,7 +120,8 @@
     "postUnpublished": "Article dépublié",
     "postCreateError": "Échec de la création de l'article",
     "postUpdateError": "Échec de la sauvegarde de l'article",
-    "postPublishError": "Échec de la publication de l'article"
+    "postPublishError": "Échec de la publication de l'article",
+    "postUnpublishError": "Échec de la dépublication de l'article"
   },
   "components": {
     "title": "Composants",
@@ -143,7 +145,91 @@
     "sections": {
       "textGeneration": "Génération de texte",
       "structuredOutput": "Sortie structurée",
-      "chatStream": "Chat en streaming"
+      "chatStream": "Chat en streaming",
+      "textGenerationDescription": "Générez du texte avec un seul prompt. Activez le streaming pour voir les tokens en temps réel.",
+      "chatStreamDescription": "Conversation complète avec streaming. Prend en charge des schémas de sortie structurée : choisissez-en un pour obtenir des réponses typées."
+    },
+    "badges": {
+      "liveApiCalls": "Appels API en direct",
+      "multipleModels": "Plusieurs modèles",
+      "sseStreaming": "Streaming SSE"
+    },
+    "chat": {
+      "system": "Système",
+      "hideMetadata": "Masquer les métadonnées",
+      "showMetadata": "Afficher les métadonnées",
+      "streaming": "Diffusion en cours...",
+      "usingTool": "Utilisation de {{tool}}...",
+      "toolsUsed": "Outils utilisés :",
+      "tokens": "Tokens :",
+      "prompt": "Prompt :",
+      "completion": "Complétion :",
+      "finishReason": "Raison de fin :"
+    },
+    "chatStream": {
+      "title": "Chat IA (streaming)",
+      "description": "Réponses IA en streaming, en temps réel",
+      "clear": "Effacer",
+      "model": "Modèle",
+      "modelPlaceholder": "Choisir un modèle",
+      "structuredOutput": "Sortie structurée",
+      "schemaPlaceholder": "Choisir le format de sortie",
+      "noSchema": "Aucun schéma (streaming)",
+      "send": "Envoyer",
+      "stop": "Arrêter",
+      "inputPlaceholder": "Écrivez votre message...",
+      "emptyState": "Commencez une conversation en envoyant un message"
+    },
+    "generateText": {
+      "title": "Générer du texte",
+      "description": "Génération de texte simple avec un seul prompt",
+      "clear": "Effacer",
+      "model": "Modèle",
+      "modelPlaceholder": "Choisir un modèle",
+      "stream": "Diffuser",
+      "promptPlaceholder": "Écris un haïku sur la programmation...",
+      "stop": "Arrêter",
+      "generating": "Génération...",
+      "generate": "Générer",
+      "error": "Erreur",
+      "response": "Réponse",
+      "streaming": "Diffusion...",
+      "total": "Total : {{count}} tokens",
+      "prompt": "Prompt :",
+      "completion": "Complétion :",
+      "unknownError": "Une erreur s'est produite",
+      "requestFailed": "Échec de la requête",
+      "streamEnded": "La diffusion s'est terminée de façon inattendue"
+    },
+    "generateObject": {
+      "title": "Générer un objet (recette)",
+      "description": "Génération de sortie structurée avec un schéma prédéfini",
+      "clear": "Effacer",
+      "model": "Modèle",
+      "modelPlaceholder": "Choisir un modèle",
+      "stream": "Diffuser",
+      "promptPlaceholder": "Donne-moi une recette de cookies aux pépites de chocolat...",
+      "stop": "Arrêter",
+      "generating": "Génération...",
+      "generate": "Générer",
+      "error": "Erreur",
+      "streaming": "Diffusion",
+      "generatingRecipe": "Génération de la recette...",
+      "hideJson": "Masquer le JSON",
+      "showJson": "Afficher le JSON",
+      "prep": "Préparation :",
+      "cook": "Cuisson :",
+      "servings": "Portions :",
+      "ingredients": "Ingrédients",
+      "instructions": "Instructions",
+      "tips": "Astuces",
+      "total": "Total : {{count}} tokens",
+      "prompt": "Prompt :",
+      "completion": "Complétion :",
+      "finish": "Fin :",
+      "requestFailed": "Échec de la requête",
+      "unknownError": "Une erreur s'est produite",
+      "invalidRecipe": "La réponse du modèle n'est pas une recette valide"
     }
   },
   "posts": {
@@ -188,7 +274,21 @@
       "videoUrl": "URL de la vidéo :",
       "imagePreviewAlt": "Aperçu",
       "save": "Enregistrer l'article",
-      "saving": "Enregistrement..."
+      "saving": "Enregistrement...",
+      "contentTypeText": "Contenu texte",
+      "contentTypeImage": "Contenu image",
+      "contentTypeVideo": "Contenu vidéo",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "remove": "Supprimer",
+      "clearImage": "Effacer l'image"
+    },
+    "edit": {
+      "title": "Modifier l'article",
+      "description": "Partagez vos idées, images et vidéos avec le monde.",
+      "publish": "Publier",
+      "unpublish": "Dépublier",
+      "loadError": "Échec du chargement de l'article"
     }
   },
   "profile": {

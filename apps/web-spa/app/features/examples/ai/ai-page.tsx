@@ -65,15 +65,15 @@ export default function AiPage() {
           <div className="mt-6 flex flex-wrap gap-2">
             <Badge variant="outline" className="gap-1.5">
               <Zap className="h-3 w-3" />
-              Live API calls
+              {t('ai.badges.liveApiCalls')}
             </Badge>
             <Badge variant="outline" className="gap-1.5">
               <Bot className="h-3 w-3" />
-              Multiple models
+              {t('ai.badges.multipleModels')}
             </Badge>
             <Badge variant="outline" className="gap-1.5">
               <Sparkles className="h-3 w-3" />
-              SSE streaming
+              {t('ai.badges.sseStreaming')}
             </Badge>
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function AiPage() {
         <SectionHeading
           eyebrow="01"
           title={t('ai.sections.textGeneration')}
-          description="Generate text with a single prompt. Toggle streaming to see real-time token output."
+          description={t('ai.sections.textGenerationDescription')}
           icon={Zap}
         />
         <div className="grid gap-6 lg:grid-cols-2">
@@ -107,7 +107,7 @@ export default function AiPage() {
         <SectionHeading
           eyebrow="02"
           title={t('ai.sections.chatStream')}
-          description="Full conversation with streaming. Supports structured output schemas — pick one to see typed responses."
+          description={t('ai.sections.chatStreamDescription')}
           icon={MessageSquare}
         />
         <div className="flex justify-center">
