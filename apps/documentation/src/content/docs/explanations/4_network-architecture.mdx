@@ -12,9 +12,7 @@ The frontend apps then use the generated SDK in combination with TanStack Query 
 That's it!
 
 :::note[OpenAPI]
-The NestJS API provides a OpenAPI schema via its use of @lonestone/nzoth library. This library provides a set of decorators to define the API endpoints, and uses zod and typescript to generate the OpenAPI schema automatically.
-
-You can learn more about the @lonestone/nzoth library in the [@lonestone/nzoth documentation](https://github.com/lonestone/nzoth).
+The NestJS API builds its OpenAPI schema with `@nestjs/swagger`. Routes declare their Zod schemas through Nest's built-in Standard Schema support (`@Body({ schema })`, `@ApiOkResponse({ standardSchema })`), and `zod-openapi` converts them to OpenAPI (`apps/api/src/common/http/openapi.ts`).
 :::
 
 ## The REST choice
