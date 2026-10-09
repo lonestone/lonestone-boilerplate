@@ -251,6 +251,7 @@ This documentation is also used by our custom cursor rules.
 - [API Readme](apps/api/README.md)
 - [Frontend Readme](apps/web-spa/README.md)
 - [Boilerplate upgrades](apps/documentation/src/content/docs/explanations/7_boilerplate-upgrades.mdx) — keep a project in sync with this template ([`.boilerstone/` overview](.boilerstone/README.md) for maintainers)
+- [Boilerstone CLI](apps/documentation/src/content/docs/references/2_boilerstone-cli.mdx) — every command of the CLI, with a map of what it reads and writes
 
 ## 🔍 Tracing Architecture
 

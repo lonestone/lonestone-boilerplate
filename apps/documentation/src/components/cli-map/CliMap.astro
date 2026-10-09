@@ -1,0 +1,816 @@
+---
+/**
+ * Interactive map of the Boilerstone CLI: every command, what it reads and
+ * writes, and the order to run them in. The map is rendered here, at build
+ * time. `client.ts` adds the clicks.
+ */
+import { FLOW_IDS, LAYOUT } from './layout'
+import { renderNodes, renderOverview, renderWires } from './render'
+import { content } from './content'
+
+const { ui } = content
+const lines = [
+  { kind: 'next', dash: '', label: ui.legend.next },
+  { kind: 'write', dash: '6 5', label: ui.legend.write },
+  { kind: 'read', dash: '1.6 4.5', label: ui.legend.read },
+]
+---
+
+<div class="cm-root not-content" data-cli-map>
+  <div class="cm-toolbar">
+    <div class="cm-flows" role="radiogroup" aria-label={ui.flowsLabel}>
+      <button type="button" role="radio" aria-checked="true" data-flow="">{ui.overview}</button>
+      {
+        FLOW_IDS.map((id) => (
+          <button type="button" role="radio" aria-checked="false" data-flow={id}>
+            {content.flows[id].title}
+          </button>
+        ))
+      }
+    </div>
+    <label class="cm-toggle"><input type="checkbox" class="cm-dim" /> {ui.dimMaintainer}</label>
+  </div>
+
+  <ul class="cm-legend" aria-label={ui.legendLabel}>
+    <li><span class="cm-sw cm-sw-key"></span>{ui.legend.key}</li>
+    <li><span class="cm-sw"></span>{ui.legend.cmd}</li>
+    <li><span class="cm-sw cm-sw-file"></span>{ui.legend.file}</li>
+    <li><span class="cm-sw cm-sw-ext"></span>{ui.legend.ext}</li>
+    <li><span class="cm-sw cm-sw-producer"></span>{ui.legend.producer}</li>
+    <li><span class="cm-sw cm-sw-band"></span>{ui.legend.border}</li>
+    <li><span class="cm-sw cm-sw-client"></span>{ui.legend.client}</li>
+    {
+      lines.map((line) => (
+        <li>
+          <svg width="30" height="10" aria-hidden="true">
+            <line
+              x1="2"
+              y1="5"
+              x2="29"
+              y2="5"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-dasharray={line.dash || undefined}
+              stroke-linecap={line.kind === 'read' ? 'round' : undefined}
+            />
+          </svg>
+          {line.label}
+        </li>
+      ))
+    }
+  </ul>
+
+  <div class="cm-work">
+    <section class="cm-map" aria-label={ui.mapLabel}>
+      <div class="cm-scroll">
+        <div class="cm-frame">
+          <div class="cm-board" style={`width:${LAYOUT.width}px;height:${LAYOUT.height}px`}>
+            <svg
+              class="cm-wires"
+              aria-hidden="true"
+              width={LAYOUT.width}
+              height={LAYOUT.height}
+              viewBox={`0 0 ${LAYOUT.width} ${LAYOUT.height}`}
+              set:html={renderWires()}
+            />
+            <Fragment set:html={renderNodes()} />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="cm-panel" aria-label={ui.panelLabel}>
+      <div class="cm-panel-bar">
+        <p class="cm-eyebrow cm-panel-label">{ui.cheatSheet}</p>
+        <button type="button" class="cm-collapse" aria-expanded="true">{ui.collapse}</button>
+      </div>
+      <div class="cm-panel-body" aria-live="polite" set:html={renderOverview()} />
+    </aside>
+  </div>
+
+  <div class="cm-tip" hidden></div>
+</div>
+
+<script>
+  import './client'
+</script>
+
+<style is:global>
+  /* Everything is nested under .cm-root: the nodes and the side panel are
+     drawn by script, so Astro's scoped styles could not reach them. The
+     colors come from Starlight, so the map follows its light and dark themes. */
+  .cm-root {
+    --cm-ink: var(--sl-color-white);
+    --cm-ink-2: var(--sl-color-gray-2);
+    --cm-line: var(--sl-color-gray-5);
+    --cm-wire: var(--sl-color-gray-3);
+    --cm-paper: var(--sl-color-bg);
+    --cm-sheet: var(--sl-color-gray-6);
+    --cm-on-ink: var(--sl-color-black);
+    --cm-accent: var(--sl-color-text-accent);
+    --cm-accent-soft: color-mix(in srgb, var(--sl-color-text-accent) 14%, transparent);
+    --cm-warn: var(--sl-color-orange-high);
+    --cm-warn-soft: var(--sl-color-orange-low);
+    --cm-mark: color-mix(in srgb, var(--sl-color-orange) 40%, transparent);
+    --cm-grid: color-mix(in srgb, var(--sl-color-white) 9%, transparent);
+    --cm-zone-producer: color-mix(in srgb, var(--sl-color-orange) 8%, transparent);
+    --cm-zone-client: color-mix(in srgb, var(--sl-color-blue) 6%, transparent);
+    --cm-zone-line: color-mix(in srgb, var(--sl-color-white) 18%, transparent);
+    --cm-zone-hatch: color-mix(in srgb, var(--sl-color-white) 9%, transparent);
+    --cm-shadow: 0 1px 0 color-mix(in srgb, var(--sl-color-black) 18%, transparent),
+      0 8px 20px -14px color-mix(in srgb, var(--sl-color-black) 70%, transparent);
+    --cm-font: var(--sl-font, var(--sl-font-system));
+    --cm-mono: var(--sl-font-mono, var(--sl-font-system-mono));
+
+    container-type: inline-size;
+    display: grid;
+    /* minmax(0, …): without it a wide child stretches the column past the screen. */
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    margin-block: 1.5rem;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--cm-ink);
+  }
+  .cm-root *,
+  .cm-root *::before,
+  .cm-root *::after {
+    box-sizing: border-box;
+  }
+  :where(.cm-root) code {
+    font-family: var(--cm-mono);
+    font-size: 0.92em;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+  }
+  :where(.cm-root) button {
+    font: inherit;
+    color: inherit;
+  }
+  .cm-root :focus-visible {
+    outline: 2px solid var(--cm-accent);
+    outline-offset: 2px;
+  }
+  /* The map needs more room than the 45rem reading column. The page goes
+     full width and left-aligned, and the text around the map keeps a
+     readable line length. */
+  main:has(.cm-root) .sl-container {
+    max-width: none;
+    margin-inline: 0;
+  }
+  main:has(.cm-root) .sl-markdown-content > :not(.cm-root, .card-grid) {
+    max-width: 50rem;
+  }
+
+  .cm-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+  }
+  .cm-flows {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .cm-flows button {
+    border: 1px solid var(--cm-line);
+    background: var(--cm-sheet);
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 14.5px;
+    cursor: pointer;
+  }
+  .cm-flows button:hover {
+    border-color: var(--cm-ink-2);
+  }
+  .cm-flows button[aria-checked='true'] {
+    background: var(--cm-ink);
+    color: var(--cm-on-ink);
+    border-color: var(--cm-ink);
+  }
+  .cm-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14.5px;
+    color: var(--cm-ink-2);
+    cursor: pointer;
+  }
+  .cm-toggle input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--cm-accent);
+  }
+
+  .cm-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    color: var(--cm-ink-2);
+  }
+  .cm-legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+  }
+  .cm-legend svg {
+    flex: none;
+  }
+  .cm-sw {
+    display: inline-block;
+    width: 26px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid var(--cm-line);
+    background: var(--cm-sheet);
+    box-shadow: var(--cm-shadow);
+  }
+  .cm-sw-key {
+    border-color: var(--cm-ink-2);
+    background:
+      linear-gradient(transparent 38%, var(--cm-mark) 38%, var(--cm-mark) 78%, transparent 78%), var(--cm-sheet);
+  }
+  .cm-sw-file {
+    background: var(--cm-paper);
+    box-shadow: none;
+    border-radius: 2px;
+  }
+  .cm-sw-ext {
+    border: 1.5px dashed var(--cm-wire);
+    background: transparent;
+    box-shadow: none;
+  }
+  .cm-sw-producer {
+    background: var(--cm-zone-producer);
+    border-color: var(--cm-zone-line);
+    box-shadow: none;
+  }
+  .cm-sw-client {
+    background: var(--cm-zone-client);
+    border-color: var(--cm-zone-line);
+    box-shadow: none;
+  }
+  .cm-sw-band {
+    background: repeating-linear-gradient(45deg, var(--cm-zone-hatch) 0 3px, transparent 3px 8px);
+    border: 1px dashed var(--cm-ink-2);
+    box-shadow: none;
+  }
+
+  .cm-work {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+  .cm-map {
+    min-width: 0;
+    border: 1px solid var(--cm-line);
+    border-radius: 10px;
+    background-color: var(--cm-paper);
+    background-image: radial-gradient(var(--cm-grid) 1px, transparent 1.3px);
+    background-size: 16px 16px;
+  }
+  .cm-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    padding: 8px;
+  }
+  .cm-frame {
+    position: relative;
+    margin: 0 auto;
+  }
+  .cm-board {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+  }
+  .cm-wires {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+  }
+
+  .cm-edge .cm-wire {
+    fill: none;
+    stroke: var(--cm-wire);
+    stroke-width: 1.6;
+    marker-end: url(#cm-arr);
+    transition:
+      opacity 0.18s,
+      stroke 0.18s;
+  }
+  .cm-edge[data-kind='write'] .cm-wire {
+    stroke-dasharray: 6 5;
+  }
+  .cm-edge[data-kind='read'] .cm-wire {
+    stroke-dasharray: 1.6 4.5;
+    stroke-linecap: round;
+  }
+  .cm-edge .cm-hit {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 14;
+    pointer-events: stroke;
+    cursor: help;
+  }
+  .cm-edge.is-on .cm-wire {
+    stroke: var(--cm-accent);
+    stroke-width: 2.4;
+    marker-end: url(#cm-arr-on);
+  }
+  .cm-edge.is-dim {
+    opacity: 0.16;
+  }
+  .cm-arrowhead {
+    fill: var(--cm-wire);
+  }
+  #cm-arr-on .cm-arrowhead {
+    fill: var(--cm-accent);
+  }
+  .cm-zone {
+    stroke: var(--cm-zone-line);
+    stroke-width: 1;
+  }
+  .cm-zone-producer {
+    fill: var(--cm-zone-producer);
+  }
+  .cm-zone-client {
+    fill: var(--cm-zone-client);
+  }
+  .cm-band {
+    fill: url(#cm-hatch);
+  }
+  .cm-hatch-line {
+    stroke: var(--cm-zone-hatch);
+    stroke-width: 4;
+  }
+  .cm-band-line {
+    stroke: var(--cm-ink-2);
+    stroke-width: 1.2;
+    stroke-dasharray: 8 6;
+  }
+  .cm-zone-label {
+    fill: var(--cm-ink-2);
+    font: 600 11px var(--cm-font);
+    letter-spacing: 0.14em;
+  }
+  .cm-band-title {
+    fill: var(--cm-ink);
+    font: 700 12px var(--cm-font);
+    letter-spacing: 0.14em;
+  }
+  .cm-band-text {
+    fill: var(--cm-ink-2);
+    font: 13px var(--cm-font);
+  }
+
+  .cm-node {
+    position: absolute;
+    width: 196px;
+    height: 80px;
+    padding: 8px 11px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 3px;
+    text-align: left;
+    background: var(--cm-sheet);
+    border: 1px solid var(--cm-line);
+    border-radius: 7px;
+    box-shadow: var(--cm-shadow);
+    cursor: pointer;
+    transition:
+      opacity 0.18s,
+      border-color 0.18s;
+  }
+  .cm-node:hover {
+    border-color: var(--cm-ink-2);
+  }
+  .cm-kind {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font: 600 10.5px/1.2 var(--cm-font);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--cm-ink-2);
+  }
+  .cm-kind > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cm-badge:empty {
+    display: none;
+  }
+  .cm-badge {
+    flex: none;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border-radius: 10px;
+    display: inline-grid;
+    place-items: center;
+    background: var(--cm-accent);
+    color: var(--cm-on-ink);
+    font: 600 11px/1 var(--cm-mono);
+    letter-spacing: 0;
+  }
+  .cm-name {
+    align-self: center;
+    min-width: 0;
+    font: 600 15px/1.15 var(--cm-mono);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .cm-node[data-long] .cm-name {
+    font-size: 13px;
+  }
+  .cm-node[data-role='key'] {
+    border-color: color-mix(in srgb, var(--cm-ink-2) 70%, var(--cm-line));
+  }
+  .cm-node[data-role='key'] .cm-name span {
+    background: linear-gradient(transparent 52%, var(--cm-mark) 52%, var(--cm-mark) 94%, transparent 94%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .cm-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    font-size: 11.5px;
+    line-height: 1.2;
+    color: var(--cm-ink-2);
+    white-space: nowrap;
+  }
+  .cm-meta span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cm-node[data-role='file'] {
+    background: var(--cm-paper);
+    box-shadow: none;
+    border-radius: 3px;
+  }
+  .cm-node[data-role='file'] .cm-name {
+    font-weight: 400;
+  }
+  .cm-node[data-role='human'],
+  .cm-node[data-role='ext'] {
+    background: transparent;
+    border: 1.5px dashed var(--cm-wire);
+    box-shadow: none;
+  }
+  .cm-node[data-role='human'] .cm-name,
+  .cm-node[data-role='ext'] .cm-name {
+    font: 600 15px/1.15 var(--cm-font);
+  }
+  .cm-node.is-dim {
+    opacity: 0.26;
+  }
+  .cm-node.is-flow {
+    border-color: var(--cm-accent);
+  }
+  .cm-node.is-selected {
+    outline: 2.5px solid var(--cm-accent);
+    outline-offset: 2px;
+  }
+
+  .cm-tip {
+    position: fixed;
+    z-index: 10;
+    max-width: 300px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: var(--cm-ink);
+    color: var(--cm-on-ink);
+    font-size: 13px;
+    line-height: 1.35;
+    pointer-events: none;
+    box-shadow: var(--cm-shadow);
+  }
+  .cm-tip[hidden] {
+    display: none;
+  }
+  .cm-tip code {
+    color: inherit;
+  }
+
+  .cm-panel {
+    min-width: 0;
+    background: var(--cm-sheet);
+    border: 1px solid var(--cm-line);
+    border-radius: 10px;
+    box-shadow: var(--cm-shadow);
+    /* Narrow: the panel sticks to the bottom of the screen while you read the map. */
+    position: sticky;
+    bottom: 0;
+    max-height: 42vh;
+    max-height: 42dvh;
+    overflow: auto;
+    z-index: 2;
+  }
+  .cm-panel.is-collapsed {
+    max-height: 52px;
+    overflow: hidden;
+  }
+  /* Wide: the panel sits beside the map and follows you down it. */
+  @container (min-width: 1300px) {
+    .cm-work {
+      grid-template-columns: minmax(0, 1fr) 380px;
+    }
+    .cm-panel {
+      top: calc(var(--sl-nav-height, 3.5rem) + 1rem);
+      bottom: auto;
+      max-height: calc(100vh - var(--sl-nav-height, 3.5rem) - 2rem);
+    }
+    .cm-panel.is-collapsed {
+      max-height: calc(100vh - var(--sl-nav-height, 3.5rem) - 2rem);
+      overflow: auto;
+    }
+    .cm-collapse {
+      display: none;
+    }
+  }
+  .cm-panel-bar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--cm-sheet);
+    border-bottom: 1px solid var(--cm-line);
+    z-index: 1;
+  }
+  .cm-eyebrow {
+    margin: 0;
+    font: 600 11.5px/1.3 var(--cm-font);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cm-ink-2);
+  }
+  .cm-collapse {
+    border: 1px solid var(--cm-line);
+    background: transparent;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .cm-panel-body {
+    padding: 14px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    gap: 12px;
+  }
+  .cm-panel h2 {
+    margin: 0;
+    font: 600 1.3rem/1.15 var(--cm-font);
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+  .cm-panel h2 code {
+    font-size: 0.86em;
+    font-weight: 600;
+  }
+  .cm-panel h3 {
+    margin: 6px 0 0;
+    font: 600 12px/1.3 var(--cm-font);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cm-ink-2);
+  }
+  .cm-panel p {
+    margin: 0;
+  }
+  .cm-panel ul,
+  .cm-panel ol {
+    margin: 0;
+    padding-left: 1.1em;
+    display: grid;
+    gap: 7px;
+  }
+  .cm-muted {
+    color: var(--cm-ink-2);
+    font-size: 14.5px;
+  }
+  .cm-summary {
+    font-size: 16.5px;
+  }
+  .cm-back {
+    justify-self: start;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--cm-accent);
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .cm-panel ul.cm-cmds {
+    list-style: none;
+    padding: 0;
+    gap: 6px;
+  }
+  .cm-cmdline {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px 7px 10px;
+    border-radius: 6px;
+    background: var(--cm-paper);
+    border: 1px solid var(--cm-line);
+  }
+  .cm-cmdline code {
+    font-size: 12.5px;
+    overflow-wrap: anywhere;
+  }
+  .cm-copy {
+    border: 1px solid var(--cm-line);
+    background: var(--cm-sheet);
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .cm-copy:hover {
+    border-color: var(--cm-accent);
+  }
+  .cm-cheat {
+    display: grid;
+    gap: 14px;
+  }
+  .cm-cheat section {
+    display: grid;
+    gap: 6px;
+  }
+  .cm-panel .cm-cheat ul {
+    list-style: none;
+    padding: 0;
+    gap: 6px;
+  }
+  .cm-cheat li {
+    display: grid;
+    gap: 2px;
+  }
+  .cm-go {
+    justify-self: start;
+    border: 0;
+    background: transparent;
+    padding: 0 2px;
+    color: var(--cm-ink-2);
+    font-size: 13.5px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .cm-go:hover {
+    color: var(--cm-accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .cm-panel ul.cm-rels {
+    list-style: none;
+    padding: 0;
+    gap: 2px;
+  }
+  .cm-rel {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    text-align: left;
+    padding: 7px 8px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .cm-rel:hover {
+    background: var(--cm-accent-soft);
+  }
+  .cm-dir {
+    color: var(--cm-ink-2);
+    font-family: var(--cm-mono);
+  }
+  .cm-lbl {
+    display: grid;
+    gap: 1px;
+  }
+  .cm-lbl b {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .cm-lbl span {
+    font-size: 13px;
+    color: var(--cm-ink-2);
+  }
+  .cm-panel ol.cm-steps {
+    list-style: none;
+    padding: 0;
+    gap: 12px;
+  }
+  .cm-steps li {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+  }
+  .cm-n {
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: var(--cm-accent);
+    color: var(--cm-on-ink);
+    font: 600 12px/1 var(--cm-mono);
+  }
+  .cm-txt {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+  }
+  .cm-chip {
+    justify-self: start;
+    border: 1px solid var(--cm-line);
+    background: var(--cm-paper);
+    border-radius: 5px;
+    padding: 2px 8px;
+    font: 12.5px/1.4 var(--cm-mono);
+    cursor: pointer;
+  }
+  .cm-chip:hover {
+    border-color: var(--cm-accent);
+  }
+  .cm-flow-note {
+    padding: 9px 11px;
+    border-radius: 7px;
+    background: var(--cm-warn-soft);
+    font-size: 14.5px;
+  }
+
+  /* Phone: the flow buttons scroll sideways in one row instead of piling up. */
+  @container (max-width: 700px) {
+    .cm-flows {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .cm-flows button {
+      flex: none;
+      white-space: nowrap;
+    }
+    .cm-legend {
+      gap: 4px 14px;
+      font-size: 12px;
+    }
+    .cm-panel-body {
+      padding-inline: 14px;
+    }
+  }
+  /* A finger needs bigger targets than a mouse. */
+  @media (pointer: coarse) {
+    .cm-copy,
+    .cm-collapse,
+    .cm-chip {
+      min-height: 40px;
+      padding-inline: 12px;
+    }
+    .cm-go,
+    .cm-back {
+      min-height: 36px;
+    }
+    .cm-flows button {
+      min-height: 44px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cm-node,
+    .cm-edge .cm-wire {
+      transition: none;
+    }
+  }
+</style>

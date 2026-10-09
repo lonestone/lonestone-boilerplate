@@ -46,6 +46,7 @@
 
 - [0_documentation.mdx](./src/content/docs/references/0_documentation.mdx) - Documentation explanation
 - [1_release_and_versionning.mdx](./src/content/docs/references/1_release_and_versionning.mdx) - How a project versions itself, and how environments consume what the pipeline builds
+- [2_boilerstone-cli.mdx](./src/content/docs/references/2_boilerstone-cli.mdx) - Every command of @lonestone/boilerstone-cli, what it reads and writes, and the order to run them in
 - [backend.mdx](./src/content/docs/references/backend.mdx) - Guidelines for the backend of the Lonestone project.
 - [frontend.mdx](./src/content/docs/references/frontend.mdx) - Guidelines for the front-end of the Lonestone project.
 - [general.mdx](./src/content/docs/references/general.mdx) - Common guidelines for development on the project
