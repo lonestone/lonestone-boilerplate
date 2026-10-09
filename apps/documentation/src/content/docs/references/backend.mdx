@@ -79,7 +79,8 @@ Then follow these steps (adapt as needed):
 
 - Use Zod schemas for request validation
 - Define schemas in the contracts directory
-- Use `TypedBody`, `TypedParam`, and other typed decorators from `@lonestone/nzoth/server`
+- Pass the schema to Nest's parameter decorators: `@Body({ schema })`, `@Param('id', { schema })`, `@Query({ schema })`. The global `StandardSchemaValidationPipe` (registered in `main.ts`) validates them
+- Declare the response schema with `@SerializeOptions({ schema })` for the global `StandardSchemaSerializerInterceptor`, and with `@ApiOkResponse({ standardSchema })` or `@ApiCreatedResponse({ standardSchema })` for the OpenAPI document
 - Export types from schemas using `z.infer<typeof schema>`
 - Use `.meta()` to add OpenAPI documentation metadata to schemas
 
@@ -88,7 +89,7 @@ Then follow these steps (adapt as needed):
 **Why use `.meta()`?**
 
 - `.meta()` adds OpenAPI/Swagger documentation metadata to your Zod schemas
-- This metadata is automatically used by `@lonestone/nzoth/server` to generate API documentation
+- `@nestjs/swagger` turns this metadata into API documentation, through the `zod-openapi` converter in `apps/api/src/common/http/openapi.ts`
 - It provides better developer experience with auto-generated OpenAPI specs
 - The metadata includes title, description, examples, and other OpenAPI-specific information
 - Enums should be present in the contract files, not in the entities. And they should be exposed via `meta()` to be used on the frontends.
@@ -128,10 +129,12 @@ export const createUserSchema = z
 export type CreateUserInput = z.infer<typeof createUserSchema>
 
 // Controller usage
-@TypedController('user')
+@Controller('user')
 export class UserController {
-  @TypedRoute.Post('', createUserSchema)
-  async createUser(@TypedBody(createUserSchema) body: CreateUserInput) {
+  @Post()
+  @SerializeOptions({ schema: createUserSchema })
+  @ApiCreatedResponse({ standardSchema: createUserSchema })
+  async createUser(@Body({ schema: createUserSchema }) body: CreateUserInput) {
     // Implementation
   }
 }

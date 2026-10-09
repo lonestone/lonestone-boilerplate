@@ -50,8 +50,7 @@ If your types/zod schemas are never outputed in the OpenAPI schema, then the gen
 So some basic rules to follow:
 
 - Zod schemas without `.meta()` will not be generated.
-- Zod schemas which are not used by your controllers (in @TypedBody, @TypedParam, @TypedQuery, @TypedRoute.Get, @TypedRoute.Post, @TypedRoute.Put, @TypedRoute.Delete) **will not be generated**.
-- Except if you use the `registerSchema()` method from nzoth/server, which will automatically register all schemas used by your controllers.
+- Zod schemas which are not used by your controllers (in `@Body`, `@Param` or `@Query` with `{ schema }`, or in `@ApiOkResponse` / `@ApiCreatedResponse` with `standardSchema`) **will not be generated**.
 - Enum used in a schema, with `z.enum()`, will not be exported as runtime enums by default, despite the option in the generator config. You need to export a schema with `meta`, such as
 
 ```typescript
