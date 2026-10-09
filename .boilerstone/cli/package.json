@@ -1,6 +1,6 @@
 {
   "name": "@lonestone/boilerstone-cli",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Lonestone boilerplate installer, project setup, and upgrade CLI",
   "keywords": [
     "boilerplate",
