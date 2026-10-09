@@ -42,6 +42,15 @@
       },
       "additionalProperties": true
     },
+    "apps": {
+      "type": "array",
+      "description": "Web apps the project kept when it was created. An empty list means API only. Absent means unknown, for example a project that was onboarded and not generated.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "examples": [["web-spa", "web-ssr"]]
+    },
     "trackedDomains": {
       "type": "array",
       "description": "Domains this project follows from the boilerplate. Known in this release: tooling, api, frontend, ci, docker-env, monitoring, email, auth, storage, ai. Domains introduced by newer releases are preserved by older CLIs with a warning.",

@@ -1,4 +1,12 @@
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -465,6 +473,223 @@ describe('tracking state lifecycle', () => {
       expect(trackingState.read(projectPath)).toEqual(
         trackingState.create({ currentVersion: '1.2.3' }),
       )
+    } finally {
+      logSpy.mockRestore()
+    }
+  })
+})
+
+describe('tracking state apps', () => {
+  it('puts apps after source when creating a state', () => {
+    const state = trackingState.create({ currentVersion: '1.2.3', apps: ['web-spa', 'web-ssr'] })
+
+    expect(state.apps).toEqual(['web-spa', 'web-ssr'])
+    expect(Object.keys(state)).toEqual([
+      'schemaVersion',
+      'source',
+      'apps',
+      'trackedDomains',
+      'intentions',
+    ])
+  })
+
+  it('records an empty list for an API-only project', () => {
+    expect(trackingState.create({ currentVersion: '1.2.3', apps: [] }).apps).toEqual([])
+  })
+
+  it('has no apps key when apps is not given', () => {
+    const state = trackingState.create({ currentVersion: '1.2.3' })
+
+    expect(state).not.toHaveProperty('apps')
+    expect(Object.keys(state)).not.toContain('apps')
+  })
+
+  it('copies the apps it is given', () => {
+    const apps = ['web-spa']
+    const state = trackingState.create({ currentVersion: '1.2.3', apps })
+
+    apps.push('web-ssr')
+
+    expect(state.apps).toEqual(['web-spa'])
+  })
+
+  it('reads apps without warning and keeps the key order on write', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const projectPath = writeTrackingState(
+        trackingState.create({ currentVersion: '1.2.3', apps: ['web-ssr'] }),
+      )
+
+      const state = trackingState.read(projectPath)
+
+      expect(state?.apps).toEqual(['web-ssr'])
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      if (!state) {
+        throw new Error('expected tracking state to be readable')
+      }
+      trackingState.write(projectPath, state)
+      expect(
+        Object.keys(
+          JSON.parse(readFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), 'utf-8')),
+        ),
+      ).toEqual(['schemaVersion', 'source', 'apps', 'trackedDomains', 'intentions'])
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+
+  it('reads a state without apps as unknown', () => {
+    const projectPath = writeTrackingState(trackingState.create({ currentVersion: '1.2.3' }))
+
+    expect(trackingState.read(projectPath)).not.toHaveProperty('apps')
+  })
+
+  it.each([
+    ['a string', 'web-spa'],
+    ['null', null],
+    ['an object', { 'web-spa': true }],
+    ['a list with a number', ['web-spa', 1]],
+    ['a list with an empty string', ['']],
+  ])('rejects apps that is %s', (_name, apps) => {
+    const projectPath = writeTrackingState({
+      ...trackingState.create({ currentVersion: '1.2.3' }),
+      apps,
+    })
+
+    expect(() => trackingState.read(projectPath)).toThrow(
+      'apps must be an array of non-empty strings',
+    )
+  })
+
+  it('keeps apps when recording an outcome and finishing an upgrade', () => {
+    const state = trackingState.create({ currentVersion: '1.2.3', apps: [] })
+
+    const recorded = trackingState.record(state, {
+      status: 'applied',
+      id: 'v1.2.4/example',
+      appliedAt: '2026-07-16',
+    })
+    const finished = trackingState.finish(recorded, '1.2.4')
+
+    expect(recorded.apps).toEqual([])
+    expect(finished.apps).toEqual([])
+    expect(Object.keys(finished)).toEqual([
+      'schemaVersion',
+      'source',
+      'apps',
+      'trackedDomains',
+      'intentions',
+    ])
+  })
+})
+
+describe('generateProject apps', () => {
+  function writeFixtureJson(projectPath: string, path: string, value: unknown): void {
+    mkdirSync(join(projectPath, path, '..'), { recursive: true })
+    writeFileSync(join(projectPath, path), `${JSON.stringify(value, null, 2)}\n`)
+  }
+
+  function createTemplateProject(): string {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerstone-generate-apps-'))
+    temporaryProjects.push(projectPath)
+    writeFixtureJson(projectPath, 'package.json', {
+      name: 'boilerstone',
+      scripts: { generate: 'pnpm --filter=@boilerstone/openapi-generator run generate' },
+    })
+    writeFixtureJson(projectPath, 'apps/api/package.json', { name: '@boilerstone/api' })
+    writeFixtureJson(projectPath, 'apps/web-spa/package.json', {
+      name: '@boilerstone/web-spa',
+      dependencies: { '@boilerstone/i18n': 'workspace:*', '@boilerstone/ui': 'workspace:*' },
+    })
+    writeFixtureJson(projectPath, 'apps/web-ssr/package.json', {
+      name: '@boilerstone/web-ssr',
+      dependencies: { '@boilerstone/ui': 'workspace:*' },
+    })
+    writeFixtureJson(projectPath, 'packages/ui/package.json', {
+      name: '@boilerstone/ui',
+      dependencies: { '@boilerstone/openapi-generator': 'workspace:*' },
+    })
+    writeFixtureJson(projectPath, 'packages/i18n/package.json', { name: '@boilerstone/i18n' })
+    writeFixtureJson(projectPath, 'packages/openapi-generator/package.json', {
+      name: '@boilerstone/openapi-generator',
+    })
+    return projectPath
+  }
+
+  function readBoilerplateJson(projectPath: string): Record<string, unknown> {
+    return JSON.parse(readFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), 'utf-8'))
+  }
+
+  it('removes the unselected app and records the selection', () => {
+    const projectPath = createTemplateProject()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+
+    try {
+      generateProject(projectPath, {
+        projectName: 'acme',
+        sourceVersion: '1.2.3',
+        apps: ['web-ssr'],
+      })
+
+      expect(readBoilerplateJson(projectPath).apps).toEqual(['web-ssr'])
+      expect(Object.keys(readBoilerplateJson(projectPath))).toEqual([
+        'schemaVersion',
+        'source',
+        'apps',
+        'trackedDomains',
+        'intentions',
+      ])
+      expect(existsSync(join(projectPath, 'apps/web-spa'))).toBe(false)
+      expect(existsSync(join(projectPath, 'apps/web-ssr'))).toBe(true)
+      expect(existsSync(join(projectPath, 'packages/i18n'))).toBe(false)
+      expect(existsSync(join(projectPath, 'packages/ui'))).toBe(true)
+      expect(
+        JSON.parse(readFileSync(join(projectPath, 'apps/web-ssr/package.json'), 'utf-8')),
+      ).toEqual({ name: '@acme/web-ssr', dependencies: { '@acme/ui': 'workspace:*' } })
+      expect(JSON.parse(readFileSync(join(projectPath, 'package.json'), 'utf-8')).scripts).toEqual(
+        expect.objectContaining({
+          generate: 'pnpm --filter=@acme/openapi-generator run generate',
+        }),
+      )
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('apps/web-spa'))
+    } finally {
+      logSpy.mockRestore()
+    }
+  })
+
+  it('records an empty list and removes every web app when none is selected', () => {
+    const projectPath = createTemplateProject()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+
+    try {
+      generateProject(projectPath, { projectName: 'acme', sourceVersion: '1.2.3', apps: [] })
+
+      expect(readBoilerplateJson(projectPath).apps).toEqual([])
+      expect(readdirSync(join(projectPath, 'apps'))).toEqual(['api'])
+      expect(readdirSync(join(projectPath, 'packages'))).toEqual([])
+      expect(
+        JSON.parse(readFileSync(join(projectPath, 'package.json'), 'utf-8')).scripts,
+      ).not.toHaveProperty('generate')
+    } finally {
+      logSpy.mockRestore()
+    }
+  })
+
+  it('removes nothing and records no apps when the option is not given', () => {
+    const projectPath = createTemplateProject()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+
+    try {
+      generateProject(projectPath, { projectName: 'acme', sourceVersion: '1.2.3' })
+
+      expect(readBoilerplateJson(projectPath)).not.toHaveProperty('apps')
+      expect(readdirSync(join(projectPath, 'apps')).sort()).toEqual(['api', 'web-spa', 'web-ssr'])
+      expect(readdirSync(join(projectPath, 'packages')).sort()).toEqual([
+        'i18n',
+        'openapi-generator',
+        'ui',
+      ])
     } finally {
       logSpy.mockRestore()
     }
