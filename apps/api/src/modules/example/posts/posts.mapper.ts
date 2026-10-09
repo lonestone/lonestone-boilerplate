@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { MediaMapper } from '../../media/media.mapper'
 import {
   PublicAuthorPosts,
   PublicPost,
@@ -21,7 +22,9 @@ type PostContentItem = UserPost['content'][number]
 // This mapper is a particulary complex one, to show that mapping logic can be contrieved but should not reside in the service.
 @Injectable()
 export class PostsMapper {
-  toUserPost(post: Post): UserPost {
+  constructor(private readonly mediaMapper: MediaMapper) {}
+
+  async toUserPost(post: Post): Promise<UserPost> {
     const versions = this.getSortedVersions(post)
     const latestVersion = versions.at(-1)
 
@@ -37,23 +40,25 @@ export class PostsMapper {
       })),
       publishedAt: post.publishedAt,
       type: this.computePostType(post, latestVersion),
-      coverImage: post.coverImage ?? undefined,
+      coverImage: post.coverImage ? await this.mediaMapper.toMedia(post.coverImage) : undefined,
       tags: this.mapTags(post),
     }
   }
 
-  toUserPosts({ posts, total, pagination }: UserPostsResult): UserPosts {
+  async toUserPosts({ posts, total, pagination }: UserPostsResult): Promise<UserPosts> {
     return {
-      data: posts.map((post) => {
-        const versions = this.getSortedVersions(post)
-        const latestVersion = versions.at(-1)
-        const contentPreview = this.findContentPreview(latestVersion?.content)
+      data: await Promise.all(
+        posts.map(async (post) => {
+          const versions = this.getSortedVersions(post)
+          const latestVersion = versions.at(-1)
+          const contentPreview = this.findContentPreview(latestVersion?.content)
 
-        return {
-          ...this.toUserPost(post),
-          contentPreview,
-        }
-      }),
+          return {
+            ...(await this.toUserPost(post)),
+            contentPreview,
+          }
+        }),
+      ),
       meta: {
         itemCount: total,
         pageSize: pagination.pageSize,
@@ -63,7 +68,7 @@ export class PostsMapper {
     }
   }
 
-  toPublicPost({ post, commentCount }: PublicPostResult): PublicPost {
+  async toPublicPost({ post, commentCount }: PublicPostResult): Promise<PublicPost> {
     const latestVersion = this.getLatestPublishedVersion(post)
 
     return {
@@ -75,36 +80,40 @@ export class PostsMapper {
       publishedAt: post.publishedAt!,
       slug: post.slug,
       commentCount,
-      coverImage: post.coverImage ?? undefined,
+      coverImage: post.coverImage ? await this.mediaMapper.toMedia(post.coverImage) : undefined,
       likesCount: post.likesCount,
       tags: this.mapTags(post),
     }
   }
 
-  toPublicPosts({
+  async toPublicPosts({
     posts,
     total,
     pagination,
     commentCountByPostId,
-  }: PublicPostsResult): PublicPosts {
+  }: PublicPostsResult): Promise<PublicPosts> {
     return {
-      data: posts.map((post) => {
-        const latestVersion = this.getLatestPublishedVersion(post)
+      data: await Promise.all(
+        posts.map(async (post) => {
+          const latestVersion = this.getLatestPublishedVersion(post)
 
-        return {
-          title: latestVersion.title,
-          publishedAt: post.publishedAt!,
-          slug: post.slug,
-          author: {
-            name: post.user.name,
-          },
-          contentPreview: this.findContentPreview(latestVersion.content),
-          commentCount: commentCountByPostId.get(post.id) ?? 0,
-          coverImage: post.coverImage ?? undefined,
-          likesCount: post.likesCount,
-          tags: this.mapTags(post),
-        }
-      }),
+          return {
+            title: latestVersion.title,
+            publishedAt: post.publishedAt!,
+            slug: post.slug,
+            author: {
+              name: post.user.name,
+            },
+            contentPreview: this.findContentPreview(latestVersion.content),
+            commentCount: commentCountByPostId.get(post.id) ?? 0,
+            coverImage: post.coverImage
+              ? await this.mediaMapper.toMedia(post.coverImage)
+              : undefined,
+            likesCount: post.likesCount,
+            tags: this.mapTags(post),
+          }
+        }),
+      ),
       meta: {
         itemCount: total,
         pageSize: pagination.pageSize,
@@ -114,30 +123,34 @@ export class PostsMapper {
     }
   }
 
-  toPublicAuthorPosts({
+  async toPublicAuthorPosts({
     posts,
     total,
     pagination,
     commentCountByPostId,
-  }: PublicAuthorPostsResult): PublicAuthorPosts {
+  }: PublicAuthorPostsResult): Promise<PublicAuthorPosts> {
     return {
-      data: posts.map((post) => {
-        const latestVersion = this.getLatestPublishedVersion(post)
+      data: await Promise.all(
+        posts.map(async (post) => {
+          const latestVersion = this.getLatestPublishedVersion(post)
 
-        return {
-          title: latestVersion.title,
-          publishedAt: post.publishedAt!,
-          slug: post.slug,
-          author: {
-            name: post.user.name,
-          },
-          contentPreview: this.findContentPreview(latestVersion.content),
-          commentCount: commentCountByPostId.get(post.id) ?? 0,
-          coverImage: post.coverImage ?? undefined,
-          likesCount: post.likesCount,
-          tags: this.mapTags(post),
-        }
-      }),
+          return {
+            title: latestVersion.title,
+            publishedAt: post.publishedAt!,
+            slug: post.slug,
+            author: {
+              name: post.user.name,
+            },
+            contentPreview: this.findContentPreview(latestVersion.content),
+            commentCount: commentCountByPostId.get(post.id) ?? 0,
+            coverImage: post.coverImage
+              ? await this.mediaMapper.toMedia(post.coverImage)
+              : undefined,
+            likesCount: post.likesCount,
+            tags: this.mapTags(post),
+          }
+        }),
+      ),
       meta: {
         itemCount: total,
         pageSize: pagination.pageSize,

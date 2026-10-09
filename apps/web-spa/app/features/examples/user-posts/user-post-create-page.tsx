@@ -1,35 +1,45 @@
-import type { CreatePostSchema } from '@boilerstone/openapi-generator'
 import { postControllerCreatePost } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import UserPostForm from './user-post-form'
+import { queryClient } from '@/lib/query-client'
+import { postKeys } from './post-keys'
+import UserPostForm, { type PostFormSubmitData } from './user-post-form'
 
 export default function UserPostCreatePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
   const { mutate: createPost, isPending } = useMutation({
-    mutationFn: (data: CreatePostSchema) =>
-      postControllerCreatePost({
-        body: data,
-      }),
-    onSuccess: async (result) => {
-      if (!result.data) {
-        toast.error(t('toasts.postCreateError'))
-        return
+    mutationFn: async (data: PostFormSubmitData) => {
+      const response = await postControllerCreatePost({
+        body: {
+          title: data.title,
+          content: JSON.stringify(data.content),
+          tags: data.tags ? JSON.stringify(data.tags) : undefined,
+          coverImage: data.coverImage,
+        },
+      })
+
+      if (response.error || !response.data) {
+        throw response.error ?? new Error(t('toasts.postCreateError'))
       }
+
+      return response.data
+    },
+    onSuccess: async (post) => {
       toast.success(t('toasts.postCreated'))
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
       await new Promise((resolve) => setTimeout(resolve, 800))
-      navigate(`/dashboard/posts/${result.data.id}/edit`)
+      navigate(`/dashboard/posts/${post.id}/edit`)
     },
     onError: (error) => {
       toast.error(error?.message || t('toasts.postCreateError'))
     },
   })
 
-  const onSubmit = async (data: CreatePostSchema) => {
+  const onSubmit = async (data: PostFormSubmitData) => {
     await createPost(data)
   }
 

@@ -4,12 +4,12 @@ import {
   publicPostControllerGetPosts,
   publicPostControllerLikePost,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
+import { FadeInImage } from '@boilerstone/ui/components/app'
 import PostContent from '@boilerstone/ui/components/posts/PostContent'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { motion, useReducedMotion, useScroll, useSpring } from 'motion/react'
 import { ArrowLeft, ArrowRight, Calendar, Clock, Heart, User } from 'lucide-react'
-import { useState } from 'react'
 import { Link, useFetcher, useSearchParams } from 'react-router'
 import { CommentsList } from '../comments/comments-list'
 
@@ -57,7 +57,7 @@ interface RelatedCardProps {
   title: string
   authorName: string
   publishedAt: string
-  coverImage?: string | null
+  coverImageUrl?: string
   index: number
 }
 
@@ -66,11 +66,9 @@ function RelatedCard({
   title,
   authorName,
   publishedAt,
-  coverImage,
+  coverImageUrl,
   index,
 }: RelatedCardProps) {
-  const [imgLoaded, setImgLoaded] = useState(false)
-  const [imgError, setImgError] = useState(false)
   const reduced = useReducedMotion()
 
   return (
@@ -86,24 +84,18 @@ function RelatedCard({
       >
         {/* Thumbnail */}
         <div className="h-16 w-24 shrink-0 overflow-hidden rounded-sm bg-muted">
-          {coverImage && !imgError ? (
-            <img
-              src={coverImage}
-              alt={title}
-              onLoad={() => setImgLoaded(true)}
-              onError={() => setImgError(true)}
-              className={[
-                'h-full w-full object-cover transform-gpu transition-all duration-500 group-hover:scale-105',
-                imgLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-sm',
-              ].join(' ')}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <span className="select-none font-sans text-lg font-black uppercase tracking-tight text-muted-foreground/20">
-                {title.slice(0, 2)}
-              </span>
-            </div>
-          )}
+          <FadeInImage
+            src={coverImageUrl}
+            alt={title}
+            className="h-full w-full object-cover duration-500 group-hover:scale-105"
+            fallback={(
+              <div className="flex h-full w-full items-center justify-center">
+                <span className="select-none font-sans text-lg font-black uppercase tracking-tight text-muted-foreground/20">
+                  {title.slice(0, 2)}
+                </span>
+              </div>
+            )}
+          />
         </div>
 
         {/* Text */}
@@ -168,7 +160,6 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
   const postSlug = post?.slug || ''
   const fetcher = useFetcher<typeof action>()
   const [searchParams] = useSearchParams()
-  const [coverLoaded, setCoverLoaded] = useState(false)
 
   const likesCount = fetcher.data?.post?.likesCount ?? post?.likesCount ?? 0
   const isLiking = fetcher.state !== 'idle'
@@ -183,14 +174,12 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
       {/* Hero cover image */}
       {post?.coverImage && (
         <div className="relative aspect-[21/9] w-full overflow-hidden bg-muted">
-          <img
-            src={post.coverImage}
+          <FadeInImage
+            src={post.coverImage.url}
             alt={post.title}
-            onLoad={() => setCoverLoaded(true)}
-            className={[
-              'h-full w-full object-cover transition-all duration-700',
-              coverLoaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-md scale-[1.02]',
-            ].join(' ')}
+            className="h-full w-full object-cover"
+            loadingClassName="opacity-0 blur-md scale-[1.02]"
+            loadedClassName="opacity-100 blur-0 scale-100"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent" />
           {/* Grain on hero image */}
@@ -340,7 +329,7 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
                       title={relPost.title}
                       authorName={relPost.author.name}
                       publishedAt={relPost.publishedAt}
-                      coverImage={relPost.coverImage}
+                      coverImageUrl={relPost.coverImage?.url}
                       index={idx}
                     />
                   ))}
