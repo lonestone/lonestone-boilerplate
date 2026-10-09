@@ -7,8 +7,6 @@ strictPeerDependencies: true
 peerDependencyRules:
   allowedVersions:
     typescript: '6'
-    # @thallesp/nestjs-better-auth peers express@5; Nest API still runs on Express 4
-    express: '4'
 # cookie@1 keeps Express (parse/serialize) and Astro <=7.1.1 (parseCookie) compatible under shamefully-hoist
 overrides:
   cookie: 1.1.1
@@ -16,6 +14,7 @@ overrides:
 # We override dependencies here to ensure that the correct version of the dependency is used for each package
 catalogs:
   auth:
+    '@thallesp/nestjs-better-auth': ^2.8.0
     better-auth: ^1.6.25
   build:
     '@types/node': ^25.9.5

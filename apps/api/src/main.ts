@@ -37,6 +37,7 @@ async function bootstrap() {
   // Stripe webhooks need the raw body for signature verification.
   // AuthModule enables req.rawBody via bodyParser.rawBody; this early middleware
   // keeps express.raw for the webhook path when a Stripe handler is added.
+  // The global AuthGuard also applies to that handler: mark it @AllowAnonymous().
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.originalUrl.startsWith(`${PREFIX}/stripe/webhook`)) {
       return express.raw({ type: 'application/json' })(req, res, next)
