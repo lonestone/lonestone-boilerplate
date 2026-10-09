@@ -277,8 +277,7 @@ describe('createAdapterUtils', () => {
       const metadata = utils.getEntityMetadata('session')
       const path = utils.getFieldPath(metadata, 'userId')
       // ManyToOne: path is [relationPropName, referencedPK] e.g. ['user', 'id']
-      expect(path).toHaveLength(2)
-      expect(path[0]).toBe('user')
+      expect(path).toEqual(['user', 'id'])
     })
 
     it('throws for a field that does not exist on the entity', () => {

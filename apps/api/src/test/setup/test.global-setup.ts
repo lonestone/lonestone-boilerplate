@@ -74,7 +74,7 @@ export default async function setup(project: TestProject) {
     password,
   })
 
-  return function teardown() {
-    container.stop()
+  return async function teardown(): Promise<void> {
+    await container.stop()
   }
 }
