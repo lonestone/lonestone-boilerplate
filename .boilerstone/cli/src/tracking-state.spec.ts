@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanupBoilerplateFiles } from '../../cli/setup'
+import { generateProject } from './generate'
 import { trackingState } from './tracking-state'
 
 const temporaryProjects: string[] = []
@@ -450,40 +450,22 @@ describe('tracking state lifecycle', () => {
     }
   })
 
-  it('keeps setup and the consumer module tracking defaults synchronized', () => {
-    const projectPath = mkdtempSync(join(tmpdir(), 'boilerstone-setup-defaults-'))
+  it('writes the default tracking state when generating a project', () => {
+    const projectPath = mkdtempSync(join(tmpdir(), 'boilerstone-generate-defaults-'))
     temporaryProjects.push(projectPath)
-    mkdirSync(join(projectPath, '.boilerstone'))
-    writeFileSync(join(projectPath, 'package.json'), '{"version":"v1.2.3"}\n')
-    const previousVersion = process.env.BOILERPLATE_SOURCE_VERSION
-    const previousCommit = process.env.BOILERPLATE_SOURCE_COMMIT
-    const previousRemote = process.env.BOILERPLATE_REPO
+    writeFileSync(join(projectPath, 'package.json'), '{"name":"boilerstone"}\n')
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
     try {
-      delete process.env.BOILERPLATE_SOURCE_VERSION
-      delete process.env.BOILERPLATE_SOURCE_COMMIT
-      delete process.env.BOILERPLATE_REPO
-      cleanupBoilerplateFiles(projectPath)
+      generateProject(projectPath, {
+        projectName: 'acme',
+        sourceVersion: '1.2.3',
+      })
 
-      expect(
-        JSON.parse(readFileSync(join(projectPath, '.boilerstone', 'boilerplate.json'), 'utf-8'))
-          .source.currentVersion,
-      ).toBe('1.2.3')
       expect(trackingState.read(projectPath)).toEqual(
         trackingState.create({ currentVersion: '1.2.3' }),
       )
     } finally {
-      const restore = (name: string, value: string | undefined): void => {
-        if (value === undefined) {
-          delete process.env[name]
-        } else {
-          process.env[name] = value
-        }
-      }
-      restore('BOILERPLATE_SOURCE_VERSION', previousVersion)
-      restore('BOILERPLATE_SOURCE_COMMIT', previousCommit)
-      restore('BOILERPLATE_REPO', previousRemote)
       logSpy.mockRestore()
     }
   })

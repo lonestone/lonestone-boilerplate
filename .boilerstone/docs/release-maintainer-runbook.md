@@ -96,7 +96,7 @@ pnpm test
 If this release changed CLI command behavior, flags, safety rules, or the meaning of a term used in the docs, update the matching `.boilerstone/docs/` pages in the same PR. The changelog line is not enough.
 
 9. Smoke test as a consumer (see below).
-10. Stop. Hand the Release PR back. **Never tag. Never merge.** The human merges from the GitHub UI as themselves. After merge, release-please creates `vX.Y.Z`.
+10. Stop. Hand the Release PR back. **Never tag. Never merge.** The human merges from the GitHub UI as themselves. After merge, release-please creates `vX.Y.Z` and CI publishes `@lonestone/boilerstone-cli` at the same version.
 
 ## Smoke test as a consumer
 
@@ -114,18 +114,22 @@ pnpm boilerplate upgrade status --json
 If the release affects the existing-project onboarding path, use a separate temporary project and run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- onboard
+pnpm dlx @lonestone/boilerstone-cli onboard
 pnpm boilerplate upgrade status
 ```
 
-After the human has merged and the tag exists, verify with a remote install:
+After the human has merged and the tag exists, the **Publish @lonestone/boilerstone-cli** job on the Release Please workflow publishes the package. Confirm `npm view @lonestone/boilerstone-cli version` matches `X.Y.Z`, then verify with a remote install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh | sh -s -- init test-boilerstone --ref vX.Y.Z
+pnpm dlx @lonestone/boilerstone-cli@X.Y.Z init test-boilerstone
 pnpm boilerplate upgrade prepare --to X.Y.Z --fetch
 ```
 
-Never move a published tag. If a pushed tag turns out to be wrong, publish a new patch version instead.
+Never move a published tag. If a pushed tag turns out to be wrong, publish a new patch version instead. Do not publish the CLI by hand as part of a normal release.
+
+If `publish-cli` fails, re-run only that job. It is separate from release-please, so the tag is not touched. The manual fallback from the tagged commit is `pnpm --filter @lonestone/boilerstone-cli publish --access public --no-git-checks`.
+
+The package version is bumped with the boilerplate on the Release PR (`.boilerstone/cli/package.json`, via `extra-files` in `release-please-config.json`).
 
 ## Selective shipping (D12)
 

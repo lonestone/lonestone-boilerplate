@@ -5,28 +5,19 @@ import type {
   ReferencePathDeclaration,
   ReleaseInfo,
   UpgradePath,
-} from './boilerplate-core'
-import type { TrackingState } from './tracking-state'
-import { execFileSync } from 'node:child_process'
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+} from './boilerplate-core.js'
+import type { TrackingState } from './tracking-state.js'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 import {
+  CLI_PACKAGE_NAME,
   compareVersions,
   computeUpgradePath,
   ensureGitignoreLine,
   ensurePackageJsonWiring,
-  ensureConsumerBoilerstonePackageJson,
   getFallbackIntentionId,
   getIntentionOrderIssues,
   getUpgradeBranchName,
@@ -34,21 +25,38 @@ import {
   parseIntentionMetadataContent,
   parseReferencePathDeclarations,
   parseReferencePaths,
+  pinRockScript,
   PRODUCER_ARTIFACTS,
   promoteUnreleasedIntentions,
   readOptionValue,
   resolveTargetVersion,
-} from './boilerplate-core'
-import { colorize, isolatedGitEnv } from './utils'
-import { trackingState } from './tracking-state'
+} from './boilerplate-core.js'
+import { isBoilerplateMaintainerCheckout, stripBoilerstoneProducerArtifacts } from './generate.js'
+import { colorize, isolatedGitEnv, movePath, runFileSync } from './utils.js'
+import { trackingState } from './tracking-state.js'
 
 const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const projectRoot = join(__dirname, '..', '..')
+
+function resolveDefaultProjectRoot(): string {
+  let dir = process.cwd()
+  while (true) {
+    if (
+      existsSync(join(dir, '.boilerstone', 'migration-intentions')) ||
+      existsSync(join(dir, '.boilerstone', 'boilerplate.json'))
+    ) {
+      return dir
+    }
+    const parent = dirname(dir)
+    if (parent === dir) {
+      return process.cwd()
+    }
+    dir = parent
+  }
+}
+
+const projectRoot = resolveDefaultProjectRoot()
 const boilerplateDir = join(projectRoot, '.boilerstone')
 const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
-// Pinned to match the boilerplate's own tsx version; used when wiring a consumer's package.json.
-const defaultTsxVersion = '^4.23.5'
 
 async function prompt(message: string, initial: string): Promise<string> {
   // Without a terminal the question would never resolve and the process would
@@ -78,9 +86,8 @@ function normalizeSemanticVersion(version: string, label: 'source' | 'target'): 
 }
 
 function runGitCommand(args: string[], cwd = projectRoot): string {
-  return execFileSync('git', args, {
+  return runFileSync('git', args, {
     cwd,
-    encoding: 'utf-8',
     env: isolatedGitEnv(),
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim()
@@ -238,15 +245,15 @@ function fetchBoilerplateReleases(
 }
 
 function archiveGitReference(reference: string, destination: string, cwd = projectRoot): void {
-  // --output avoids buffering the archive on stdout (execFileSync caps stdout at 1MB by default)
+  // --output avoids buffering the archive on stdout (the default cap is 1MB)
   const tarFile = join(destination, '.reference.tar')
   try {
-    execFileSync(
+    runFileSync(
       'git',
       ['archive', '--format=tar', `--output=${tarFile}`, reference, '.boilerstone/'],
       { cwd, env: isolatedGitEnv() },
     )
-    execFileSync('tar', ['-xf', tarFile, '-C', destination])
+    runFileSync('tar', ['-xf', tarFile, '-C', destination])
   } finally {
     rmSync(tarFile, { force: true })
   }
@@ -278,12 +285,12 @@ function extractIntentionReferencePaths(
   }
 
   const tarFile = join(destination, '.reference.tar')
-  execFileSync(
+  runFileSync(
     'git',
     ['archive', '--format=tar', `--output=${tarFile}`, targetTag, ...existingPaths],
     { cwd, env: isolatedGitEnv() },
   )
-  execFileSync('tar', ['-xf', tarFile, '-C', destination])
+  runFileSync('tar', ['-xf', tarFile, '-C', destination])
   rmSync(tarFile, { force: true })
   return existingPaths
 }
@@ -328,9 +335,8 @@ function listGitMarkdownFiles(reference: string, directory: string, cwd = projec
 }
 
 function readGitFile(reference: string, filePath: string, cwd = projectRoot): string {
-  return execFileSync('git', ['show', `${reference}:${filePath}`], {
+  return runFileSync('git', ['show', `${reference}:${filePath}`], {
     cwd,
-    encoding: 'utf-8',
     env: isolatedGitEnv(),
   })
 }
@@ -962,7 +968,32 @@ function finishUpgrade(options: UpgradeFinishCommandOptions): UpgradePathResolut
   }
 
   trackingState.write(absolutePath, trackingState.finish(state, targetVersion))
+  if (syncRockScriptPin(absolutePath, targetVersion)) {
+    console.log(
+      `  ${colorize('✓', 'green')} package.json: rock now runs ${CLI_PACKAGE_NAME}@${targetVersion}`,
+    )
+  }
   return resolution
+}
+
+/**
+ * Keeps a pinned `pnpm dlx @lonestone/boilerstone-cli@<version> rock` script on the
+ * release the project now tracks. A custom or vendored `rock` is left alone.
+ */
+function syncRockScriptPin(projectPath: string, version: string): boolean {
+  const pkgPath = join(projectPath, 'package.json')
+  if (!existsSync(pkgPath)) {
+    return false
+  }
+  const next = pinRockScript(
+    JSON.parse(readFileSync(pkgPath, 'utf-8')) as PackageJsonShape,
+    version,
+  )
+  if (!next) {
+    return false
+  }
+  writeFileSync(pkgPath, `${JSON.stringify(next, null, 2)}\n`, 'utf-8')
+  return true
 }
 
 function cmdUpgradeFinish(options: UpgradeFinishCommandOptions): void {
@@ -1009,14 +1040,15 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
     process.exit(1)
   }
 
-  // 1. Wire the root package.json (boilerplate script + tsx runtime).
+  // 1. Wire the root package.json: a `boilerplate` script running the published
+  //    CLI through pnpm dlx. No dependency is added.
   const pkgPath = join(root, 'package.json')
   if (!existsSync(pkgPath)) {
     console.error(`  ${colorize('❌', 'red')} No package.json found in ${root}`)
     process.exit(1)
   }
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as PackageJsonShape
-  const wiring = ensurePackageJsonWiring(pkg, defaultTsxVersion)
+  const wiring = ensurePackageJsonWiring(pkg)
   if (wiring.changes.length > 0) {
     writeFileSync(pkgPath, `${JSON.stringify(wiring.pkg, null, 2)}\n`, 'utf-8')
     for (const change of wiring.changes) {
@@ -1037,31 +1069,15 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
     console.log(`  ${colorize('✓', 'green')} .gitignore already ignores .boilerstone/upgrade/`)
   }
 
-  // 3. Switch .boilerstone/ to consumer mode (drop producer-only artifacts).
-  let removed = 0
-  for (const artifact of PRODUCER_ARTIFACTS) {
-    const target = join(dir, artifact)
-    if (existsSync(target)) {
-      rmSync(target, { recursive: true, force: true })
-      console.log(`  ${colorize('✓', 'green')} removed producer artifact .boilerstone/${artifact}`)
-      removed += 1
-    }
-  }
-  if (removed === 0) {
-    console.log(`  ${colorize('✓', 'green')} .boilerstone/ already in consumer mode`)
-  }
-
-  // 3b. Strip producer test tooling from the vendored package.json.
-  const boilerstonePkgPath = join(dir, 'package.json')
-  if (existsSync(boilerstonePkgPath)) {
-    const boilerstonePkg = JSON.parse(readFileSync(boilerstonePkgPath, 'utf-8')) as PackageJsonShape
-    const consumerPkg = ensureConsumerBoilerstonePackageJson(boilerstonePkg)
-    if (consumerPkg.changes.length > 0) {
-      writeFileSync(boilerstonePkgPath, `${JSON.stringify(consumerPkg.pkg, null, 2)}\n`, 'utf-8')
-      for (const change of consumerPkg.changes) {
-        console.log(`  ${colorize('✓', 'green')} .boilerstone/package.json: ${change}`)
-      }
-    }
+  // 3. Drop producer-only files inside .boilerstone/. This is client code:
+  //    nothing outside .boilerstone/ is ever removed here.
+  console.log(`\n${colorize('🧹 Switching .boilerstone/ to consumer mode', 'cyan')}\n`)
+  if (isBoilerplateMaintainerCheckout(root)) {
+    console.log(
+      `  ${colorize('→', 'cyan')} Skipped producer-side cleanup in boilerplate maintainer checkout`,
+    )
+  } else {
+    stripBoilerstoneProducerArtifacts(root)
   }
 
   // 4. Initialize tracking state (detects/confirms the source version).
@@ -1078,7 +1094,7 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
     )
   } else {
     console.log(
-      `  ${colorize('1.', 'bright')} Install the CLI runtime: ${colorize('pnpm install', 'blue')}`,
+      `  ${colorize('1.', 'bright')} Refresh the lockfile:    ${colorize('pnpm install', 'blue')}`,
     )
     console.log(
       `  ${colorize('2.', 'bright')} Check readiness:         ${colorize('pnpm boilerplate upgrade status', 'blue')}`,
@@ -1940,7 +1956,7 @@ async function prepareUpgrade(options: PrepareUpgradeRequest): Promise<PreparedU
     writeFileSync(join(temporaryUpgradeDir, 'upgrade-session.md'), sessionPrompt, 'utf-8')
 
     ensureUpgradeBranch(absolutePath, branchName)
-    renameSync(temporaryUpgradeDir, upgradeDir)
+    movePath(temporaryUpgradeDir, upgradeDir)
     isPublished = true
 
     return {
@@ -2193,9 +2209,11 @@ ${colorize('Examples:', 'cyan')}
   ${colorize('boilerplate upgrade status --project ./my-project --json', 'dim')}`)
 }
 
-async function main(): Promise<void> {
-  const args = process.argv.slice(2)
+function isVersionToken(value: string | undefined): boolean {
+  return Boolean(value && /^(latest|v?\d+\.\d+\.\d+)$/.test(value))
+}
 
+export async function runBoilerplateCli(args = process.argv.slice(2)): Promise<void> {
   if (args.length === 0) {
     printUsage()
     process.exit(0)
@@ -2233,7 +2251,12 @@ async function main(): Promise<void> {
     } else if (command === 'upgrade') {
       // Accept both `1.0.0` and `v1.0.0` — tags carry the v, versions don't.
       const from = readOptionValue(args, '--from')?.replace(/^v(?=\d)/, '')
-      const to = readOptionValue(args, '--to')?.replace(/^v(?=\d)/, '')
+      const positionalTarget = isVersionToken(subcommand)
+        ? subcommand.replace(/^v(?=\d)/, '')
+        : undefined
+      const to =
+        readOptionValue(args, '--to')?.replace(/^v(?=\d)/, '') ??
+        (positionalTarget === 'latest' ? undefined : positionalTarget)
       const project = readOptionValue(args, '--project') || '.'
       const json = args.includes('--json')
       const fetch = args.includes('--fetch')
@@ -2255,7 +2278,12 @@ async function main(): Promise<void> {
           json,
           fetch,
         })
-      } else if (subcommand === 'prepare' || !subcommand || subcommand.startsWith('--')) {
+      } else if (
+        subcommand === 'prepare' ||
+        !subcommand ||
+        subcommand.startsWith('--') ||
+        Boolean(positionalTarget)
+      ) {
         // `pnpm boilerplate upgrade` is the everyday command: prepare with all
         // defaults (latest, fetch when needed, interactive selection on a TTY).
         await cmdUpgradePrepare({
@@ -2308,11 +2336,12 @@ async function main(): Promise<void> {
 // Run only when invoked as a script, so tests can import the helpers below
 const isDirectExecution = process.argv[1] ? resolve(process.argv[1]) === __filename : false
 if (isDirectExecution) {
-  main()
+  runBoilerplateCli()
 }
 
 export {
   archiveGitReference,
+  cmdBootstrap as bootstrapProject,
   extractIntentionReferencePaths,
   finishUpgrade,
   generateReferenceReadme,

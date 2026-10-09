@@ -6,7 +6,7 @@
 
 This repository represents the typical project structure at Lonestone, consisting of an API and one to several frontends.
 
-Start new projects with the versioned installer described below. It resolves the latest published boilerplate release by default, so projects never start from unreleased changes on `main`.
+Start new projects with the versioned installer described below. Each CLI version creates the boilerplate release with the same version, so projects never start from unreleased changes on `main`.
 
 For more details, see the [documentation](https://lonestone.github.io/lonestone-boilerplate/) or check out the local documentation in the `apps/documentation` folder.
 
@@ -55,29 +55,26 @@ See the [Project Structure](apps/documentation/src/content/docs/explanations/1_a
 
 ### Create a new project
 
-Run the installer from the directory that should contain the new project:
+Create the project from the directory that should contain it:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh \
-  | sh -s -- init my-project
+pnpm dlx @lonestone/boilerstone-cli init my-project
 ```
 
-The installer resolves the latest stable `vX.Y.Z` tag, creates the project, installs dependencies, and runs the interactive `pnpm rock` setup. Pin a specific release when reproducibility requires it:
+The CLI creates the project from the release that has its own version (`@lonestone/boilerstone-cli@X.Y.Z` creates `vX.Y.Z`), renames the workspace to `@my-project/*` (the directory name, so use lowercase letters, digits and dashes), installs dependencies, and runs the interactive `pnpm rock` setup. Without a version, `pnpm dlx` takes the latest CLI, so the latest release. It may reuse a cached copy for a while after a release: the CLI prints its version when it starts. Pin a specific release by pinning the CLI:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh \
-  | sh -s -- init my-project --ref v1.0.0
+pnpm dlx @lonestone/boilerstone-cli@1.2.0 init my-project
 ```
 
-`--ref` accepts only `latest` (the default) or an explicit release tag such as `v1.0.0`. Branches such as `main` are intentionally rejected.
+A CLI only generates its own release: each release's layout is what that CLI knows. Releases published before the CLI existed (v1.0.0, v1.1.0) cannot be used to create a new project.
 
 ### Onboard an existing project
 
 Run this once at the root of a project originally generated from the boilerplate but not yet tracked by Boilerstone:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lonestone/lonestone-boilerplate/main/install.sh \
-  | sh -s -- onboard
+pnpm dlx @lonestone/boilerstone-cli onboard
 ```
 
 Then inspect and prepare the latest applicable upgrade:
@@ -100,33 +97,20 @@ fnm use 24.13.0
 npm i -g pnpm@10.28.2
 ```
 
-When working from an existing checkout rather than the installer, install dependencies manually:
+When joining an existing project (a fresh clone of a project created with `init`), install dependencies and set up your local environment:
 
 ```bash
 pnpm install
-```
-
-Then run the setup script:
-
-The project includes an automated setup script that will:
-- Detect available applications (API, Web SPA, Web SSR, OpenAPI Generator)
-- Prompt you for database configuration (user, password, name, host, port)
-- Prompt you for application ports
-- Configure SMTP settings (MailDev)
-- Copy and configure all `.env` files automatically
-- Optionally start Docker services (database, MailDev)
-- Optionally run database migrations
-
-```bash
 pnpm rock
 ```
 
-The script will guide you through the configuration process interactively. It will:
-- Ask for your project name
-- Rename workspace packages to `@your-project/*` and rewrite remaining `@boilerstone/` imports in apps, packages, docs, tsconfig, and CI
-- Check for existing `.env` files and only prompt for missing variables
-- Automatically update all `.env` files with your configuration
+`pnpm rock` sets up the local development environment. It will:
+- Create the missing `.env` files from every `.env.example` (root, `apps/*`, `packages/*`)
+- Prompt only for missing variables: database, application ports, SMTP (MailDev)
 - Set up proper API URLs and trusted origins across all applications
+- Optionally start Docker services (database, MailDev) and run database migrations
+
+It never renames packages or deletes files, so it is safe to re-run. Renaming the workspace to `@your-project/*` happens once, in `init`.
 
 Start applications in development mode:
 
