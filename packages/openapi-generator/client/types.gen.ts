@@ -5,126 +5,6 @@ export type ClientOptions = {
 };
 
 /**
- * UseCase1SingleGenerationRequest
- *
- * Single generation; trace is finalized with name/output so Langfuse shows them
- */
-export type UseCase1SingleGenerationRequest = {
-    prompt: string;
-    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-    options?: AiGenerateOptions;
-};
-
-/**
- * UseCase2GroupedCallsRequest
- *
- * Multiple LLM calls in one request; one trace in Langfuse, finalized at end
- */
-export type UseCase2GroupedCallsRequest = {
-    /**
-     * Prompts for each step (same trace)
-     */
-    prompts: Array<string>;
-    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-};
-
-/**
- * UseCase3LogicalUnitsRequest
- *
- * Multiple workflows; each workflow gets its own Langfuse trace (split per unit)
- */
-export type UseCase3LogicalUnitsRequest = {
-    /**
-     * One prompt per logical workflow; each gets its own trace
-     */
-    workflowPrompts: Array<string>;
-    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-};
-
-/**
- * UseCase4ChatSessionRequest
- *
- * Simple generateText with sessionId for grouping traces across requests
- */
-export type UseCase4ChatSessionRequest = {
-    prompt: string;
-    /**
-     * Session ID to group traces in Langfuse (e.g. conversation or thread)
-     */
-    sessionId: string;
-    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-};
-
-/**
- * GenerateTextRequest
- *
- * Request for simple text generation with a single prompt
- */
-export type GenerateTextRequest = {
-    prompt: string;
-    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-    options?: AiGenerateOptions;
-};
-
-/**
- * GenerateObjectRequest
- *
- * Request for structured object generation with a predefined schema type
- */
-export type GenerateObjectRequest = {
-    prompt: string;
-    schemaType: 'userProfile' | 'task' | 'product' | 'recipe';
-    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-    options?: AiGenerateOptions;
-};
-
-/**
- * ChatRequest
- *
- * Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.
- */
-export type ChatRequest = {
-    messages: Array<ChatMessageWithSchemaType>;
-    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-    options?: AiGenerateOptions;
-    schemaType?: ChatSchemaType;
-};
-
-/**
- * StreamTextRequest
- *
- * Request for streaming text generation with a single prompt
- */
-export type StreamTextRequest = {
-    prompt: string;
-    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-    options?: AiGenerateOptions;
-};
-
-/**
- * StreamObjectRequest
- *
- * Request for streaming structured object generation
- */
-export type StreamObjectRequest = {
-    prompt: string;
-    schemaType: 'userProfile' | 'task' | 'product' | 'recipe';
-    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-    options?: AiGenerateOptions;
-};
-
-/**
- * StreamChatRequest
- *
- * Request for streaming multi-turn AI conversation
- */
-export type StreamChatRequest = {
-    messages: Array<ChatMessageWithSchemaType>;
-    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-    options?: AiGenerateOptions;
-};
-
-/**
  * CreateCommentSchema
  *
  * Schema for creating a comment
@@ -133,197 +13,6 @@ export type CreateCommentSchema = {
     content: string;
     parentId?: string;
 };
-
-/**
- * CreatePostSchema
- *
- * Schema for creating/updating a post
- */
-export type CreatePostSchema = {
-    title: string;
-    content: Array<PostContentSchema>;
-    coverImage?: string;
-    tags?: Array<string>;
-};
-
-/**
- * UpdatePostSchema
- *
- * Schema for updating a post
- */
-export type UpdatePostSchema = {
-    title?: string;
-    content?: Array<PostContentSchema>;
-    coverImage?: string;
-    tags?: Array<string>;
-};
-
-/**
- * GenerateTextResponse
- *
- * Response from text generation
- */
-export type GenerateTextResponse = {
-    usage?: TokenUsage;
-    finishReason?: string;
-    toolCalls?: Array<ToolCall>;
-    toolResults?: Array<ToolResult>;
-    result: string;
-};
-
-/**
- * TokenUsage
- *
- * Token usage information for an AI generation
- */
-export type TokenUsage = {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-};
-
-/**
- * ToolCall
- *
- * A tool call made by the AI
- */
-export type ToolCall = {
-    toolCallId: string;
-    toolName: string;
-    args: {
-        [key: string]: unknown;
-    };
-};
-
-/**
- * ToolResult
- *
- * The result of a tool call
- */
-export type ToolResult = {
-    toolCallId: string;
-    toolName: string;
-    result: unknown;
-};
-
-/**
- * UseCase2GroupedCallsResponse
- *
- * Combined results from grouped LLM calls
- */
-export type UseCase2GroupedCallsResponse = {
-    traceName: string;
-    results: Array<string>;
-    usage?: TokenUsage;
-};
-
-/**
- * UseCase3LogicalUnitsResponse
- *
- * One result per workflow (each in its own trace)
- */
-export type UseCase3LogicalUnitsResponse = {
-    workflows: Array<{
-        index: number;
-        result: string;
-        usage?: TokenUsage;
-    }>;
-};
-
-/**
- * GenerateObjectResponse
- *
- * Response from structured object generation
- */
-export type GenerateObjectResponse = {
-    usage?: TokenUsage;
-    finishReason?: string;
-    toolCalls?: Array<ToolCall>;
-    toolResults?: Array<ToolResult>;
-    result: unknown;
-};
-
-/**
- * ChatResponse
- *
- * Response from AI chat conversation
- */
-export type ChatResponse = {
-    usage?: TokenUsage;
-    finishReason?: string;
-    toolCalls?: Array<ToolCall>;
-    toolResults?: Array<ToolResult>;
-    result: string;
-    messages: Array<ChatMessageWithSchemaType>;
-};
-
-/**
- * ChatMessageWithSchemaType
- *
- * A message with optional schemaType metadata for identifying structured output
- */
-export type ChatMessageWithSchemaType = {
-    role: 'user' | 'assistant' | 'system' | 'tool';
-    content: string;
-    metadata?: {
-        isConsideredSystemMessage?: boolean;
-        /**
-         * TokenUsage
-         *
-         * Total token usage for the message, including tools calls and reasoning steps
-         */
-        usage?: {
-            promptTokens: number;
-            completionTokens: number;
-            totalTokens: number;
-        };
-        finishReason?: string;
-        /**
-         * ISO 8601 timestamp when the message was created
-         */
-        timestamp?: Date;
-        /**
-         * Tool calls made to generate the message
-         */
-        toolCalls?: Array<{
-            toolCallId: string;
-            toolName: string;
-            args: {
-                [key: string]: unknown;
-            };
-        }>;
-        /**
-         * Reasoning text for the message
-         */
-        reasonning?: string;
-        /**
-         * ChatSchemaType
-         *
-         * Predefined schema types for testing structured output
-         */
-        schemaType?: 'userProfile' | 'task' | 'product' | 'recipe' | 'none';
-    };
-};
-
-/**
- * ChatSchemaType
- *
- * Predefined schema types for testing structured output
- */
-export const ChatSchemaType = {
-    USER_PROFILE: 'userProfile',
-    TASK: 'task',
-    PRODUCT: 'product',
-    RECIPE: 'recipe',
-    NONE: 'none'
-} as const;
-
-/**
- * ChatSchemaType
- *
- * Predefined schema types for testing structured output
- */
-export type ChatSchemaType = typeof ChatSchemaType[keyof typeof ChatSchemaType];
 
 /**
  * CommentSchema
@@ -345,6 +34,47 @@ export type CommentSchema = {
 };
 
 /**
+ * UpdateCommentSchema
+ *
+ * Schema for updating a comment
+ */
+export type UpdateCommentSchema = {
+    content: string;
+};
+
+/**
+ * PaginationQuerySchema
+ *
+ * Schema for pagination query
+ */
+export type PaginationQuerySchema = {
+    /**
+     * Starting position of the query
+     */
+    offset?: number;
+    /**
+     * Number of items to return
+     */
+    pageSize?: number;
+};
+
+/**
+ * SortingQueryStringSchema
+ *
+ * Schema for sorting items
+ */
+export type SortingQueryStringSchema = string;
+
+/**
+ * FilterQueryStringSchema
+ *
+ * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
+ * Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
+ * Available properties: title, tag
+ */
+export type FilterQueryStringSchema = string;
+
+/**
  * CommentsSchema
  *
  * Schema for a paginated list of comments
@@ -357,24 +87,6 @@ export type CommentsSchema = {
         itemCount: number;
         hasMore: boolean;
     };
-};
-
-/**
- * UserPostSchema
- *
- * Schema for a user's post
- */
-export type UserPostSchema = {
-    id: string;
-    slug?: string | null;
-    title: string;
-    content: Array<PostContentSchema>;
-    versions: Array<PostVersionSchema>;
-    publishedAt?: string | null;
-    type: 'published' | 'draft';
-    commentCount?: number;
-    coverImage?: string;
-    tags: Array<TagSchema>;
 };
 
 /**
@@ -391,6 +103,18 @@ export type PostContentSchema = {
 } | {
     type: 'video';
     data: string;
+};
+
+/**
+ * CreatePostSchema
+ *
+ * Schema for creating/updating a post
+ */
+export type CreatePostSchema = {
+    title: string;
+    content: Array<PostContentSchema>;
+    coverImage?: string;
+    tags?: Array<string>;
 };
 
 /**
@@ -413,6 +137,36 @@ export type TagSchema = {
     id: string;
     name: string;
     slug: string;
+};
+
+/**
+ * UserPostSchema
+ *
+ * Schema for a user's post
+ */
+export type UserPostSchema = {
+    id: string;
+    slug?: string | null;
+    title: string;
+    content: Array<PostContentSchema>;
+    versions: Array<PostVersionSchema>;
+    publishedAt?: string | null;
+    type: 'published' | 'draft';
+    commentCount?: number;
+    coverImage?: string;
+    tags: Array<TagSchema>;
+};
+
+/**
+ * UpdatePostSchema
+ *
+ * Schema for updating a post
+ */
+export type UpdatePostSchema = {
+    title?: string;
+    content?: Array<PostContentSchema>;
+    coverImage?: string;
+    tags?: Array<string>;
 };
 
 /**
@@ -515,6 +269,323 @@ export type PublicAuthorPostsSchema = {
 };
 
 /**
+ * AiGenerateOptions
+ *
+ * Options for an AI generation
+ */
+export type AiGenerateOptions = {
+    temperature?: number;
+    maxTokens?: number;
+    topP?: number;
+    frequencyPenalty?: number;
+    presencePenalty?: number;
+    maxSteps?: number;
+    stopWhen?: number;
+    telemetry?: {
+        /**
+         * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
+         */
+        traceMode?: 'inherit' | 'split';
+        /**
+         * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
+         */
+        traceId?: string;
+        /**
+         * Display name used as root span name for the Langfuse trace. This does not control grouping.
+         */
+        traceName?: string;
+        /**
+         * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
+         */
+        spanName?: string;
+        /**
+         * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
+         */
+        sessionId?: string;
+        /**
+         * Telemetry metadata attached to (Langfuse) trace/span.
+         */
+        metadata?: {
+            [key: string]: unknown;
+        };
+        /**
+         * The original prompt that was used to generate the response. (Use prompt.toJSON())
+         */
+        langfuseOriginalPrompt?: string;
+    };
+    metadata?: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * GenerateTextRequest
+ *
+ * Request for simple text generation with a single prompt
+ */
+export type GenerateTextRequest = {
+    prompt: string;
+    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
+    options?: AiGenerateOptions;
+};
+
+/**
+ * TokenUsage
+ *
+ * Token usage information for an AI generation
+ */
+export type TokenUsage = {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+};
+
+/**
+ * ToolCall
+ *
+ * A tool call made by the AI
+ */
+export type ToolCall = {
+    toolCallId: string;
+    toolName: string;
+    args: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * ToolResult
+ *
+ * The result of a tool call
+ */
+export type ToolResult = {
+    toolCallId: string;
+    toolName: string;
+    result: unknown;
+};
+
+/**
+ * GenerateTextResponse
+ *
+ * Response from text generation
+ */
+export type GenerateTextResponse = {
+    usage?: TokenUsage;
+    finishReason?: string;
+    toolCalls?: Array<ToolCall>;
+    toolResults?: Array<ToolResult>;
+    result: string;
+};
+
+/**
+ * GenerateObjectRequest
+ *
+ * Request for structured object generation with a predefined schema type
+ */
+export type GenerateObjectRequest = {
+    prompt: string;
+    schemaType: 'userProfile' | 'task' | 'product' | 'recipe';
+    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
+    options?: AiGenerateOptions;
+};
+
+/**
+ * GenerateObjectResponse
+ *
+ * Response from structured object generation
+ */
+export type GenerateObjectResponse = {
+    usage?: TokenUsage;
+    finishReason?: string;
+    toolCalls?: Array<ToolCall>;
+    toolResults?: Array<ToolResult>;
+    result: unknown;
+};
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing structured output
+ */
+export const ChatSchemaType = {
+    USER_PROFILE: 'userProfile',
+    TASK: 'task',
+    PRODUCT: 'product',
+    RECIPE: 'recipe',
+    NONE: 'none'
+} as const;
+
+/**
+ * ChatSchemaType
+ *
+ * Predefined schema types for testing structured output
+ */
+export type ChatSchemaType = typeof ChatSchemaType[keyof typeof ChatSchemaType];
+
+/**
+ * ChatMessageWithSchemaType
+ *
+ * A message with optional schemaType metadata for identifying structured output
+ */
+export type ChatMessageWithSchemaType = {
+    role: 'user' | 'assistant' | 'system' | 'tool';
+    content: string;
+    metadata?: {
+        isConsideredSystemMessage?: boolean;
+        usage?: TokenUsage;
+        finishReason?: string;
+        /**
+         * ISO 8601 timestamp when the message was created
+         */
+        timestamp?: Date;
+        /**
+         * Tool calls made to generate the message
+         */
+        toolCalls?: Array<ToolCall>;
+        /**
+         * Reasoning text for the message
+         */
+        reasonning?: string;
+        schemaType?: ChatSchemaType;
+    };
+};
+
+/**
+ * ChatRequest
+ *
+ * Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.
+ */
+export type ChatRequest = {
+    messages: Array<ChatMessageWithSchemaType>;
+    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
+    options?: AiGenerateOptions;
+    schemaType?: ChatSchemaType;
+};
+
+/**
+ * ChatResponse
+ *
+ * Response from AI chat conversation
+ */
+export type ChatResponse = {
+    usage?: TokenUsage;
+    finishReason?: string;
+    toolCalls?: Array<ToolCall>;
+    toolResults?: Array<ToolResult>;
+    result: string;
+    messages: Array<ChatMessageWithSchemaType>;
+};
+
+/**
+ * StreamTextRequest
+ *
+ * Request for streaming text generation with a single prompt
+ */
+export type StreamTextRequest = {
+    prompt: string;
+    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
+    options?: AiGenerateOptions;
+};
+
+/**
+ * StreamObjectRequest
+ *
+ * Request for streaming structured object generation
+ */
+export type StreamObjectRequest = {
+    prompt: string;
+    schemaType: 'userProfile' | 'task' | 'product' | 'recipe';
+    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
+    options?: AiGenerateOptions;
+};
+
+/**
+ * StreamChatRequest
+ *
+ * Request for streaming multi-turn AI conversation
+ */
+export type StreamChatRequest = {
+    messages: Array<ChatMessageWithSchemaType>;
+    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
+    options?: AiGenerateOptions;
+};
+
+/**
+ * UseCase1SingleGenerationRequest
+ *
+ * Single generation; trace is finalized with name/output so Langfuse shows them
+ */
+export type UseCase1SingleGenerationRequest = {
+    prompt: string;
+    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
+    options?: AiGenerateOptions;
+};
+
+/**
+ * UseCase2GroupedCallsRequest
+ *
+ * Multiple LLM calls in one request; one trace in Langfuse, finalized at end
+ */
+export type UseCase2GroupedCallsRequest = {
+    /**
+     * Prompts for each step (same trace)
+     */
+    prompts: Array<string>;
+    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
+};
+
+/**
+ * UseCase2GroupedCallsResponse
+ *
+ * Combined results from grouped LLM calls
+ */
+export type UseCase2GroupedCallsResponse = {
+    traceName: string;
+    results: Array<string>;
+    usage?: TokenUsage;
+};
+
+/**
+ * UseCase3LogicalUnitsRequest
+ *
+ * Multiple workflows; each workflow gets its own Langfuse trace (split per unit)
+ */
+export type UseCase3LogicalUnitsRequest = {
+    /**
+     * One prompt per logical workflow; each gets its own trace
+     */
+    workflowPrompts: Array<string>;
+    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
+};
+
+/**
+ * UseCase3LogicalUnitsResponse
+ *
+ * One result per workflow (each in its own trace)
+ */
+export type UseCase3LogicalUnitsResponse = {
+    workflows: Array<{
+        index: number;
+        result: string;
+        usage?: TokenUsage;
+    }>;
+};
+
+/**
+ * UseCase4ChatSessionRequest
+ *
+ * Simple generateText with sessionId for grouping traces across requests
+ */
+export type UseCase4ChatSessionRequest = {
+    prompt: string;
+    /**
+     * Session ID to group traces in Langfuse (e.g. conversation or thread)
+     */
+    sessionId: string;
+    model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
+};
+
+/**
  * AiCoreMessage
  *
  * A message in the conversation history following Vercel AI SDK patterns
@@ -542,43 +613,80 @@ export type AiCoreMessage = {
 };
 
 /**
- * AiStreamEvent
+ * AiStreamTextChunkEvent
  *
- * SSE event for AI text streaming with tool support
+ * A text chunk event during streaming
  */
-export type AiStreamEvent = {
+export type AiStreamTextChunkEvent = {
     type: 'chunk';
     text: string;
-} | {
+};
+
+/**
+ * AiStreamToolCallEvent
+ *
+ * Event when a tool is being called during streaming
+ */
+export type AiStreamToolCallEvent = {
     type: 'tool-call';
     toolCallId: string;
     toolName: string;
     args: {
         [key: string]: unknown;
     };
-} | {
+};
+
+/**
+ * AiStreamToolResultEvent
+ *
+ * Event when a tool returns a result during streaming
+ */
+export type AiStreamToolResultEvent = {
     type: 'tool-result';
     toolCallId: string;
     toolName: string;
     result: unknown;
-} | {
+};
+
+/**
+ * AiStreamUsage
+ *
+ * Token usage information for the stream
+ */
+export type AiStreamUsage = {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+};
+
+/**
+ * AiStreamDoneEvent
+ *
+ * Final event when streaming is complete
+ */
+export type AiStreamDoneEvent = {
     type: 'done';
     fullText: string;
-    /**
-     * AiStreamUsage
-     *
-     * Token usage information for the stream
-     */
-    usage?: {
-        promptTokens: number;
-        completionTokens: number;
-        totalTokens: number;
-    };
+    usage?: AiStreamUsage;
     finishReason?: string;
-} | {
+};
+
+/**
+ * AiStreamErrorEvent
+ *
+ * Error event during streaming
+ */
+export type AiStreamErrorEvent = {
     type: 'error';
     message: string;
 };
+
+/**
+ * AiStreamEvent
+ *
+ * SSE event for AI text streaming with tool support
+ */
+export type AiStreamEvent = AiStreamTextChunkEvent | AiStreamToolCallEvent | AiStreamToolResultEvent | AiStreamDoneEvent | AiStreamErrorEvent;
 
 /**
  * Task
@@ -640,89 +748,12 @@ export type UserProfile = {
     skills?: Array<string>;
 };
 
-/**
- * AiGenerateOptions
- *
- * Options for an AI generation
- */
-export type AiGenerateOptions = {
-    temperature?: number;
-    maxTokens?: number;
-    topP?: number;
-    frequencyPenalty?: number;
-    presencePenalty?: number;
-    maxSteps?: number;
-    stopWhen?: number;
-    telemetry?: {
-        /**
-         * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
-         */
-        traceMode?: 'inherit' | 'split';
-        /**
-         * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
-         */
-        traceId?: string;
-        /**
-         * Display name used as root span name for the Langfuse trace. This does not control grouping.
-         */
-        traceName?: string;
-        /**
-         * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
-         */
-        spanName?: string;
-        /**
-         * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
-         */
-        sessionId?: string;
-        /**
-         * Telemetry metadata attached to (Langfuse) trace/span.
-         */
-        metadata?: {
-            [key: string]: unknown;
-        };
-        /**
-         * The original prompt that was used to generate the response. (Use prompt.toJSON())
-         */
-        langfuseOriginalPrompt?: string;
-    };
-    metadata?: {
-        [key: string]: unknown;
-    };
+export type CommentsControllerGetCommentsSortItem = {
+    property: 'createdAt' | 'authorName';
+    direction: 'asc' | 'desc';
 };
 
-/**
- * PaginationQuerySchema
- *
- * Schema for pagination query
- */
-export type PaginationQuerySchema = {
-    /**
-     * Starting position of the query
-     */
-    offset: number;
-    /**
-     * Number of items to return
-     */
-    pageSize: number;
-};
-
-/**
- * SortingQueryStringSchema
- *
- * Schema for sorting items
- */
-export type SortingQueryStringSchema = string;
-
-/**
- * FilterQueryStringSchema
- *
- * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
- * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
- * <br> Available properties: title, tag
- */
-export type FilterQueryStringSchema = string;
-
-export type CommentsControllerPostSlug = string;
+export type CommentsControllerGetCommentsSortArray = Array<CommentsControllerGetCommentsSortItem>;
 
 export type CommentsControllerGetCommentsFilterItem = {
     property: 'content';
@@ -732,19 +763,19 @@ export type CommentsControllerGetCommentsFilterItem = {
 
 export type CommentsControllerGetCommentsFilterArray = Array<CommentsControllerGetCommentsFilterItem>;
 
-export type CommentsControllerGetCommentsSortItem = {
-    property: 'createdAt' | 'authorName';
-    direction: 'asc' | 'desc';
-};
-
-export type CommentsControllerGetCommentsSortArray = Array<CommentsControllerGetCommentsSortItem>;
-
 export type CommentsControllerGetCommentRepliesSortItem = {
     property: 'createdAt' | 'authorName';
     direction: 'asc' | 'desc';
 };
 
 export type CommentsControllerGetCommentRepliesSortArray = Array<CommentsControllerGetCommentRepliesSortItem>;
+
+export type PostControllerGetUserPostsSortItem = {
+    property: 'title' | 'createdAt';
+    direction: 'asc' | 'desc';
+};
+
+export type PostControllerGetUserPostsSortArray = Array<PostControllerGetUserPostsSortItem>;
 
 export type PostControllerGetUserPostsFilterItem = {
     property: 'title' | 'tag';
@@ -754,12 +785,12 @@ export type PostControllerGetUserPostsFilterItem = {
 
 export type PostControllerGetUserPostsFilterArray = Array<PostControllerGetUserPostsFilterItem>;
 
-export type PostControllerGetUserPostsSortItem = {
+export type PublicPostControllerGetPostsSortItem = {
     property: 'title' | 'createdAt';
     direction: 'asc' | 'desc';
 };
 
-export type PostControllerGetUserPostsSortArray = Array<PostControllerGetUserPostsSortItem>;
+export type PublicPostControllerGetPostsSortArray = Array<PublicPostControllerGetPostsSortItem>;
 
 export type PublicPostControllerGetPostsFilterItem = {
     property: 'title' | 'tag';
@@ -768,13 +799,6 @@ export type PublicPostControllerGetPostsFilterItem = {
 };
 
 export type PublicPostControllerGetPostsFilterArray = Array<PublicPostControllerGetPostsFilterItem>;
-
-export type PublicPostControllerGetPostsSortItem = {
-    property: 'title' | 'createdAt';
-    direction: 'asc' | 'desc';
-};
-
-export type PublicPostControllerGetPostsSortArray = Array<PublicPostControllerGetPostsSortItem>;
 
 export type PublicAuthorControllerGetAuthorPostsSortItem = {
     property: 'title' | 'createdAt';
@@ -799,33 +823,30 @@ export type CommentsControllerGetCommentsData = {
     path: {
         postSlug: string;
     };
-    query: {
+    query?: {
         /**
-         * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
-         * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
-         * <br> Available properties: content
+         * Starting position of the query
          */
-        filter?: CommentsControllerGetCommentsFilterArray;
+        offset?: number;
+        /**
+         * Number of items to return
+         */
+        pageSize?: number;
         /**
          * Schema for sorting items
          */
         sort?: CommentsControllerGetCommentsSortArray;
         /**
-         * Starting position of the query
+         * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
+         * Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
+         * Available properties: content
          */
-        offset: number;
-        /**
-         * Number of items to return
-         */
-        pageSize: number;
+        filter?: CommentsControllerGetCommentsFilterArray;
     };
     url: '/api/posts/{postSlug}/comments';
 };
 
 export type CommentsControllerGetCommentsResponses = {
-    /**
-     * Schema for a paginated list of comments
-     */
     200: CommentsSchema;
 };
 
@@ -849,13 +870,47 @@ export type CommentsControllerCreateCommentData = {
 };
 
 export type CommentsControllerCreateCommentResponses = {
-    /**
-     * Schema for a comment
-     */
-    200: CommentSchema;
+    201: CommentSchema;
 };
 
 export type CommentsControllerCreateCommentResponse = CommentsControllerCreateCommentResponses[keyof CommentsControllerCreateCommentResponses];
+
+export type CommentsControllerDeleteCommentData = {
+    body?: never;
+    path: {
+        commentId: string;
+        postSlug: string;
+    };
+    query?: never;
+    url: '/api/posts/{postSlug}/comments/{commentId}';
+};
+
+export type CommentsControllerDeleteCommentResponses = {
+    200: unknown;
+};
+
+export type CommentsControllerUpdateCommentData = {
+    /**
+     * UpdateCommentSchema
+     *
+     * Schema for updating a comment
+     */
+    body: {
+        content: string;
+    };
+    path: {
+        postSlug: string;
+        commentId: string;
+    };
+    query?: never;
+    url: '/api/posts/{postSlug}/comments/{commentId}';
+};
+
+export type CommentsControllerUpdateCommentResponses = {
+    200: CommentSchema;
+};
+
+export type CommentsControllerUpdateCommentResponse = CommentsControllerUpdateCommentResponses[keyof CommentsControllerUpdateCommentResponses];
 
 export type CommentsControllerGetCommentCountData = {
     body?: never;
@@ -876,76 +931,56 @@ export type CommentsControllerGetCommentRepliesData = {
         commentId: string;
         postSlug: string;
     };
-    query: {
+    query?: {
+        /**
+         * Starting position of the query
+         */
+        offset?: number;
+        /**
+         * Number of items to return
+         */
+        pageSize?: number;
         /**
          * Schema for sorting items
          */
         sort?: CommentsControllerGetCommentRepliesSortArray;
-        /**
-         * Starting position of the query
-         */
-        offset: number;
-        /**
-         * Number of items to return
-         */
-        pageSize: number;
     };
     url: '/api/posts/{postSlug}/comments/{commentId}/replies';
 };
 
 export type CommentsControllerGetCommentRepliesResponses = {
-    /**
-     * Schema for a paginated list of comments
-     */
     200: CommentsSchema;
 };
 
 export type CommentsControllerGetCommentRepliesResponse = CommentsControllerGetCommentRepliesResponses[keyof CommentsControllerGetCommentRepliesResponses];
 
-export type CommentsControllerDeleteCommentData = {
-    body?: never;
-    path: {
-        commentId: string;
-        postSlug: string;
-    };
-    query?: never;
-    url: '/api/posts/{postSlug}/comments/{commentId}';
-};
-
-export type CommentsControllerDeleteCommentResponses = {
-    200: unknown;
-};
-
 export type PostControllerGetUserPostsData = {
     body?: never;
     path?: never;
-    query: {
+    query?: {
         /**
-         * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
-         * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
-         * <br> Available properties: title, tag
+         * Starting position of the query
          */
-        filter?: PostControllerGetUserPostsFilterArray;
+        offset?: number;
+        /**
+         * Number of items to return
+         */
+        pageSize?: number;
         /**
          * Schema for sorting items
          */
         sort?: PostControllerGetUserPostsSortArray;
         /**
-         * Starting position of the query
+         * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
+         * Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
+         * Available properties: title, tag
          */
-        offset: number;
-        /**
-         * Number of items to return
-         */
-        pageSize: number;
+        filter?: PostControllerGetUserPostsFilterArray;
     };
     url: '/api/admin/posts';
 };
 
 export type PostControllerGetUserPostsResponses = {
-    /**
-     * Schema for a list of user's posts
-     */
     200: UserPostsSchema;
 };
 
@@ -959,21 +994,7 @@ export type PostControllerCreatePostData = {
      */
     body: {
         title: string;
-        /**
-         * PostContentSchema
-         *
-         * Schema for content items (text, image, video)
-         */
-        content: Array<{
-            type: 'text';
-            data: string;
-        } | {
-            type: 'image';
-            data: string;
-        } | {
-            type: 'video';
-            data: string;
-        }>;
+        content: Array<PostContentSchema>;
         coverImage?: string;
         tags?: Array<string>;
     };
@@ -983,10 +1004,7 @@ export type PostControllerCreatePostData = {
 };
 
 export type PostControllerCreatePostResponses = {
-    /**
-     * Schema for a user's post
-     */
-    200: UserPostSchema;
+    201: UserPostSchema;
 };
 
 export type PostControllerCreatePostResponse = PostControllerCreatePostResponses[keyof PostControllerCreatePostResponses];
@@ -1001,9 +1019,6 @@ export type PostControllerGetUserPostData = {
 };
 
 export type PostControllerGetUserPostResponses = {
-    /**
-     * Schema for a user's post
-     */
     200: UserPostSchema;
 };
 
@@ -1017,21 +1032,7 @@ export type PostControllerUpdatePostData = {
      */
     body: {
         title?: string;
-        /**
-         * PostContentSchema
-         *
-         * Schema for content items (text, image, video)
-         */
-        content?: Array<{
-            type: 'text';
-            data: string;
-        } | {
-            type: 'image';
-            data: string;
-        } | {
-            type: 'video';
-            data: string;
-        }>;
+        content?: Array<PostContentSchema>;
         coverImage?: string;
         tags?: Array<string>;
     };
@@ -1043,9 +1044,6 @@ export type PostControllerUpdatePostData = {
 };
 
 export type PostControllerUpdatePostResponses = {
-    /**
-     * Schema for a user's post
-     */
     200: UserPostSchema;
 };
 
@@ -1061,8 +1059,10 @@ export type PostControllerPublishPostData = {
 };
 
 export type PostControllerPublishPostResponses = {
-    200: unknown;
+    200: UserPostSchema;
 };
+
+export type PostControllerPublishPostResponse = PostControllerPublishPostResponses[keyof PostControllerPublishPostResponses];
 
 export type PostControllerUnpublishPostData = {
     body?: never;
@@ -1074,8 +1074,10 @@ export type PostControllerUnpublishPostData = {
 };
 
 export type PostControllerUnpublishPostResponses = {
-    200: unknown;
+    200: UserPostSchema;
 };
+
+export type PostControllerUnpublishPostResponse = PostControllerUnpublishPostResponses[keyof PostControllerUnpublishPostResponses];
 
 export type PublicPostControllerGetRandomPostData = {
     body?: never;
@@ -1085,9 +1087,6 @@ export type PublicPostControllerGetRandomPostData = {
 };
 
 export type PublicPostControllerGetRandomPostResponses = {
-    /**
-     * A public post
-     */
     200: PublicPostSchema;
 };
 
@@ -1103,9 +1102,6 @@ export type PublicPostControllerGetPostData = {
 };
 
 export type PublicPostControllerGetPostResponses = {
-    /**
-     * A public post
-     */
     200: PublicPostSchema;
 };
 
@@ -1114,33 +1110,30 @@ export type PublicPostControllerGetPostResponse = PublicPostControllerGetPostRes
 export type PublicPostControllerGetPostsData = {
     body?: never;
     path?: never;
-    query: {
+    query?: {
         /**
-         * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
-         * <br> Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
-         * <br> Available properties: title, tag
+         * Starting position of the query
          */
-        filter?: PublicPostControllerGetPostsFilterArray;
+        offset?: number;
+        /**
+         * Number of items to return
+         */
+        pageSize?: number;
         /**
          * Schema for sorting items
          */
         sort?: PublicPostControllerGetPostsSortArray;
         /**
-         * Starting position of the query
+         * Filtering query string, in the format of "property:rule[:value];property:rule[:value];..."
+         * Available rules: eq, neq, gt, gte, lt, lte, like, nlike, in, nin, isnull, isnotnull
+         * Available properties: title, tag
          */
-        offset: number;
-        /**
-         * Number of items to return
-         */
-        pageSize: number;
+        filter?: PublicPostControllerGetPostsFilterArray;
     };
     url: '/api/public/posts';
 };
 
 export type PublicPostControllerGetPostsResponses = {
-    /**
-     * A list of public posts
-     */
     200: PublicPostsSchema;
 };
 
@@ -1156,9 +1149,6 @@ export type PublicPostControllerLikePostData = {
 };
 
 export type PublicPostControllerLikePostResponses = {
-    /**
-     * A public post
-     */
     200: PublicPostSchema;
 };
 
@@ -1169,27 +1159,24 @@ export type PublicAuthorControllerGetAuthorPostsData = {
     path: {
         slug: string;
     };
-    query: {
+    query?: {
+        /**
+         * Starting position of the query
+         */
+        offset?: number;
+        /**
+         * Number of items to return
+         */
+        pageSize?: number;
         /**
          * Schema for sorting items
          */
         sort?: PublicAuthorControllerGetAuthorPostsSortArray;
-        /**
-         * Starting position of the query
-         */
-        offset: number;
-        /**
-         * Number of items to return
-         */
-        pageSize: number;
     };
     url: '/api/public/authors/{slug}/posts';
 };
 
 export type PublicAuthorControllerGetAuthorPostsResponses = {
-    /**
-     * A list of posts from a specific author
-     */
     200: PublicAuthorPostsSchema;
 };
 
@@ -1204,55 +1191,7 @@ export type AiExampleControllerGenerateTextData = {
     body: {
         prompt: string;
         model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-        /**
-         * AiGenerateOptions
-         *
-         * Options for an AI generation
-         */
-        options?: {
-            temperature?: number;
-            maxTokens?: number;
-            topP?: number;
-            frequencyPenalty?: number;
-            presencePenalty?: number;
-            maxSteps?: number;
-            stopWhen?: number;
-            telemetry?: {
-                /**
-                 * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
-                 */
-                traceMode?: 'inherit' | 'split';
-                /**
-                 * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
-                 */
-                traceId?: string;
-                /**
-                 * Display name used as root span name for the Langfuse trace. This does not control grouping.
-                 */
-                traceName?: string;
-                /**
-                 * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
-                 */
-                spanName?: string;
-                /**
-                 * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
-                 */
-                sessionId?: string;
-                /**
-                 * Telemetry metadata attached to (Langfuse) trace/span.
-                 */
-                metadata?: {
-                    [key: string]: unknown;
-                };
-                /**
-                 * The original prompt that was used to generate the response. (Use prompt.toJSON())
-                 */
-                langfuseOriginalPrompt?: string;
-            };
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
+        options?: AiGenerateOptions;
     };
     path?: never;
     query?: never;
@@ -1260,10 +1199,7 @@ export type AiExampleControllerGenerateTextData = {
 };
 
 export type AiExampleControllerGenerateTextResponses = {
-    /**
-     * Response from text generation
-     */
-    200: GenerateTextResponse;
+    201: GenerateTextResponse;
 };
 
 export type AiExampleControllerGenerateTextResponse = AiExampleControllerGenerateTextResponses[keyof AiExampleControllerGenerateTextResponses];
@@ -1278,55 +1214,7 @@ export type AiExampleControllerGenerateObjectData = {
         prompt: string;
         schemaType: 'userProfile' | 'task' | 'product' | 'recipe';
         model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-        /**
-         * AiGenerateOptions
-         *
-         * Options for an AI generation
-         */
-        options?: {
-            temperature?: number;
-            maxTokens?: number;
-            topP?: number;
-            frequencyPenalty?: number;
-            presencePenalty?: number;
-            maxSteps?: number;
-            stopWhen?: number;
-            telemetry?: {
-                /**
-                 * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
-                 */
-                traceMode?: 'inherit' | 'split';
-                /**
-                 * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
-                 */
-                traceId?: string;
-                /**
-                 * Display name used as root span name for the Langfuse trace. This does not control grouping.
-                 */
-                traceName?: string;
-                /**
-                 * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
-                 */
-                spanName?: string;
-                /**
-                 * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
-                 */
-                sessionId?: string;
-                /**
-                 * Telemetry metadata attached to (Langfuse) trace/span.
-                 */
-                metadata?: {
-                    [key: string]: unknown;
-                };
-                /**
-                 * The original prompt that was used to generate the response. (Use prompt.toJSON())
-                 */
-                langfuseOriginalPrompt?: string;
-            };
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
+        options?: AiGenerateOptions;
     };
     path?: never;
     query?: never;
@@ -1334,10 +1222,7 @@ export type AiExampleControllerGenerateObjectData = {
 };
 
 export type AiExampleControllerGenerateObjectResponses = {
-    /**
-     * Response from structured object generation
-     */
-    200: GenerateObjectResponse;
+    201: GenerateObjectResponse;
 };
 
 export type AiExampleControllerGenerateObjectResponse = AiExampleControllerGenerateObjectResponses[keyof AiExampleControllerGenerateObjectResponses];
@@ -1349,104 +1234,10 @@ export type AiExampleControllerChatData = {
      * Request for multi-turn AI conversation with message history. schemaType can be used to request structured output.
      */
     body: {
-        messages: Array<{
-            role: 'user' | 'assistant' | 'system' | 'tool';
-            content: string;
-            metadata?: {
-                isConsideredSystemMessage?: boolean;
-                /**
-                 * TokenUsage
-                 *
-                 * Total token usage for the message, including tools calls and reasoning steps
-                 */
-                usage?: {
-                    promptTokens: number;
-                    completionTokens: number;
-                    totalTokens: number;
-                };
-                finishReason?: string;
-                /**
-                 * ISO 8601 timestamp when the message was created
-                 */
-                timestamp?: Date;
-                /**
-                 * Tool calls made to generate the message
-                 */
-                toolCalls?: Array<{
-                    toolCallId: string;
-                    toolName: string;
-                    args: {
-                        [key: string]: unknown;
-                    };
-                }>;
-                /**
-                 * Reasoning text for the message
-                 */
-                reasonning?: string;
-                /**
-                 * ChatSchemaType
-                 *
-                 * Predefined schema types for testing structured output
-                 */
-                schemaType?: 'userProfile' | 'task' | 'product' | 'recipe' | 'none';
-            };
-        }>;
+        messages: Array<ChatMessageWithSchemaType>;
         model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-        /**
-         * AiGenerateOptions
-         *
-         * Options for an AI generation
-         */
-        options?: {
-            temperature?: number;
-            maxTokens?: number;
-            topP?: number;
-            frequencyPenalty?: number;
-            presencePenalty?: number;
-            maxSteps?: number;
-            stopWhen?: number;
-            telemetry?: {
-                /**
-                 * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
-                 */
-                traceMode?: 'inherit' | 'split';
-                /**
-                 * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
-                 */
-                traceId?: string;
-                /**
-                 * Display name used as root span name for the Langfuse trace. This does not control grouping.
-                 */
-                traceName?: string;
-                /**
-                 * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
-                 */
-                spanName?: string;
-                /**
-                 * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
-                 */
-                sessionId?: string;
-                /**
-                 * Telemetry metadata attached to (Langfuse) trace/span.
-                 */
-                metadata?: {
-                    [key: string]: unknown;
-                };
-                /**
-                 * The original prompt that was used to generate the response. (Use prompt.toJSON())
-                 */
-                langfuseOriginalPrompt?: string;
-            };
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
-        /**
-         * ChatSchemaType
-         *
-         * Predefined schema types for testing structured output
-         */
-        schemaType?: 'userProfile' | 'task' | 'product' | 'recipe' | 'none';
+        options?: AiGenerateOptions;
+        schemaType?: ChatSchemaType;
     };
     path?: never;
     query?: never;
@@ -1454,10 +1245,7 @@ export type AiExampleControllerChatData = {
 };
 
 export type AiExampleControllerChatResponses = {
-    /**
-     * Response from AI chat conversation
-     */
-    200: ChatResponse;
+    201: ChatResponse;
 };
 
 export type AiExampleControllerChatResponse = AiExampleControllerChatResponses[keyof AiExampleControllerChatResponses];
@@ -1471,55 +1259,7 @@ export type AiExampleControllerStreamTextData = {
     body: {
         prompt: string;
         model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-        /**
-         * AiGenerateOptions
-         *
-         * Options for an AI generation
-         */
-        options?: {
-            temperature?: number;
-            maxTokens?: number;
-            topP?: number;
-            frequencyPenalty?: number;
-            presencePenalty?: number;
-            maxSteps?: number;
-            stopWhen?: number;
-            telemetry?: {
-                /**
-                 * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
-                 */
-                traceMode?: 'inherit' | 'split';
-                /**
-                 * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
-                 */
-                traceId?: string;
-                /**
-                 * Display name used as root span name for the Langfuse trace. This does not control grouping.
-                 */
-                traceName?: string;
-                /**
-                 * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
-                 */
-                spanName?: string;
-                /**
-                 * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
-                 */
-                sessionId?: string;
-                /**
-                 * Telemetry metadata attached to (Langfuse) trace/span.
-                 */
-                metadata?: {
-                    [key: string]: unknown;
-                };
-                /**
-                 * The original prompt that was used to generate the response. (Use prompt.toJSON())
-                 */
-                langfuseOriginalPrompt?: string;
-            };
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
+        options?: AiGenerateOptions;
     };
     path?: never;
     query?: never;
@@ -1540,55 +1280,7 @@ export type AiExampleControllerStreamObjectData = {
         prompt: string;
         schemaType: 'userProfile' | 'task' | 'product' | 'recipe';
         model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-        /**
-         * AiGenerateOptions
-         *
-         * Options for an AI generation
-         */
-        options?: {
-            temperature?: number;
-            maxTokens?: number;
-            topP?: number;
-            frequencyPenalty?: number;
-            presencePenalty?: number;
-            maxSteps?: number;
-            stopWhen?: number;
-            telemetry?: {
-                /**
-                 * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
-                 */
-                traceMode?: 'inherit' | 'split';
-                /**
-                 * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
-                 */
-                traceId?: string;
-                /**
-                 * Display name used as root span name for the Langfuse trace. This does not control grouping.
-                 */
-                traceName?: string;
-                /**
-                 * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
-                 */
-                spanName?: string;
-                /**
-                 * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
-                 */
-                sessionId?: string;
-                /**
-                 * Telemetry metadata attached to (Langfuse) trace/span.
-                 */
-                metadata?: {
-                    [key: string]: unknown;
-                };
-                /**
-                 * The original prompt that was used to generate the response. (Use prompt.toJSON())
-                 */
-                langfuseOriginalPrompt?: string;
-            };
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
+        options?: AiGenerateOptions;
     };
     path?: never;
     query?: never;
@@ -1606,98 +1298,9 @@ export type AiExampleControllerStreamChatData = {
      * Request for streaming multi-turn AI conversation
      */
     body: {
-        messages: Array<{
-            role: 'user' | 'assistant' | 'system' | 'tool';
-            content: string;
-            metadata?: {
-                isConsideredSystemMessage?: boolean;
-                /**
-                 * TokenUsage
-                 *
-                 * Total token usage for the message, including tools calls and reasoning steps
-                 */
-                usage?: {
-                    promptTokens: number;
-                    completionTokens: number;
-                    totalTokens: number;
-                };
-                finishReason?: string;
-                /**
-                 * ISO 8601 timestamp when the message was created
-                 */
-                timestamp?: Date;
-                /**
-                 * Tool calls made to generate the message
-                 */
-                toolCalls?: Array<{
-                    toolCallId: string;
-                    toolName: string;
-                    args: {
-                        [key: string]: unknown;
-                    };
-                }>;
-                /**
-                 * Reasoning text for the message
-                 */
-                reasonning?: string;
-                /**
-                 * ChatSchemaType
-                 *
-                 * Predefined schema types for testing structured output
-                 */
-                schemaType?: 'userProfile' | 'task' | 'product' | 'recipe' | 'none';
-            };
-        }>;
+        messages: Array<ChatMessageWithSchemaType>;
         model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-        /**
-         * AiGenerateOptions
-         *
-         * Options for an AI generation
-         */
-        options?: {
-            temperature?: number;
-            maxTokens?: number;
-            topP?: number;
-            frequencyPenalty?: number;
-            presencePenalty?: number;
-            maxSteps?: number;
-            stopWhen?: number;
-            telemetry?: {
-                /**
-                 * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
-                 */
-                traceMode?: 'inherit' | 'split';
-                /**
-                 * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
-                 */
-                traceId?: string;
-                /**
-                 * Display name used as root span name for the Langfuse trace. This does not control grouping.
-                 */
-                traceName?: string;
-                /**
-                 * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
-                 */
-                spanName?: string;
-                /**
-                 * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
-                 */
-                sessionId?: string;
-                /**
-                 * Telemetry metadata attached to (Langfuse) trace/span.
-                 */
-                metadata?: {
-                    [key: string]: unknown;
-                };
-                /**
-                 * The original prompt that was used to generate the response. (Use prompt.toJSON())
-                 */
-                langfuseOriginalPrompt?: string;
-            };
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
+        options?: AiGenerateOptions;
     };
     path?: never;
     query?: never;
@@ -1717,55 +1320,7 @@ export type AiExampleUseCasesControllerUseCase1SingleGenerationData = {
     body: {
         prompt: string;
         model?: 'OPENAI_GPT_5_NANO' | 'GOOGLE_GEMINI_3_FLASH' | 'CLAUDE_HAIKU_3_5' | 'CLAUDE_OPUS_4_5' | 'MISTRAL_SMALL';
-        /**
-         * AiGenerateOptions
-         *
-         * Options for an AI generation
-         */
-        options?: {
-            temperature?: number;
-            maxTokens?: number;
-            topP?: number;
-            frequencyPenalty?: number;
-            presencePenalty?: number;
-            maxSteps?: number;
-            stopWhen?: number;
-            telemetry?: {
-                /**
-                 * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
-                 */
-                traceMode?: 'inherit' | 'split';
-                /**
-                 * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
-                 */
-                traceId?: string;
-                /**
-                 * Display name used as root span name for the Langfuse trace. This does not control grouping.
-                 */
-                traceName?: string;
-                /**
-                 * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
-                 */
-                spanName?: string;
-                /**
-                 * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
-                 */
-                sessionId?: string;
-                /**
-                 * Telemetry metadata attached to (Langfuse) trace/span.
-                 */
-                metadata?: {
-                    [key: string]: unknown;
-                };
-                /**
-                 * The original prompt that was used to generate the response. (Use prompt.toJSON())
-                 */
-                langfuseOriginalPrompt?: string;
-            };
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
+        options?: AiGenerateOptions;
     };
     path?: never;
     query?: never;
@@ -1773,10 +1328,7 @@ export type AiExampleUseCasesControllerUseCase1SingleGenerationData = {
 };
 
 export type AiExampleUseCasesControllerUseCase1SingleGenerationResponses = {
-    /**
-     * Response from text generation
-     */
-    200: GenerateTextResponse;
+    201: GenerateTextResponse;
 };
 
 export type AiExampleUseCasesControllerUseCase1SingleGenerationResponse = AiExampleUseCasesControllerUseCase1SingleGenerationResponses[keyof AiExampleUseCasesControllerUseCase1SingleGenerationResponses];
@@ -1800,10 +1352,7 @@ export type AiExampleUseCasesControllerUseCase2GroupedCallsData = {
 };
 
 export type AiExampleUseCasesControllerUseCase2GroupedCallsResponses = {
-    /**
-     * Combined results from grouped LLM calls
-     */
-    200: UseCase2GroupedCallsResponse;
+    201: UseCase2GroupedCallsResponse;
 };
 
 export type AiExampleUseCasesControllerUseCase2GroupedCallsResponse = AiExampleUseCasesControllerUseCase2GroupedCallsResponses[keyof AiExampleUseCasesControllerUseCase2GroupedCallsResponses];
@@ -1827,10 +1376,7 @@ export type AiExampleUseCasesControllerUseCase3LogicalUnitsData = {
 };
 
 export type AiExampleUseCasesControllerUseCase3LogicalUnitsResponses = {
-    /**
-     * One result per workflow (each in its own trace)
-     */
-    200: UseCase3LogicalUnitsResponse;
+    201: UseCase3LogicalUnitsResponse;
 };
 
 export type AiExampleUseCasesControllerUseCase3LogicalUnitsResponse = AiExampleUseCasesControllerUseCase3LogicalUnitsResponses[keyof AiExampleUseCasesControllerUseCase3LogicalUnitsResponses];
@@ -1855,10 +1401,7 @@ export type AiExampleUseCasesControllerUseCase4ChatSessionData = {
 };
 
 export type AiExampleUseCasesControllerUseCase4ChatSessionResponses = {
-    /**
-     * Response from text generation
-     */
-    200: GenerateTextResponse;
+    201: GenerateTextResponse;
 };
 
 export type AiExampleUseCasesControllerUseCase4ChatSessionResponse = AiExampleUseCasesControllerUseCase4ChatSessionResponses[keyof AiExampleUseCasesControllerUseCase4ChatSessionResponses];
@@ -1883,10 +1426,7 @@ export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedData = 
 };
 
 export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses = {
-    /**
-     * Response from text generation
-     */
-    200: GenerateTextResponse;
+    201: GenerateTextResponse;
 };
 
 export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponse = AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses[keyof AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses];
