@@ -1,9 +1,6 @@
-import {
-  createFilterQueryStringSchema,
-  createPaginationQuerySchema,
-  createSortingQueryStringSchema,
-  paginatedSchema,
-} from '@lonestone/nzoth/server'
+import { createFilterQueryStringSchema } from '../../../../common/http/filtering'
+import { createPaginationQuerySchema, paginatedSchema } from '../../../../common/http/pagination'
+import { createSortingQueryStringSchema } from '../../../../common/http/sorting'
 import { z } from 'zod'
 
 // 📖 See API Guidelines: Schema Definition Best Practices

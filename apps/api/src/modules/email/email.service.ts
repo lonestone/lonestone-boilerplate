@@ -1,6 +1,7 @@
 import { Traceable } from '@amplication/opentelemetry-nestjs'
 import { Injectable, Logger } from '@nestjs/common'
-import { createTransport, Transporter } from 'nodemailer'
+import type { Transporter } from 'nodemailer'
+import { createTransport } from 'nodemailer'
 import { config } from '../../config/env.config'
 
 export interface EmailOptions {

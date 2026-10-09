@@ -1,4 +1,4 @@
-import { Response } from 'supertest'
+import type { Response } from 'supertest'
 
 export function expectPaginatedResponse(response: Response, expectedLength: number) {
   expect(response.body.data).toHaveLength(expectedLength)

@@ -1,10 +1,10 @@
+import type { ProviderInstance } from './ai.providers'
 import { config } from '../../config/env.config'
 import {
   createAnthropic,
   createGoogleGenerativeAI,
   createMistral,
   createOpenAI,
-  ProviderInstance,
 } from './ai.providers'
 
 // Providers are initialized synchronously for OpenAI, but async for Google/Anthropic

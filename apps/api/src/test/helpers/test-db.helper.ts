@@ -22,8 +22,6 @@ export async function createTestOrm(dbConfig: {
   user: string
   password: string
 }): Promise<TestOrmContext> {
-  // @ts-expect-error - import.meta is not available in CommonJS BUT DUDE I KNOW WHAT I'M DOING
-  // This file is used by Vitest and we need to use the ESM import.meta.glob to get the entities.
   const entityModules = import.meta.glob('../../modules/**/*.entity.ts', { eager: true })
 
   const allEntities = Array.from(

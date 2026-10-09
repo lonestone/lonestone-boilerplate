@@ -5,25 +5,23 @@ import { Migrator } from '@mikro-orm/migrations'
 import { defineConfig } from '@mikro-orm/postgresql'
 import { SeedManager } from '@mikro-orm/seeder'
 import { config } from '../../config/env.config'
+import { entities } from './entities.generated'
 
 type CreateMikroOrmOptions = {
   isTest?: boolean
 } & Options
 
-export const entityGlobs = {
-  entities: ['./dist/**/*.entity.js'],
-  entitiesTs: ['./src/**/*.entity.ts'],
-}
-
 export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
+  const { migrations, ...rest } = options ?? {}
+
   return defineConfig({
     host: config.database.host,
     port: config.database.port,
     user: config.database.user,
     password: config.database.password,
     dbName: config.database.name,
-    entities: entityGlobs.entities,
-    entitiesTs: entityGlobs.entitiesTs,
+    entities: [...entities],
+    entitiesTs: [...entities],
     metadataProvider: ReflectMetadataProvider,
     // Column names mirror entity property names verbatim (camelCase),
     // matching the database schema. Relation FK columns still declare an
@@ -36,8 +34,11 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
     migrations: {
       path: './dist/modules/db/migrations',
       pathTs: './src/modules/db/migrations',
+      // MikroORM writes `${snapshotName}.json` in the migrations folder.
+      snapshotName: 'snapshot',
       allOrNothing: true,
       disableForeignKeys: false,
+      ...migrations,
     },
     seeder: {
       path: './dist/seeders',
@@ -47,7 +48,7 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
       emit: 'ts',
       fileName: (className: string) => className,
     },
-    ...options,
+    ...rest,
   })
 }
 

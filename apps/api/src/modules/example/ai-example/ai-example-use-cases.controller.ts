@@ -7,8 +7,8 @@ import type {
   UseCase3LogicalUnitsResponse,
   UseCase4ChatSessionRequest,
 } from './ai-example.contract'
-import { TypedBody, TypedController, TypedRoute } from '@lonestone/nzoth/server'
-import { Logger } from '@nestjs/common'
+import { Body, Controller, Logger, Post, SerializeOptions } from '@nestjs/common'
+import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger'
 import { AllowAnonymous } from '@thallesp/nestjs-better-auth'
 import { AiService } from '../../ai/ai.service'
 import { LangfuseService } from '../../ai/langfuse.service'
@@ -27,7 +27,8 @@ import {
  * See docs: Organizing Traces (4_ai.mdx).
  */
 @AllowAnonymous()
-@TypedController('ai/examples')
+@ApiTags('AI Examples')
+@Controller('ai/examples')
 export class AiExampleUseCasesController {
   private readonly logger = new Logger(AiExampleUseCasesController.name)
 
@@ -41,9 +42,11 @@ export class AiExampleUseCasesController {
    * The trace is orphaned by default; we call finalizeTrace so Langfuse shows name and output.
    * In the Langfuse UI, we should see 1 line with the name/output of the trace and the result of the LLM call.
    */
-  @TypedRoute.Post('use-case-1-single-generation', generateTextResponseSchema)
+  @Post('use-case-1-single-generation')
+  @SerializeOptions({ schema: generateTextResponseSchema })
+  @ApiCreatedResponse({ standardSchema: generateTextResponseSchema })
   async useCase1SingleGeneration(
-    @TypedBody(useCase1SingleGenerationRequestSchema) body: UseCase1SingleGenerationRequest,
+    @Body({ schema: useCase1SingleGenerationRequestSchema }) body: UseCase1SingleGenerationRequest,
   ): Promise<GenerateTextResponse> {
     const prompt = await this.langfuseService.getLangfusePrompt('Boilerplate tests')
 
@@ -78,9 +81,11 @@ export class AiExampleUseCasesController {
    * All calls use inherit; we finalize the trace at the end with a single name/output.
    * In the Langfuse UI, we should see 1 line with the name/output of the trace and the results of the LLM calls.
    */
-  @TypedRoute.Post('use-case-2-grouped-calls', useCase2GroupedCallsResponseSchema)
+  @Post('use-case-2-grouped-calls')
+  @SerializeOptions({ schema: useCase2GroupedCallsResponseSchema })
+  @ApiCreatedResponse({ standardSchema: useCase2GroupedCallsResponseSchema })
   async useCase2GroupedCalls(
-    @TypedBody(useCase2GroupedCallsRequestSchema) body: UseCase2GroupedCallsRequest,
+    @Body({ schema: useCase2GroupedCallsRequestSchema }) body: UseCase2GroupedCallsRequest,
   ): Promise<UseCase2GroupedCallsResponse> {
     const results: string[] = []
     let lastUsage: UseCase2GroupedCallsResponse['usage']
@@ -121,9 +126,11 @@ export class AiExampleUseCasesController {
    * Note that this technique could be used for "workflow" like units, called in a CRON job, etc.
    * The idea is to "detach" the traces from the OTEL main trace
    */
-  @TypedRoute.Post('use-case-3-logical-units', useCase3LogicalUnitsResponseSchema)
+  @Post('use-case-3-logical-units')
+  @SerializeOptions({ schema: useCase3LogicalUnitsResponseSchema })
+  @ApiCreatedResponse({ standardSchema: useCase3LogicalUnitsResponseSchema })
   async useCase3LogicalUnits(
-    @TypedBody(useCase3LogicalUnitsRequestSchema) body: UseCase3LogicalUnitsRequest,
+    @Body({ schema: useCase3LogicalUnitsRequestSchema }) body: UseCase3LogicalUnitsRequest,
   ): Promise<UseCase3LogicalUnitsResponse> {
     const workflows: UseCase3LogicalUnitsResponse['workflows'] = []
 
@@ -184,9 +191,11 @@ export class AiExampleUseCasesController {
    * Use case 4: Simple generation with sessionId — one Langfuse trace per session (across requests).
    * Same sessionId => same traceId (deterministic) => multiple lines in the "tracing" list view, but merged in one session in the "sessions" view on Langfuse UI.
    */
-  @TypedRoute.Post('use-case-4-chat-session', generateTextResponseSchema)
+  @Post('use-case-4-chat-session')
+  @SerializeOptions({ schema: generateTextResponseSchema })
+  @ApiCreatedResponse({ standardSchema: generateTextResponseSchema })
   async useCase4ChatSession(
-    @TypedBody(useCase4ChatSessionRequestSchema) body: UseCase4ChatSessionRequest,
+    @Body({ schema: useCase4ChatSessionRequestSchema }) body: UseCase4ChatSessionRequest,
   ): Promise<GenerateTextResponse> {
     const result = await this.aiService.generateText({
       prompt: body.prompt,
@@ -213,9 +222,11 @@ export class AiExampleUseCasesController {
    * Use case 5: Chat session with turns merged into a single trace.
    * Same as use case 4, but with turns merged into a single trace.
    */
-  @TypedRoute.Post('use-case-5-chat-session-with-turns-merged', generateTextResponseSchema)
+  @Post('use-case-5-chat-session-with-turns-merged')
+  @SerializeOptions({ schema: generateTextResponseSchema })
+  @ApiCreatedResponse({ standardSchema: generateTextResponseSchema })
   async useCase5ChatSessionWithTurnsMerged(
-    @TypedBody(useCase4ChatSessionRequestSchema) body: UseCase4ChatSessionRequest,
+    @Body({ schema: useCase4ChatSessionRequestSchema }) body: UseCase4ChatSessionRequest,
   ): Promise<GenerateTextResponse> {
     const traceId = await LangfuseService.createTraceId(`chat.session:${body.sessionId}`)
 

@@ -1,10 +1,10 @@
 import { IncomingMessage, ServerResponse } from 'node:http'
 import { OpenTelemetryModule } from '@amplication/opentelemetry-nestjs'
 import { Module } from '@nestjs/common'
-import { ConfigModule as NestConfigModule } from '@nestjs/config'
 import { APP_FILTER } from '@nestjs/core'
 import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup'
 import { LoggerModule } from 'nestjs-pino'
+import { AppConfigModule } from './config/config.module'
 import { AppController } from './app.controller'
 import { AiModule } from './modules/ai/ai.module'
 import { AuthModule } from './modules/auth/auth.module'
@@ -24,6 +24,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
 
 @Module({
   imports: [
+    AppConfigModule,
     OpenTelemetryModule.forRoot(),
     SentryModule.forRoot(),
     LoggerModule.forRoot({
@@ -93,7 +94,6 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     AuthModule,
     EmailModule,
     AiModule,
-    NestConfigModule,
     ExampleModule,
   ],
   controllers: [AppController],
