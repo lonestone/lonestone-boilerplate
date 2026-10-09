@@ -1,6 +1,7 @@
 import type { Tool } from 'ai'
 import type { ModelId } from '../ai.config'
 import { z } from 'zod'
+import { registerSchema } from '../../../common/http/openapi'
 import { modelConfigBase } from '../ai.config'
 
 // ============================================================================
@@ -154,6 +155,7 @@ export const aiCoreMessageSchema = z
   })
 
 export type AiCoreMessage = z.infer<typeof aiCoreMessageSchema>
+registerSchema(aiCoreMessageSchema)
 
 // ============================================================================
 // generateText() - Simple text generation
@@ -356,3 +358,4 @@ export const aiStreamEventSchema = z
   })
 
 export type AiStreamEvent = z.infer<typeof aiStreamEventSchema>
+registerSchema(aiStreamEventSchema)

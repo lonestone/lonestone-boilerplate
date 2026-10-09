@@ -6,7 +6,7 @@ import { apiReference } from '@scalar/nestjs-api-reference'
 import express from 'express'
 import { Logger, LoggerErrorInterceptor } from 'nestjs-pino'
 import { AppModule } from './app.module'
-import { standardSchemaConverter } from './common/http/openapi'
+import { addRegisteredSchemas, standardSchemaConverter } from './common/http/openapi'
 import { config } from './config/env.config'
 import { initialiazeTelemetry } from './instrument'
 
@@ -65,6 +65,7 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, swaggerConfig, {
       standardSchemaConverter,
     })
+    addRegisteredSchemas(document)
 
     app.use(`${PREFIX}/docs.json`, (_: express.Request, res: express.Response) => {
       res.json(document)

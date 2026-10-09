@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { queryItemsSchema } from './openapi'
 
 export enum FilterRule {
   EQUALS = 'eq',
@@ -105,5 +106,11 @@ export function createFilterQueryStringSchema<T extends readonly [string, ...str
 Available rules: ${Object.values(FilterRule).join(', ')} 
 Available properties: ${availableFilteringKeys.join(', ')}`,
       example: 'name:eq:John;age:gt:30',
+      // The generated client types `filter` as an array of items and joins it back into this string.
+      override: {
+        type: 'string',
+        format: 'filter',
+        items: queryItemsSchema(FilteringSchema(availableFilteringKeys)),
+      },
     })
 }

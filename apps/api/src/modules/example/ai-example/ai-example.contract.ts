@@ -1,5 +1,6 @@
 import type { ModelId } from '../../ai/ai.config'
 import { z } from 'zod'
+import { registerSchema } from '../../../common/http/openapi'
 import { modelConfigBase } from '../../ai/ai.config'
 import {
   aiBaseResultSchema,
@@ -96,6 +97,11 @@ export const recipeSchema = z
     title: 'Recipe',
     description: 'A recipe',
   })
+
+registerSchema(taskSchema)
+registerSchema(productSchema)
+registerSchema(recipeSchema)
+registerSchema(userProfileSchema)
 
 export const chatSchemas: Record<Exclude<ChatSchemaType, 'none'>, z.ZodType> = {
   userProfile: userProfileSchema,

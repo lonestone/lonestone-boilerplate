@@ -20,7 +20,7 @@ import {
   SerializeOptions,
   UseGuards,
 } from '@nestjs/common'
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger'
+import { ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 import { Session } from '../../auth/auth.decorator'
 import { AuthGuard } from '../../auth/auth.guard'
@@ -96,6 +96,8 @@ export class PostController {
   @Get()
   @SerializeOptions({ schema: userPostsSchema })
   @ApiOkResponse({ standardSchema: userPostsSchema })
+  @ApiQuery({ name: 'sort', required: false })
+  @ApiQuery({ name: 'filter', required: false })
   async getUserPosts(
     @Session() session: LoggedInBetterAuthSession,
     @Query({ schema: postPaginationSchema }) pagination: PostPagination,
@@ -145,6 +147,8 @@ export class PublicPostController {
   @Get()
   @SerializeOptions({ schema: publicPostsSchema })
   @ApiOkResponse({ standardSchema: publicPostsSchema })
+  @ApiQuery({ name: 'sort', required: false })
+  @ApiQuery({ name: 'filter', required: false })
   async getPosts(
     @Query({ schema: postPaginationSchema }) pagination: PostPagination,
     @Query('sort', { schema: postSortingSchema }) sort?: PostSorting,
@@ -176,6 +180,7 @@ export class PublicAuthorController {
   @Get(':slug/posts')
   @SerializeOptions({ schema: publicAuthorPostsSchema })
   @ApiOkResponse({ standardSchema: publicAuthorPostsSchema })
+  @ApiQuery({ name: 'sort', required: false })
   async getAuthorPosts(
     @Param('slug', { schema: z.string() }) slug: string,
     @Query({ schema: postPaginationSchema }) pagination: PostPagination,

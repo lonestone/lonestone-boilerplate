@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { queryItemsSchema } from './openapi'
 
 export const sortDirectionSchema = z.enum(['asc', 'desc'], {
   error: () => ({
@@ -48,5 +49,11 @@ export function createSortingQueryStringSchema<T extends readonly [string, ...st
       title: 'SortingQueryStringSchema',
       description: 'Schema for sorting items',
       example: 'name:asc,age:desc',
+      // The generated client types `sort` as an array of items and joins it back into this string.
+      override: {
+        type: 'string',
+        format: 'sort',
+        items: queryItemsSchema(SortingSchema(enabledKeys)),
+      },
     })
 }

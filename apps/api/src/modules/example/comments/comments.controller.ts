@@ -11,7 +11,7 @@ import {
   SerializeOptions,
   UseGuards,
 } from '@nestjs/common'
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger'
+import { ApiCreatedResponse, ApiOkResponse, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 import { Session } from '../../auth/auth.decorator'
 import { AuthGuard } from '../../auth/auth.guard'
@@ -79,6 +79,8 @@ export class CommentsController {
   @Get()
   @SerializeOptions({ schema: commentsSchema })
   @ApiOkResponse({ standardSchema: commentsSchema })
+  @ApiQuery({ name: 'sort', required: false })
+  @ApiQuery({ name: 'filter', required: false })
   async getComments(
     @Param('postSlug', { schema: z.string() }) postSlug: string,
     @Query({ schema: commentPaginationSchema }) pagination: CommentPagination,
@@ -98,6 +100,8 @@ export class CommentsController {
   @Get(':commentId/replies')
   @SerializeOptions({ schema: commentsSchema })
   @ApiOkResponse({ standardSchema: commentsSchema })
+  @ApiParam({ name: 'postSlug', type: String })
+  @ApiQuery({ name: 'sort', required: false })
   async getCommentReplies(
     @Param('commentId', { schema: z.string() }) commentId: string,
     @Query({ schema: commentPaginationSchema }) pagination: CommentPagination,
@@ -109,6 +113,7 @@ export class CommentsController {
 
   @Delete(':commentId')
   @UseGuards(AuthGuard)
+  @ApiParam({ name: 'postSlug', type: String })
   async deleteComment(
     @Param('commentId', { schema: z.string() }) commentId: string,
     @Session() session: { user: { id: string } },
