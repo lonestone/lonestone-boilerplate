@@ -15,7 +15,6 @@
     "db:migration:init": "dotenvx run -- npx mikro-orm migration:create --initial",
     "db:migrate:create": "dotenvx run -- npx mikro-orm migration:create",
     "db:migrate:up": "dotenvx run -- npx mikro-orm migration:up",
-    "db:migrate:prod": "dotenvx run -- node --enable-source-maps dist/migrate.js",
     "db:migrate:down": "dotenvx run -- npx mikro-orm migration:down",
     "db:migrate:fresh": "dotenvx run -- npx mikro-orm migration:fresh",
     "db:migrate:seed": "dotenvx run -- npx mikro-orm migration:fresh --seed",

@@ -135,7 +135,7 @@ docker run -p 3000:3000 \
 
 ### Running with Migrations (if applicable)
 
-Locally, use `pnpm db:migrate:up`. The production image runs `dist/migrate.js`, which applies the compiled files in `dist/modules/db/migrations/`. The Dockerfile already does that. To do the same with a custom command:
+The image runs `pnpm db:migrate:up` before starting the API. Its `MIKRO_ORM_CLI_*` variables point the MikroORM CLI to the compiled config and migrations in `dist/`. To do the same with a custom command:
 
 ```bash
 docker run -p 3000:3000 \
@@ -146,5 +146,5 @@ docker run -p 3000:3000 \
   -e DATABASE_PORT=5432 \
   -e BETTER_AUTH_SECRET=secret \
   -e API_PORT=3000 \
-  lonestone/api sh -c "pnpm db:migrate:prod && pnpm run start"
+  lonestone/api sh -c "pnpm db:migrate:up && pnpm run start"
 ```
