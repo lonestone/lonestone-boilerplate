@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
+import type { WebApp } from './apps.js'
 import {
   CLI_PACKAGE_NAME,
   type PackageJsonShape,
@@ -7,6 +8,7 @@ import {
   TEMPLATE_ROCK_SCRIPT_COMMAND,
   wireGeneratedPackageJson,
 } from './boilerplate-core.js'
+import { pruneWorkspace } from './prune-workspace.js'
 import { trackingState } from './tracking-state.js'
 import { colorize, isolatedGitEnv, runFileSync } from './utils.js'
 
@@ -23,6 +25,7 @@ export const PRODUCER_FILES_TO_REMOVE = [
   '.cursor/skills/boilerstone-intention',
   '.claude/skills/boilerstone-init',
   '.cursor/skills/boilerstone-init',
+  '.github/workflows/init-combos.yml',
   ...PRODUCER_ARTIFACTS.map((artifact) => `.boilerstone/${artifact}`),
 ]
 
@@ -33,6 +36,11 @@ export interface GenerateProjectOptions {
   sourceCommit?: string
   /** Defaults to the public boilerplate repository. */
   remote?: string
+  /**
+   * Web apps the project keeps. The others, and the packages only they used, are removed.
+   * Left undefined, nothing is removed and no `apps` field is recorded.
+   */
+  apps?: readonly WebApp[]
 }
 
 function readJson<T>(filePath: string): T {
@@ -334,6 +342,14 @@ function renameWorkspace(rootPath: string, projectName: string): void {
   updateDockerCompose(rootPath, projectName)
 }
 
+/** Remove the web apps that were not selected, and the shared packages only they used. */
+function pruneUnselectedApps(rootPath: string, apps: readonly WebApp[]): void {
+  const { removedApps, removedPackages } = pruneWorkspace(rootPath, apps)
+  for (const path of [...removedApps, ...removedPackages]) {
+    console.log(`  ${colorize('✓', 'green')} Removed ${colorize(path, 'dim')}`)
+  }
+}
+
 function wirePublishedCli(rootPath: string, version: string): void {
   const pkgPath = join(rootPath, 'package.json')
   writeJson(pkgPath, wireGeneratedPackageJson(readJson<PackageJsonShape>(pkgPath), version))
@@ -353,6 +369,9 @@ export function generateProject(rootPath: string, options: GenerateProjectOption
 
   removePaths(rootPath, PRODUCER_FILES_TO_REMOVE)
   stripCliPackageReferences(rootPath)
+  if (options.apps !== undefined) {
+    pruneUnselectedApps(rootPath, options.apps)
+  }
   renameWorkspace(rootPath, options.projectName)
   wirePublishedCli(rootPath, options.sourceVersion)
 
@@ -364,6 +383,7 @@ export function generateProject(rootPath: string, options: GenerateProjectOption
       currentVersion: options.sourceVersion,
       remote: options.remote,
       commit: options.sourceCommit,
+      apps: options.apps,
     }),
   )
   console.log(

@@ -43,6 +43,7 @@ function runInstaller(
   { env = {}, prepare }: { env?: NodeJS.ProcessEnv; prepare?: (fixturePath: string) => void } = {},
 ): {
   status: number | null
+  stdout: string
   stderr: string
   commandLog: string
   fixturePath: string
@@ -96,6 +97,9 @@ process.exit(0)
   const result = spawnSync(process.execPath, [cliBin, ...args], {
     cwd: fixturePath,
     encoding: 'utf-8',
+    // Own session, so the installer cannot open /dev/tty even when the tests
+    // run from a terminal: it must not stop to ask questions.
+    detached: !isWindows,
     env: {
       ...process.env,
       COMMAND_LOG: commandLogPath,
@@ -106,6 +110,7 @@ process.exit(0)
 
   return {
     status: result.status,
+    stdout: result.stdout,
     stderr: result.stderr,
     commandLog: existsSync(commandLogPath) ? readFileSync(commandLogPath, 'utf-8') : '',
     fixturePath,
@@ -155,6 +160,14 @@ function createPublishedCliTemplate(): string {
   )
   writeFixtureFile(templatePath, '.boilerstone/migration-intentions/TEMPLATE.md', '# Template')
   writeFixtureFile(templatePath, '.boilerstone/docs/upgrade-runbook.md', '# Runbook')
+  return templatePath
+}
+
+/** The published CLI template, with the web apps a new project can leave out. */
+function createTemplateWithWebApps(): string {
+  const templatePath = createPublishedCliTemplate()
+  writeFixtureFile(templatePath, 'apps/web-spa/package.json', '{"name":"@boilerstone/web-spa"}\n')
+  writeFixtureFile(templatePath, 'apps/web-ssr/package.json', '{"name":"@boilerstone/web-ssr"}\n')
   return templatePath
 }
 
@@ -357,6 +370,130 @@ describe('init project generation', () => {
       expect(result.stderr).toContain("'My_App' is not a valid project name")
       expect(existsSync(join(result.fixturePath, 'My_App'))).toBe(false)
       expect(result.commandLog).not.toContain('git clone')
+    } finally {
+      result.cleanup()
+    }
+  })
+})
+
+describe('init app selection', () => {
+  function runInitWithWebApps(args: string[]) {
+    const templatePath = createTemplateWithWebApps()
+    const result = runInstaller(['init', 'app', ...args], {
+      env: { TEMPLATE_FIXTURE: templatePath },
+    })
+    return {
+      ...result,
+      appPath: join(result.fixturePath, 'app'),
+      cleanup: () => {
+        result.cleanup()
+        rmSync(templatePath, { recursive: true, force: true })
+      },
+    }
+  }
+
+  // No terminal here, so a run without --apps keeps every web app.
+  const choices: [label: string, args: string[], apps: string[]][] = [
+    ['without --apps and without a terminal', [], ['web-spa', 'web-ssr']],
+    ['--apps web-ssr', ['--apps', 'web-ssr'], ['web-ssr']],
+    ['--apps=web-spa', ['--apps=web-spa'], ['web-spa']],
+    ['--apps web-ssr,web-spa (any order)', ['--apps', 'web-ssr,web-spa'], ['web-spa', 'web-ssr']],
+    ['--apps none', ['--apps', 'none'], []],
+  ]
+
+  it.each([
+    ['an unknown id', ['--apps', 'mobile'], "Unknown app 'mobile'"],
+    ['an app that is always included', ['--apps', 'api'], "'api' is always included"],
+    ['documentation', ['--apps=documentation'], "'documentation' is always included"],
+    ['none with another app', ['--apps', 'none,web-spa'], 'cannot be combined'],
+    ['a missing value', ['--apps'], '--apps needs a value'],
+    ['an empty value', ['--apps='], '--apps needs a value'],
+    [
+      'a flag where the value should be',
+      ['--apps', '--ref', `v${cliVersion}`],
+      '--apps needs a value',
+    ],
+  ])('rejects %s before any git or pnpm call', (_label, appsArgs, message) => {
+    const result = runInstaller(['init', 'app', ...appsArgs])
+
+    try {
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain(message)
+      expect(result.commandLog).toBe('')
+      expect(existsSync(join(result.fixturePath, 'app'))).toBe(false)
+      expect(leftoverStagingDirs(result.fixturePath)).toEqual([])
+    } finally {
+      result.cleanup()
+    }
+  })
+
+  it.each([
+    ['with a space', ['--apps', 'web-spa']],
+    ['with an equals sign', ['--apps=web-spa']],
+  ])('refuses --apps %s outside init before any git or pnpm call', (_label, appsArgs) => {
+    const result = runInstaller(['onboard', ...appsArgs], { prepare: existingProject })
+
+    try {
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('--apps only applies to init')
+      expect(result.commandLog).toBe('')
+    } finally {
+      result.cleanup()
+    }
+  })
+
+  it.each([
+    ['with a space', ['--apps', 'web-spa']],
+    ['with an equals sign', ['--apps=web-spa']],
+  ])('accepts --apps %s', (_label, appsArgs) => {
+    const result = runInitWithWebApps(appsArgs)
+
+    try {
+      expect(result.status, result.stderr).toBe(0)
+      expect(result.stdout).toContain('Apps in the new project: api, documentation, web-spa')
+      expect(getPnpmCalls(result.commandLog)).toEqual(['pnpm install', 'pnpm fmt', 'pnpm rock'])
+    } finally {
+      result.cleanup()
+    }
+  })
+
+  it.each(choices)('lists the apps it will create (%s)', (_label, args, apps) => {
+    const result = runInitWithWebApps(args)
+
+    try {
+      expect(result.status, result.stderr).toBe(0)
+      expect(result.stdout).toContain(
+        `Apps in the new project: ${['api', 'documentation', ...apps].join(', ')}`,
+      )
+      expect(getPnpmCalls(result.commandLog)).toEqual(['pnpm install', 'pnpm fmt', 'pnpm rock'])
+    } finally {
+      result.cleanup()
+    }
+  })
+
+  it.each(choices)('records the chosen web apps (%s)', (_label, args, apps) => {
+    const result = runInitWithWebApps(args)
+
+    try {
+      expect(result.status, result.stderr).toBe(0)
+      expect(
+        JSON.parse(readFileSync(join(result.appPath, '.boilerstone/boilerplate.json'), 'utf-8'))
+          .apps,
+      ).toEqual(apps)
+    } finally {
+      result.cleanup()
+    }
+  })
+
+  it.each(choices)('removes the web apps that were not chosen (%s)', (_label, args, apps) => {
+    const result = runInitWithWebApps(args)
+
+    try {
+      expect(result.status, result.stderr).toBe(0)
+      expect(existsSync(join(result.appPath, 'apps/api'))).toBe(true)
+      for (const webApp of ['web-spa', 'web-ssr']) {
+        expect(existsSync(join(result.appPath, 'apps', webApp)), webApp).toBe(apps.includes(webApp))
+      }
     } finally {
       result.cleanup()
     }
