@@ -60,7 +60,7 @@ Work gap by gap. Skip example modules the project removed. Keep business logic a
 
 - Upgrading `@sentry/nestjs` to 11. It keeps a scoped peer exception for now.
 - The schema-drift check in `src/test/setup/test.global-setup.ts`. Adopt it separately if wanted.
-- The Better Auth integration and its `/auth/*` route wildcard.
+- The Better Auth integration. `unreleased/nestjs-better-auth` covers it and must run first: the staged controllers use its `@AllowAnonymous()`, `@OptionalAuth()` and `Session`.
 - Entities, services, business queries and migration files themselves.
 - Frontend apps beyond removing the unused `@lonestone/nzoth` dependency.
 
