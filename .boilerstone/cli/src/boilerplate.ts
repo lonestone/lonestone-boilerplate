@@ -31,7 +31,11 @@ import {
   readOptionValue,
   resolveTargetVersion,
 } from './boilerplate-core.js'
-import { isBoilerplateMaintainerCheckout, stripBoilerstoneProducerArtifacts } from './generate.js'
+import {
+  isBoilerplateMaintainerCheckout,
+  stripBoilerstoneProducerArtifacts,
+  stripProducerOnlyBlocks,
+} from './generate.js'
 import { colorize, isolatedGitEnv, movePath, runFileSync } from './utils.js'
 import { trackingState } from './tracking-state.js'
 
@@ -262,7 +266,8 @@ function archiveGitReference(reference: string, destination: string, cwd = proje
 // Stages the app-code paths declared by the staged intentions ("## Reference
 // Paths") from the target tag, so the executor can compare meaning without
 // cloning the whole boilerplate. Paths missing at the tag are silently skipped
-// (some entries are prose like "or the project's equivalent config").
+// (some entries are prose like "or the project's equivalent config"). Producer-
+// only blocks of shared files are removed from the staged copies.
 function extractIntentionReferencePaths(
   intentions: Array<Pick<MigrationIntention, 'content'>>,
   targetTag: string,
@@ -292,6 +297,9 @@ function extractIntentionReferencePaths(
   )
   runFileSync('tar', ['-xf', tarFile, '-C', destination])
   rmSync(tarFile, { force: true })
+  // The tag is the producer's view of shared files (scripts, workflows, skills).
+  // Stage the consumer's view, the same one `init` generates.
+  stripProducerOnlyBlocks(destination, { quiet: true })
   return existingPaths
 }
 

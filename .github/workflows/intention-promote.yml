@@ -1,5 +1,9 @@
 name: Intention promote
 
+# Producer-only. Without .boilerstone/migration-intentions/ this is not the
+# boilerplate repository and the job skips successfully. The rule is defined
+# in .boilerstone/README.md ("Producer or consumer").
+#
 # On a Release PR, staged unreleased/*.md files must have moved into
 # vX.Y.Z/NN-slug.md with rewritten ids. GitHub has no in-between check
 # conclusion that both nags and blocks merge (skip is silent, fail is
@@ -19,23 +23,25 @@ jobs:
     name: Intention promote
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Detect a Release PR
         id: gate
         env:
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: |
-          if [[ ",${LABELS}," == *",autorelease: pending,"* ]]; then
+          if [ ! -d .boilerstone/migration-intentions ]; then
+            echo "required=false" >> "$GITHUB_OUTPUT"
+            echo ".boilerstone/migration-intentions/ does not exist on this branch, so this is not the boilerplate repository. Nothing to promote. Skipping."
+          elif [[ ",${LABELS}," == *",autorelease: pending,"* ]]; then
             echo "required=true" >> "$GITHUB_OUTPUT"
           else
             echo "required=false" >> "$GITHUB_OUTPUT"
             echo "Not a Release PR (no autorelease: pending label). Skipping."
           fi
-
-      - name: Checkout repository
-        if: steps.gate.outputs.required == 'true'
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Require unreleased intentions to be promoted
         if: steps.gate.outputs.required == 'true'

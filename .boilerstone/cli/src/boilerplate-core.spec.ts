@@ -677,6 +677,53 @@ describe('extractIntentionReferencePaths', () => {
       rmSync(destDir, { recursive: true, force: true })
     }
   })
+
+  it('stages shared files without their producer-only blocks, and leaves the tag alone', () => {
+    const repoDir = createGitRepo('boilerplate-refblocks-repo-')
+    const destDir = mkdtempSync(join(tmpdir(), 'boilerplate-refblocks-dest-'))
+    const block = (body: string): string =>
+      [
+        'keep',
+        '# boilerstone:producer-only:begin',
+        body,
+        '# boilerstone:producer-only:end',
+        'end',
+        '',
+      ].join('\n')
+
+    try {
+      writeProjectFile(repoDir, 'scripts/configure.sh', block('no-intention label'))
+      writeProjectFile(repoDir, 'apps/api/notes.txt', block('outside the shared roots'))
+      runGit(repoDir, ['add', '-A'])
+      runGit(repoDir, ['commit', '-m', 'init'])
+      runGit(repoDir, ['tag', 'v9.9.9'])
+
+      const intention = {
+        content: [
+          '## Reference Paths',
+          '',
+          '- `scripts/configure.sh`',
+          '- `apps/api/notes.txt`',
+        ].join('\n'),
+      }
+      const staged = extractIntentionReferencePaths([intention], 'v9.9.9', destDir, repoDir)
+
+      expect(staged).toEqual(['apps/api/notes.txt', 'scripts/configure.sh'])
+      expect(readFileSync(join(destDir, 'scripts/configure.sh'), 'utf-8')).toBe('keep\nend\n')
+      expect(readFileSync(join(destDir, 'apps/api/notes.txt'), 'utf-8')).toContain(
+        'outside the shared roots',
+      )
+      const tagged = spawnProcessSync('git', ['show', 'v9.9.9:scripts/configure.sh'], {
+        cwd: repoDir,
+        encoding: 'utf-8',
+        env: isolatedGitEnv(),
+      })
+      expect(tagged.stdout).toContain('no-intention label')
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true })
+      rmSync(destDir, { recursive: true, force: true })
+    }
+  })
 })
 
 describe('archiveGitReference', () => {

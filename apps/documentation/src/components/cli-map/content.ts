@@ -158,6 +158,7 @@ export const content: Content = {
       does: [
         'Run it in the folder that will hold the project. The folder name becomes the scope `@my-app/*`: use lowercase letters, digits and dashes.',
         'Clones the release into a temporary folder, rewrites it, then moves it into place. If something fails, nothing is left behind.',
+        'Drops what only the boilerplate repository needs: `.boilerstone/cli`, its intentions, the intention CI checks, the release-writing skills, and the producer-only parts of shared files.',
         'Writes the `pnpm dlx` scripts and creates `boilerplate.json`.',
         'Then runs `git init`, `pnpm install`, `pnpm fmt` and `pnpm rock`.',
       ],

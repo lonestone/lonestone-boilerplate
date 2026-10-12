@@ -14,7 +14,9 @@ You run on the author's machine. CI only checks. You compose nothing server-side
 1. There is an open pull request for the current branch (`gh pr view`).
 2. Read `CONTRIBUTING.md` and `commitlint.config.ts` (types and scopes). Do not guess scopes.
 3. **Never merge** the pull request. Finalization ends at `gh pr edit`. Merging afterwards is a human step, from any path (UI, `gh`, auto-merge).
-4. **Intention-or-label** (boilerplate producer only). If `.boilerstone/migration-intentions/` exists, this PR must either add a file under `.boilerstone/migration-intentions/unreleased/` (not the README) or carry the `no-intention` label. Check with `gh pr view --json labels,files`. If neither is present, stop: tell the user to write an intention (the `boilerstone-intention` skill) or apply the label. Do not invent the intention content without asking.
+<!-- boilerstone:producer-only:begin -->
+4. **Intention-or-label** (boilerplate repository only; see "Producer or consumer" in `.boilerstone/README.md`). In that repository, this PR must either add a file under `.boilerstone/migration-intentions/unreleased/` (not the README) or carry the `no-intention` label. Check with `gh pr view --json labels,files`. If neither is present, stop: tell the user to write an intention (the `boilerstone-intention` skill) or apply the label. Do not invent the intention content without asking.
+<!-- boilerstone:producer-only:end -->
 
 ## Job
 
