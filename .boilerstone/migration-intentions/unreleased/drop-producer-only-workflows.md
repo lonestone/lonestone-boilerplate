@@ -41,7 +41,7 @@ Work through the gaps in this order. Gap 1 must be closed before gap 2.
    Done when: neither file exists.
 
 3. **Repository script and settings doc** — signal: `rg "no-intention|Intention gate|Intention promote" scripts` matches.
-   In the staged references, the lines between `boilerstone:producer-only:begin` and `boilerstone:producer-only:end` are the boilerplate-only parts. Drop the same parts from the project's copies: the `no-intention` label step and its help text, the two required-check entries, and the label section of the settings doc. Keep every project-specific change, and do not copy the marker lines.
+   Compare the staged source and target copies of both files. The target no longer has the boilerplate-only parts: the `no-intention` label step and its help text, the two required-check entries, and the label section of the settings doc. Make the project's copies match, and keep every project-specific change.
    Done when: the `rg` command above returns nothing and `bash -n scripts/configure-github-repo.sh` passes.
 
 4. **Release-tag fixture** — signal: `.github/workflows/ci.yml` has the step `Ensure local v1.0.0 release tag`.

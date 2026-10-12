@@ -201,17 +201,23 @@ function listFilesRecursively(rootPath: string, directory: string): string[] {
   })
 }
 
-/** Drop the producer-only blocks from the files under PRODUCER_BLOCK_ROOTS. */
-export function stripProducerOnlyBlocks(rootPath: string): void {
+/**
+ * Drop the producer-only blocks from the files under PRODUCER_BLOCK_ROOTS.
+ * Used on a generated project, and on the reference files an upgrade stages
+ * from a release tag, so a project never receives a producer-only block.
+ */
+export function stripProducerOnlyBlocks(rootPath: string, options: { quiet?: boolean } = {}): void {
   for (const path of PRODUCER_BLOCK_ROOTS.flatMap((root) => listFilesRecursively(rootPath, root))) {
     const filePath = join(rootPath, path)
     const content = readFileSync(filePath, 'utf-8')
     const next = stripProducerOnlyBlocksFromText(content, path)
     if (next !== content) {
       writeFileSync(filePath, next, 'utf-8')
-      console.log(
-        `  ${colorize('✓', 'green')} Removed producer-only blocks from ${colorize(path, 'dim')}`,
-      )
+      if (!options.quiet) {
+        console.log(
+          `  ${colorize('✓', 'green')} Removed producer-only blocks from ${colorize(path, 'dim')}`,
+        )
+      }
     }
   }
 }
