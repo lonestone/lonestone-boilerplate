@@ -62,7 +62,8 @@ vi.mock('@langfuse/tracing', () => {
   }
 })
 
-vi.mock('../ai.utils', () => ({
+vi.mock('../ai.utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../ai.utils')>()),
   getModel: vi.fn(),
   getDefaultModel: vi.fn(),
   getModelInstance: vi.fn(),
@@ -73,28 +74,6 @@ vi.mock('../ai.utils', () => ({
   }),
   createSchemaPromptCommand: vi.fn(() => 'IMPORTANT: You must respond with valid JSON'),
   createSchemaPromptCommandForChat: vi.fn(() => 'IMPORTANT: You must respond with valid JSON'),
-  extractToolCalls: vi.fn((steps) => {
-    const toolCalls = steps?.flatMap(
-      (step: { toolCalls?: Array<{ toolCallId: string; toolName: string; input: unknown }> }) =>
-        (step.toolCalls || []).map((tc) => ({
-          toolCallId: tc.toolCallId,
-          toolName: tc.toolName,
-          args: tc.input as Record<string, unknown>,
-        })),
-    )
-    return toolCalls && toolCalls.length > 0 ? toolCalls : undefined
-  }),
-  extractToolResults: vi.fn((steps) => {
-    const toolResults = steps?.flatMap(
-      (step: { toolResults?: Array<{ toolCallId: string; toolName: string; output: unknown }> }) =>
-        (step.toolResults || []).map((tr) => ({
-          toolCallId: tr.toolCallId,
-          toolName: tr.toolName,
-          result: tr.output,
-        })),
-    )
-    return toolResults && toolResults.length > 0 ? toolResults : undefined
-  }),
 }))
 
 vi.mock('../langfuse.service')

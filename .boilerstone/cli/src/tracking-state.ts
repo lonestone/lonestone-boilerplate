@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { BOILERPLATE_REMOTE } from './boilerplate-core.js'
 
 interface AppliedIntention {
   id: string
@@ -20,6 +21,11 @@ interface TrackingState {
     currentVersion: string
     commit?: string
   }
+  /**
+   * Web apps the project kept when it was generated. Empty means API only.
+   * Missing means unknown, for example a project that was onboarded.
+   */
+  apps?: string[]
   trackedDomains: string[]
   intentions: {
     applied: AppliedIntention[]
@@ -32,6 +38,7 @@ interface CreateTrackingStateInput {
   repository?: string
   remote?: string
   commit?: string
+  apps?: readonly string[]
   trackedDomains?: string[]
 }
 
@@ -102,6 +109,7 @@ function normalize(
   for (const property of getUnknownProperties(state, [
     'schemaVersion',
     'source',
+    'apps',
     'trackedDomains',
     'intentions',
   ])) {
@@ -143,6 +151,12 @@ function normalize(
     (typeof source.commit !== 'string' || !/^[a-f0-9]{7,40}$/.test(source.commit))
   ) {
     invalid('source.commit must match ^[a-f0-9]{7,40}$')
+  }
+  if (
+    state.apps !== undefined &&
+    (!Array.isArray(state.apps) || state.apps.some((app) => typeof app !== 'string' || !app))
+  ) {
+    invalid('apps must be an array of non-empty strings')
   }
   const domainValues = Array.isArray(state.trackedDomains)
     ? state.trackedDomains
@@ -228,6 +242,7 @@ function normalize(
       ...source,
       currentVersion: currentVersion.replace(/^v(?=\d)/, ''),
     },
+    ...(Array.isArray(state.apps) ? { apps: [...state.apps] } : {}),
     intentions: {
       ...intentions,
       applied: normalizedApplied,
@@ -242,10 +257,11 @@ function create(input: CreateTrackingStateInput): TrackingState {
       schemaVersion: 1,
       source: {
         repository: input.repository ?? 'lonestone/lonestone-boilerplate',
-        remote: input.remote ?? 'https://github.com/lonestone/lonestone-boilerplate.git',
+        remote: input.remote ?? BOILERPLATE_REMOTE,
         currentVersion: input.currentVersion,
         ...(input.commit !== undefined ? { commit: input.commit } : {}),
       },
+      ...(input.apps !== undefined ? { apps: [...input.apps] } : {}),
       trackedDomains: input.trackedDomains ?? [...DEFAULT_TRACKED_DOMAINS],
       intentions: { applied: [], skipped: [] },
     },

@@ -54,7 +54,8 @@
       "password": "New password",
       "confirmPassword": "Confirm new password",
       "reset": "Reset",
-      "backToLogin": "Back to sign in"
+      "backToLogin": "Back to sign in",
+      "failedToReset": "Failed to reset your password. The link may have expired."
     },
     "verifyEmail": {
       "title": "Email verification",
@@ -119,7 +120,8 @@
     "postUnpublished": "Post unpublished",
     "postCreateError": "Failed to create post",
     "postUpdateError": "Failed to save post",
-    "postPublishError": "Failed to publish post"
+    "postPublishError": "Failed to publish post",
+    "postUnpublishError": "Failed to unpublish post"
   },
   "components": {
     "title": "Components",
@@ -143,7 +145,91 @@
     "sections": {
       "textGeneration": "Text generation",
       "structuredOutput": "Structured output",
-      "chatStream": "Chat with streaming"
+      "chatStream": "Chat with streaming",
+      "textGenerationDescription": "Generate text with a single prompt. Toggle streaming to see real-time token output.",
+      "chatStreamDescription": "Full conversation with streaming. Supports structured output schemas — pick one to see typed responses."
+    },
+    "badges": {
+      "liveApiCalls": "Live API calls",
+      "multipleModels": "Multiple models",
+      "sseStreaming": "SSE streaming"
+    },
+    "chat": {
+      "system": "System",
+      "hideMetadata": "Hide metadata",
+      "showMetadata": "Show metadata",
+      "streaming": "Streaming...",
+      "usingTool": "Using {{tool}}...",
+      "toolsUsed": "Tools used:",
+      "tokens": "Tokens:",
+      "prompt": "Prompt:",
+      "completion": "Completion:",
+      "finishReason": "Finish reason:"
+    },
+    "chatStream": {
+      "title": "AI Chat (Streaming)",
+      "description": "Real-time streaming AI responses",
+      "clear": "Clear",
+      "model": "Model",
+      "modelPlaceholder": "Select a model",
+      "structuredOutput": "Structured Output",
+      "schemaPlaceholder": "Select output format",
+      "noSchema": "No schema (streaming)",
+      "send": "Send",
+      "stop": "Stop",
+      "inputPlaceholder": "Type your message...",
+      "emptyState": "Start a conversation by sending a message"
+    },
+    "generateText": {
+      "title": "Generate Text",
+      "description": "Simple text generation with a single prompt",
+      "clear": "Clear",
+      "model": "Model",
+      "modelPlaceholder": "Select a model",
+      "stream": "Stream",
+      "promptPlaceholder": "Write a haiku about programming...",
+      "stop": "Stop",
+      "generating": "Generating...",
+      "generate": "Generate",
+      "error": "Error",
+      "response": "Response",
+      "streaming": "Streaming...",
+      "total": "Total: {{count}} tokens",
+      "prompt": "Prompt:",
+      "completion": "Completion:",
+      "unknownError": "An error occurred",
+      "requestFailed": "Request failed",
+      "streamEnded": "The stream ended unexpectedly"
+    },
+    "generateObject": {
+      "title": "Generate Object (Recipe)",
+      "description": "Structured output generation with a predefined schema",
+      "clear": "Clear",
+      "model": "Model",
+      "modelPlaceholder": "Select a model",
+      "stream": "Stream",
+      "promptPlaceholder": "Give me a recipe for chocolate chip cookies...",
+      "stop": "Stop",
+      "generating": "Generating...",
+      "generate": "Generate",
+      "error": "Error",
+      "streaming": "Streaming",
+      "generatingRecipe": "Generating recipe...",
+      "hideJson": "Hide JSON",
+      "showJson": "Show JSON",
+      "prep": "Prep:",
+      "cook": "Cook:",
+      "servings": "Servings:",
+      "ingredients": "Ingredients",
+      "instructions": "Instructions",
+      "tips": "Tips",
+      "total": "Total: {{count}} tokens",
+      "prompt": "Prompt:",
+      "completion": "Completion:",
+      "finish": "Finish:",
+      "requestFailed": "Request failed",
+      "unknownError": "An error occurred",
+      "invalidRecipe": "The model reply is not a valid recipe"
     }
   },
   "posts": {
@@ -188,7 +274,21 @@
       "videoUrl": "Video URL:",
       "imagePreviewAlt": "Preview",
       "save": "Save post",
-      "saving": "Saving post..."
+      "saving": "Saving post...",
+      "contentTypeText": "Text content",
+      "contentTypeImage": "Image content",
+      "contentTypeVideo": "Video content",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "remove": "Remove",
+      "clearImage": "Clear image"
+    },
+    "edit": {
+      "title": "Edit post",
+      "description": "Share your thoughts, images and videos with the world.",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "loadError": "Failed to load this post"
     }
   },
   "profile": {

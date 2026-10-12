@@ -178,10 +178,12 @@ jobs:
           node-version: ${{ needs.setup.outputs.node-version }}
           pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
 
+      # boilerstone:producer-only:begin
       # Before the initial release tag exists, the boilerstone tests need a
       # local fixture to resolve this checkout as the release producer.
       - name: 🏷️ Ensure local v1.0.0 release tag
         run: git rev-parse --verify --quiet refs/tags/v1.0.0 || git tag v1.0.0 ${{ github.sha }}
+      # boilerstone:producer-only:end
 
       - name: 🧪 Run test
         run: pnpm test

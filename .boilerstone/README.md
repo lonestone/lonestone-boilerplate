@@ -51,6 +51,21 @@ Generated projects call the published `@lonestone/boilerstone-cli` with `pnpm dl
 
 In a generated project, the producer side (`cli/`, `migration-intentions/`, release runbook, …) is stripped — intentions then come from git tags. That's expected.
 
+## Producer or consumer
+
+The boilerplate repository is the **producer**: it writes and publishes migration intentions. A project generated from it, or onboarded to it, is a **consumer**: it only applies them.
+
+One test tells them apart: **`.boilerstone/migration-intentions/` exists**. Only the producer has it. `init` and `bootstrap` remove it, so a consumer never does. This is the only definition. Skills, workflows and docs point here instead of restating it.
+
+How the rest of the repository follows it:
+
+- **Whole files** that only make sense in the producer are listed in `PRODUCER_FILES_TO_REMOVE` (`cli/src/generate.ts`), and `init` does not generate them. Today that includes the two intention workflows and the `boilerstone-intention` and `boilerstone-release` skills.
+- **Parts of a shared file** (a step in `ci.yml`, a section of `scripts/github-repo-settings.md`, a step in the `finalize-pr` skill) sit between a `boilerstone:producer-only:begin` line and a `boilerstone:producer-only:end` line, in whatever comment syntax the file uses. `init` removes those lines from `.github/`, `scripts/`, `.claude/` and `.cursor/`, and fails on an unbalanced pair. `upgrade prepare` removes them from the reference files it stages from a release tag, so an upgrade never hands them to a project either. The producer keeps them. Do not fork a file for the producer.
+- **Workflows** that reach a project despite the removal list (the list drifted, or someone copied them in) check the directory themselves and skip successfully when it is missing. A copy made before that check existed has no guard: a migration intention removes it.
+- **Skills** that only apply to one side say so and point to this section.
+
+`bootstrap` and `onboard` never touch anything outside `.boilerstone/`, so an existing project is cleaned up by a migration intention instead.
+
 ## Detaching
 
 1. `rm -rf .boilerstone`

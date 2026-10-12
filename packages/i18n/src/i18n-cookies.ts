@@ -39,6 +39,17 @@ function shouldUseSecureCookie(): boolean {
 }
 
 /**
+ * Decode a cookie value, keeping the raw value when it is not valid percent-encoding.
+ */
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
+/**
  * Parse cookie string into key-value pairs
  */
 export function parseCookies(cookieHeader: string): Record<string, string> {
@@ -59,7 +70,7 @@ export function parseCookies(cookieHeader: string): Record<string, string> {
     const name = pair.slice(0, separatorIndex).trim()
     const value = pair.slice(separatorIndex + 1).trim()
     if (name && value) {
-      cookies[name] = decodeURIComponent(value)
+      cookies[name] = safeDecode(value)
     }
   }
 
@@ -216,7 +227,7 @@ export function getCookie(name: string): string | null {
     const cookieName = cookie.slice(0, separatorIndex).trim()
     const cookieValue = cookie.slice(separatorIndex + 1).trim()
     if (cookieName === name) {
-      return decodeURIComponent(cookieValue)
+      return safeDecode(cookieValue)
     }
   }
 

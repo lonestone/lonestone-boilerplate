@@ -9,9 +9,12 @@ This skill is a thin adapter. The canon lives at `apps/documentation/src/content
 
 ## Preflight
 
-1. If `.boilerstone/migration-intentions/` exists, this is the boilerplate repository (producer). Stop and point the user to `boilerstone-release`.
-2. This skill is for consumer projects that version with release-please.
-3. **Never tag. Never merge the Release PR.** Those are human steps. Green checks are not consent to ship.
+<!-- boilerstone:producer-only:begin -->
+In the boilerplate repository (see "Producer or consumer" in `.boilerstone/README.md`) stop and point the user to `boilerstone-release`.
+
+<!-- boilerstone:producer-only:end -->
+1. This skill is for consumer projects that version with release-please.
+2. **Never tag. Never merge the Release PR.** Those are human steps. Green checks are not consent to ship.
 
 ## Job
 

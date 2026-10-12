@@ -29,11 +29,15 @@ ${colorize('Upgrade commands:', 'cyan')}
 
 ${colorize('Options:', 'cyan')}
   ${colorize('--ref <vX.Y.Z>', 'bright')}          Optional for init/onboard; must be this CLI's version
+  ${colorize('--apps <list>', 'bright')}           init only: web apps to include (web-spa, web-ssr, comma separated, or none)
+                          Without it, init asks about each one, or keeps all when it cannot ask
   ${colorize('--project <path>', 'bright')}        Project root (default: current directory)
 
 ${colorize('Examples:', 'cyan')}
   ${colorize(`pnpm dlx ${CLI_PACKAGE_NAME} init my-app`, 'dim')}
   ${colorize(`pnpm dlx ${CLI_PACKAGE_NAME}@1.2.0 init my-app`, 'dim')}   ${colorize('(pin the release by pinning the CLI)', 'dim')}
+  ${colorize(`pnpm dlx ${CLI_PACKAGE_NAME} init my-app --apps web-ssr`, 'dim')}
+  ${colorize(`pnpm dlx ${CLI_PACKAGE_NAME} init my-app --apps none`, 'dim')}   ${colorize('(API only)', 'dim')}
   ${colorize(`pnpm dlx ${CLI_PACKAGE_NAME} onboard`, 'dim')}
   ${colorize('pnpm boilerplate upgrade', 'dim')}   ${colorize('(inside a project)', 'dim')}
 `)

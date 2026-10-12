@@ -10,7 +10,11 @@ export default function AuthResetPasswordPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const resetPasswordMutation = useMutation({
+  const {
+    mutate: resetPasswordMutate,
+    isPending,
+    error,
+  } = useMutation({
     mutationFn: async (data: AuthResetPasswordFormData) => {
       const response = await authClient.resetPassword({
         newPassword: data.password,
@@ -18,7 +22,7 @@ export default function AuthResetPasswordPage() {
       })
 
       if (response.error) {
-        throw new Error(response.error.message || t('auth.resetPassword.reset'))
+        throw new Error(response.error.message || t('auth.resetPassword.failedToReset'))
       }
 
       return response.data
@@ -29,7 +33,7 @@ export default function AuthResetPasswordPage() {
   })
 
   const handleResetPassword = (data: AuthResetPasswordFormData) => {
-    resetPasswordMutation.mutate(data)
+    resetPasswordMutate(data)
   }
 
   return (
@@ -38,10 +42,14 @@ export default function AuthResetPasswordPage() {
         title={t('auth.resetPassword.title')}
         description={t('auth.resetPassword.description')}
       />
-      <AuthResetPasswordForm
-        onSubmit={handleResetPassword}
-        isPending={resetPasswordMutation.isPending}
-      />
+      <AuthResetPasswordForm onSubmit={handleResetPassword} isPending={isPending} />
+      <div className="h-10">
+        {error ? (
+          <div className="text-sm font-medium text-red-500">
+            {t('auth.resetPassword.failedToReset')}
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }

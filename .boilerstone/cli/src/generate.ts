@@ -1,28 +1,34 @@
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
+import type { WebApp } from './apps.js'
 import {
+  BOILERPLATE_REMOTE,
   CLI_PACKAGE_NAME,
   type PackageJsonShape,
   PRODUCER_ARTIFACTS,
   TEMPLATE_ROCK_SCRIPT_COMMAND,
   wireGeneratedPackageJson,
 } from './boilerplate-core.js'
+import { pruneWorkspace } from './prune-workspace.js'
 import { trackingState } from './tracking-state.js'
 import { colorize, isolatedGitEnv, runFileSync } from './utils.js'
 
 const TEMPLATE_SCOPE = '@boilerstone'
-const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
 
 // Producer-only paths dropped from a freshly generated project. The
 // `.boilerstone/` subset is derived from PRODUCER_ARTIFACTS so the two lists
-// cannot drift.
+// cannot drift. Both intention workflows also skip on their own when
+// `.boilerstone/migration-intentions/` is missing, in case this list drifts.
 export const PRODUCER_FILES_TO_REMOVE = [
+  '.github/workflows/intention-gate.yml',
+  '.github/workflows/intention-promote.yml',
   '.claude/skills/boilerstone-release',
   '.cursor/skills/boilerstone-release',
   '.claude/skills/boilerstone-intention',
   '.cursor/skills/boilerstone-intention',
   '.claude/skills/boilerstone-init',
   '.cursor/skills/boilerstone-init',
+  '.github/workflows/init-combos.yml',
   ...PRODUCER_ARTIFACTS.map((artifact) => `.boilerstone/${artifact}`),
 ]
 
@@ -33,6 +39,11 @@ export interface GenerateProjectOptions {
   sourceCommit?: string
   /** Defaults to the public boilerplate repository. */
   remote?: string
+  /**
+   * Web apps the project keeps. The others, and the packages only they used, are removed.
+   * Left undefined, nothing is removed and no `apps` field is recorded.
+   */
+  apps?: readonly WebApp[]
 }
 
 function readJson<T>(filePath: string): T {
@@ -62,7 +73,7 @@ export function isBoilerplateMaintainerCheckout(rootPath: string): boolean {
       env: isolatedGitEnv(),
     })
 
-    return normalizeGitRemote(originUrl) === normalizeGitRemote(defaultBoilerplateRemote)
+    return normalizeGitRemote(originUrl) === normalizeGitRemote(BOILERPLATE_REMOTE)
   } catch {
     return false
   }
@@ -118,6 +129,95 @@ function removePaths(rootPath: string, paths: readonly string[]): void {
       console.log(`  ${colorize('✓', 'green')} Removed ${colorize(path, 'dim')}`)
     } catch {
       console.log(`  ${colorize('⚠', 'yellow')} Failed to remove ${colorize(path, 'dim')}`)
+    }
+  }
+}
+
+const PRODUCER_BLOCK_BEGIN = 'boilerstone:producer-only:begin'
+const PRODUCER_BLOCK_END = 'boilerstone:producer-only:end'
+
+/**
+ * Directories whose files may carry producer-only blocks: lines between a
+ * begin and an end marker (in any comment syntax) that only make sense in the
+ * boilerplate repository. Generation removes them; the boilerplate keeps them.
+ */
+export const PRODUCER_BLOCK_ROOTS = ['.github', 'scripts', '.claude', '.cursor']
+
+/**
+ * Remove every producer-only block, marker lines included. Throws on a block
+ * that is nested, never closed, or closed without a begin: a half-stripped
+ * file would ship broken to every new project.
+ */
+export function stripProducerOnlyBlocksFromText(text: string, label: string): string {
+  if (!text.includes(PRODUCER_BLOCK_BEGIN) && !text.includes(PRODUCER_BLOCK_END)) {
+    return text
+  }
+
+  const kept: string[] = []
+  let openedAt = 0
+  let justClosed = false
+  text.split('\n').forEach((line, index) => {
+    const lineNumber = index + 1
+    if (line.includes(PRODUCER_BLOCK_BEGIN)) {
+      if (openedAt) {
+        throw new Error(
+          `${label}:${lineNumber}: producer-only block nested in the one opened at line ${openedAt}`,
+        )
+      }
+      openedAt = lineNumber
+    } else if (line.includes(PRODUCER_BLOCK_END)) {
+      if (!openedAt) {
+        throw new Error(`${label}:${lineNumber}: producer-only block end without a begin`)
+      }
+      openedAt = 0
+      justClosed = true
+    } else if (!openedAt) {
+      // A block set off by blank lines would otherwise leave two in a row.
+      const doubleBlank = justClosed && !line.trim() && !kept.at(-1)?.trim() && kept.length > 0
+      justClosed = false
+      if (!doubleBlank) {
+        kept.push(line)
+      }
+    }
+  })
+
+  if (openedAt) {
+    throw new Error(`${label}:${openedAt}: producer-only block never closed`)
+  }
+  return kept.join('\n')
+}
+
+function listFilesRecursively(rootPath: string, directory: string): string[] {
+  const absolute = join(rootPath, directory)
+  if (!existsSync(absolute)) {
+    return []
+  }
+  return readdirSync(absolute, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name)
+    if (entry.isDirectory()) {
+      return listFilesRecursively(rootPath, path)
+    }
+    return entry.isFile() ? [path] : []
+  })
+}
+
+/**
+ * Drop the producer-only blocks from the files under PRODUCER_BLOCK_ROOTS.
+ * Used on a generated project, and on the reference files an upgrade stages
+ * from a release tag, so a project never receives a producer-only block.
+ */
+export function stripProducerOnlyBlocks(rootPath: string, options: { quiet?: boolean } = {}): void {
+  for (const path of PRODUCER_BLOCK_ROOTS.flatMap((root) => listFilesRecursively(rootPath, root))) {
+    const filePath = join(rootPath, path)
+    const content = readFileSync(filePath, 'utf-8')
+    const next = stripProducerOnlyBlocksFromText(content, path)
+    if (next !== content) {
+      writeFileSync(filePath, next, 'utf-8')
+      if (!options.quiet) {
+        console.log(
+          `  ${colorize('✓', 'green')} Removed producer-only blocks from ${colorize(path, 'dim')}`,
+        )
+      }
     }
   }
 }
@@ -334,6 +434,14 @@ function renameWorkspace(rootPath: string, projectName: string): void {
   updateDockerCompose(rootPath, projectName)
 }
 
+/** Remove the web apps that were not selected, and the shared packages only they used. */
+function pruneUnselectedApps(rootPath: string, apps: readonly WebApp[]): void {
+  const { removedApps, removedPackages } = pruneWorkspace(rootPath, apps)
+  for (const path of [...removedApps, ...removedPackages]) {
+    console.log(`  ${colorize('✓', 'green')} Removed ${colorize(path, 'dim')}`)
+  }
+}
+
 function wirePublishedCli(rootPath: string, version: string): void {
   const pkgPath = join(rootPath, 'package.json')
   writeJson(pkgPath, wireGeneratedPackageJson(readJson<PackageJsonShape>(pkgPath), version))
@@ -352,7 +460,11 @@ export function generateProject(rootPath: string, options: GenerateProjectOption
   console.log(`\n${colorize('🧱 Generating the project', 'cyan')}\n`)
 
   removePaths(rootPath, PRODUCER_FILES_TO_REMOVE)
+  stripProducerOnlyBlocks(rootPath)
   stripCliPackageReferences(rootPath)
+  if (options.apps !== undefined) {
+    pruneUnselectedApps(rootPath, options.apps)
+  }
   renameWorkspace(rootPath, options.projectName)
   wirePublishedCli(rootPath, options.sourceVersion)
 
@@ -364,6 +476,7 @@ export function generateProject(rootPath: string, options: GenerateProjectOption
       currentVersion: options.sourceVersion,
       remote: options.remote,
       commit: options.sourceCommit,
+      apps: options.apps,
     }),
   )
   console.log(

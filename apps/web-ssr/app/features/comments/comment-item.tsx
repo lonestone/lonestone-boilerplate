@@ -1,8 +1,4 @@
-import type {
-  CommentSchema,
-  CommentsControllerGetCommentRepliesResponse,
-  CreateCommentSchema,
-} from '@boilerstone/openapi-generator'
+import type { CommentSchema, CreateCommentSchema } from '@boilerstone/openapi-generator'
 import { commentsControllerGetCommentReplies } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import {
@@ -17,34 +13,33 @@ import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronUp, Loader2, Reply, Trash2, User } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CommentForm } from '@/features/comments/comment-form'
-import { queryClient } from '@/lib/query-client'
 
 function Replies({
   commentId,
+  postSlug,
   currentUserId,
   postAuthorId,
   isAddingComment,
   depth,
   onDelete,
   onReplySubmit,
-  onLoadMoreReplies,
 }: {
   commentId: string
+  postSlug: string
   currentUserId?: string
   postAuthorId?: string
   isAddingComment: boolean
   depth: number
   onDelete: (commentId: string) => void
   onReplySubmit: (data: CreateCommentSchema) => Promise<void>
-  onLoadMoreReplies: (commentId: string) => void
 }) {
   const { data: replies, isLoading: isLoadingReplies } = useQuery({
-    queryKey: ['replies', commentId],
+    queryKey: ['replies', postSlug, commentId],
     queryFn: async () => {
       const res = await commentsControllerGetCommentReplies({
         path: {
           commentId,
-          postSlug: 'test',
+          postSlug,
         },
         query: {
           offset: 0,
@@ -59,8 +54,6 @@ function Replies({
       return res.data
     },
   })
-
-  const hasMoreReplies = false
 
   if (isLoadingReplies) {
     return (
@@ -79,6 +72,7 @@ function Replies({
         <CommentItem
           key={reply.id}
           comment={reply}
+          postSlug={postSlug}
           currentUserId={currentUserId}
           postAuthorId={postAuthorId}
           isAddingComment={isAddingComment}
@@ -87,17 +81,6 @@ function Replies({
           onReplySubmit={onReplySubmit}
         />
       ))}
-
-      {hasMoreReplies && (
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn('mt-2 text-xs', depth > 0 ? 'h-6 text-xs ml-8' : 'h-8 w-full')}
-          onClick={() => onLoadMoreReplies(commentId)}
-        >
-          Load more replies
-        </Button>
-      )}
     </div>
   )
 }
@@ -105,6 +88,7 @@ function Replies({
 // Component for rendering a single comment with its replies
 interface CommentItemProps {
   comment: CommentSchema
+  postSlug: string
   currentUserId?: string
   postAuthorId?: string
   isAddingComment: boolean
@@ -115,6 +99,7 @@ interface CommentItemProps {
 
 export function CommentItem({
   comment,
+  postSlug,
   currentUserId,
   postAuthorId,
   isAddingComment,
@@ -142,41 +127,6 @@ export function CommentItem({
 
   const toggleReplies = () => {
     setShowReplies((prev) => !prev)
-  }
-
-  const loadMoreReplies = async (commentId: string) => {
-    // Use any type to avoid type errors with the API response
-    const currentReplies = queryClient.getQueryData<{
-      data: CommentsControllerGetCommentRepliesResponse
-    }>(['replies', commentId])
-    if (!currentReplies || !currentReplies.data?.meta) return
-
-    try {
-      const offset = currentReplies.data.meta.offset + currentReplies.data.meta.pageSize
-      const newReplies = await commentsControllerGetCommentReplies({
-        path: {
-          commentId,
-          postSlug: 'test',
-        },
-        query: {
-          offset,
-          pageSize: 10,
-        },
-      })
-
-      // Merge the new replies with existing ones
-      if (currentReplies.data && newReplies.data) {
-        queryClient.setQueryData(['replies', commentId], {
-          ...newReplies,
-          data: {
-            ...newReplies.data,
-            data: [...currentReplies.data.data, ...newReplies.data.data],
-          },
-        })
-      }
-    } catch (error) {
-      console.error('Error loading more replies:', error)
-    }
   }
 
   return (
@@ -311,13 +261,13 @@ export function CommentItem({
       {showReplies && (
         <Replies
           commentId={comment.id}
+          postSlug={postSlug}
           currentUserId={currentUserId}
           postAuthorId={postAuthorId}
           isAddingComment={isAddingComment}
           depth={depth}
           onDelete={onDelete}
           onReplySubmit={onReplySubmit}
-          onLoadMoreReplies={loadMoreReplies}
         />
       )}
     </div>

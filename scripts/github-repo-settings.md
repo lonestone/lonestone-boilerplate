@@ -8,7 +8,11 @@ Apply them once on a new consumer repository. From the repo root:
 ./scripts/configure-github-repo.sh --apply
 ```
 
-The script defaults to a dry run (prints the API calls, changes nothing). `--apply` patches merge settings, creates the `no-intention` label if it is missing, and creates the `staging` and `production` GitHub Environments if they are missing. It does not mutate branch protection or store Dokploy secrets.
+The script defaults to a dry run (prints the API calls, changes nothing). `--apply` patches merge settings and creates the `staging` and `production` GitHub Environments if they are missing.
+<!-- boilerstone:producer-only:begin -->
+On the boilerplate repository it also creates the `no-intention` label.
+<!-- boilerstone:producer-only:end -->
+It does not mutate branch protection or store Dokploy secrets.
 
 ## Checklist
 
@@ -25,8 +29,11 @@ This last item is load-bearing. Without it, GitHub will not copy the curated des
 
 ### Labels
 
+<!-- boilerstone:producer-only:begin -->
 - [ ] `no-intention` — skip the migration-intention gate (boilerplate producer). Apply it on PRs that do not need a consumer-facing intention (refactors, boilerplate-internal CI).
+<!-- boilerstone:producer-only:end -->
 - [ ] Release-please labels (`autorelease: pending`, …) are created by the Release Please workflow.
+<!-- boilerstone:producer-only:begin -->
 
 Create the gate label:
 
@@ -37,14 +44,17 @@ gh label create no-intention \
 ```
 
 `./scripts/configure-github-repo.sh --apply` also creates it if it is missing.
+<!-- boilerstone:producer-only:end -->
 
 ### Branch protection on `main`
 
 Require pull requests, and require these status checks to pass:
 
 - [ ] `PR title and description` (workflow: **PR lint**)
+<!-- boilerstone:producer-only:begin -->
 - [ ] `Intention gate` (workflow: **Intention gate**) — boilerplate producer; skips successfully when `no-intention` or `autorelease: pending` is present
 - [ ] `Intention promote` (workflow: **Intention promote**) — boilerplate producer; skips on ordinary PRs. On a Release PR it fails until staged `unreleased/` files have moved into `vX.Y.Z/`
+<!-- boilerstone:producer-only:end -->
 - [ ] `Release note` (workflow: **Release note**) — other PRs skip this check successfully
 - [ ] Existing CI jobs (`Lint`, `Type Check`, `Build`, `Test`, …)
 

@@ -37,6 +37,11 @@ describe('getHtmlLang', () => {
     expect(getHtmlLang('en')).toBe('en-GB')
     expect(isSupportedLocale('fr-FR')).toBe(false)
   })
+
+  it('ignores Object prototype keys', () => {
+    expect(isSupportedLocale('constructor')).toBe(false)
+    expect(normalizeLocale('toString')).toBe(DEFAULT_LOCALE)
+  })
 })
 
 describe('cookie helpers', () => {
@@ -45,6 +50,11 @@ describe('cookie helpers', () => {
       locale: 'fr',
       token: 'a=b',
     })
+  })
+
+  it('keeps malformed percent-encoded cookie values instead of throwing', () => {
+    expect(() => parseCookies('locale=%E0%A4%A')).not.toThrow()
+    expect(parseCookies('locale=%E0%A4%A')).toEqual({ locale: '%E0%A4%A' })
   })
 
   it('accepts SupportedLocale cookie values', () => {

@@ -9,7 +9,7 @@ This skill is a thin adapter. The canon lives in the **Intention authoring** sec
 
 ## Preflight
 
-1. Only run in the boilerplate repository itself (`.boilerstone/migration-intentions/` exists). In a consumer project this skill does not apply.
+1. Only run in the boilerplate repository itself (see "Producer or consumer" in `.boilerstone/README.md`). In a consumer project this skill does not apply.
 2. There is an open pull request (or a branch about to become one) that contains the code change.
 
 ## Job

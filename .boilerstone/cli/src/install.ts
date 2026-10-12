@@ -4,7 +4,14 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
-import { CLI_PACKAGE_NAME } from './boilerplate-core.js'
+import {
+  ALWAYS_INCLUDED_APPS,
+  parseAppsOption,
+  WEB_APP_LABELS,
+  WEB_APPS,
+  type WebApp,
+} from './apps.js'
+import { BOILERPLATE_REMOTE, CLI_PACKAGE_NAME } from './boilerplate-core.js'
 import { bootstrapProject } from './boilerplate.js'
 import { generateProject, isPublishedCliTemplate, isValidProjectName } from './generate.js'
 import {
@@ -17,12 +24,12 @@ import {
   spawnProcessSync,
 } from './utils.js'
 
-const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate'
-
 interface InstallerOptions {
   mode: string
   /** Undefined when `--ref` was not passed. */
   ref?: string
+  /** The raw `--apps` value, parsed later. Undefined when `--apps` was not passed. */
+  apps?: string
   positionals: string[]
 }
 
@@ -81,14 +88,27 @@ function cloneRelease(
 ): void {
   try {
     runGit(['clone', '--quiet', '--depth', '1', ...extraArgs, '--branch', ref, repoUrl, target])
-  } catch {
-    throw new Error(`git clone failed (ref: ${ref})`)
+  } catch (error) {
+    throw new Error(
+      `git clone failed (ref: ${ref}): ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
+    )
+  }
+}
+
+/** Parses a `--apps` value. Dies with the parser's own message when it is not valid. */
+function parseApps(value: string): WebApp[] {
+  try {
+    return parseAppsOption(value)
+  } catch (error) {
+    die(error instanceof Error ? error.message : String(error))
   }
 }
 
 function parseArgs(argv: string[]): InstallerOptions {
   const [mode = 'help', ...rest] = argv
   let ref: string | undefined
+  let apps: string | undefined
   const positionals: string[] = []
 
   for (let index = 0; index < rest.length; index += 1) {
@@ -106,8 +126,27 @@ function parseArgs(argv: string[]): InstallerOptions {
       ref = current.slice('--ref='.length)
       continue
     }
+    if (current === '--apps' || current.startsWith('--apps=')) {
+      if (mode !== 'init') {
+        die('--apps only applies to init')
+      }
+      if (current === '--apps') {
+        // A missing value is kept as an empty one: init rejects it with the
+        // other bad values, and the next flag is not swallowed as a list.
+        const value = rest[index + 1]
+        if (value === undefined || value.startsWith('--')) {
+          apps = ''
+        } else {
+          apps = value
+          index += 1
+        }
+      } else {
+        apps = current.slice('--apps='.length)
+      }
+      continue
+    }
     if (current === '-h' || current === '--help') {
-      return { mode: 'help', ref, positionals }
+      return { mode: 'help', ref, apps, positionals }
     }
     if (current.startsWith('--')) {
       die(`Unknown option: ${current}`)
@@ -115,7 +154,7 @@ function parseArgs(argv: string[]): InstallerOptions {
     positionals.push(current)
   }
 
-  return { mode, ref, positionals }
+  return { mode, ref, apps, positionals }
 }
 
 /**
@@ -154,6 +193,27 @@ async function promptYesNo(message: string, defaultYes: boolean): Promise<boolea
   }
 }
 
+/**
+ * One question per web app. Without a terminal, promptYesNo answers yes, so
+ * every web app is kept.
+ */
+async function askWebApps(): Promise<WebApp[]> {
+  const chosen: WebApp[] = []
+  for (const app of WEB_APPS) {
+    if (await promptYesNo(`Include ${WEB_APP_LABELS[app]}?`, true)) {
+      chosen.push(app)
+    }
+  }
+  return chosen
+}
+
+function assertValidProjectName(dir: string): void {
+  const projectName = basename(dir)
+  if (!isValidProjectName(projectName)) {
+    die(`'${projectName}' is not a valid project name: use lowercase letters, digits and dashes`)
+  }
+}
+
 function fetchSubdirs(repoUrl: string, ref: string, subdirs: string[], cwd: string): void {
   for (const subdir of subdirs) {
     if (existsSync(join(cwd, subdir))) {
@@ -189,11 +249,9 @@ function fetchSubdirs(repoUrl: string, ref: string, subdirs: string[], cwd: stri
  * there, then move it into place. The CLI runs from outside the project it
  * builds, and a failure leaves nothing behind at `dir`.
  */
-function stageProject(repoUrl: string, ref: string, dir: string): void {
+function stageProject(repoUrl: string, ref: string, dir: string, apps: readonly WebApp[]): void {
+  assertValidProjectName(dir)
   const projectName = basename(dir)
-  if (!isValidProjectName(projectName)) {
-    die(`'${projectName}' is not a valid project name: use lowercase letters, digits and dashes`)
-  }
 
   mkdirSync(dirname(dir), { recursive: true })
   // Not mkdtemp: it creates the directory as 0700, and the project root keeps
@@ -220,6 +278,7 @@ function stageProject(repoUrl: string, ref: string, dir: string): void {
       sourceVersion: ref.replace(/^v/, ''),
       sourceCommit: sourceCommit || undefined,
       remote: process.env.BOILERPLATE_REPO?.trim() || undefined,
+      apps,
     })
 
     movePath(staging, dir)
@@ -259,7 +318,13 @@ async function offerOnboardCommit(cwd: string, workspaceChanged: boolean): Promi
     '.gitignore',
     ...(workspaceChanged ? ['pnpm-workspace.yaml', 'pnpm-lock.yaml'] : []),
   ].filter((path) => existsSync(join(cwd, path)))
-  spawnProcessSync('git', ['add', ...paths], { cwd, env: gitEnv(), stdio: 'ignore' })
+  const add = spawnProcessSync('git', ['add', ...paths], { cwd, env: gitEnv(), stdio: 'inherit' })
+  if (add.error || add.status !== 0) {
+    info(
+      'git add failed - stage .boilerstone/ and the other onboarding files yourself, then commit',
+    )
+    return
+  }
 
   const staged = spawnProcessSync('git', ['diff', '--cached', '--quiet'], { cwd, env: gitEnv() })
   if (staged.status === 0) {
@@ -309,17 +374,91 @@ Commands:
   onboard             Add the upgrade system + agent skills to an existing project (run at its root)
   upgrade [version]   Prepare a boilerplate upgrade in an already-wired project (default: latest)
 
+Options:
+  --apps <list>       init only: web apps to include: ${WEB_APPS.join(', ')} (comma separated) or none
+                      Without it, init asks about each web app, or keeps them all when it cannot ask
+                      api and documentation are always included
+
 init and onboard use the release that has this CLI's version. Pin a release by
 pinning the CLI: pnpm dlx ${CLI_PACKAGE_NAME}@1.2.0 init my-app
+
+Examples:
+  pnpm dlx ${CLI_PACKAGE_NAME} init my-app --apps web-ssr
+  pnpm dlx ${CLI_PACKAGE_NAME} init my-app --apps web-spa,web-ssr
+  pnpm dlx ${CLI_PACKAGE_NAME} init my-app --apps none
 
 Environment:
   BOILERPLATE_REPO    Override the repository URL (e.g. an SSH URL for a private fork)
 `)
 }
 
+async function runInit(options: InstallerOptions, repoUrl: string, cwd: string): Promise<void> {
+  if (options.positionals.length > 1) {
+    die('init accepts at most one directory argument')
+  }
+  const dirInput = options.positionals[0] || 'my-app'
+  const ref = getCliReleaseRef(options.ref, `init ${dirInput}`)
+  // A bad --apps value fails before any git or pnpm call.
+  const givenApps = options.apps === undefined ? undefined : parseApps(options.apps)
+  need('git')
+  need('pnpm')
+  const dir = resolve(cwd, dirInput)
+  assertValidProjectName(dir)
+  if (existsSync(dir)) {
+    die(`Directory '${dirInput}' already exists`)
+  }
+  // Asked last, so nobody answers questions for a run that cannot start.
+  const apps = givenApps ?? (await askWebApps())
+  info(`Apps in the new project: ${[...ALWAYS_INCLUDED_APPS, ...apps].join(', ')}`)
+  info(`Creating new project in ${dir} from ${repoUrl}@${ref}`)
+  stageProject(repoUrl, ref, dir, apps)
+
+  runGit(['init', '--quiet'], dir)
+  runPnpm(['install'], dir)
+  // The scope rename changes line lengths and package.json key order:
+  // format the new project so it starts clean.
+  if (!tryRunPnpm(['fmt'], dir)) {
+    info('pnpm fmt failed — run it yourself before the first commit')
+  }
+  runPnpm(['rock'], dir)
+  ok(`Project ready in ${dir}`)
+}
+
+async function runOnboard(options: InstallerOptions, repoUrl: string, cwd: string): Promise<void> {
+  if (options.positionals.length > 0) {
+    die('onboard does not accept positional arguments')
+  }
+  const ref = getCliReleaseRef(options.ref, 'onboard')
+  need('git')
+  need('pnpm')
+  if (!existsSync(join(cwd, 'package.json'))) {
+    die('Run this at the root of an existing project (package.json not found)')
+  }
+  fetchSubdirs(
+    repoUrl,
+    ref,
+    ['.boilerstone', '.claude/skills/boilerstone-upgrade', '.cursor/skills/boilerstone-upgrade'],
+    cwd,
+  )
+  rmSync(join(cwd, '.boilerstone/boilerplate.json'), { force: true })
+  const workspacePath = join(cwd, 'pnpm-workspace.yaml')
+  const workspaceBefore = readOptionalFile(workspacePath)
+  process.env.BOILERPLATE_INSTALLER_ONBOARD = '1'
+  await bootstrapProject(cwd)
+  // There is no CLI dependency to install. Bootstrap only edits the workspace
+  // to drop old `.boilerstone` entries: refresh the lockfile then and only
+  // then, so the onboarding commit never carries unrelated lockfile changes.
+  const workspaceChanged = readOptionalFile(workspacePath) !== workspaceBefore
+  if (workspaceChanged) {
+    runPnpm(['install'], cwd)
+  }
+  await offerOnboardCommit(cwd, workspaceChanged)
+  ok('Project onboarded')
+}
+
 export async function runInstaller(argv: string[]): Promise<void> {
   const options = parseArgs(argv)
-  const repoUrl = process.env.BOILERPLATE_REPO?.trim() || defaultBoilerplateRemote
+  const repoUrl = process.env.BOILERPLATE_REPO?.trim() || BOILERPLATE_REMOTE
   const cwd = process.cwd()
 
   if (options.mode === 'help' || options.mode === '-h' || options.mode === '--help') {
@@ -328,62 +467,12 @@ export async function runInstaller(argv: string[]): Promise<void> {
   }
 
   if (options.mode === 'init') {
-    if (options.positionals.length > 1) {
-      die('init accepts at most one directory argument')
-    }
-    const dirInput = options.positionals[0] || 'my-app'
-    const ref = getCliReleaseRef(options.ref, `init ${dirInput}`)
-    need('git')
-    need('pnpm')
-    const dir = resolve(cwd, dirInput)
-    if (existsSync(dir)) {
-      die(`Directory '${dirInput}' already exists`)
-    }
-    info(`Creating new project in ${dir} from ${repoUrl}@${ref}`)
-    stageProject(repoUrl, ref, dir)
-
-    runGit(['init', '--quiet'], dir)
-    runPnpm(['install'], dir)
-    // The scope rename changes line lengths and package.json key order:
-    // format the new project so it starts clean.
-    if (!tryRunPnpm(['fmt'], dir)) {
-      info('pnpm fmt failed — run it yourself before the first commit')
-    }
-    runPnpm(['rock'], dir)
-    ok(`Project ready in ${dir}`)
+    await runInit(options, repoUrl, cwd)
     return
   }
 
   if (options.mode === 'onboard') {
-    if (options.positionals.length > 0) {
-      die('onboard does not accept positional arguments')
-    }
-    const ref = getCliReleaseRef(options.ref, 'onboard')
-    need('git')
-    need('pnpm')
-    if (!existsSync(join(cwd, 'package.json'))) {
-      die('Run this at the root of an existing project (package.json not found)')
-    }
-    fetchSubdirs(
-      repoUrl,
-      ref,
-      ['.boilerstone', '.claude/skills/boilerstone-upgrade', '.cursor/skills/boilerstone-upgrade'],
-      cwd,
-    )
-    rmSync(join(cwd, '.boilerstone/boilerplate.json'), { force: true })
-    const workspacePath = join(cwd, 'pnpm-workspace.yaml')
-    const workspaceBefore = readOptionalFile(workspacePath)
-    process.env.BOILERPLATE_INSTALLER_ONBOARD = '1'
-    await bootstrapProject(cwd)
-    // There is no CLI dependency to install. Bootstrap only edits the workspace
-    // to drop old `.boilerstone` entries: refresh the lockfile then and only
-    // then, so the onboarding commit never carries unrelated lockfile changes.
-    const workspaceChanged = readOptionalFile(workspacePath) !== workspaceBefore
-    if (workspaceChanged) {
-      runPnpm(['install'], cwd)
-    }
-    await offerOnboardCommit(cwd, workspaceChanged)
-    ok('Project onboarded')
+    await runOnboard(options, repoUrl, cwd)
     return
   }
 
