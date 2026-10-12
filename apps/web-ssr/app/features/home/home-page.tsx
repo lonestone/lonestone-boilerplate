@@ -100,18 +100,23 @@ function TeaserCard({ post, index }: { post: TeaserPost; index: number }) {
   )
 }
 
+// This route is prerendered at build time, when the API is not running (CI,
+// Docker build). A failed request must give an empty list, not fail the build.
 export async function loader() {
-  const result = await publicPostControllerGetPosts({
-    query: { offset: 0, pageSize: 3, filter: [] },
-  })
+  try {
+    const result = await publicPostControllerGetPosts({
+      query: { offset: 0, pageSize: 3, filter: [] },
+    })
 
-  if (result.error) {
-    throw result.error
-  }
-
-  return {
-    latestPosts: result.data?.data ?? [],
-    totalPosts: result.data?.meta.itemCount ?? 0,
+    return {
+      latestPosts: result.data?.data ?? [],
+      totalPosts: result.data?.meta.itemCount ?? 0,
+    }
+  } catch {
+    return {
+      latestPosts: [],
+      totalPosts: 0,
+    }
   }
 }
 
