@@ -16,8 +16,10 @@ for arg in "$@"; do
       echo "Usage: $0 [--apply]"
       echo "  Default: print the gh api calls (dry run)."
       echo "  --apply: set squash-only merge, PR title+description as the squash message,"
-      echo "           and create the no-intention label and staging/production"
-      echo "           GitHub Environments if they are missing."
+      # boilerstone:producer-only:begin
+      echo "           create the no-intention label,"
+      # boilerstone:producer-only:end
+      echo "           and create the staging/production GitHub Environments if they are missing."
       echo "  Does not change branch protection or store Dokploy secrets."
       exit 0
       ;;
@@ -57,6 +59,7 @@ run_or_print gh api -X PATCH "repos/${repo}" \
   -F squash_merge_commit_title=PR_TITLE \
   -F squash_merge_commit_message=PR_BODY
 
+# boilerstone:producer-only:begin
 echo
 echo "Label no-intention (skip the migration-intention gate)."
 if [[ "${apply}" == true ]]; then
@@ -72,6 +75,7 @@ if [[ "${apply}" == true ]]; then
 else
   printf 'dry-run: gh api -X POST repos/%s/labels -f name=no-intention ...\n' "${repo}"
 fi
+# boilerstone:producer-only:end
 
 echo
 echo "GitHub Environments staging and production (Promote workflow)."
@@ -98,8 +102,11 @@ fi
 
 echo
 echo "Still do in the GitHub UI (see scripts/github-repo-settings.md):"
-echo "  - Protect main; require checks \"PR title and description\", \"Intention gate\", \"Release note\", plus CI jobs"
+echo "  - Protect main; require checks \"PR title and description\", \"Release note\", plus CI jobs"
 echo "    (not available on a private repository on the free plan: the checks are then advisory,"
 echo "    so check that PR lint is green before merging; finalize-pr runs pnpm lint:pr locally)"
+# boilerstone:producer-only:begin
+echo "  - On the boilerplate repository, also require \"Intention gate\" and \"Intention promote\""
+# boilerstone:producer-only:end
 echo "  - Do not enable merge commits or rebase merging"
 echo "  - On Environments staging and production, add DOKPLOY_URL, DOKPLOY_API_KEY, DOKPLOY_APPLICATIONS"

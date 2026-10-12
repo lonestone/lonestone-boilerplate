@@ -1,5 +1,9 @@
 name: Intention gate
 
+# Producer-only. Without .boilerstone/migration-intentions/ this is not the
+# boilerplate repository and the job skips successfully. The rule is defined
+# in .boilerstone/README.md ("Producer or consumer").
+
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
@@ -13,11 +17,21 @@ jobs:
     name: Intention gate
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Detect skip conditions
         id: gate
         env:
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: |
+          if [ ! -d .boilerstone/migration-intentions ]; then
+            echo "required=false" >> "$GITHUB_OUTPUT"
+            echo ".boilerstone/migration-intentions/ does not exist on this branch, so this is not the boilerplate repository. No intention is required. Skipping."
+            exit 0
+          fi
           if [[ ",${LABELS}," == *",no-intention,"* ]]; then
             echo "required=false" >> "$GITHUB_OUTPUT"
             echo "Label no-intention present. Skipping."
@@ -29,12 +43,6 @@ jobs:
             exit 0
           fi
           echo "required=true" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout repository
-        if: steps.gate.outputs.required == 'true'
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Require a staged unreleased intention
         if: steps.gate.outputs.required == 'true'

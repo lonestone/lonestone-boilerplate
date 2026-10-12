@@ -17,8 +17,11 @@ const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerp
 
 // Producer-only paths dropped from a freshly generated project. The
 // `.boilerstone/` subset is derived from PRODUCER_ARTIFACTS so the two lists
-// cannot drift.
+// cannot drift. Both intention workflows also skip on their own when
+// `.boilerstone/migration-intentions/` is missing, in case this list drifts.
 export const PRODUCER_FILES_TO_REMOVE = [
+  '.github/workflows/intention-gate.yml',
+  '.github/workflows/intention-promote.yml',
   '.claude/skills/boilerstone-release',
   '.cursor/skills/boilerstone-release',
   '.claude/skills/boilerstone-intention',
@@ -126,6 +129,89 @@ function removePaths(rootPath: string, paths: readonly string[]): void {
       console.log(`  ${colorize('✓', 'green')} Removed ${colorize(path, 'dim')}`)
     } catch {
       console.log(`  ${colorize('⚠', 'yellow')} Failed to remove ${colorize(path, 'dim')}`)
+    }
+  }
+}
+
+const PRODUCER_BLOCK_BEGIN = 'boilerstone:producer-only:begin'
+const PRODUCER_BLOCK_END = 'boilerstone:producer-only:end'
+
+/**
+ * Directories whose files may carry producer-only blocks: lines between a
+ * begin and an end marker (in any comment syntax) that only make sense in the
+ * boilerplate repository. Generation removes them; the boilerplate keeps them.
+ */
+export const PRODUCER_BLOCK_ROOTS = ['.github', 'scripts', '.claude', '.cursor']
+
+/**
+ * Remove every producer-only block, marker lines included. Throws on a block
+ * that is nested, never closed, or closed without a begin: a half-stripped
+ * file would ship broken to every new project.
+ */
+export function stripProducerOnlyBlocksFromText(text: string, label: string): string {
+  if (!text.includes(PRODUCER_BLOCK_BEGIN) && !text.includes(PRODUCER_BLOCK_END)) {
+    return text
+  }
+
+  const kept: string[] = []
+  let openedAt = 0
+  let justClosed = false
+  text.split('\n').forEach((line, index) => {
+    const lineNumber = index + 1
+    if (line.includes(PRODUCER_BLOCK_BEGIN)) {
+      if (openedAt) {
+        throw new Error(
+          `${label}:${lineNumber}: producer-only block nested in the one opened at line ${openedAt}`,
+        )
+      }
+      openedAt = lineNumber
+    } else if (line.includes(PRODUCER_BLOCK_END)) {
+      if (!openedAt) {
+        throw new Error(`${label}:${lineNumber}: producer-only block end without a begin`)
+      }
+      openedAt = 0
+      justClosed = true
+    } else if (!openedAt) {
+      // A block set off by blank lines would otherwise leave two in a row.
+      const doubleBlank = justClosed && !line.trim() && !kept.at(-1)?.trim() && kept.length > 0
+      justClosed = false
+      if (!doubleBlank) {
+        kept.push(line)
+      }
+    }
+  })
+
+  if (openedAt) {
+    throw new Error(`${label}:${openedAt}: producer-only block never closed`)
+  }
+  return kept.join('\n')
+}
+
+function listFilesRecursively(rootPath: string, directory: string): string[] {
+  const absolute = join(rootPath, directory)
+  if (!existsSync(absolute)) {
+    return []
+  }
+  return readdirSync(absolute, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name)
+    if (entry.isDirectory()) {
+      return listFilesRecursively(rootPath, path)
+    }
+    return entry.isFile() ? [path] : []
+  })
+}
+
+/** Drop the producer-only blocks from the files under PRODUCER_BLOCK_ROOTS. */
+export function stripProducerOnlyBlocks(rootPath: string): void {
+  for (const path of PRODUCER_BLOCK_ROOTS.flatMap((root) => listFilesRecursively(rootPath, root))) {
+    const filePath = join(rootPath, path)
+    const content = readFileSync(filePath, 'utf-8')
+    const next = stripProducerOnlyBlocksFromText(content, path)
+    if (next !== content) {
+      writeFileSync(filePath, next, 'utf-8')
+      console.log(
+        `  ${colorize('✓', 'green')} Removed producer-only blocks from ${colorize(path, 'dim')}`,
+      )
     }
   }
 }
@@ -368,6 +454,7 @@ export function generateProject(rootPath: string, options: GenerateProjectOption
   console.log(`\n${colorize('🧱 Generating the project', 'cyan')}\n`)
 
   removePaths(rootPath, PRODUCER_FILES_TO_REMOVE)
+  stripProducerOnlyBlocks(rootPath)
   stripCliPackageReferences(rootPath)
   if (options.apps !== undefined) {
     pruneUnselectedApps(rootPath, options.apps)
