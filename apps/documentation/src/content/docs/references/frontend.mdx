@@ -41,26 +41,11 @@ If not specified otherwise, follow the following guidelines:
 - Use react-hook-form for form handling.
 - Use zod for form validation.
 - Use @boilerstone/i18n for internationalization, no hardcoded strings.
-- Use tanstack-query for data fetching
-  - structure queries by features, put the queries options in /features/featureName/utils/featureName-queries.ts
-
-```
-export function fetchOrganizationQueryOptions(options: { pageSize: number, page: number, search?: string }) {
-  return {
-    queryKey: ['organizations', options.page, options.pageSize, options.search],
-    queryFn: () =>
-      apiClient.organizationsControllerFindAll({
-        query: {
-          offset: (options.page - 1) * options.pageSize,
-          pageSize: options.pageSize,
-          filter: options.search ? `name:like:${options.search}` : undefined,
-        },
-      }),
-  }
-}
-
-// in component
-  const { data: organizations } = useQuery({
-    ...fetchOrganizationQueryOptions({ page: pageValue, search: searchValue, pageSize: PAGE_SIZE }),
-  })
-```
+- Use tanstack-query for data fetching. The [data fetching guide](/lonestone-boilerplate/guides/data-fetching) explains why; the rules are:
+  - one hook file per feature, `/features/feature-name/hooks/use-feature-name.ts`, with a key factory and one hook per query and per mutation (`useUserPost`, `useUpdateUserPost`). The hooks call the generated SDK. There is no separate queries file.
+  - components call the hooks. No SDK call and no inline `queryKey` in a component body. Route loaders may call the SDK. Better Auth (`authClient`) calls are out of scope.
+  - keys come only from the feature's key factory, from broad to specific (`all`, `lists()`, `list(params)`, `detail(id)`). Every value the `queryFn` reads goes in the key. Another feature that must invalidate yours imports the factory.
+  - `throwOnError: true` on every SDK call inside a `queryFn` or `mutationFn`. Never set it globally, and never write `if (response.error) throw`.
+  - mutation hooks use `useQueryClient()`, never the `queryClient` singleton, and only handle the cache. They return the invalidation promise, so `isPending` covers the refetch.
+  - no toast, navigation or `console.error` inside a hook. The component passes them to `mutate(variables, { onSuccess, onError })`.
+  - reference implementations: `apps/web-spa/app/features/examples/user-posts` (queries and mutations) and `apps/web-ssr/app/features/comments` (infinite query)

@@ -1,0 +1,146 @@
+---
+title: Data fetching with TanStack Query
+description: One way to read and write API data in the frontends — one hook file per feature, a key factory, the generated SDK
+---
+
+Every feature that talks to the API has one hook file. It holds a key factory and one hook per query and per mutation. The hooks call the SDK that hey-api generates. Components only call the hooks: `useUserPost(id)`, `useUpdateUserPost(id)`.
+
+The reference implementations are `apps/web-spa/app/features/examples/user-posts` (queries and mutations) and `apps/web-ssr/app/features/comments` (infinite query). Copy their shape.
+
+## Where it lives
+
+```
+features/user-posts/
+  hooks/use-user-posts.ts   key factory + one hook per query and per mutation
+  user-posts-page.tsx       useUserPosts({ page, pageSize, search })
+```
+
+The file is `hooks/use-<feature>.ts`, in kebab-case. Split it by concern (`use-user-posts.ts`, `use-user-post-mutations.ts`) only when it gets long. The SDK is the API layer, so there is no extra "queries" file between it and the hooks.
+
+Do not call an SDK function or write a `queryKey` in a component body: it calls a hook. Router loaders may call the SDK directly. Better Auth calls (`authClient`) are not part of this guide.
+
+## Keys
+
+Write one key factory per feature. Keys go from broad to specific, so you can invalidate by prefix.
+
+```ts
+export const userPostKeys = {
+  all: ['user-posts'] as const,
+  lists: () => [...userPostKeys.all, 'list'] as const,
+  list: (params: UserPostsListParams) => [...userPostKeys.lists(), params] as const,
+  details: () => [...userPostKeys.all, 'detail'] as const,
+  detail: (id: string) => [...userPostKeys.details(), id] as const,
+}
+```
+
+Every value the `queryFn` reads must be in the key. If the page number changes the request, the page number is in the key.
+
+A key typed by hand in two places drifts. Another feature that must invalidate yours imports `userPostKeys` from the hook file. It does not retype the array.
+
+## Reading
+
+One hook per query. It calls `useQuery` with a key from the factory and a `queryFn` that calls the SDK.
+
+```ts
+export function useUserPost(id: string) {
+  return useQuery({
+    queryKey: userPostKeys.detail(id),
+    queryFn: async ({ signal }) => {
+      const { data } = await postControllerGetUserPost({
+        path: { id },
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+  })
+}
+```
+
+```tsx
+const { data: post, isLoading } = useUserPost(id)
+```
+
+The hook returns the `useQuery` result as is, so everything in the TanStack docs applies to it. Put extra behavior in the hook, not in the component: an `enabled` condition, a `select`, or two queries combined.
+
+If a router loader or `queryClient.prefetchQuery` needs the same query, pull the `queryKey` and `queryFn` out into a function that returns `queryOptions({ ... })`. Keep it in the same hook file, export it, and call it from the hook. The loader imports it from there. Do not add that layer before a second caller needs it.
+
+### Errors
+
+Pass `throwOnError: true` to every SDK call inside a `queryFn` or `mutationFn`. The SDK then throws on a failed request, and `data` is never `undefined`. You no longer write `if (response.error) throw response.error`.
+
+Do it per call, not with `client.setConfig({ throwOnError: true })`. The global setting changes every caller, including loaders that read `response.error`, and it does not narrow the `data` type.
+
+## Writing
+
+A mutation hook handles the cache and nothing else. It always uses `useQueryClient()`. Do not import the `queryClient` singleton: on web-ssr a module-level client is shared between requests.
+
+```ts
+export function useUpdateUserPost(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: UpdatePostSchema) => {
+      const { data } = await postControllerUpdatePost({ path: { id }, body, throwOnError: true })
+      return data
+    },
+    // Return the promise: `isPending` stays true until the refetch is done.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: userPostKeys.detail(id) }),
+        queryClient.invalidateQueries({ queryKey: userPostKeys.lists() }),
+      ]),
+  })
+}
+```
+
+The caller owns the screen: toast, navigation, form state. Pass them to `mutate`.
+
+```tsx
+const { mutate: updatePost, isPending } = useUpdateUserPost(id)
+
+updatePost(data, {
+  onSuccess: () => toast.success(t('toasts.postUpdated')),
+  onError: () => toast.error(t('toasts.postUpdateError')),
+})
+```
+
+Two rules for the call site:
+
+- Callbacks passed to `mutate` do not run if the component unmounts before the request ends. If the cache must be updated either way, put it in the hook, as above.
+- Use `mutateAsync` with `try/catch` only when you must wait for the result before the next step. For everything else, use `mutate`.
+
+## Server rendering (web-ssr)
+
+On web-ssr, a route that reads its data once per visit returns it from the `loader`. It does not need TanStack Query.
+
+Use TanStack Query when the data is refetched or invalidated on the client after the first render. To also have it in the first HTML, extract the options as described under Reading, write them on a public endpoint, and prefetch them in the loader with a client created for that request. `root.tsx` already merges `loaderData.dehydratedState` into the provider.
+
+```ts
+export async function loader({ request }: Route.LoaderArgs) {
+  const url = new URL(request.url)
+  const params = {
+    page: Number(url.searchParams.get('page') ?? 1),
+    search: url.searchParams.get('search') ?? '',
+  }
+
+  const queryClient = createQueryClient()
+  await queryClient.prefetchQuery(postsListQueryOptions(params))
+
+  return { params, dehydratedState: dehydrate(queryClient) }
+}
+```
+
+The component reads `params` from `loaderData`, calls the hook (which uses the same `postsListQueryOptions`), and finds the data already in the cache. Use public endpoints only: the loader runs on the server and does not forward the browser's cookie. No example route uses this yet.
+
+## What we do not do
+
+- **No optimistic-update helper.** A generic `useResourceMutation` with rollback is a lot of code for a case most screens do not have. Add optimistic updates in the one mutation that needs them.
+- **No generated TanStack Query plugin.** hey-api can generate query options from the SDK. No Lonestone project uses it, and we keep the hooks and keys hand-written.
+- **No toast, navigation or `console.error` inside a mutation hook.** They belong to the caller, and hard-coded strings there bypass i18n.
+
+## Review checklist
+
+- No SDK call and no inline `queryKey` in a component: it calls a hook.
+- No key typed outside the key factory.
+- Every SDK call in a `queryFn` or `mutationFn` has `throwOnError: true`.
+- Mutation hooks use `useQueryClient()` and return the invalidation promise.

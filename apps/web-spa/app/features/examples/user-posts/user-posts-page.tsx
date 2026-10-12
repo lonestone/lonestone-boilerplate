@@ -1,16 +1,14 @@
-import { postControllerGetUserPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { EmptyState } from '@boilerstone/ui/components/app'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import { FilterRule } from '@lonestone/nzoth/client'
-import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'motion/react'
 import { ChevronLeft, ChevronRight, FileText, PlusCircle, SearchIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { UserPostCard } from '@/features/examples/user-posts/user-post-card'
+import { useUserPosts } from '@/features/examples/user-posts/hooks/use-user-posts'
 
 const PAGE_SIZE = 12
 
@@ -40,25 +38,10 @@ export default function PostsListPage() {
     setSearchParams(newParams)
   }
 
-  const { data: posts, isLoading } = useQuery({
-    queryKey: ['posts', pageValue, searchValue],
-    queryFn: async () => {
-      const response = await postControllerGetUserPosts({
-        query: {
-          offset: (pageValue - 1) * PAGE_SIZE,
-          pageSize: PAGE_SIZE,
-          filter: searchValue
-            ? [{ property: 'title', rule: FilterRule.LIKE, value: searchValue }]
-            : [],
-        },
-      })
-
-      if (response.error) {
-        throw response.error
-      }
-
-      return response.data
-    },
+  const { data: posts, isLoading } = useUserPosts({
+    page: pageValue,
+    pageSize: PAGE_SIZE,
+    search: searchValue,
   })
 
   const totalPages = useMemo(() => {

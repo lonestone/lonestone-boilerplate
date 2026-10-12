@@ -10,9 +10,9 @@ import { useEffect, useMemo } from 'react'
 import { CommentItem } from '@/features/comments/comment-item'
 import {
   useAddComment,
-  useCommentsQuery,
+  useComments,
   useDeleteComment,
-} from '@/features/comments/utils/comments-queries'
+} from '@/features/comments/hooks/use-comments'
 import { CommentForm } from './comment-form'
 
 interface CommentsListProps {
@@ -24,7 +24,7 @@ interface CommentsListProps {
 export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsListProps) {
   const { ref, inView } = useInView()
 
-  const { mutateAsync: addComment, isPending: isAddingComment } = useAddComment({ postId })
+  const { mutateAsync: addComment, isPending: isAddingComment } = useAddComment(postId)
 
   const onSubmit = async (data: CreateCommentSchema): Promise<void> => {
     await addComment(data)
@@ -37,9 +37,9 @@ export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsLi
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useCommentsQuery({ postId })
+  } = useComments(postId)
 
-  const deleteCommentMutation = useDeleteComment({ postId })
+  const deleteCommentMutation = useDeleteComment(postId)
 
   const allComments = useMemo(() => {
     return commentsPages?.pages.flatMap((page) => page?.data || []) || []
@@ -92,7 +92,11 @@ export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsLi
               currentUserId={currentUserId}
               postAuthorId={postAuthorId}
               isAddingComment={isAddingComment}
-              onDelete={(commentId) => deleteCommentMutation.mutate(commentId)}
+              onDelete={(commentId) =>
+                deleteCommentMutation.mutate(commentId, {
+                  onError: (error) => console.error('Error deleting comment:', error),
+                })
+              }
               onReplySubmit={async (data) => {
                 await onSubmit(data)
               }}
