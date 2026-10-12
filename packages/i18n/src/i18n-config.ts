@@ -23,7 +23,7 @@ export const DEFAULT_LOCALE: SupportedLocale = 'fr'
 export const FALLBACK_LOCALE: SupportedLocale = 'fr'
 
 export function isSupportedLocale(locale: string): locale is SupportedLocale {
-  return locale in SUPPORTED_LOCALES
+  return (SUPPORTED_LOCALE_KEYS as readonly string[]).includes(locale)
 }
 
 /** Normalize `fr`, `fr-FR`, or unknown tags to a SupportedLocale key. */

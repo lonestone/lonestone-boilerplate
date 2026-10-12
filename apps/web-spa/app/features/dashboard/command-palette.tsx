@@ -11,7 +11,7 @@ import {
 import { Brain, Component, LayoutDashboard, Moon, PlusCircle, Sun, User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import useTheme from '@/hooks/useTheme'
+import useTheme from '@/hooks/use-theme'
 
 interface CommandPaletteProps {
   open: boolean

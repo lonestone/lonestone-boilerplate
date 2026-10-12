@@ -126,7 +126,7 @@ function getPnpmCalls(commandLog: string): string[] {
 
 function cloneCommand(tag: string): RegExp {
   return new RegExp(
-    `git clone --quiet --depth 1 --branch ${tag.replaceAll('.', '\\.')} https://github\\.com/lonestone/lonestone-boilerplate \\S*\\.lonestone-init-\\S+\\n`,
+    `git clone --quiet --depth 1 --branch ${tag.replaceAll('.', '\\.')} https://github\\.com/lonestone/lonestone-boilerplate(?:\\.git)? \\S*\\.lonestone-init-\\S+\\n`,
   )
 }
 
@@ -183,7 +183,7 @@ const cliVersion = (
 
 function onboardCloneCommand(tag: string): RegExp {
   return new RegExp(
-    `git clone --quiet --depth 1 --filter=blob:none --sparse --branch ${tag.replaceAll('.', '\\.')} https://github\\.com/lonestone/lonestone-boilerplate \\S+\\n`,
+    `git clone --quiet --depth 1 --filter=blob:none --sparse --branch ${tag.replaceAll('.', '\\.')} https://github\\.com/lonestone/lonestone-boilerplate(?:\\.git)? \\S+\\n`,
   )
 }
 

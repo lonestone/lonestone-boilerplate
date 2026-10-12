@@ -402,20 +402,16 @@ function findClassEnd(content: string, className: string): number {
  * Inserts missing properties into a class body.
  */
 function insertPropertiesIntoClass(
+  filePath: string,
   content: string,
   className: string,
   propertiesCode: string,
 ): string {
-  const classStartRegex = new RegExp(`\\nexport\\s+class\\s+${className}\\s*\\{`)
-  const startMatch = classStartRegex.exec(content)
-
-  if (!startMatch) {
-    return content
-  }
-
   const classEnd = findClassEnd(content, className)
   if (classEnd === -1) {
-    return content
+    throw new Error(
+      `Cannot find class ${className} to add Better Auth fields in ${filePath}. Expected "export class ${className} {" in the entity file.`,
+    )
   }
 
   const insertion = `\n${propertiesCode}\n`
@@ -475,7 +471,7 @@ function patchExistingEntityFile(
       for (const [name, path] of property.entityImports) entityImports.set(name, path)
     }
 
-    content = insertPropertiesIntoClass(content, diff.metadata!.className, propertiesCode)
+    content = insertPropertiesIntoClass(filePath, content, diff.metadata!.className, propertiesCode)
   }
 
   return ensureEntityImports(

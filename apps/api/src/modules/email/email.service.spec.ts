@@ -1,23 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { Transporter } from 'nodemailer'
 import { EmailService } from './email.service'
+
+const { mockSendMail, mockVerify } = vi.hoisted(() => ({
+  mockSendMail: vi.fn(),
+  mockVerify: vi.fn(),
+}))
+
+vi.mock('nodemailer', () => ({
+  createTransport: vi.fn(() => ({ sendMail: mockSendMail, verify: mockVerify })),
+}))
 
 describe('emailService', () => {
   let service: EmailService
-  let mockTransporter: Partial<Transporter>
 
   beforeEach(async () => {
+    mockSendMail.mockReset()
+    mockVerify.mockReset()
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [EmailService],
     }).compile()
 
     service = module.get<EmailService>(EmailService)
-
-    // Create mock transporter
-    mockTransporter = {
-      sendMail: vi.fn(),
-      verify: vi.fn(),
-    }
   })
 
   it('should be defined', () => {
@@ -32,15 +36,7 @@ describe('emailService', () => {
         content: 'Test content',
       }
 
-      // Mock the transporter to avoid actual email sending in tests
-      const mockSendMail = vi.fn().mockResolvedValue({ messageId: 'test-message-id' })
-      mockTransporter.sendMail = mockSendMail
-
-      // Use Object.defineProperty to mock the private transporter
-      Object.defineProperty(service, 'transporter', {
-        value: mockTransporter,
-        writable: true,
-      })
+      mockSendMail.mockResolvedValue({ messageId: 'test-message-id' })
 
       await service.sendEmail(emailOptions)
 
@@ -61,13 +57,7 @@ describe('emailService', () => {
         html: '<h1>Test HTML</h1>',
       }
 
-      const mockSendMail = vi.fn().mockResolvedValue({ messageId: 'test-message-id' })
-      mockTransporter.sendMail = mockSendMail
-
-      Object.defineProperty(service, 'transporter', {
-        value: mockTransporter,
-        writable: true,
-      })
+      mockSendMail.mockResolvedValue({ messageId: 'test-message-id' })
 
       await service.sendEmail(emailOptions)
 
@@ -83,13 +73,7 @@ describe('emailService', () => {
 
   describe('verifyConnection', () => {
     it('should return true when connection is verified', async () => {
-      const mockVerify = vi.fn().mockResolvedValue(true)
-      mockTransporter.verify = mockVerify
-
-      Object.defineProperty(service, 'transporter', {
-        value: mockTransporter,
-        writable: true,
-      })
+      mockVerify.mockResolvedValue(true)
 
       const result = await service.verifyConnection()
 
@@ -98,13 +82,7 @@ describe('emailService', () => {
     })
 
     it('should return false when connection verification fails', async () => {
-      const mockVerify = vi.fn().mockRejectedValue(new Error('Connection failed'))
-      mockTransporter.verify = mockVerify
-
-      Object.defineProperty(service, 'transporter', {
-        value: mockTransporter,
-        writable: true,
-      })
+      mockVerify.mockRejectedValue(new Error('Connection failed'))
 
       const result = await service.verifyConnection()
 

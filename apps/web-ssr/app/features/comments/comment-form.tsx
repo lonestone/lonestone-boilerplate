@@ -7,7 +7,6 @@ import { cn } from '@boilerstone/ui/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import { Loader2, Send, User } from 'lucide-react'
-import { useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 
 interface CommentFormProps {
@@ -33,16 +32,6 @@ export function CommentForm({ initialData, onSubmit, isPending, onCancel }: Comm
     },
     mode: 'onChange',
   })
-
-  // Reset form when initialData changes (e.g. when cancelling a reply)
-  useEffect(() => {
-    if (initialData) {
-      reset({
-        content: initialData.content || '',
-        parentId: initialData.parentId || undefined,
-      })
-    }
-  }, [initialData, reset])
 
   // Handle form submission
   const _onSubmit = async (data: CreateCommentSchema) => {

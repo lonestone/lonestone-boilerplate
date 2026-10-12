@@ -4,7 +4,7 @@ import {
   publicPostControllerGetPosts,
   publicPostControllerLikePost,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
-import PostContent from '@boilerstone/ui/components/posts/PostContent'
+import PostContent from '@boilerstone/ui/components/posts/post-content'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { motion, useReducedMotion, useScroll, useSpring } from 'motion/react'

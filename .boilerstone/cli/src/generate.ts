@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'no
 import { extname, join } from 'node:path'
 import type { WebApp } from './apps.js'
 import {
+  BOILERPLATE_REMOTE,
   CLI_PACKAGE_NAME,
   type PackageJsonShape,
   PRODUCER_ARTIFACTS,
@@ -13,7 +14,6 @@ import { trackingState } from './tracking-state.js'
 import { colorize, isolatedGitEnv, runFileSync } from './utils.js'
 
 const TEMPLATE_SCOPE = '@boilerstone'
-const defaultBoilerplateRemote = 'https://github.com/lonestone/lonestone-boilerplate.git'
 
 // Producer-only paths dropped from a freshly generated project. The
 // `.boilerstone/` subset is derived from PRODUCER_ARTIFACTS so the two lists
@@ -73,7 +73,7 @@ export function isBoilerplateMaintainerCheckout(rootPath: string): boolean {
       env: isolatedGitEnv(),
     })
 
-    return normalizeGitRemote(originUrl) === normalizeGitRemote(defaultBoilerplateRemote)
+    return normalizeGitRemote(originUrl) === normalizeGitRemote(BOILERPLATE_REMOTE)
   } catch {
     return false
   }

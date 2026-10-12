@@ -9,15 +9,7 @@ import fetch from 'node-fetch'
  * It'll then be converted back to correctly formatted strings before being sent to the server (See index.ts at root of the package)
  * Nzoth will handle the backend verification of the sort and filter strings
  */
-async function main() {
-  const url = `${process.env.API_URL}/docs.json`
-  const tmp = path.resolve('tmp', 'openapi.json')
-  const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error(`Failed to fetch OpenAPI spec from ${url}: ${res.status} ${res.statusText}`)
-  }
-  const spec = await res.json()
-
+function transformSpec(spec) {
   spec.components = spec.components || {}
   spec.components.schemas = spec.components.schemas || {}
 
@@ -72,10 +64,26 @@ async function main() {
     }
   }
 
+  return spec
+}
+
+async function main() {
+  const url = `${process.env.API_URL}/docs.json`
+  const tmp = path.resolve('tmp', 'openapi.json')
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch OpenAPI spec from ${url}: ${res.status} ${res.statusText}`)
+  }
+  const spec = transformSpec(await res.json())
+
   fs.mkdirSync(path.dirname(tmp), { recursive: true })
   fs.writeFileSync(tmp, JSON.stringify(spec, null, 2))
   // oxlint-disable-next-line no-console
   console.log('✔ OpenAPI spec transformed with dynamic filter/sort arrays')
 }
 
-main().catch(console.error)
+main().catch((error) => {
+  // oxlint-disable-next-line no-console
+  console.error(error)
+  process.exit(1)
+})

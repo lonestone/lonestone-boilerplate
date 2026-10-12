@@ -28,11 +28,6 @@ export default function AuthVerifyEmailPage() {
 
       return response.data
     },
-    onSuccess: () => {
-      setTimeout(() => {
-        navigate('/login')
-      }, 3000)
-    },
   })
 
   useEffect(() => {
@@ -42,6 +37,20 @@ export default function AuthVerifyEmailPage() {
     }
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
+
+  useEffect(() => {
+    if (!isSuccess) {
+      return
+    }
+
+    const timerId: ReturnType<typeof setTimeout> = setTimeout(() => {
+      navigate('/login')
+    }, 3000)
+
+    return () => {
+      clearTimeout(timerId)
+    }
+  }, [isSuccess, navigate])
 
   if (isPending) {
     return (
