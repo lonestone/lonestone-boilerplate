@@ -1,10 +1,12 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomBytes } from 'node:crypto'
+import type { DynamicModule } from '@nestjs/common'
 import { INestApplication } from '@nestjs/common'
+import { AuthModule as BetterAuthModule } from '@thallesp/nestjs-better-auth'
 import { NextFunction, Request, Response } from 'express'
 import { BetterAuthSession } from 'src/modules/auth/auth.config'
-import supertest from 'supertest'
 import { User } from '../../modules/auth/auth.entity'
+import supertest from 'supertest'
 
 /** Session scoped to the current request (enables parallel tests). Fallback: global _session when no header. */
 export const testSessionStorage = new AsyncLocalStorage<BetterAuthSession>()
@@ -17,22 +19,33 @@ export function clearTestSessionStore(): void {
   testSessionStore.clear()
 }
 
-export interface MockAuthService {
-  api: { getSession: () => Promise<BetterAuthSession | null> }
+export interface MockAuthApi {
+  getSession: () => Promise<BetterAuthSession | null>
+}
+
+export interface MockAuthHandle {
+  /** Minimal Better Auth-shaped object for AuthModule.forRoot / AuthGuard */
+  auth: {
+    api: MockAuthApi
+    options: { basePath: string }
+  }
   setSession: (session: BetterAuthSession) => void
   clearSession: () => void
 }
 
 /**
- * Creates a mock AuthService for e2e tests.
- * Uses useValue (not useClass) so it does not depend on MODULE_OPTIONS_TOKEN injection.
+ * Creates a mock Better Auth instance for e2e tests.
+ * AuthGuard reads session via options.auth.api.getSession (not AuthService).
  */
-export function createMockAuthService(): MockAuthService {
+export function createMockAuthHandle(): MockAuthHandle {
   let _session: BetterAuthSession = null
 
+  const getSession = async () => testSessionStorage.getStore() ?? _session
+
   return {
-    api: {
-      getSession: async () => testSessionStorage.getStore() ?? _session,
+    auth: {
+      api: { getSession },
+      options: { basePath: '/api/auth' },
     },
     setSession(session: BetterAuthSession) {
       _session = session
@@ -41,6 +54,17 @@ export function createMockAuthService(): MockAuthService {
       _session = null
     },
   }
+}
+
+/**
+ * Nest AuthModule configured for e2e: global AuthGuard + mock getSession, no HTTP handler mount.
+ */
+export function createTestAuthModule(mock: MockAuthHandle): DynamicModule {
+  return BetterAuthModule.forRoot({
+    auth: mock.auth as never,
+    disableTrustedOriginsCors: true,
+    disableControllers: true,
+  })
 }
 
 const TEST_SESSION_ID_HEADER = 'X-Test-Session-Id'

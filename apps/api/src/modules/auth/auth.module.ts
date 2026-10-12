@@ -1,36 +1,30 @@
-import type { AuthContext, MiddlewareContext, MiddlewareOptions } from 'better-auth'
-import type { MiddlewareConsumer, NestModule } from '@nestjs/common'
-import { MikroORM } from '@mikro-orm/core'
+import { MikroORM, RequestContext } from '@mikro-orm/core'
 import { MikroOrmModule } from '@mikro-orm/nestjs'
-import { Global, Inject, Module, RequestMethod } from '@nestjs/common'
-import { DiscoveryModule, DiscoveryService, MetadataScanner } from '@nestjs/core'
-import { createAuthMiddleware } from 'better-auth/api'
-import { toNodeHandler } from 'better-auth/node'
+import { Global, Module } from '@nestjs/common'
+import { AuthModule as BetterAuthModule } from '@thallesp/nestjs-better-auth'
 import { config } from '../../config/env.config'
 import { EmailModule } from '../email/email.module'
 import { EmailService } from '../email/email.service'
-import { BetterAuthType, createBetterAuth } from './auth.config'
-import { AFTER_HOOK_KEY, BEFORE_HOOK_KEY, HOOK_KEY } from './auth.decorator'
-import { AuthModuleOptions, ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } from './auth.definition'
+import { createBetterAuth } from './auth.config'
 import { Account, Session, User, Verification } from './auth.entity'
-import { AuthGuard } from './auth.guard'
-import { AuthService } from './auth.service'
 
+/**
+ * Lonestone auth module: wires Better Auth (via @thallesp/nestjs-better-auth)
+ * with MikroORM entities, email callbacks, and RequestContext for the auth handler.
+ */
 @Global()
 @Module({
   imports: [
-    DiscoveryModule,
     EmailModule,
     MikroOrmModule.forFeature([User, Session, Account, Verification]),
-  ],
-  providers: [
-    {
-      provide: MODULE_OPTIONS_TOKEN,
-      useFactory: (
-        emailService: EmailService,
-        orm: MikroORM,
-      ): AuthModuleOptions<BetterAuthType> => {
-        const betterAuth = createBetterAuth({
+    BetterAuthModule.forRootAsync({
+      imports: [EmailModule],
+      inject: [EmailService, MikroORM],
+      useFactory: (emailService: EmailService, orm: MikroORM) => ({
+        // App-level CORS in main.ts already covers all methods (incl. PATCH).
+        // The library's trustedOrigins CORS omits PATCH, so keep it disabled.
+        disableTrustedOriginsCors: true,
+        auth: createBetterAuth({
           baseUrl: config.api.baseUrl,
           secret: config.betterAuth.secret,
           trustedOrigins: config.betterAuth.trustedOrigins,
@@ -51,86 +45,19 @@ import { AuthService } from './auth.service'
               content: `Hello ${data.user.name}, please verify your email by clicking on the link below: <a href="${url}">${url}</a>`,
             })
           },
-        })
-        return {
-          auth: betterAuth,
-        }
-      },
-      inject: [EmailService, MikroORM],
-    },
-    AuthService,
-    AuthGuard,
+        }),
+        bodyParser: {
+          json: { enabled: true },
+          urlencoded: { enabled: true, extended: true },
+          // Enables req.rawBody for webhook signature verification (e.g. Stripe).
+          rawBody: true,
+        },
+        middleware: (_req, _res, next) => {
+          RequestContext.create(orm.em, next)
+        },
+      }),
+    }),
   ],
-  exports: [AuthService, AuthGuard],
+  exports: [MikroOrmModule, BetterAuthModule],
 })
-export class AuthModule extends ConfigurableModuleClass implements NestModule {
-  constructor(
-    @Inject(DiscoveryService)
-    private readonly discoveryService: DiscoveryService,
-    @Inject(MetadataScanner)
-    private readonly metadataScanner: MetadataScanner,
-    @Inject(MODULE_OPTIONS_TOKEN)
-    private readonly options: AuthModuleOptions<BetterAuthType>,
-  ) {
-    super()
-  }
-
-  configure(consumer: MiddlewareConsumer) {
-    const auth = this.options.auth
-
-    const providers = this.discoveryService
-      .getProviders()
-      .filter(
-        ({ metatype, instance }) => metatype && instance && Reflect.getMetadata(HOOK_KEY, metatype),
-      )
-
-    for (const provider of providers) {
-      const providerPrototype = Object.getPrototypeOf(provider.instance!)
-      const methods = this.metadataScanner.getAllMethodNames(providerPrototype)
-
-      for (const method of methods) {
-        const providerMethod = providerPrototype[method]
-
-        this.setupHook(BEFORE_HOOK_KEY, 'before', providerMethod, provider.instance)
-        this.setupHook(AFTER_HOOK_KEY, 'after', providerMethod, provider.instance)
-      }
-    }
-
-    const handler = toNodeHandler(auth)
-
-    consumer.apply(handler).forRoutes({
-      path: '/auth/*',
-      method: RequestMethod.ALL,
-    })
-  }
-
-  private setupHook(
-    metadataKey: symbol,
-    hookType: 'before' | 'after',
-    providerMethod: (
-      ctx: MiddlewareContext<
-        MiddlewareOptions,
-        AuthContext & {
-          returned?: object
-          responseHeaders?: Headers
-        }
-      >,
-    ) => Promise<void>,
-    providerInstance: object,
-  ) {
-    const auth = this.options.auth
-    const hookPath = Reflect.getMetadata(metadataKey, providerMethod)
-    if (!hookPath || !auth?.options.hooks) return
-
-    const originalHook = auth.options.hooks[hookType]
-    auth.options.hooks[hookType] = createAuthMiddleware(async (ctx) => {
-      if (originalHook) {
-        await originalHook(ctx)
-      }
-
-      if (hookPath === ctx.path) {
-        await providerMethod.call(providerInstance, ctx)
-      }
-    })
-  }
-}
+export class AuthModule {}

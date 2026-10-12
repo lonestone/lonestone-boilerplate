@@ -9,6 +9,7 @@ import type {
 } from './ai-example.contract'
 import { TypedBody, TypedController, TypedRoute } from '@lonestone/nzoth/server'
 import { Logger } from '@nestjs/common'
+import { AllowAnonymous } from '@thallesp/nestjs-better-auth'
 import { AiService } from '../../ai/ai.service'
 import { LangfuseService } from '../../ai/langfuse.service'
 import {
@@ -25,6 +26,7 @@ import {
  * Trace use-case examples — no auth required.
  * See docs: Organizing Traces (4_ai.mdx).
  */
+@AllowAnonymous()
 @TypedController('ai/examples')
 export class AiExampleUseCasesController {
   private readonly logger = new Logger(AiExampleUseCasesController.name)
