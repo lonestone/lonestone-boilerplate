@@ -57,6 +57,7 @@
 - [v1.0.0.mdx](./src/content/docs/releases/v1.0.0.mdx) - First public release of the Lonestone boilerplate
 - [v1.1.0.mdx](./src/content/docs/releases/v1.1.0.mdx) - From writing a commit to deploying in production — one squash message, and everything else derives from it
 - [v1.2.0.mdx](./src/content/docs/releases/v1.2.0.mdx) - The installer and upgrade tool become one published CLI, and existing projects get a first bundle of fixes
+- [v1.3.0.mdx](./src/content/docs/releases/v1.3.0.mdx) - New projects choose their web apps, the API delegates its auth glue to a maintained package, and generated projects stop failing the intention checks
 
 ## Root
 

@@ -1,5 +1,5 @@
 ---
-id: unreleased/nestjs-better-auth
+id: v1.3.0/nestjs-better-auth
 domain: auth
 classification: breaking-manual
 pr: 130
@@ -93,4 +93,4 @@ Known limit of the package: its guard calls `getSession()` before it checks `@Al
 
 ## Record Result
 
-Run `pnpm boilerplate upgrade record --id unreleased/nestjs-better-auth --applied` after validation passes, or record it as skipped with a reason. The id stays `unreleased/…` until the boilerplate release promotes it.
+Run `pnpm boilerplate upgrade record --id v1.3.0/nestjs-better-auth --applied` after validation passes, or record it as skipped with a reason.
