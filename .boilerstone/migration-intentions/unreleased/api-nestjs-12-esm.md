@@ -37,7 +37,7 @@ The image still applies migrations with `pnpm db:migrate:up` and the `MIKRO_ORM_
 Work gap by gap. Skip example modules the project removed. Keep business logic as is: only decorators, imports and config move.
 
 1. **Dependencies and ESM** — signal: `apps/api/package.json` has `@nestjs/core` 11.x, no `"type": "module"`, or lists `@lonestone/nzoth`.
-   Align the Nest pins (`@nestjs/*` 12.1.x, `@nestjs/config` / `swagger` / `cli` / `schematics` 12.0.x), `@amplication/opentelemetry-nestjs` 7, `@mikro-orm/nestjs` 7.1, `express` 5 and `nestjs-pino` 5 with the staged reference. Add `"type": "module"`. Remove `@lonestone/nzoth` from every app. In `pnpm-workspace.yaml`, remove any `allowAny` on `@nestjs/*` and add only the scoped `@sentry/nestjs>@nestjs/*` exception.
+   Align the Nest pins (`@nestjs/*` 12.1.x, `@nestjs/config` / `swagger` / `cli` / `schematics` 12.0.x), `@amplication/opentelemetry-nestjs` 7, `@mikro-orm/nestjs` 7.1, `express` 5 and `nestjs-pino` 5 with the staged reference. Move every other `@nestjs/*` package the project uses to a release that accepts Nest 12 (for example `@nestjs/schedule` 12.0.x), or remove it if nothing imports it: the reference dropped `@nestjs/schedule` for that reason. Add `"type": "module"`. Remove `@lonestone/nzoth` from every app. In `pnpm-workspace.yaml`, remove any `allowAny` on `@nestjs/*` and add only the scoped `@sentry/nestjs>@nestjs/*` exception.
    Done when: `pnpm install` passes with `strictPeerDependencies: true` and `rg @lonestone/nzoth apps/*/package.json` returns nothing.
 
 2. **TypeScript module settings** — signal: `apps/api/tsconfig.json` uses `"module": "nodenext"` or lacks `verbatimModuleSyntax`.
@@ -46,11 +46,12 @@ Work gap by gap. Skip example modules the project removed. Keep business logic a
 
 3. **Validation, serialization and OpenAPI** — signal: `rg "@lonestone/nzoth" apps/api/src` returns matches (`TypedRoute`, `TypedBody`, `TypedParam`, `TypedQuery`, `registerSchema`).
    Register `StandardSchemaValidationPipe` and `StandardSchemaSerializerInterceptor` globally in `main.ts`. Replace each typed decorator with the Nest decorator plus `{ schema }`, `@SerializeOptions({ schema })` and `@ApiOkResponse({ standardSchema })`, following the staged posts and comments controllers. Copy `apps/api/src/common/http/`: its OpenAPI converter turns each `.meta({ title })` into a named component, as nzoth did, so the generated client keeps type names such as `CommentSchema`; its `sort` / `filter` helpers keep the `format` the OpenAPI generator turns into typed arrays. Swagger marks every named `@Query` as required, so add `@ApiQuery({ name, required: false })` for optional ones such as `sort` and `filter`. Declare path parameters the method does not read with `@ApiParam`. Replace each nzoth `registerSchema()` with the one from `common/http/openapi.ts`, and call `addRegisteredSchemas(document)` after `SwaggerModule.createDocument`. Set `app.set('query parser', 'extended')`, because Express 5 no longer expands nested query keys.
+   Validation errors change shape. nzoth answered `{ statusCode, timestamp, path, errors }`, with the Zod issues in `errors`. Nest answers `{ statusCode, error, message }`, where `message` holds one `"field: reason"` string per issue. A response that fails its schema becomes a plain 500. Update any client, frontend form or test that reads `errors`.
    Done when: `rg @lonestone/nzoth apps/api/src` returns nothing, and after `pnpm generate` against the dev server the frontend apps typecheck with no change to their imports.
 
-4. **Static entity list** — signal: `apps/api/src/modules/db/db.config.ts` discovers entities through a glob.
-   Run `pnpm --filter=api db:entities` (script from the staged reference) and point `entities` / `entitiesTs` to `entities.generated.ts`. The list does not depend on the build layout, and it types the `EntityManager`.
-   Done when: `db.config.ts` imports `./entities.generated` and the API boots against an empty database.
+4. **Entity discovery and snapshot name** — signal: `apps/api/src/modules/db/entities.ts` does not exist, or the migrations folder still has a `.snapshot-<dbName>.json`.
+   Keep the folder globs in `db.config.ts` (`./dist/**/*.entity.js` and `./src/**/*.entity.ts`): the MikroORM CLI uses them, from the sources in dev and from `dist/` in the image. Copy `entities.ts`. Its `import.meta.glob` collects every class exported by a `*.entity.ts` file, and Vite turns it into static imports in dev, tests and the build. Pass it as `entities` and `entitiesTs` in `db.service.ts` and in the test ORM helpers. Under vite-node and Vitest, MikroORM cannot import `.ts` entity files by path, so code that runs through Vite needs class references. Never import `entities.ts` from `db.config.ts`, because the CLI does not run through Vite. The staged `db.config.ts` also sets `migrations.snapshotName: 'snapshot'`, so the snapshot no longer depends on the database name. In the same commit, `git mv` the project's `.snapshot-<dbName>.json` to `src/modules/db/migrations/snapshot.json`, or the next `db:migrate:create` runs without a snapshot.
+   Done when: `dotenvx run -- npx mikro-orm migration:check` in `apps/api` reports the schema as up to date, no `.snapshot-*.json` remains, and the API boots and serves a route that reads the database.
 
 5. **Build, dev and tests on Vite** — signal: `apps/api/package.json` runs `nest build` / `nest start`, or `apps/api/vitest.config.ts` exists.
    Replace it with the staged `apps/api/vite.config.ts`. Adopt the `build`, `start`, `dev` and `test` scripts. Copy the reload hook and the one-time telemetry guard from the staged `main.ts`. Remove the Nest CLI builder options from `nest-cli.json`, but keep the CLI for schematics. Set `module.type: es6` in `.swcrc`. Remove `@swc/cli` if the project lists it.
@@ -59,6 +60,7 @@ Work gap by gap. Skip example modules the project removed. Keep business logic a
 ## Out of Scope
 
 - Upgrading `@sentry/nestjs` to 11. It keeps a scoped peer exception for now.
+- Sentry's automatic tracing under ESM. Sentry documents an `--import` preload for ES modules. `start` has none, and `initialiazeTelemetry()` runs after the app's imports, so HTTP and database spans may be missing. Error capture goes through `SentryGlobalFilter` and does not depend on the preload. Neither was checked against a real DSN.
 - The schema-drift check in `src/test/setup/test.global-setup.ts`. Adopt it separately if wanted.
 - The Better Auth integration. `unreleased/nestjs-better-auth` covers it and must run first: the staged controllers use its `@AllowAnonymous()`, `@OptionalAuth()` and `Session`.
 - Entities, services, business queries and migration files themselves.
@@ -75,6 +77,8 @@ Work gap by gap. Skip example modules the project removed. Keep business logic a
 - `apps/api/src/main.ts` — **adapt**
 - `apps/api/src/common/http/` — **copy**
 - `apps/api/src/modules/db/db.config.ts` — **adapt**
+- `apps/api/src/modules/db/db.service.ts` — **adapt**
+- `apps/api/src/modules/db/entities.ts` — **copy**
 - `apps/api/src/modules/example/posts/posts.controller.ts` — **adapt**
 - `apps/api/src/modules/example/comments/comments.controller.ts` — **adapt**
 
