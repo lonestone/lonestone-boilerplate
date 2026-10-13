@@ -76,4 +76,4 @@ Nothing else in the repository depends on this directory.
 
 ## Roadmap
 
-Eventually a module registry (shadcn-style optional imports). Not built yet — the upgrade system is the first brick.
+An item registry: a small base, plus reusable items a project adds when it needs them. The generic code is copied, shadcn-style, and an agent writes the project-specific part. Not built yet — the upgrade system is the first brick. The proposal: [Item registry](../apps/documentation/src/content/docs/explanations/8_item-registry.mdx).
