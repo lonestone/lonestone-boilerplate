@@ -38,6 +38,11 @@ If not specified otherwise, follow the following guidelines:
 - Use shadcn/ui for components.
 - Use react-router for routing.
   - routes are usually defined in a `routes.ts` file
+- Compose screens. Do not copy a header into a new page.
+  - A route layout writes the frame once: header, main, footer. Brand, navigation, theme, and auth stay in that file. A signed-in app uses `AppLayout`. Do not add a shell that takes those blocks as props.
+  - A screen composes `Page` and `PageHeader`. `band` is the public title. `inset` is the title row inside the dashboard. Eyebrow, title, and description are the text. Anything else is a slot: `before`, `leading`, `actions`.
+  - A block inside a screen composes `Section` and `SectionHeader`. The comments list under an article is the reference. It is not a page.
+  - A paged list composes `Pagination`, `PaginationContent`, `PaginationItem`, `PaginationPrevious`, and `PaginationNext`. The page keeps the page number, the range, and the labels.
 - Use react-hook-form for form handling.
 - Use zod for form validation.
 - Use @boilerstone/i18n for internationalization, no hardcoded strings.

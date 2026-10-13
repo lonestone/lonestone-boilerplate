@@ -1,4 +1,5 @@
 import type { CreatePostSchema } from '@boilerstone/openapi-generator'
+import { PageHeader } from '@boilerstone/ui/components/app/page'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
@@ -27,15 +28,12 @@ export default function UserPostCreatePage() {
   return (
     <div>
       <div className="space-y-6 max-w-3xl">
-        <div className="border-b border-border pb-6">
-          <p className="mb-1 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-            {t('posts.title')}
-          </p>
-          <h1 className="font-sans text-3xl font-black tracking-tight text-foreground">
-            {t('posts.create.title')}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('posts.create.description')}</p>
-        </div>
+        <PageHeader
+          variant="inset"
+          eyebrow={t('posts.title')}
+          title={t('posts.create.title')}
+          description={t('posts.create.description')}
+        />
         <UserPostForm onSubmit={onSubmit} isSubmitting={isPending} />
       </div>
     </div>

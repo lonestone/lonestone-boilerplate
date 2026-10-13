@@ -1,4 +1,5 @@
 import type { UpdatePostSchema } from '@boilerstone/openapi-generator'
+import { PageHeader } from '@boilerstone/ui/components/app/page'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { SendIcon } from '@boilerstone/ui/icons'
@@ -54,25 +55,22 @@ export default function UserPostEditPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div className="flex items-end justify-between border-b border-border pb-6">
-        <div>
-          <p className="mb-1 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-            {t('posts.title')}
-          </p>
-          <h1 className="font-sans text-3xl font-black tracking-tight text-foreground">
-            {t('posts.edit.title')}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('posts.edit.description')}</p>
-        </div>
-        <Button
-          size="sm"
-          onClick={onPublish}
-          disabled={isPublishing || isUnpublishing || isPending}
-        >
-          <SendIcon className="size-4" />
-          {post?.publishedAt ? t('posts.edit.unpublish') : t('posts.edit.publish')}
-        </Button>
-      </div>
+      <PageHeader
+        variant="inset"
+        eyebrow={t('posts.title')}
+        title={t('posts.edit.title')}
+        description={t('posts.edit.description')}
+        actions={
+          <Button
+            size="sm"
+            onClick={onPublish}
+            disabled={isPublishing || isUnpublishing || isPending}
+          >
+            <SendIcon className="size-4" />
+            {post?.publishedAt ? t('posts.edit.unpublish') : t('posts.edit.publish')}
+          </Button>
+        }
+      />
       <UserPostForm
         onSubmit={onSubmit}
         initialData={{

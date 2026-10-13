@@ -10,7 +10,6 @@
     "./components/primitives/*": "./src/components/primitives/*.tsx",
     "./components/data-table": "./src/components/data-table/index.tsx",
     "./components/data-table/*": "./src/components/data-table/*.tsx",
-    "./components/app": "./src/components/app/index.tsx",
     "./components/app/*": "./src/components/app/*.tsx",
     "./hooks": "./src/hooks/index.ts",
     "./hooks/*": "./src/hooks/*.ts",

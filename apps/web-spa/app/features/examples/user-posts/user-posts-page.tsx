@@ -1,9 +1,17 @@
-import { EmptyState } from '@boilerstone/ui/components/app'
+import { EmptyState } from '@boilerstone/ui/components/app/empty-state'
+import { PageHeader } from '@boilerstone/ui/components/app/page'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Input } from '@boilerstone/ui/components/primitives/input'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@boilerstone/ui/components/primitives/pagination'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { motion, useReducedMotion } from 'motion/react'
-import { ChevronLeft, ChevronRight, FileText, PlusCircle, SearchIcon } from 'lucide-react'
+import { FileText, PlusCircle, SearchIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
@@ -38,6 +46,12 @@ export default function PostsListPage() {
     setSearchParams(newParams)
   }
 
+  const pageQuery = (nextPage: number) => {
+    const next = new URLSearchParams(searchParams)
+    next.set('page', String(nextPage))
+    return next.toString()
+  }
+
   const { data: posts, isLoading } = useUserPosts({
     page: pageValue,
     pageSize: PAGE_SIZE,
@@ -53,24 +67,22 @@ export default function PostsListPage() {
     <div className="space-y-8">
       {/* Page header */}
       <motion.div
-        className="flex items-end justify-between border-b border-border pb-6"
         initial={reduced ? false : { opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
       >
-        <div>
-          <p className="mb-1 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-            Content
-          </p>
-          <h1 className="font-sans text-3xl font-black tracking-tight text-foreground">
-            {t('posts.title')}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('posts.description')}</p>
-        </div>
-        <Button render={<Link to="/dashboard/posts/new" />}>
-          <PlusCircle className="h-4 w-4" />
-          {t('posts.createNew')}
-        </Button>
+        <PageHeader
+          variant="inset"
+          eyebrow="Content"
+          title={t('posts.title')}
+          description={t('posts.description')}
+          actions={
+            <Button render={<Link to="/dashboard/posts/new" />}>
+              <PlusCircle className="h-4 w-4" />
+              {t('posts.createNew')}
+            </Button>
+          }
+        />
       </motion.div>
 
       {/* Search bar */}
@@ -123,41 +135,52 @@ export default function PostsListPage() {
             ))}
           </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-border pt-4">
-            <p className="text-sm text-muted-foreground">
-              {t('posts.showing')}{' '}
-              <span className="font-medium text-foreground">
-                {(pageValue - 1) * PAGE_SIZE + 1} –{' '}
-                {Math.min(pageValue * PAGE_SIZE, posts.meta.itemCount || 0)}
-              </span>{' '}
-              {t('posts.of')}{' '}
-              <span className="font-medium text-foreground">{posts.meta.itemCount}</span>
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(pageValue - 1)}
-                disabled={pageValue <= 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                {t('posts.previous')}
-              </Button>
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {pageValue} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(pageValue + 1)}
-                disabled={pageValue >= totalPages}
-              >
-                {t('posts.next')}
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          {totalPages > 1 ? (
+            <Pagination className="justify-between border-t border-border pt-4">
+              <p className="text-sm text-muted-foreground">
+                {t('posts.showing')}{' '}
+                <span className="font-medium text-foreground">
+                  {(pageValue - 1) * PAGE_SIZE + 1} –{' '}
+                  {Math.min(pageValue * PAGE_SIZE, posts.meta.itemCount || 0)}
+                </span>{' '}
+                {t('posts.of')}{' '}
+                <span className="font-medium text-foreground">{posts.meta.itemCount}</span>
+              </p>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    text={t('posts.previous')}
+                    href={pageValue > 1 ? `?${pageQuery(pageValue - 1)}` : undefined}
+                    aria-disabled={pageValue <= 1 || undefined}
+                    className={pageValue <= 1 ? 'pointer-events-none opacity-50' : undefined}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      if (pageValue > 1) handlePageChange(pageValue - 1)
+                    }}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="text-sm text-muted-foreground tabular-nums">
+                    {pageValue} / {totalPages}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    text={t('posts.next')}
+                    href={pageValue < totalPages ? `?${pageQuery(pageValue + 1)}` : undefined}
+                    aria-disabled={pageValue >= totalPages || undefined}
+                    className={
+                      pageValue >= totalPages ? 'pointer-events-none opacity-50' : undefined
+                    }
+                    onClick={(event) => {
+                      event.preventDefault()
+                      if (pageValue < totalPages) handlePageChange(pageValue + 1)
+                    }}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          ) : null}
         </>
       ) : (
         <EmptyState

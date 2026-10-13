@@ -1,10 +1,17 @@
 import type { Route } from './+types/posts-list-page'
 import { publicPostControllerGetPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
-import { EmptyState } from '@boilerstone/ui/components/app'
+import { EmptyState } from '@boilerstone/ui/components/app/empty-state'
+import { Page, PageBody, PageHeader } from '@boilerstone/ui/components/app/page'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Input } from '@boilerstone/ui/components/primitives/input'
-import { ChevronLeft, ChevronRight, FileText, Search, X } from 'lucide-react'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@boilerstone/ui/components/primitives/pagination'
+import { FileText, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 
@@ -81,6 +88,12 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
     setSearchParams(newParams)
   }
 
+  const pageQuery = (nextPage: number) => {
+    const next = new URLSearchParams(searchParams)
+    next.set('page', String(nextPage))
+    return next.toString()
+  }
+
   const totalPages = useMemo(() => {
     if (!posts?.data?.meta.itemCount) return 0
     return Math.ceil(posts.data.meta.itemCount / 10)
@@ -90,27 +103,20 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
   const itemCount = posts?.data?.meta.itemCount ?? 0
 
   return (
-    <div>
-      {/* Page header */}
-      <div className="border-b border-border/60 bg-background">
-        <div className="container mx-auto px-4 py-12 md:px-6 md:py-16">
-          <p className="mb-2 text-xs font-medium tracking-widest text-muted-foreground uppercase">
-            All articles
-          </p>
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <h1 className="font-sans text-4xl font-black tracking-tight text-foreground md:text-5xl">
-              The Journal
-            </h1>
-            {itemCount > 0 && (
-              <span className="text-sm text-muted-foreground">
-                {itemCount} {itemCount === 1 ? 'article' : 'articles'}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+    <Page variant="band">
+      <PageHeader
+        eyebrow="All articles"
+        title="The Journal"
+        actions={
+          itemCount > 0 ? (
+            <span className="text-sm text-muted-foreground">
+              {itemCount} {itemCount === 1 ? 'article' : 'articles'}
+            </span>
+          ) : null
+        }
+      />
 
-      <div className="container mx-auto px-4 py-8 md:px-6 md:py-10">
+      <PageBody>
         {/* Filters bar */}
         <div className="mb-8 flex flex-wrap items-center gap-3">
           <div className="relative min-w-48 flex-1">
@@ -162,41 +168,48 @@ export default function PostsListPage({ loaderData }: Route.ComponentProps) {
               ))}
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-8 flex items-center justify-between">
-                <div className="text-xs text-muted-foreground tabular-nums">
+            {totalPages > 1 ? (
+              <Pagination className="mt-8 justify-between">
+                <p className="text-xs text-muted-foreground tabular-nums">
                   {(page - 1) * 10 + 1}–{Math.min(page * 10, itemCount)} of {itemCount}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(page - 1)}
-                    disabled={page <= 1}
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-                    Previous
-                  </Button>
-                  <span className="hidden text-xs text-muted-foreground sm:block">
-                    Page {page} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(page + 1)}
-                    disabled={page >= totalPages}
-                  >
-                    Next
-                    <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                  </Button>
-                </div>
-              </div>
-            )}
+                </p>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      text="Previous"
+                      href={page > 1 ? `?${pageQuery(page - 1)}` : undefined}
+                      aria-disabled={page <= 1 || undefined}
+                      className={page <= 1 ? 'pointer-events-none opacity-50' : undefined}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        if (page > 1) handlePageChange(page - 1)
+                      }}
+                    />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <span className="hidden text-xs text-muted-foreground sm:block">
+                      Page {page} of {totalPages}
+                    </span>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      text="Next"
+                      href={page < totalPages ? `?${pageQuery(page + 1)}` : undefined}
+                      aria-disabled={page >= totalPages || undefined}
+                      className={page >= totalPages ? 'pointer-events-none opacity-50' : undefined}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        if (page < totalPages) handlePageChange(page + 1)
+                      }}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            ) : null}
           </>
         )}
-      </div>
-    </div>
+      </PageBody>
+    </Page>
   )
 }
 

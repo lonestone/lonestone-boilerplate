@@ -1,6 +1,7 @@
 import type { SupportedLocale } from '@boilerstone/i18n/config'
 import { SUPPORTED_LOCALES } from '@boilerstone/i18n/config'
-import { AppLayout, AppLayoutHeader, AppLoader } from '@boilerstone/ui/components/app'
+import { AppLayout, AppLayoutHeader } from '@boilerstone/ui/components/app/app-layout'
+import { AppLoader } from '@boilerstone/ui/components/app/app-loader'
 import {
   Sidebar,
   SidebarContent,
