@@ -90,6 +90,19 @@ flowchart RL
   Market[payment-marketplace] --> Core
 ```
 
+### Hooks: how the base lets items in
+
+The base never imports an item. Instead, it offers a few fixed places where an item can plug in. Each one exists because at least one item needs it.
+
+| Hook | What an item can do there | Used by |
+| --- | --- | --- |
+| **Registration** | Register its module, in one place. | Every item |
+| **Its own settings** | Read its own settings, without touching the base's settings file. | Every item |
+| **App startup** | Read incoming requests exactly as they were sent. | `payment-core`, to check that a notification really comes from the provider |
+| **Tracing** | Add its own tracing next to the base's. | `ai`, to send model calls to Langfuse |
+
+When a new item needs something none of these offer, we add a hook to the base first. We do not let the item patch base files.
+
 ## Inside an item
 
 Like shadcn, the code is copied into the project and then belongs to it. Unlike shadcn, part of a feature always depends on the client: which provider, who may do what, how it connects to the project's own data. An item says what that part is, and an agent writes it.
@@ -104,6 +117,37 @@ Take the storage item:
 | shadcn | Yes, all of it | No | No |
 | Intentions (today) | No | Yes, all of it | Yes |
 | **Registry items** | Yes, the generic part | Yes, the project part | Yes, so updates reach it |
+
+### What an item contains
+
+Every item has the same three parts, and nothing else:
+
+```text
+registry/storage/
+  item.json     the item's card: its name, what it needs, its settings, its packages
+  INSTALL.md    the install instructions: questions to ask, what to write, how to check it works
+  files/        the ready-made code, laid out where it goes in a project
+```
+
+The install instructions follow the same idea as intentions: they describe the goal and the decisions, not a diff. That is what lets an agent fit the item into a project that has already moved away from the base.
+
+### Items or intentions?
+
+- An **item** adds something a project does not have yet.
+- An **intention** changes something a project already has.
+- An improvement to an item is an intention, marked with the item's name. Only projects that added the item receive it.
+
+## The life of an item in a project
+
+```mermaid
+flowchart LR
+  A[Added: generic code copied, project part written] --> B[Owned: the project edits it freely]
+  B --> C[Improved upstream: an intention, only for projects that have it]
+  C --> B
+  B --> D[Removed: delete its folder and its registration line]
+```
+
+The project remembers which items it added, and from which release. That is how an improvement finds the right projects. Nothing is ever updated automatically: each improvement is read, accepted or skipped, then applied like any other intention.
 
 ## We choose the shape, not the vendor
 
@@ -152,6 +196,14 @@ flowchart TB
 7. **Once copied, it belongs to the project.** A project may change item code freely. Later improvements arrive as intentions, which explain the change, not as diffs that would clash with local edits. *Prevents projects afraid to touch the code they added.*
 8. **A vendor is a setting, not a layer.** One reference provider per item. No shared interface written "just in case". *Prevents abstractions that hide what matters.*
 
+## What the registry is not
+
+- **Not a package manager.** Items are not npm packages. They have no version of their own and are never updated automatically.
+- **Not a plugin system.** Once added, an item is ordinary project code. Nothing loads it at runtime.
+- **Not a wrapper over vendors.** One reference provider per item.
+- **Not a home for one-off features.** A feature built for a single client stays in that client's project, or becomes a docs guide.
+- **Not for the web apps yet.** Items are API only for now.
+
 ## Decided, and still open
 
 **Decided**
@@ -165,10 +217,14 @@ flowchart TB
 - Payment covers one-off payments, subscriptions and marketplaces.
 - No vendor imposed.
 
-**Still open, with a proposal**
+**Still open**
 
-- **The kitchen sink: rebuilt automatically, or kept in another repo?** Proposal: rebuilt automatically from the boilerplate. A second repo would drift away from the base it is meant to test.
-- **The posts and comments examples: an item, or deleted?** Proposal: an item, because they show how we write a feature.
-- **web-ssr once the examples leave.** Proposal: an empty shell.
-- **What geoloc covers.** Proposal: three items. Address search first, then distance queries, then a map once items get a web part.
-- **The rules above.** To validate.
+Each question comes with a proposal, the reason behind it, and what would change it.
+
+| Question | Proposal | Why | What would change it |
+| --- | --- | --- | --- |
+| The kitchen sink: rebuilt automatically, or kept in another repo? | Rebuilt automatically from the boilerplate, never committed. | Items are released with the base they were tested against. A second repo would have its own versions and drift away from that base. | Needing to keep hand-made changes in the kitchen sink that items cannot describe. |
+| The posts and comments examples: an item, or deleted? | An item, `example-crud`. | They are the reference for how we write a feature, for developers and for agents. | The CRUD tutorial covering those conventions well enough on its own. |
+| web-ssr once the examples leave | An empty shell. | Today it only shows the blog example. | Most server-rendered projects starting with the same public pages, such as a landing page. |
+| What geoloc covers | Three items: address search, distance queries, a map. Address search first. | They cost very different things: an API key, a database change, a web page. | Clients asking for them in another order. |
+| The rules in "Keeping it clean" | To validate. | | |
