@@ -5,11 +5,17 @@ import { Migrator } from '@mikro-orm/migrations'
 import { defineConfig } from '@mikro-orm/postgresql'
 import { SeedManager } from '@mikro-orm/seeder'
 import { config } from '../../config/env.config'
-import { entities } from './entities.generated'
 
 type CreateMikroOrmOptions = {
   isTest?: boolean
 } & Options
+
+// Folder discovery, for the MikroORM CLI. Code that runs through Vite passes the classes
+// from `entities.ts` instead (see `db.service.ts`).
+export const entityGlobs = {
+  entities: ['./dist/**/*.entity.js'],
+  entitiesTs: ['./src/**/*.entity.ts'],
+}
 
 export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
   const { migrations, ...rest } = options ?? {}
@@ -20,8 +26,8 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
     user: config.database.user,
     password: config.database.password,
     dbName: config.database.name,
-    entities: [...entities],
-    entitiesTs: [...entities],
+    entities: entityGlobs.entities,
+    entitiesTs: entityGlobs.entitiesTs,
     metadataProvider: ReflectMetadataProvider,
     // Column names mirror entity property names verbatim (camelCase),
     // matching the database schema. Relation FK columns still declare an

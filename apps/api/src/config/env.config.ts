@@ -138,5 +138,3 @@ export const config = {
     tracesSampleRate: configParsed.data.TRACES_SAMPLE_RATE,
   },
 } as const
-
-export type AppConfig = typeof config

@@ -101,9 +101,12 @@ async function assertMigrationsMatchEntities(connection: {
 }): Promise<void> {
   const { MikroORM } = await import('@mikro-orm/core')
   const { createMikroOrmOptions } = await import('../../modules/db/db.config')
+  const { entities } = await import('../../modules/db/entities')
 
   const orm = await MikroORM.init(
     createMikroOrmOptions({
+      entities,
+      entitiesTs: entities,
       dbName: MIGRATION_SCHEMA_CHECK_DB,
       host: connection.host,
       port: connection.port,

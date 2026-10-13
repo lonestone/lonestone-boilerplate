@@ -21,7 +21,6 @@
     "db:fresh": "dotenvx run -- npx mikro-orm schema:fresh --run",
     "db:fresh:seed": "dotenvx run -- npx mikro-orm schema:fresh --run --seed",
     "db:sync": "dotenvx run -- npx mikro-orm schema:update --run",
-    "db:entities": "dotenvx run -- npx mikro-orm discovery:export --path './src/**/entities/*.entity.ts' --path './src/modules/example/**/*.entity.ts' --out './src/modules/db/entities.generated.ts'",
     "auth:generate": "dotenvx run -- auth generate --config src/modules/auth/auth.cli.mts --yes",
     "test": "cross-env NODE_ENV=test vitest run --config=vite.config.ts",
     "test:watch": "cross-env NODE_ENV=test vitest --config=vite.config.ts --watch",
