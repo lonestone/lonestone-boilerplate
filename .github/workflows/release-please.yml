@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish, for example v1.3.0
+        required: true
+        type: string
 
 # A human merges the Release PR from the GitHub UI as themselves.
 # Do not auto-merge it. Green checks are not consent to ship.
@@ -16,6 +22,7 @@ permissions:
 jobs:
   release-please:
     name: Release Please
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -73,16 +80,18 @@ jobs:
   publish-cli:
     name: Publish @lonestone/boilerstone-cli
     needs: release-please
-    if: ${{ always() && !cancelled() && needs.release-please.outputs.release_created == 'true' && github.repository == 'lonestone/lonestone-boilerplate' }}
+    if: ${{ always() && !cancelled() && github.repository == 'lonestone/lonestone-boilerplate' && (needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || needs.release-please.outputs.tag_name }}
     steps:
       - name: Checkout the tagged commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ env.TAG }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -94,14 +103,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24.13.0
-          # Lets npm read NODE_AUTH_TOKEN from the generated .npmrc.
-          registry-url: https://registry.npmjs.org
 
       - name: Verify the CLI version matches the tag
-        env:
-          TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
           set -euo pipefail
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "tag must look like v1.2.3, got '${TAG}'"
+            exit 1
+          fi
           VERSION="${TAG#v}"
           CLI_VERSION="$(node -p "require('./.boilerstone/cli/package.json').version")"
           if [[ "$CLI_VERSION" != "$VERSION" ]]; then
@@ -121,12 +130,11 @@ jobs:
       - name: Check the CLI is built
         run: test -f .boilerstone/cli/dist/bin.js
 
+      # Do not set NODE_AUTH_TOKEN. setup-node's registry-url writes an npmrc
+      # line that expands it. A deleted NPM_TOKEN secret becomes an empty
+      # token, npm skips trusted publishing, and publish fails with ENEEDAUTH.
+      # The id-token permission above is the credential.
       - name: Publish @lonestone/boilerstone-cli
         run: pnpm --filter @lonestone/boilerstone-cli publish --access public --no-git-checks
         env:
-          # npm only accepts a trusted publisher on a package that already
-          # exists, so the first release publishes with this token. After
-          # that, npm uses trusted publishing (id-token above) and the secret
-          # can be deleted.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
