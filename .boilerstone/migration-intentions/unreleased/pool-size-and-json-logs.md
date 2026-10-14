@@ -2,6 +2,7 @@
 id: unreleased/pool-size-and-json-logs
 domain: api
 classification: migration
+pr: 188
 ---
 
 # Configure the database pool size and log JSON outside development
