@@ -144,7 +144,7 @@ flowchart LR
   A[Added: generic code copied, project part written] --> B[Owned: the project edits it freely]
   B --> C[Improved upstream: an intention, only for projects that have it]
   C --> B
-  B --> D[Removed: delete its folder and its registration line]
+  B --> D[Removed: delete its code and its entry]
 ```
 
 The project remembers which items it added, and from which release. That is how an improvement finds the right projects. Nothing is ever updated automatically: each improvement is read, accepted or skipped, then applied like any other intention.
@@ -191,10 +191,116 @@ flowchart TB
 2. **One item, one capability.** If its install instructions need more than a handful of questions, it is two items. *Prevents items that grow into mini-frameworks.*
 3. **Dependencies point toward the base.** An item may use the base, and the core of its own family. Never another item. The base never knows an item exists. *Prevents adding one item and dragging three others with it.*
 4. **Items add, they don't edit.** An item brings its own files and registers itself in one place. If it needs more from the base, the base gets a proper hook first, designed once for every item. *Prevents items that patch the same base files and clash.*
-5. **Same shape, removable in one move.** Every item looks the same: one folder, its own settings, its own instructions, its own test, the same coding rules as the base. Removing it means deleting its folder and its one registration line. *Prevents each item being reinvented by whoever wrote it.*
+5. **Same shape, removable in one move.** Every item looks the same: one folder, its own settings, its own instructions, its own test, the same coding rules as the base. Removing it means deleting its folder and its one registration line. Its packages and settings are listed in its card, so nothing is left behind. *Prevents each item being reinvented by whoever wrote it.*
 6. **Tested together, released together.** Every change to the base is checked against every item in the kitchen sink. Items ship with the base, under the same version. An item that breaks blocks the change, or leaves. *Prevents items that silently stop working.*
 7. **Once copied, it belongs to the project.** A project may change item code freely. Later improvements arrive as intentions, which explain the change, not as diffs that would clash with local edits. *Prevents projects afraid to touch the code they added.*
 8. **A vendor is a setting, not a layer.** One reference provider per item. No shared interface written "just in case". *Prevents abstractions that hide what matters.*
+
+## Formats
+
+What the tools read and write. Like the upgrade system, these are plain files that a human or an agent can read.
+
+### The item card: `item.json`
+
+```json
+{
+  "name": "storage",
+  "description": "Upload and serve files on any S3-compatible service.",
+  "owner": "@github-handle",
+  "requires": [],
+  "packages": {
+    "apps/api": {
+      "dependencies": {
+        "@aws-sdk/client-s3": "^3.700.0",
+        "@aws-sdk/s3-request-presigner": "^3.700.0"
+      }
+    }
+  },
+  "settings": [
+    { "name": "S3_ENDPOINT", "example": "http://localhost:9000" },
+    { "name": "S3_BUCKET", "example": "uploads" }
+  ]
+}
+```
+
+- `requires` lists other items. Only the core of the item's own family is allowed: `payment-checkout` requires `payment-core`.
+- `packages` lists only what the base does not already have, by app folder. Plain version ranges, never a pnpm catalog: catalogs are for packages several apps share.
+- `settings` lists environment variables with an example value. Whether a setting is required, and its format, is checked in the item's own settings code.
+- No version. An item ships with the base, under the base's version.
+- No list of files. The `files/` folder is the list.
+
+### The install instructions: `INSTALL.md`
+
+Same spirit as an intention, with fixed headings:
+
+- **Goal.** What the project can do once the item is in.
+- **Questions.** What to ask before writing anything: which provider, which bucket, which data owns a file.
+- **Project part.** What the agent writes with the answers, and where.
+- **Out of scope.** What the agent must not touch.
+- **Validation.** How to check that it works.
+
+### What the project remembers: `boilerplate.json`
+
+```json
+"items": [
+  { "name": "storage", "addedIn": "1.5.0" }
+]
+```
+
+- One entry per item. `addedIn` is the release the code was copied from.
+- No `items` list means no items. Projects created before the registry keep working.
+- The file's format version stays 1. The CLI already keeps properties it does not know, so an older CLI does not erase this list.
+
+Projects created before the registry already have the AI module and the examples as base code. An intention will ask, for each one, whether the project still has it, and record it as an item if so. Otherwise those projects would stop receiving AI fixes.
+
+### Item improvements: the `item` field on intentions
+
+```yaml
+---
+id: unreleased/storage-signed-link-expiry
+domain: storage
+classification: migration
+item: storage
+---
+```
+
+- An intention with `item` reaches only the projects that list that item. This check comes before the domain check and does not depend on it. `domain` stays required.
+- One intention touches at most one item. A change to the base and to an item is two intentions.
+- Reference Paths are written as they appear in a project, such as `apps/api/src/modules/storage/`. Since the intention names its item, the upgrade fetches them from the item's folder in the release.
+
+### What `pnpm boilerplate add <item>` does
+
+It follows the same steps as an upgrade: check, prepare a branch, let the agent work, record.
+
+1. **Checks.** If one fails, nothing is written.
+   - The git tree is clean, and no upgrade or other add is in progress.
+   - The item exists in the project's release. If it is newer, the message says which release first has it.
+   - The item is not already listed.
+   - Every item in `requires` is already listed. `add` never adds them on its own.
+   - None of the item's files already exists in the project. If some do, it lists them and stops. It never overwrites or merges.
+2. **Copies,** on a new branch `add/<item>`:
+   - the item's files, as they are;
+   - its packages, into the app's `package.json`. If the project already has one of them, the project's version stays, with a warning;
+   - its settings, at the end of `apps/api/.env.example`, and of `apps/api/.env` if it exists, under a comment with the item's name. Then it lists the settings to fill in;
+   - the registration line, at the registration point (see [Hooks](#hooks-how-the-base-lets-items-in)).
+3. **Hands over to the agent.** It puts `INSTALL.md` and a session prompt in `.boilerstone/add/`, a folder git ignores, like the upgrade workspace.
+4. **Records.** Once the project part is written and checked, `pnpm boilerplate add record <item>` writes the entry in `boilerplate.json` and removes the workspace.
+
+Also:
+
+- With no add in progress, `add record <item>` records an item the project already has, such as the AI module in an older project.
+- `add` with no name lists the items in the project's release, and which ones the project already has.
+- Inside the boilerplate repo, `add` reads items from the current commit, not from a release. That is how the kitchen sink tests items before they are released.
+- Removing an item stays manual: its folder, its registration line, the packages and settings listed in its card, and its entry in `boilerplate.json`.
+
+### What the checks enforce
+
+The intention lint gets four more checks. They turn some of the rules above into errors:
+
+- `item` on an intention names a folder that exists in `registry/`.
+- No item ships a file that already exists in the base or in another item (rule 4).
+- `requires` names only the core of the item's own family (rule 3).
+- Every `item.json` has the fields above.
 
 ## What the registry is not
 
@@ -224,7 +330,9 @@ Each question comes with a proposal, the reason behind it, and what would change
 | Question | Proposal | Why | What would change it |
 | --- | --- | --- | --- |
 | The kitchen sink: rebuilt automatically, or kept in another repo? | Rebuilt automatically from the boilerplate, never committed. | Items are released with the base they were tested against. A second repo would have its own versions and drift away from that base. | Needing to keep hand-made changes in the kitchen sink that items cannot describe. |
+| Who writes the project part in the kitchen sink? | Nobody. The kitchen sink holds only each item's generic part, and checks that it builds, starts, and passes the item's own tests. | An automatic build cannot wait for an agent. The generic part is what the registry owns and must keep working. | An item whose generic part cannot run or be tested without a project part. |
 | The posts and comments examples: an item, or deleted? | An item, `example-crud`. | They are the reference for how we write a feature, for developers and for agents. | The CRUD tutorial covering those conventions well enough on its own. |
 | web-ssr once the examples leave | An empty shell. | Today it only shows the blog example. | Most server-rendered projects starting with the same public pages, such as a landing page. |
 | What geoloc covers | Three items: address search, distance queries, a map. Address search first. | They cost very different things: an API key, a database change, a web page. | Clients asking for them in another order. |
 | The rules in "Keeping it clean" | To validate. | | |
+| The formats | To validate. | | |
