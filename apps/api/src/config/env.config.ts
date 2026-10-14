@@ -43,6 +43,9 @@ export const configValidationSchema = z.object({
   DATABASE_NAME: z.string(),
   DATABASE_HOST: z.string(),
   DATABASE_PORT: z.coerce.number(),
+  // Connections per API instance. Keep instances x pool size under the
+  // database's max_connections (100 by default on PostgreSQL).
+  DATABASE_POOL_MAX: z.coerce.number().int().positive().default(10),
 
   // BetterAuth
   BETTER_AUTH_SECRET: z.string(),
@@ -103,6 +106,7 @@ export const config = {
     name: configParsed.data.DATABASE_NAME,
     host: configParsed.data.DATABASE_HOST,
     port: configParsed.data.DATABASE_PORT,
+    poolMax: configParsed.data.DATABASE_POOL_MAX,
     connectionStringUrl: `postgresql://${configParsed.data.DATABASE_USER}:${configParsed.data.DATABASE_PASSWORD}@${configParsed.data.DATABASE_HOST}:${configParsed.data.DATABASE_PORT}/${configParsed.data.DATABASE_NAME}`,
   },
   email: {
