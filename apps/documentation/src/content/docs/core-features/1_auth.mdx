@@ -33,6 +33,17 @@ When adding a Better Auth plugin:
 It's a good practise to keep all entities related to better-auth in the auth module!
 :::
 
+## Sessions
+
+Sessions live in the `session` table. Every API instance reads the same table and signs cookies with the same `BETTER_AUTH_SECRET`, so you can run several instances without sticky sessions.
+
+Reading a session from the database costs two queries: one for the session, one for the user. To avoid that on most requests, `auth.config.ts` turns on Better Auth's [cookie cache](https://www.better-auth.com/docs/concepts/session-management#cookie-cache) for 5 minutes. A signed copy of the session travels in a second cookie, and the API trusts it until it expires.
+
+This has two consequences:
+
+- A revoked session, a password reset on another device, or a user change made outside Better Auth can stay visible for up to 5 minutes. Lower `session.cookieCache.maxAge` if that delay is too long for your project.
+- The global `AuthGuard` does not send back the refreshed cookie. The cache cookie is renewed at sign-in and each time the frontend calls `get-session` (for example through `authClient.useSession()`). Between those calls, once the cookie expires, requests read the database again.
+
 # 📝 How to use
 
 Better-auth provides server and client methods, see the [Better Auth documentation](https://www.better-auth.com/docs) for more details.
