@@ -2,6 +2,7 @@
 id: unreleased/session-indexes-and-cookie-cache
 domain: auth
 classification: migration
+pr: 186
 ---
 
 # Index session lookups and cache sessions in a cookie
