@@ -130,11 +130,14 @@ jobs:
       - name: Check the CLI is built
         run: test -f .boilerstone/cli/dist/bin.js
 
-      # Do not set NODE_AUTH_TOKEN. setup-node's registry-url writes an npmrc
-      # line that expands it. A deleted NPM_TOKEN secret becomes an empty
-      # token, npm skips trusted publishing, and publish fails with ENEEDAUTH.
-      # The id-token permission above is the credential.
+      # npm trades the id-token above for a publish token. That only works
+      # while npmjs.com lists a trusted publisher for this package with
+      # repository lonestone/lonestone-boilerplate, workflow release-please.yml,
+      # no environment, and npm publish allowed. A new trusted publisher
+      # expires unless a publish validates it within 48 hours. When the trade
+      # fails, npm only says ENEEDAUTH; the verbose log prints the reason.
       - name: Publish @lonestone/boilerstone-cli
         run: pnpm --filter @lonestone/boilerstone-cli publish --access public --no-git-checks
         env:
+          NPM_CONFIG_LOGLEVEL: verbose
           NPM_CONFIG_PROVENANCE: true
