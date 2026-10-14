@@ -133,18 +133,8 @@ docker run -p 3000:3000 \
   lonestone/api
 ```
 
-### Running with Migrations (if applicable)
+### Migrations and health check
 
-If you use database migrations, you can run them when starting the container by uncommenting the appropriate line in the Dockerfile or using a custom command:
+The image applies pending migrations when the container starts (`node dist/migrate.js`), then starts the API. The migration script takes a PostgreSQL advisory lock first. When several instances start together, one applies the migrations and the others wait, then find nothing left to apply.
 
-```bash
-docker run -p 3000:3000 \
-  -e DATABASE_PASSWORD=password \
-  -e DATABASE_USER=user \
-  -e DATABASE_NAME=dbname \
-  -e DATABASE_HOST=db \
-  -e DATABASE_PORT=5432 \
-  -e BETTER_AUTH_SECRET=secret \
-  -e API_PORT=3000 \
-  lonestone/api sh -c "pnpm db:migrate:up && node dist/main.js"
-```
+`GET /api/health` answers `{ "status": "ok" }` when the database is reachable and 503 when it is not. Point your load balancer or orchestrator health check at it.

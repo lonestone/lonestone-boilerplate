@@ -56,7 +56,7 @@ pnpm --filter=api db:migration:init
 ```
 
 3. Clean your production database: MikroORM will need an empty database to apply the initial migration. You may also want to do that for you pre-production environment.
-4. Set up your infrastructure to run `pnpm --filter=api db:migrate:up` on startup (instead of `pnpm --filter=api db:sync` or other)
+4. Make sure your infrastructure runs the migrations on startup (instead of `pnpm --filter=api db:sync` or other). The API Docker image already does it with `node dist/migrate.js`, under a lock so that several instances never run them twice.
 
 And... that's it! You can deploy this version.
 
@@ -90,6 +90,6 @@ Migrations are tricky because they order of execution matters. If another develo
 
 When several PRs are opened and are making changes to the database, it's a good practise to synchronize between developers to ensure migrations are runned in a correct order.
 
-When you are ready to deploy your changes, just push your changes and your container / launch command should run the migrations via `pnpm --filter=api db:migrate:up`.
+When you are ready to deploy your changes, just push your changes. The API container runs pending migrations on startup with `node dist/migrate.js`.
 
 Remember to respect the production safety rules described in the [Database Migrations](/lonestone-boilerplate/explanations/6_database-migrations) page.

@@ -39,5 +39,7 @@ EXPOSE 3000
 ENV MIKRO_ORM_CLI_PREFER_TS=false
 ENV MIKRO_ORM_CLI_CONFIG=dist/modules/db/db.config.js
 
-# Start the application
-CMD ["sh", "-c", "pnpm db:migrate:up && pnpm run start"]
+# Apply pending migrations under a database lock, so instances that start
+# together do not run them twice. Then exec replaces the shell with node, so
+# node receives SIGTERM directly and exits with code 0 after Nest closes.
+CMD ["sh", "-c", "node dist/migrate.js && exec node dist/main.js"]
