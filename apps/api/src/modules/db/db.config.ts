@@ -22,6 +22,7 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
     user: config.database.user,
     password: config.database.password,
     dbName: config.database.name,
+    pool: { max: config.database.poolMax },
     entities: entityGlobs.entities,
     entitiesTs: entityGlobs.entitiesTs,
     metadataProvider: ReflectMetadataProvider,

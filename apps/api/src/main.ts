@@ -22,6 +22,9 @@ async function bootstrap() {
   // handle the raw body on /api/auth and re-add JSON parsers for other routes.
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
+    // Hold startup logs until Pino is in place, so they come out in the same
+    // format as the rest (JSON outside development).
+    bufferLogs: true,
   })
 
   // Use Pino logger

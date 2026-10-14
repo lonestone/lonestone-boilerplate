@@ -38,9 +38,10 @@ pnpm install
 | `DATABASE_USER` | Database connection user | Yes | - |
 | `DATABASE_PASSWORD` | Database connection password | Yes | - |
 | `DATABASE_NAME` | Database name | Yes | - |
+| `DATABASE_POOL_MAX` | Connections per API instance. Keep instances × pool size under PostgreSQL's `max_connections` (100 by default). | No | `10` |
 | `API_PORT` | Port on which the API listens | Yes | - |
 | `BETTER_AUTH_SECRET` | Secret key for JWTs | Yes | - |
-| `NODE_ENV` | Environment (development, production) | No | `development` |
+| `NODE_ENV` | Environment (development, production). Logs are human-readable in `development` and JSON lines otherwise. | No | `development` |
 | `TRUSTED_ORIGINS` | List of trusted origins. ⚠️ If you change the port of your frontends, you need to update this variable. | Yes | - |
 
 See [`.env.example`](./.env.example) for reference.
