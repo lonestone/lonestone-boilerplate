@@ -48,7 +48,6 @@ The application will be available at `http://localhost:5173`
 
 - `pnpm dev` - Start the development server
 - `pnpm build` - Build the application for production
-- `pnpm preview` - Preview the production build locally
 
 ## Project Structure
 

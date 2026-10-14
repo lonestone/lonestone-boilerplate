@@ -5,7 +5,7 @@ description: Understanding the network architecture of the boilerplate
 
 ## How it works
 
-The boilerplate uses a REST-based network architecture. The fundamental idea is to have as much typing as possible. The NestJS REST API provides a complete OpenAPI schema, which is used by the @packages/openapi-generator to generate a full typed TypeScript client for the frontend apps.
+The boilerplate uses a REST-based network architecture. The fundamental idea is to have as much typing as possible. The NestJS REST API provides a complete OpenAPI schema, which is used by the `@boilerstone/openapi-generator` package to generate a full typed TypeScript client for the frontend apps.
 
 The frontend apps then use the generated SDK in combination with TanStack Query to fetch and cache data from the API.
 
