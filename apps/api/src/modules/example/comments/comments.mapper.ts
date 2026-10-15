@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { Comment } from './comments.entity'
-import { CommentsResult } from './comments.service'
-import { CommentResponse, CommentsResponse } from './contracts/comments.contract'
+import type { CommentsResult } from './comments.service'
+import type { CommentResponse, CommentsResponse } from './contracts/comments.contract'
 
 @Injectable()
 export class CommentsMapper {

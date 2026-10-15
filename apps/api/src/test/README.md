@@ -17,7 +17,7 @@ src/test/
 │   └── test.global-setup.ts    # Container PostgreSQL partagé + env variables
 ```
 
-La config Vitest se trouve dans `apps/api/vitest.config.ts` (projets `unit` et `e2e`).
+La config Vitest se trouve dans `apps/api/vite.config.ts` (projets `unit` et `e2e`).
 
 Dans le dossier `src/modules/*/tests/`, vous trouverez les tests pour le module `*`.
 
@@ -41,6 +41,7 @@ pnpm test:cov
 
 Le système utilise :
 - **1 container PostgreSQL partagé** démarré via `globalSetup` (rapide)
+- **1 check migrations/entités** sur une base dédiée (une fois, avant les tests)
 - **1 base de données par test** pour l'isolation totale
 - **Sessions parallel-safe** avec `AsyncLocalStorage` + header `X-Test-Session-Id`
 - **Pattern AAA** (Arrange-Act-Assert) recommandé

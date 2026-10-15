@@ -6,6 +6,7 @@
 import { MikroORM } from '@mikro-orm/core'
 import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy'
 import { createTestMikroOrmOptions } from '../../modules/db/db.config'
+import { entities } from '../../modules/db/entities'
 
 export interface TestOrmContext {
   orm: MikroORM
@@ -22,23 +23,11 @@ export async function createTestOrm(dbConfig: {
   user: string
   password: string
 }): Promise<TestOrmContext> {
-  // @ts-expect-error - import.meta is not available in CommonJS BUT DUDE I KNOW WHAT I'M DOING
-  // This file is used by Vitest and we need to use the ESM import.meta.glob to get the entities.
-  const entityModules = import.meta.glob('../../modules/**/*.entity.ts', { eager: true })
-
-  const allEntities = Array.from(
-    new Set(
-      Object.values(entityModules).flatMap((mod) =>
-        Object.values(mod as object).filter((val) => typeof val === 'function'),
-      ),
-    ),
-  )
-
   const dbName = `test_${crypto.randomUUID()}`
   process.env.DATABASE_NAME = dbName
   // Initialize ORM with the container's database
   const mikroOrmOptions = createTestMikroOrmOptions({
-    entitiesTs: allEntities,
+    entitiesTs: entities,
     allowGlobalContext: true,
     contextName: `context_${dbName}`,
     dbName,

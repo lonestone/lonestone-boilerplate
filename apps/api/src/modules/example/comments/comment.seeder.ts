@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker'
 
-import { Dictionary, EntityManager } from '@mikro-orm/core'
+import type { Dictionary } from '@mikro-orm/core'
+import { EntityManager } from '@mikro-orm/core'
 import { Seeder } from '@mikro-orm/seeder'
 import { User } from '../../auth/auth.entity'
 import { Post } from '../posts/posts.entity'

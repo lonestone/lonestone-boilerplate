@@ -25,6 +25,6 @@ export class Session {
   @Property({ nullable: true })
   userAgent?: string
 
-  @ManyToOne(() => User, { fieldName: 'userId' })
+  @ManyToOne(() => User, { fieldName: 'userId', updateRule: 'cascade' })
   user!: User
 }

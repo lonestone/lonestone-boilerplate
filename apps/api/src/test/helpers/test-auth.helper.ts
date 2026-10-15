@@ -1,12 +1,11 @@
+import type { DynamicModule, INestApplication } from '@nestjs/common'
+import type { NextFunction, Request, Response } from 'express'
+import type { BetterAuthSession } from '../../modules/auth/auth.config'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomBytes } from 'node:crypto'
-import type { DynamicModule } from '@nestjs/common'
-import { INestApplication } from '@nestjs/common'
 import { AuthModule as BetterAuthModule } from '@thallesp/nestjs-better-auth'
-import { NextFunction, Request, Response } from 'express'
-import { BetterAuthSession } from 'src/modules/auth/auth.config'
-import { User } from '../../modules/auth/auth.entity'
 import supertest from 'supertest'
+import { User } from '../../modules/auth/auth.entity'
 
 /** Session scoped to the current request (enables parallel tests). Fallback: global _session when no header. */
 export const testSessionStorage = new AsyncLocalStorage<BetterAuthSession>()
