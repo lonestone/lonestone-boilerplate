@@ -1,6 +1,6 @@
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
-import { AppLoader } from '@boilerstone/ui/components/app'
-import { EmptyState } from '@boilerstone/ui/components/app'
+import { AppLoader } from '@boilerstone/ui/components/app/app-loader'
+import { EmptyState } from '@boilerstone/ui/components/app/empty-state'
 import {
   Accordion,
   AccordionContent,

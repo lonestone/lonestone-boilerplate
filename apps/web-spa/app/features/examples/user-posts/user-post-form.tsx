@@ -20,7 +20,7 @@ interface PostFormData {
 }
 
 interface UserPostFormProps {
-  onSubmit: (data: PostFormData) => Promise<void>
+  onSubmit: (data: PostFormData) => void | Promise<void>
   initialData?: PostFormData
   isSubmitting?: boolean
 }

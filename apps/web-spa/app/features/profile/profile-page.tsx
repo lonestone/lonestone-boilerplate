@@ -1,3 +1,4 @@
+import { PageHeader } from '@boilerstone/ui/components/app/page'
 import { Avatar, AvatarFallback } from '@boilerstone/ui/components/primitives/avatar'
 import { useTranslation } from 'react-i18next'
 import { authClient } from '@/lib/auth-client'
@@ -28,16 +29,12 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="border-b border-border pb-6">
-        <p className="mb-1 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-          {t('profile.eyebrow')}
-        </p>
-        <h1 className="font-sans text-3xl font-black tracking-tight text-foreground">
-          {t('profile.title')}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t('profile.description')}</p>
-      </div>
+      <PageHeader
+        variant="inset"
+        eyebrow={t('profile.eyebrow')}
+        title={t('profile.title')}
+        description={t('profile.description')}
+      />
 
       {/* Identity */}
       <div className="flex items-center gap-4">
