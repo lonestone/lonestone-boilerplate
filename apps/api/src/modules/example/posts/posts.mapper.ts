@@ -106,9 +106,7 @@ export class PostsMapper {
             },
             contentPreview: this.findContentPreview(latestVersion.content),
             commentCount: commentCountByPostId.get(post.id) ?? 0,
-            coverImage: post.coverImage
-              ? await this.mediaMapper.toMedia(post.coverImage)
-              : undefined,
+            coverImage: await this.mediaMapper.toOptionalMedia(post.coverImage),
             likesCount: post.likesCount,
             tags: this.mapTags(post),
           }
@@ -143,9 +141,7 @@ export class PostsMapper {
             },
             contentPreview: this.findContentPreview(latestVersion.content),
             commentCount: commentCountByPostId.get(post.id) ?? 0,
-            coverImage: post.coverImage
-              ? await this.mediaMapper.toMedia(post.coverImage)
-              : undefined,
+            coverImage: await this.mediaMapper.toOptionalMedia(post.coverImage),
             likesCount: post.likesCount,
             tags: this.mapTags(post),
           }
