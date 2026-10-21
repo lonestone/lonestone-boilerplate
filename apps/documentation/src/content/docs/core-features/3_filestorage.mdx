@@ -1,14 +1,149 @@
 ---
 title: File Storage
-description: File storage explanation
+description: Store and serve files through a provider-neutral S3 module
 ---
-
-🚧 TODO
 
 # File Storage
 
-## S3 module
+The API includes provider-neutral S3 infrastructure. Storage is disabled by default, so an
+unavailable S3 service cannot prevent an application that does not use files from starting. File
+operations return `503 Service Unavailable` while storage is disabled.
 
-## MinIO
+`StorageModule` is infrastructure-only. It exports `StorageService`, uses one bucket, and does not
+expose HTTP routes or provider internals. It moves bytes and signs download URLs. It knows nothing
+about the database.
 
-## Production setup
+Files are not streamed through the API. Each API response that includes a file carries a signed
+URL, and the client loads the file straight from the bucket. The API only decides who gets a URL.
+Signing happens locally, without a call to the bucket.
+
+`MediaModule` sits on top of it and owns the `Media` table. One `Media` row is one stored file: its
+opaque storage key, original filename, MIME type, and size. It exports `MediaService` and
+`MediaMapper`, and has no controller. Business modules own their HTTP contracts, authorization
+rules, and the relation that points to a `Media` row.
+
+## Configuration
+
+Configure the API with these provider-neutral variables:
+
+- `STORAGE_ENABLED`: enable the configured storage provider. Defaults to `false`.
+- `STORAGE_BUCKET`: bucket name. Required when storage is enabled.
+- `STORAGE_ENDPOINT`: S3 endpoint. Leave it empty for AWS S3.
+- `STORAGE_REGION`: S3 region. Defaults to `us-east-1`.
+- `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY`: provider credentials. Required when
+  storage is enabled.
+- `STORAGE_FORCE_PATH_STYLE`: required by many self-hosted S3-compatible services, RustFS included.
+  Defaults to `false`.
+- `STORAGE_CREATE_BUCKET`: create the bucket during startup when it is missing. Defaults to `false`.
+- `STORAGE_SIGNED_URL_EXPIRES_IN`: lifetime of signed download URLs, in seconds. Defaults to `3600`.
+  The S3 limit is `604800` (7 days).
+
+Credentials and endpoint have no default. The API refuses to start with `STORAGE_ENABLED=true` and
+missing credentials, instead of silently pointing at a local service. The values for the local
+RustFS live in `.env.example`.
+
+## Local RustFS
+
+Docker Compose provides RustFS as the local S3-compatible service. Its data is stored in the
+`rustfs_data` volume.
+
+```bash
+pnpm docker:up
+```
+
+The S3 endpoint is `http://localhost:9000`. The RustFS console is available at
+`http://localhost:9001`. Credentials come from the root `.env` file and are mapped to RustFS by
+Compose.
+
+## Use from API code
+
+Import `MediaModule` in a business module and inject `MediaService`. Business modules should
+depend on it instead of importing `StorageService`, the AWS SDK, or the S3 provider.
+
+Point to the file with a relation to `Media` rather than copying its columns onto the business
+entity. A `OneToOne` relation guarantees that one `Media` row belongs to a single owner:
+
+```typescript
+@OneToOne(() => Media, { owner: true, nullable: true, fieldName: 'coverImageId' })
+coverImage?: Media
+```
+
+A file lives in two places: a row in the database and an object in the bucket. `MediaService`
+keeps them in sync, so business services never clean up objects themselves:
+
+- `replace` uploads the new file, lets you attach it, and flushes. If the flush fails, it deletes
+  the new object and rethrows the original error. Once committed, it deletes the previous object.
+  Leave `current` empty to attach a first file.
+- `remove` lets you detach the file, deletes the row, and deletes the object after the commit.
+
+```typescript
+async setCoverImage(post: Post, upload: StorageUpload): Promise<void> {
+  await this.mediaService.replace({
+    current: post.coverImage,
+    upload,
+    attach: (media) => (post.coverImage = media),
+  })
+}
+
+async removeCoverImage(post: Post, coverImage: Media): Promise<void> {
+  await this.mediaService.remove({
+    media: coverImage,
+    detach: () => (post.coverImage = undefined),
+  })
+}
+```
+
+An object that fails to delete after a commit is only logged: the database is already right, and
+failing the request would undo nothing.
+
+Map the relation with `MediaMapper.toMedia` and reuse `mediaSchema` in your contracts. `toMedia` is
+async: it signs a download URL and returns it with its `expiresAt` date. The signed URL fixes the
+response `Content-Type` to the stored MIME type and sets an inline `Content-Disposition` with the
+original filename. The storage key is never a field of the contract.
+
+```typescript
+coverImage: post.coverImage ? await this.mediaMapper.toMedia(post.coverImage) : undefined,
+```
+
+Only call `toMedia` for users allowed to see the file. Anyone holding the URL can read the file
+until it expires.
+
+## Signed URLs and caching
+
+A URL that changed on every response would defeat every cache: the browser would download the
+image again on each refetch. To avoid that, signing starts from a fixed time window of half the URL
+lifetime. Every response within the same window returns exactly the same URL, so browsers and query
+caches reuse the file. Each URL handed out stays valid for at least half its lifetime: 30 minutes
+with the default of one hour.
+
+Signed URLs also ask the bucket to answer with `Cache-Control: private, max-age=<lifetime>,
+immutable`. Storage keys are never reused, so the bytes behind a URL never change.
+
+Two rules follow for clients:
+
+- Refetch the entity to get a new URL once `expiresAt` has passed.
+- Do not cache a server-rendered page for longer than half the URL lifetime. Otherwise the page can
+  outlive the URLs it contains, and its images break.
+
+## Production
+
+Use a dedicated bucket and restricted credentials. Provision the bucket with your infrastructure
+and keep `STORAGE_CREATE_BUCKET=false`. Configure the provider endpoint, region, TLS, retention,
+backups, and lifecycle rules according to the chosen service. Domain modules should set upload size
+limits that also match reverse proxy and platform limits.
+
+AWS S3 normally uses virtual-hosted addressing, so keep `STORAGE_FORCE_PATH_STYLE=false`. Enable it
+only when the selected compatible provider requires it.
+
+Signed URLs use the host of `STORAGE_ENDPOINT`, and the host is part of the signature. Browsers must
+reach the bucket at that same address. Locally, the API and the browser both use
+`http://localhost:9000`. If the API reaches the bucket through a private hostname, such as a Docker
+service name, browsers cannot open the URLs. Rewriting the host after signing breaks the signature.
+
+## Remove storage
+
+If you do not need files, leave `STORAGE_ENABLED=false`. To remove the infrastructure, remove every
+relation to `Media`, delete `apps/api/src/modules/media` and `apps/api/src/modules/storage`, and
+create a migration that drops the `media` table. Then remove the AWS SDK packages
+(`@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner`) and `testcontainers` if nothing else uses
+it. Finally, remove the `STORAGE_*` variables and the RustFS Compose service and volume.
