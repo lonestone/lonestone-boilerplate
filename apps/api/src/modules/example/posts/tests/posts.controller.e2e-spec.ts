@@ -20,6 +20,7 @@ import { initializeTestApp } from '../../../../test/helpers/test-app.helper'
 import { createRequest, TestRequest } from '../../../../test/helpers/test-auth.helper'
 import { createUserWithSession } from '../../../../test/helpers/test-user.helpers'
 import { BetterAuthSession } from '../../../auth/auth.config'
+import { Post } from '../posts.entity'
 import { PostModule } from '../posts.module'
 
 const MINIMAL_PNG = Buffer.from(
@@ -203,6 +204,40 @@ describe('postController (e2e)', () => {
 
       expect(response.status).toBe(503)
       expect(response.body.message).toMatch(/storage is disabled/i)
+    })
+  })
+
+  describe('read routes with storage disabled', () => {
+    it('omits the cover image instead of failing', async (context) => {
+      const { em, request } = context
+      const { session } = await createUserWithSession(em, { name: 'Alice' })
+      const postId = await createPost(request, session)
+      const publishResponse = await request
+        .withSession(session)
+        .patch(`/admin/posts/${postId}/publish`)
+      const storedPostEm = em.fork()
+      const storedPost = await storedPostEm.findOneOrFail(Post, { id: postId })
+      storedPost.coverImage = Object.assign(new Media(), {
+        storageKey: 'stored-before-storage-was-disabled',
+        filename: 'cover.png',
+        mimeType: 'image/png',
+        size: MINIMAL_PNG.length,
+      })
+      await storedPostEm.flush()
+
+      const responses = await Promise.all([
+        request.withSession(session).get('/admin/posts'),
+        request.withSession(session).get(`/admin/posts/${postId}`),
+        request.get('/public/posts'),
+        request.get('/public/posts/random'),
+        request.get(`/public/posts/${publishResponse.body.slug}`),
+        request.get('/public/authors/Alice/posts'),
+      ])
+
+      for (const response of responses) {
+        expect(response.status).toBe(200)
+        expect(JSON.stringify(response.body)).not.toContain('coverImage')
+      }
     })
   })
 
