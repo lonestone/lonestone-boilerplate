@@ -1,17 +1,15 @@
 import type { Route } from './+types/home-page'
 import type { PublicPostsSchema } from '@boilerstone/openapi-generator'
 import { publicPostControllerGetPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
+import { FadeInImage } from '@boilerstone/ui/components/app'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight, BookOpen, Pen } from 'lucide-react'
-import { useState } from 'react'
 import { Link } from 'react-router'
 
 type TeaserPost = PublicPostsSchema['data'][number]
 
 function TeaserCard({ post, index }: { post: TeaserPost; index: number }) {
-  const [imgError, setImgError] = useState(false)
-  const [imgLoaded, setImgLoaded] = useState(false)
   const reduced = useReducedMotion()
   const preview = post.contentPreview?.data ?? ''
   const excerpt = preview.length > 120 ? `${preview.slice(0, 120)}…` : preview
@@ -34,24 +32,18 @@ function TeaserCard({ post, index }: { post: TeaserPost; index: number }) {
 
         {/* Cover — always present (image or branded fallback) for consistent cards */}
         <div className="mb-4 aspect-video overflow-hidden rounded-sm bg-muted">
-          {post.coverImage && !imgError ? (
-            <img
-              src={post.coverImage}
-              alt={post.title}
-              onLoad={() => setImgLoaded(true)}
-              onError={() => setImgError(true)}
-              className={[
-                'h-full w-full object-cover transform-gpu transition-all duration-700 group-hover:scale-105',
-                imgLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-sm',
-              ].join(' ')}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <span className="select-none font-sans text-4xl font-black uppercase tracking-tight text-muted-foreground/20">
-                {post.title.slice(0, 2)}
-              </span>
-            </div>
-          )}
+          <FadeInImage
+            src={post.coverImage?.url}
+            alt={post.title}
+            className="h-full w-full object-cover group-hover:scale-105"
+            fallback={(
+              <div className="flex h-full w-full items-center justify-center">
+                <span className="select-none font-sans text-4xl font-black uppercase tracking-tight text-muted-foreground/20">
+                  {post.title.slice(0, 2)}
+                </span>
+              </div>
+            )}
+          />
         </div>
 
         {/* Tags */}

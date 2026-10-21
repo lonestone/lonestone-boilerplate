@@ -275,22 +275,22 @@
           "length": 255,
           "mappedType": "string"
         },
-        "coverImage": {
-          "name": "coverImage",
-          "type": "varchar(255)",
+        "coverImageId": {
+          "name": "coverImageId",
+          "type": "uuid",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "unique": false,
-          "length": 255,
+          "unique": true,
+          "length": null,
           "precision": null,
           "scale": null,
           "default": null,
           "comment": null,
           "collation": null,
           "enumItems": [],
-          "mappedType": "string"
+          "mappedType": "uuid"
         },
         "likesCount": {
           "name": "likesCount",
@@ -346,6 +346,14 @@
           "unique": true
         },
         {
+          "columnNames": ["coverImageId"],
+          "composite": false,
+          "constraint": true,
+          "keyName": "post_coverImageId_unique",
+          "primary": false,
+          "unique": true
+        },
+        {
           "keyName": "post_pkey",
           "columnNames": ["id"],
           "composite": false,
@@ -363,6 +371,14 @@
           "referencedColumnNames": ["id"],
           "referencedTableName": "public.user",
           "updateRule": "cascade"
+        },
+        "post_coverImageId_foreign": {
+          "columnNames": ["coverImageId"],
+          "constraintName": "post_coverImageId_foreign",
+          "localTableName": "public.post",
+          "referencedColumnNames": ["id"],
+          "referencedTableName": "public.media",
+          "deleteRule": "set null"
         }
       },
       "nativeEnums": {}
@@ -998,6 +1014,153 @@
           "deleteRule": "cascade"
         }
       },
+      "comment": null
+    },
+    {
+      "name": "media",
+      "schema": "public",
+      "columns": {
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "filename": {
+          "name": "filename",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "mimeType": {
+          "name": "mimeType",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "size": {
+          "name": "size",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "storageKey": {
+          "name": "storageKey",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": ["id"],
+          "composite": false,
+          "constraint": true,
+          "keyName": "media_pkey",
+          "primary": true,
+          "unique": true
+        },
+        {
+          "columnNames": ["storageKey"],
+          "composite": false,
+          "constraint": true,
+          "keyName": "media_storageKey_unique",
+          "primary": false,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "triggers": [],
+      "foreignKeys": {},
       "comment": null
     }
   ],

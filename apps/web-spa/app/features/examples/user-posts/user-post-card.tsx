@@ -10,15 +10,16 @@ export function UserPostCard({ post }: { post: Omit<UserPostSchema, 'content'> }
   const createdAt = new Date(post.versions[0].createdAt)
   const updatedAt = new Date(post.versions[post.versions.length - 1].createdAt)
   const isUpdated = updatedAt.getTime() !== createdAt.getTime()
+  const imageSrc = post.coverImage?.url
 
   return (
     <Link to={`/dashboard/posts/${post.id}/edit`} className="group block h-full">
       <article className="relative flex flex-col overflow-hidden border border-border bg-card transition-all duration-200 hover:border-foreground/20 hover:shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_2px_16px_rgba(0,0,0,0.25)] h-full">
         {/* Cover image with blur-up */}
-        {post.coverImage && !imgError ? (
+        {imageSrc && !imgError ? (
           <div className="relative aspect-video w-full overflow-hidden bg-muted">
             <img
-              src={post.coverImage}
+              src={imageSrc}
               alt={post.title}
               onLoad={() => setImgLoaded(true)}
               onError={() => setImgError(true)}
