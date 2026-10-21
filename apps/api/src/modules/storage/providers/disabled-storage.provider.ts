@@ -1,15 +1,15 @@
 import { IStorageProvider, SignedUrl, StorageUnavailableError } from './storage-provider.interface'
 
 export class DisabledStorageProvider implements IStorageProvider {
-  upload(): Promise<void> {
+  async upload(): Promise<void> {
     throw new StorageUnavailableError()
   }
 
-  delete(): Promise<void> {
+  async delete(): Promise<void> {
     throw new StorageUnavailableError()
   }
 
-  getSignedUrl(): Promise<SignedUrl> {
+  async getSignedUrl(): Promise<SignedUrl> {
     throw new StorageUnavailableError()
   }
 }
