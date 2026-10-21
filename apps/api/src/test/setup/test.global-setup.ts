@@ -42,11 +42,11 @@ export default async function setup(project: TestProject) {
   process.env.NODE_ENV = 'test'
   process.env.CLIENTS_WEB_APP_URL = 'http://localhost:3000'
   process.env.CLIENTS_WEB_SSR_URL = 'http://localhost:5174'
-  process.env.S3_ENDPOINT = 'http://localhost:9000'
-  process.env.S3_REGION = 'us-east-1'
-  process.env.S3_ACCESS_KEY_ID = 'minioadmin'
-  process.env.S3_SECRET_ACCESS_KEY = 'minioadmin'
-  process.env.S3_BUCKET = 'test'
+  process.env.STORAGE_ENDPOINT = 'http://localhost:9000'
+  process.env.STORAGE_REGION = 'us-east-1'
+  process.env.STORAGE_ACCESS_KEY_ID = 'rustfsadmin'
+  process.env.STORAGE_SECRET_ACCESS_KEY = 'rustfsadmin'
+  process.env.STORAGE_BUCKET = 'test'
 
   // API and Auth variables
   process.env.API_PORT = '3000'
