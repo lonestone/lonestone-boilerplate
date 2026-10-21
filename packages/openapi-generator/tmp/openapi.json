@@ -153,6 +153,91 @@
         }
       }
     },
+    "/api/posts/{postSlug}/comments/{commentId}": {
+      "patch": {
+        "operationId": "CommentsController_updateComment",
+        "tags": ["Comments"],
+        "parameters": [
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Schema for updating a comment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "required": ["content"],
+                "additionalProperties": false,
+                "title": "UpdateCommentSchema",
+                "description": "Schema for updating a comment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema for a comment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentSchema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "CommentsController_deleteComment",
+        "tags": ["Comments"],
+        "parameters": [
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/posts/{postSlug}/comments/count": {
       "get": {
         "operationId": "CommentsController_getCommentCount",
@@ -245,35 +330,6 @@
         }
       }
     },
-    "/api/posts/{postSlug}/comments/{commentId}": {
-      "delete": {
-        "operationId": "CommentsController_deleteComment",
-        "tags": ["Comments"],
-        "parameters": [
-          {
-            "name": "commentId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "postSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/admin/posts": {
       "post": {
         "operationId": "PostController_createPost",
@@ -342,10 +398,6 @@
                       "description": "Schema for content items (text, image, video)",
                       "type": "object"
                     }
-                  },
-                  "coverImage": {
-                    "type": "string",
-                    "format": "uri"
                   },
                   "tags": {
                     "type": "array",
@@ -518,10 +570,6 @@
                       "type": "object"
                     }
                   },
-                  "coverImage": {
-                    "type": "string",
-                    "format": "uri"
-                  },
                   "tags": {
                     "type": "array",
                     "items": {
@@ -572,6 +620,79 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/admin/posts/{id}/cover-image": {
+      "put": {
+        "operationId": "PostController_setCoverImage",
+        "tags": ["Admin Posts"],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Post identifier"
+            },
+            "description": "Post identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Accepted types: image/jpeg, image/png, image/gif, image/webp. Maximum size: 10485760 bytes."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema for a user's post",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPostSchema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "PostController_removeCoverImage",
+        "tags": ["Admin Posts"],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Post identifier"
+            },
+            "description": "Post identifier"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
           }
         }
       }
@@ -2472,6 +2593,20 @@
         "title": "CreateCommentSchema",
         "description": "Schema for creating a comment"
       },
+      "UpdateCommentSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": ["content"],
+        "additionalProperties": false,
+        "title": "UpdateCommentSchema",
+        "description": "Schema for updating a comment"
+      },
       "CreatePostSchema": {
         "type": "object",
         "properties": {
@@ -2484,10 +2619,6 @@
             "items": {
               "$ref": "#/components/schemas/PostContentSchema"
             }
-          },
-          "coverImage": {
-            "type": "string",
-            "format": "uri"
           },
           "tags": {
             "type": "array",
@@ -2513,10 +2644,6 @@
             "items": {
               "$ref": "#/components/schemas/PostContentSchema"
             }
-          },
-          "coverImage": {
-            "type": "string",
-            "format": "uri"
           },
           "tags": {
             "type": "array",
@@ -2982,8 +3109,7 @@
             "type": "number"
           },
           "coverImage": {
-            "type": "string",
-            "format": "uri"
+            "$ref": "#/components/schemas/MediaSchema"
           },
           "tags": {
             "type": "array",
@@ -3066,6 +3192,38 @@
         "title": "PostVersionSchema",
         "description": "Schema for a post version"
       },
+      "MediaSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiresAt": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "filename", "mimeType", "size", "url", "expiresAt"],
+        "additionalProperties": false,
+        "title": "MediaSchema",
+        "description": "A stored file. `url` is a short-lived signed download link that expires at `expiresAt`. The storage key is never returned as a field."
+      },
       "TagSchema": {
         "type": "object",
         "properties": {
@@ -3136,8 +3294,7 @@
                   "type": "number"
                 },
                 "coverImage": {
-                  "type": "string",
-                  "format": "uri"
+                  "$ref": "#/components/schemas/MediaSchema"
                 },
                 "tags": {
                   "type": "array",
@@ -3210,8 +3367,7 @@
             "type": "number"
           },
           "coverImage": {
-            "type": "string",
-            "format": "uri"
+            "$ref": "#/components/schemas/MediaSchema"
           },
           "likesCount": {
             "type": "number"
@@ -3259,8 +3415,7 @@
                   "type": "number"
                 },
                 "coverImage": {
-                  "type": "string",
-                  "format": "uri"
+                  "$ref": "#/components/schemas/MediaSchema"
                 },
                 "likesCount": {
                   "type": "number"
@@ -3342,8 +3497,7 @@
                   "type": "number"
                 },
                 "coverImage": {
-                  "type": "string",
-                  "format": "uri"
+                  "$ref": "#/components/schemas/MediaSchema"
                 },
                 "likesCount": {
                   "type": "number"

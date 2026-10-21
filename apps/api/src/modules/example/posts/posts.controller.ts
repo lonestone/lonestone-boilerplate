@@ -8,14 +8,19 @@ import {
   TypedRoute,
 } from '@lonestone/nzoth/server'
 import { HttpCode, Param } from '@nestjs/common'
+import { ApiNoContentResponse } from '@nestjs/swagger'
 import { AllowAnonymous, Session } from '@thallesp/nestjs-better-auth'
 import { z } from 'zod'
 import { LoggedInBetterAuthSession } from '../../auth/auth.config'
+import { IMAGE_MIME_TYPES } from '../../media/media-file-type.util'
+import { MediaUpload, MediaUploadRules, UploadedMedia } from '../../media/media-upload.decorator'
+import { StorageUpload } from '../../storage/storage.service'
 import {
   CreatePostInput,
   createPostSchema,
   PostFiltering,
   postFilteringSchema,
+  postIdSchema,
   PostPagination,
   postPaginationSchema,
   PostSorting,
@@ -31,6 +36,11 @@ import {
 } from './contracts/posts.contract'
 import { PostsMapper } from './posts.mapper'
 import { PostService } from './posts.service'
+
+const POST_COVER_IMAGE_UPLOAD: MediaUploadRules = {
+  maxSizeBytes: 10 * 1024 * 1024,
+  mimeTypes: IMAGE_MIME_TYPES,
+}
 
 @TypedController('admin/posts', undefined, {
   tags: ['Admin Posts'],
@@ -58,6 +68,27 @@ export class PostController {
   ): Promise<UserPost> {
     const post = await this.postService.updatePost(id, session.user.id, body)
     return this.postsMapper.toUserPost(post)
+  }
+
+  @TypedRoute.Put(':id/cover-image', userPostSchema)
+  @MediaUpload(POST_COVER_IMAGE_UPLOAD)
+  async setCoverImage(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedParam('id', postIdSchema) id: string,
+    @UploadedMedia() image: StorageUpload,
+  ): Promise<UserPost> {
+    const post = await this.postService.setCoverImage(id, session.user.id, image)
+    return this.postsMapper.toUserPost(post)
+  }
+
+  @TypedRoute.Delete(':id/cover-image')
+  @ApiNoContentResponse()
+  @HttpCode(204)
+  async removeCoverImage(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedParam('id', postIdSchema) id: string,
+  ): Promise<void> {
+    await this.postService.removeCoverImage(id, session.user.id)
   }
 
   @TypedRoute.Patch(':id/publish')

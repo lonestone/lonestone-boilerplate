@@ -135,6 +135,15 @@ export type CreateCommentSchema = {
 };
 
 /**
+ * UpdateCommentSchema
+ *
+ * Schema for updating a comment
+ */
+export type UpdateCommentSchema = {
+    content: string;
+};
+
+/**
  * CreatePostSchema
  *
  * Schema for creating/updating a post
@@ -142,7 +151,6 @@ export type CreateCommentSchema = {
 export type CreatePostSchema = {
     title: string;
     content: Array<PostContentSchema>;
-    coverImage?: string;
     tags?: Array<string>;
 };
 
@@ -154,7 +162,6 @@ export type CreatePostSchema = {
 export type UpdatePostSchema = {
     title?: string;
     content?: Array<PostContentSchema>;
-    coverImage?: string;
     tags?: Array<string>;
 };
 
@@ -373,7 +380,7 @@ export type UserPostSchema = {
     publishedAt?: string | null;
     type: 'published' | 'draft';
     commentCount?: number;
-    coverImage?: string;
+    coverImage?: MediaSchema;
     tags: Array<TagSchema>;
 };
 
@@ -405,6 +412,20 @@ export type PostVersionSchema = {
 };
 
 /**
+ * MediaSchema
+ *
+ * A stored file. `url` is a short-lived signed download link that expires at `expiresAt`. The storage key is never returned as a field.
+ */
+export type MediaSchema = {
+    id: string;
+    filename: string;
+    mimeType: string;
+    size: number;
+    url: string;
+    expiresAt: string;
+};
+
+/**
  * TagSchema
  *
  * A tag attached to a post
@@ -429,7 +450,7 @@ export type UserPostsSchema = {
         publishedAt?: string | null;
         type: 'published' | 'draft';
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: MediaSchema;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
     }>;
@@ -455,7 +476,7 @@ export type PublicPostSchema = {
     publishedAt: string;
     slug?: string;
     commentCount?: number;
-    coverImage?: string;
+    coverImage?: MediaSchema;
     likesCount: number;
     tags: Array<TagSchema>;
 };
@@ -474,7 +495,7 @@ export type PublicPostsSchema = {
         publishedAt: string;
         slug?: string;
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: MediaSchema;
         likesCount: number;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
@@ -501,7 +522,7 @@ export type PublicAuthorPostsSchema = {
         publishedAt: string;
         slug?: string;
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: MediaSchema;
         likesCount: number;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
@@ -857,6 +878,46 @@ export type CommentsControllerCreateCommentResponses = {
 
 export type CommentsControllerCreateCommentResponse = CommentsControllerCreateCommentResponses[keyof CommentsControllerCreateCommentResponses];
 
+export type CommentsControllerDeleteCommentData = {
+    body?: never;
+    path: {
+        commentId: string;
+        postSlug: string;
+    };
+    query?: never;
+    url: '/api/posts/{postSlug}/comments/{commentId}';
+};
+
+export type CommentsControllerDeleteCommentResponses = {
+    200: unknown;
+};
+
+export type CommentsControllerUpdateCommentData = {
+    /**
+     * UpdateCommentSchema
+     *
+     * Schema for updating a comment
+     */
+    body: {
+        content: string;
+    };
+    path: {
+        commentId: string;
+        postSlug: string;
+    };
+    query?: never;
+    url: '/api/posts/{postSlug}/comments/{commentId}';
+};
+
+export type CommentsControllerUpdateCommentResponses = {
+    /**
+     * Schema for a comment
+     */
+    200: CommentSchema;
+};
+
+export type CommentsControllerUpdateCommentResponse = CommentsControllerUpdateCommentResponses[keyof CommentsControllerUpdateCommentResponses];
+
 export type CommentsControllerGetCommentCountData = {
     body?: never;
     path: {
@@ -901,20 +962,6 @@ export type CommentsControllerGetCommentRepliesResponses = {
 };
 
 export type CommentsControllerGetCommentRepliesResponse = CommentsControllerGetCommentRepliesResponses[keyof CommentsControllerGetCommentRepliesResponses];
-
-export type CommentsControllerDeleteCommentData = {
-    body?: never;
-    path: {
-        commentId: string;
-        postSlug: string;
-    };
-    query?: never;
-    url: '/api/posts/{postSlug}/comments/{commentId}';
-};
-
-export type CommentsControllerDeleteCommentResponses = {
-    200: unknown;
-};
 
 export type PostControllerGetUserPostsData = {
     body?: never;
@@ -974,7 +1021,6 @@ export type PostControllerCreatePostData = {
             type: 'video';
             data: string;
         }>;
-        coverImage?: string;
         tags?: Array<string>;
     };
     path?: never;
@@ -1032,7 +1078,6 @@ export type PostControllerUpdatePostData = {
             type: 'video';
             data: string;
         }>;
-        coverImage?: string;
         tags?: Array<string>;
     };
     path: {
@@ -1050,6 +1095,50 @@ export type PostControllerUpdatePostResponses = {
 };
 
 export type PostControllerUpdatePostResponse = PostControllerUpdatePostResponses[keyof PostControllerUpdatePostResponses];
+
+export type PostControllerRemoveCoverImageData = {
+    body?: never;
+    path: {
+        /**
+         * Post identifier
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/admin/posts/{id}/cover-image';
+};
+
+export type PostControllerRemoveCoverImageResponses = {
+    204: void;
+};
+
+export type PostControllerRemoveCoverImageResponse = PostControllerRemoveCoverImageResponses[keyof PostControllerRemoveCoverImageResponses];
+
+export type PostControllerSetCoverImageData = {
+    body: {
+        /**
+         * Accepted types: image/jpeg, image/png, image/gif, image/webp. Maximum size: 10485760 bytes.
+         */
+        file: Blob | File;
+    };
+    path: {
+        /**
+         * Post identifier
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/admin/posts/{id}/cover-image';
+};
+
+export type PostControllerSetCoverImageResponses = {
+    /**
+     * Schema for a user's post
+     */
+    200: UserPostSchema;
+};
+
+export type PostControllerSetCoverImageResponse = PostControllerSetCoverImageResponses[keyof PostControllerSetCoverImageResponses];
 
 export type PostControllerPublishPostData = {
     body?: never;
