@@ -62,6 +62,15 @@ export const zCreateCommentSchema = z.object({
 });
 
 /**
+ * UpdateCommentSchema
+ *
+ * Schema for updating a comment
+ */
+export const zUpdateCommentSchema = z.object({
+    content: z.string().min(1).max(1000)
+});
+
+/**
  * TokenUsage
  *
  * Token usage information for an AI generation
@@ -280,7 +289,6 @@ export const zPostContentSchema = z.union([
 export const zCreatePostSchema = z.object({
     title: z.string().min(1),
     content: z.array(zPostContentSchema),
-    coverImage: z.optional(z.url()),
     tags: z.optional(z.array(z.string()))
 });
 
@@ -292,7 +300,6 @@ export const zCreatePostSchema = z.object({
 export const zUpdatePostSchema = z.object({
     title: z.optional(z.string().min(1)),
     content: z.optional(z.array(zPostContentSchema)),
-    coverImage: z.optional(z.url()),
     tags: z.optional(z.array(z.string()))
 });
 
@@ -305,6 +312,20 @@ export const zPostVersionSchema = z.object({
     id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
     title: z.string(),
     createdAt: z.string()
+});
+
+/**
+ * MediaSchema
+ *
+ * A stored file. `url` is a short-lived signed download link that expires at `expiresAt`. The storage key is never returned as a field.
+ */
+export const zMediaSchema = z.object({
+    id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+    filename: z.string(),
+    mimeType: z.string(),
+    size: z.int().gte(0).lte(9007199254740991),
+    url: z.url(),
+    expiresAt: z.string()
 });
 
 /**
@@ -338,7 +359,7 @@ export const zUserPostSchema = z.object({
     ])),
     type: z.enum(['published', 'draft']),
     commentCount: z.optional(z.number()),
-    coverImage: z.optional(z.url()),
+    coverImage: z.optional(zMediaSchema),
     tags: z.array(zTagSchema)
 });
 
@@ -362,7 +383,7 @@ export const zUserPostsSchema = z.object({
         ])),
         type: z.enum(['published', 'draft']),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zMediaSchema),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
     })),
@@ -388,7 +409,7 @@ export const zPublicPostSchema = z.object({
     publishedAt: z.string(),
     slug: z.optional(z.string()),
     commentCount: z.optional(z.number()),
-    coverImage: z.optional(z.url()),
+    coverImage: z.optional(zMediaSchema),
     likesCount: z.number(),
     tags: z.array(zTagSchema)
 });
@@ -407,7 +428,7 @@ export const zPublicPostsSchema = z.object({
         publishedAt: z.string(),
         slug: z.optional(z.string()),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zMediaSchema),
         likesCount: z.number(),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
@@ -434,7 +455,7 @@ export const zPublicAuthorPostsSchema = z.object({
         publishedAt: z.string(),
         slug: z.optional(z.string()),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zMediaSchema),
         likesCount: z.number(),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
@@ -920,6 +941,31 @@ export const zCommentsControllerCreateCommentData = z.object({
  */
 export const zCommentsControllerCreateCommentResponse = zCommentSchema;
 
+export const zCommentsControllerDeleteCommentData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        commentId: z.string(),
+        postSlug: z.string()
+    }),
+    query: z.optional(z.never())
+});
+
+export const zCommentsControllerUpdateCommentData = z.object({
+    body: z.object({
+        content: z.string().min(1).max(1000)
+    }),
+    path: z.object({
+        commentId: z.string(),
+        postSlug: z.string()
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Schema for a comment
+ */
+export const zCommentsControllerUpdateCommentResponse = zCommentSchema;
+
 export const zCommentsControllerGetCommentCountData = z.object({
     body: z.optional(z.never()),
     path: z.object({
@@ -945,15 +991,6 @@ export const zCommentsControllerGetCommentRepliesData = z.object({
  * Schema for a paginated list of comments
  */
 export const zCommentsControllerGetCommentRepliesResponse = zCommentsSchema;
-
-export const zCommentsControllerDeleteCommentData = z.object({
-    body: z.optional(z.never()),
-    path: z.object({
-        commentId: z.string(),
-        postSlug: z.string()
-    }),
-    query: z.optional(z.never())
-});
 
 export const zPostControllerGetUserPostsData = z.object({
     body: z.optional(z.never()),
@@ -988,7 +1025,6 @@ export const zPostControllerCreatePostData = z.object({
                 data: z.string()
             })
         ])),
-        coverImage: z.optional(z.url()),
         tags: z.optional(z.array(z.string()))
     }),
     path: z.optional(z.never()),
@@ -1030,7 +1066,6 @@ export const zPostControllerUpdatePostData = z.object({
                 data: z.string()
             })
         ]))),
-        coverImage: z.optional(z.url()),
         tags: z.optional(z.array(z.string()))
     }),
     path: z.object({
@@ -1043,6 +1078,31 @@ export const zPostControllerUpdatePostData = z.object({
  * Schema for a user's post
  */
 export const zPostControllerUpdatePostResponse = zUserPostSchema;
+
+export const zPostControllerRemoveCoverImageData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+export const zPostControllerRemoveCoverImageResponse = z.void();
+
+export const zPostControllerSetCoverImageData = z.object({
+    body: z.object({
+        file: z.string()
+    }),
+    path: z.object({
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Schema for a user's post
+ */
+export const zPostControllerSetCoverImageResponse = zUserPostSchema;
 
 export const zPostControllerPublishPostData = z.object({
     body: z.optional(z.never()),

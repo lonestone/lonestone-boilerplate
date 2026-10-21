@@ -1,3 +1,4 @@
+import { ServiceUnavailableException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { StorageService } from '../../storage/storage.service'
 import { mediaSchema } from '../contracts/media.contract'
@@ -46,5 +47,26 @@ describe('MediaMapper', () => {
     expect(actualMedia).not.toHaveProperty('storageKey')
     expect(JSON.stringify(actualMedia)).not.toContain('secret-storage-key')
     expect(mediaSchema.safeParse(actualMedia).success).toBe(true)
+  })
+
+  it('maps a missing optional media to undefined', async () => {
+    await expect(mapper.toOptionalMedia(undefined)).resolves.toBeUndefined()
+
+    expect(storageService.getSignedUrl).not.toHaveBeenCalled()
+  })
+
+  it('omits an optional media while storage is disabled', async () => {
+    vi.mocked(storageService.getSignedUrl).mockRejectedValue(
+      new ServiceUnavailableException('File storage is disabled'),
+    )
+
+    await expect(mapper.toOptionalMedia(new Media())).resolves.toBeUndefined()
+  })
+
+  it('keeps other signing failures', async () => {
+    const signingError = new Error('Invalid credentials')
+    vi.mocked(storageService.getSignedUrl).mockRejectedValue(signingError)
+
+    await expect(mapper.toOptionalMedia(new Media())).rejects.toBe(signingError)
   })
 })

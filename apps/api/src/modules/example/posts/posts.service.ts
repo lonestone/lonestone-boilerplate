@@ -4,6 +4,8 @@ import slugify from 'slugify'
 import { User } from '../../auth/auth.entity'
 import { buildOrderBy } from '../../db/query-order.util'
 import { Comment } from '../../example/comments/comments.entity'
+import { MediaService } from '../../media/media.service'
+import { StorageUpload } from '../../storage/storage.service'
 import {
   CreatePostInput,
   PostFiltering,
@@ -41,7 +43,10 @@ export interface PublicAuthorPostsResult {
 
 @Injectable()
 export class PostService {
-  constructor(private readonly em: EntityManager) {}
+  constructor(
+    private readonly em: EntityManager,
+    private readonly mediaService: MediaService,
+  ) {}
 
   // Find existing tags by slug or create them on the fly (used by create/update).
   private async resolveTags(names: string[]): Promise<Tag[]> {
@@ -73,7 +78,6 @@ export class PostService {
     version.content = data.content
     post.versions.add(version)
 
-    post.coverImage = data.coverImage
     if (data.tags) post.tags.set(await this.resolveTags(data.tags))
 
     this.em.persist([post, version])
@@ -85,7 +89,7 @@ export class PostService {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
-      { populate: ['versions', 'tags'] },
+      { populate: ['versions', 'tags', 'coverImage'] },
     )
     if (!post) throw new NotFoundException('Post not found')
 
@@ -117,11 +121,30 @@ export class PostService {
       await this.em.flush()
     }
 
-    if (data.coverImage !== undefined) post.coverImage = data.coverImage
     if (data.tags) post.tags.set(await this.resolveTags(data.tags))
     await this.em.flush()
 
     return post
+  }
+
+  async setCoverImage(postId: string, userId: string, upload: StorageUpload): Promise<Post> {
+    const post = await this.findOwnedPost(postId, userId)
+    await this.mediaService.replace({
+      current: post.coverImage,
+      upload,
+      attach: (media) => (post.coverImage = media),
+    })
+    return post
+  }
+
+  async removeCoverImage(postId: string, userId: string): Promise<void> {
+    const post = await this.findOwnedPost(postId, userId)
+    if (!post.coverImage) throw new NotFoundException('Post cover image not found')
+
+    await this.mediaService.remove({
+      media: post.coverImage,
+      detach: () => (post.coverImage = undefined),
+    })
   }
 
   // One query for all posts in a page, instead of one count query per post.
@@ -160,7 +183,7 @@ export class PostService {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
-      { populate: ['versions', 'tags'] },
+      { populate: ['versions', 'tags', 'coverImage'] },
     )
     if (!post) throw new NotFoundException('Post not found')
 
@@ -194,7 +217,7 @@ export class PostService {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
-      { populate: ['versions', 'tags'] },
+      { populate: ['versions', 'tags', 'coverImage'] },
     )
     if (!post) throw new NotFoundException('Post not found')
 
@@ -208,7 +231,7 @@ export class PostService {
       Post,
       { id: postId, user: userId },
       {
-        populate: ['versions', 'user'],
+        populate: ['versions', 'user', 'coverImage'],
       },
     )
     if (!post) throw new NotFoundException('Post not found')
@@ -238,7 +261,7 @@ export class PostService {
     }
 
     const [posts, total] = await this.em.findAndCount(Post, where, {
-      populate: ['versions'],
+      populate: ['versions', 'coverImage'],
       orderBy,
       limit: pagination.pageSize,
       offset: pagination.offset,
@@ -262,7 +285,7 @@ export class PostService {
       Post,
       { publishedAt: { $ne: null } },
       {
-        populate: ['user', 'versions', 'tags'],
+        populate: ['user', 'versions', 'tags', 'coverImage'],
         orderBy: { createdAt: 'DESC' },
         offset: randomIndex,
         limit: 1,
@@ -305,7 +328,7 @@ export class PostService {
     }
 
     const [posts, total] = await this.em.findAndCount(Post, where, {
-      populate: ['user', 'versions', 'tags'],
+      populate: ['user', 'versions', 'tags', 'coverImage'],
       orderBy,
       limit: pagination.pageSize,
       offset: pagination.offset,
@@ -342,7 +365,7 @@ export class PostService {
     }
 
     const [posts, total] = await this.em.findAndCount(Post, where, {
-      populate: ['user', 'versions', 'tags'],
+      populate: ['user', 'versions', 'tags', 'coverImage'],
       orderBy,
       limit: pagination.pageSize,
       offset: pagination.offset,
@@ -357,13 +380,13 @@ export class PostService {
     const post = await this.em.findOne(
       Post,
       { slug, publishedAt: { $ne: null } },
-      { populate: ['user', 'versions', 'tags'] },
+      { populate: ['user', 'versions', 'tags', 'coverImage'] },
     )
 
     if (!post) throw new NotFoundException(`Post not found: ${slug}`)
 
     await this.em.nativeUpdate(Post, { id: post.id }, { likesCount: raw('"likesCount" + 1') })
-    await this.em.refresh(post, { populate: ['user', 'versions', 'tags'] })
+    await this.em.refresh(post, { populate: ['user', 'versions', 'tags', 'coverImage'] })
 
     const commentCount = await this.em.count(Comment, { post: post.id })
 
@@ -375,7 +398,7 @@ export class PostService {
       Post,
       { slug, publishedAt: { $ne: null } },
       {
-        populate: ['user', 'versions', 'tags'],
+        populate: ['user', 'versions', 'tags', 'coverImage'],
       },
     )
 
@@ -389,5 +412,16 @@ export class PostService {
       post,
       commentCount,
     }
+  }
+
+  private async findOwnedPost(postId: string, userId: string): Promise<Post> {
+    const post = await this.em.findOne(
+      Post,
+      { id: postId, user: userId },
+      { populate: ['versions', 'tags', 'coverImage'] },
+    )
+    if (!post) throw new NotFoundException('Post not found')
+
+    return post
   }
 }
