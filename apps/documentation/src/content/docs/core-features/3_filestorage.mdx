@@ -96,17 +96,78 @@ async removeCoverImage(post: Post, coverImage: Media): Promise<void> {
 An object that fails to delete after a commit is only logged: the database is already right, and
 failing the request would undo nothing.
 
-Map the relation with `MediaMapper.toMedia` and reuse `mediaSchema` in your contracts. `toMedia` is
-async: it signs a download URL and returns it with its `expiresAt` date. The signed URL fixes the
-response `Content-Type` to the stored MIME type and sets an inline `Content-Disposition` with the
-original filename. The storage key is never a field of the contract.
+Map the relation with `MediaMapper` and reuse `mediaSchema` in your contracts. `toMedia` is async:
+it signs a download URL and returns it with its `expiresAt` date. The signed URL fixes the response
+`Content-Type` to the stored MIME type and sets an inline `Content-Disposition` with the original
+filename. The storage key is never a field of the contract.
+
+For an optional relation, use `toOptionalMedia`. It also returns `undefined` while storage is
+disabled, so a list that contains one file still loads instead of failing with `503`:
 
 ```typescript
-coverImage: post.coverImage ? await this.mediaMapper.toMedia(post.coverImage) : undefined,
+coverImage: await this.mediaMapper.toOptionalMedia(post.coverImage),
 ```
 
 Only call `toMedia` for users allowed to see the file. Anyone holding the URL can read the file
 until it expires.
+
+## Upload a file from an HTTP route
+
+Give the file its own route, under the entity it belongs to, for example
+`PUT /admin/posts/:id/cover-image`. Create and update routes stay in JSON with `@TypedBody`, so their
+contract keeps its real types. Uploading a file before its owner exists would leave orphan files,
+and passing a media ID around would mean checking who uploaded it. A route under the owner avoids
+both: the owner's own access check covers the file.
+
+Two decorators from `MediaModule` handle the multipart part. Business modules do not import Multer
+or describe the body by hand:
+
+- `@MediaUpload(rules)` accepts one file in a `file` field. It sets the size limit, and documents
+  the body in OpenAPI as a binary file, so the generated client sends `FormData`.
+- `@UploadedMedia()` returns the file, ready for `MediaService`. It reads the file's first bytes to
+  find its real type, and ignores the MIME type sent by the client.
+
+```typescript
+const POST_COVER_IMAGE_UPLOAD: MediaUploadRules = {
+  maxSizeBytes: 10 * 1024 * 1024,
+  mimeTypes: IMAGE_MIME_TYPES,
+}
+
+@TypedRoute.Put(':id/cover-image', userPostSchema)
+@MediaUpload(POST_COVER_IMAGE_UPLOAD)
+async setCoverImage(
+  @Session() session: LoggedInBetterAuthSession,
+  @TypedParam('id', postIdSchema) id: string,
+  @UploadedMedia() image: StorageUpload,
+): Promise<UserPost> {
+  const post = await this.postService.setCoverImage(id, session.user.id, image)
+  return this.postsMapper.toUserPost(post)
+}
+```
+
+A missing file returns `400`, a file over the limit `413`, and a file of another type `415`. To
+accept a new type, add its signature to `media-file-type.util.ts`.
+
+The client sends the file with the generated SDK:
+
+```typescript
+await postControllerSetCoverImage({ path: { id: postId }, body: { file } })
+```
+
+Creating a post with an image takes two requests: create the post, then send its image. If the
+image fails, the post still exists, and the user can add the image again from the edit page.
+
+## Posts example
+
+Set `STORAGE_ENABLED=true` to try it. `PUT /api/admin/posts/:id/cover-image` sets or replaces the
+cover image, and `DELETE /api/admin/posts/:id/cover-image` removes it. Both only work for the
+owner of the post: another user receives `404`. Admin responses give the owner a signed URL for
+drafts and published posts. Public responses only include published posts, so only their images
+get a URL. Frontends put the URL straight into an image tag:
+
+```tsx
+<FadeInImage src={post.coverImage?.url} alt={post.title} />
+```
 
 ## Signed URLs and caching
 
@@ -142,8 +203,10 @@ service name, browsers cannot open the URLs. Rewriting the host after signing br
 
 ## Remove storage
 
-If you do not need files, leave `STORAGE_ENABLED=false`. To remove the infrastructure, remove every
-relation to `Media`, delete `apps/api/src/modules/media` and `apps/api/src/modules/storage`, and
-create a migration that drops the `media` table. Then remove the AWS SDK packages
-(`@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner`) and `testcontainers` if nothing else uses
-it. Finally, remove the `STORAGE_*` variables and the RustFS Compose service and volume.
+If you do not need files, leave `STORAGE_ENABLED=false`: posts simply have no cover image. To
+remove the infrastructure, remove the cover image routes and the `coverImage` relation from posts,
+delete `apps/api/src/modules/media` and `apps/api/src/modules/storage`, and create a migration that
+drops the `coverImageId` column and the `media` table. Then remove the AWS SDK packages
+(`@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner`), `@types/multer`, and `testcontainers`
+if nothing else uses it. Remove the `STORAGE_*` variables and the RustFS Compose service and volume,
+then regenerate the OpenAPI client and remove the cover image field from the post form.

@@ -1,37 +1,51 @@
-import type { CreatePostSchema } from '@boilerstone/openapi-generator'
 import { postControllerCreatePost } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { queryClient } from '@/lib/query-client'
-import UserPostForm from './user-post-form'
+import { postKeys, saveCoverImage } from './utils/user-posts-queries'
+import UserPostForm, { type PostFormSubmitData } from './user-post-form'
 
 export default function UserPostCreatePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
   const { mutate: createPost, isPending } = useMutation({
-    mutationFn: (data: CreatePostSchema) =>
-      postControllerCreatePost({
-        body: data,
-      }),
-    onSuccess: async (result) => {
-      if (!result.data) {
-        toast.error(t('toasts.postCreateError'))
-        return
+    mutationFn: async (data: PostFormSubmitData) => {
+      const response = await postControllerCreatePost({
+        body: {
+          title: data.title,
+          content: data.content,
+          tags: data.tags,
+        },
+      })
+
+      if (response.error || !response.data) {
+        throw response.error ?? new Error(t('toasts.postCreateError'))
       }
-      queryClient.invalidateQueries({ queryKey: ['posts'] })
+
+      // The post exists at this point: an image failure must not hide it.
+      try {
+        await saveCoverImage(response.data.id, data.coverImage)
+      } catch {
+        toast.error(t('toasts.postCoverImageError'))
+      }
+
+      return response.data
+    },
+    onSuccess: async (post) => {
       toast.success(t('toasts.postCreated'))
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
       await new Promise((resolve) => setTimeout(resolve, 800))
-      navigate(`/dashboard/posts/${result.data.id}/edit`)
+      navigate(`/dashboard/posts/${post.id}/edit`)
     },
     onError: (error) => {
       toast.error(error?.message || t('toasts.postCreateError'))
     },
   })
 
-  const onSubmit = async (data: CreatePostSchema) => {
+  const onSubmit = async (data: PostFormSubmitData) => {
     await createPost(data)
   }
 
