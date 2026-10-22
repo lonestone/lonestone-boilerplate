@@ -460,9 +460,23 @@ describe('postController cover image (e2e)', () => {
     const response = await context.request
       .withSession(session)
       .put(`/admin/posts/${postId}/cover-image`)
-      .field('note', 'no file')
 
     expect(response.status).toBe(400)
+  })
+
+  it('rejects text fields sent alongside the file', async (context) => {
+    const { session } = await createUserWithSession(context.em)
+    const postId = await createPost(context.request, session)
+
+    const response = await context.request
+      .withSession(session)
+      .put(`/admin/posts/${postId}/cover-image`)
+      .field('padding', 'x'.repeat(1024))
+      .attach('file', MINIMAL_PNG, { filename: 'cover.png', contentType: 'image/png' })
+
+    expect(response.status).toBe(400)
+    const postResponse = await context.request.withSession(session).get(`/admin/posts/${postId}`)
+    expect(postResponse.body).not.toHaveProperty('coverImage')
   })
 
   it('rejects a file that is not a supported image, whatever its declared type', async (context) => {

@@ -31,7 +31,9 @@ export function MediaUpload(rules: MediaUploadRules): MethodDecorator {
     SetMetadata(MEDIA_UPLOAD_RULES, rules),
     UseInterceptors(
       FileInterceptor(MEDIA_UPLOAD_FIELD, {
-        limits: { fileSize: rules.maxSizeBytes, files: 1 },
+        // Text parts are rejected before being buffered, so they cannot bypass the file size limit.
+        // Do not add `parts: 1`: busboy counts the closing boundary and would reject a valid upload.
+        limits: { fileSize: rules.maxSizeBytes, files: 1, fields: 0, fieldSize: 0 },
       }),
     ),
     ApiConsumes('multipart/form-data'),
