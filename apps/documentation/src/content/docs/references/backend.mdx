@@ -52,7 +52,10 @@ There is no module generator. Copy `apps/api/src/modules/example/posts/` and ada
 
 Then follow these steps (adapt as needed):
 
-1. Create an entity, using posts.entity.ts (or another existing entity file if not found) as reference;
+1. Create an entity, using `posts/entities/post.entity.ts` (or another existing entity file if not found) as reference;
+   a. Put one entity class per file, under `<module>/entities/<name>.entity.ts`. MikroORM discovers entities by importing each compiled `*.entity.js` as an ES module, and Node cannot see the exports of a compiled file that exports several classes, so those entities are silently skipped;
+   b. A module with several entities re-exports them from a barrel at `<module>.entity.ts`, like `auth.entity.ts` and `posts.entity.ts`;
+   c. When two entities reference each other, type the relation as `Rel<Entity>` (from `@mikro-orm/core`) to avoid a "Cannot access before initialization" error at startup;
 2. Create a contract, using posts.contract.ts (or another existing contract file if not found) as reference.
    a. The contract file should contain the schema for all CRUD actions (GET/POST/PUT/DELETE);
    b. If related contracts are needed (relations), create the related contract files first;
