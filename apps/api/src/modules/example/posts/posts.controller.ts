@@ -7,17 +7,18 @@ import {
   TypedParam,
   TypedRoute,
 } from '@lonestone/nzoth/server'
-import { HttpCode, Param, UploadedFile, UseInterceptors } from '@nestjs/common'
-import { FileInterceptor } from '@nestjs/platform-express'
-import { ApiBody, ApiConsumes, ApiNoContentResponse } from '@nestjs/swagger'
+import { HttpCode, Param } from '@nestjs/common'
+import { ApiNoContentResponse } from '@nestjs/swagger'
 import { AllowAnonymous, Session } from '@thallesp/nestjs-better-auth'
 import { z } from 'zod'
 import { LoggedInBetterAuthSession } from '../../auth/auth.config'
+import { MultipartFile } from '../../media/multipart-file.decorator'
 import {
-  CreatePostMultipart,
+  CreatePostInput,
   createPostSchema,
   PostFiltering,
   postFilteringSchema,
+  POST_COVER_IMAGE_MAX_SIZE_BYTES,
   postIdSchema,
   PostPagination,
   postPaginationSchema,
@@ -26,62 +27,14 @@ import {
   publicAuthorPostsSchema,
   publicPostSchema,
   publicPostsSchema,
-  toCreatePostInput,
-  toUpdatePostInput,
-  UpdatePostMultipart,
+  UpdatePostInput,
   updatePostSchema,
   UserPost,
   userPostSchema,
   userPostsSchema,
 } from './contracts/posts.contract'
-import { parsePostImageFile, POST_COVER_IMAGE_MAX_SIZE_BYTES } from './image-file.util'
 import { PostsMapper } from './posts.mapper'
 import { PostService } from './posts.service'
-
-const SWAGGER_API_PARAMETERS = 'swagger/apiParameters'
-
-function ApiPostMultipartBody(required: string[]): MethodDecorator {
-  const apiBody = ApiBody({
-    schema: {
-      type: 'object',
-      required,
-      properties: {
-        title: { type: 'string' },
-        content: {
-          type: 'string',
-          description: 'JSON array of post content blocks',
-        },
-        tags: {
-          type: 'string',
-          description: 'JSON array of tag names',
-        },
-        coverImage: {
-          type: 'string',
-          format: 'binary',
-        },
-      },
-    },
-  })
-
-  return (target, propertyKey, descriptor): void => {
-    if (!descriptor?.value) return
-
-    const existingParameters: unknown = Reflect.getMetadata(
-      SWAGGER_API_PARAMETERS,
-      descriptor.value,
-    )
-    const parameters = Array.isArray(existingParameters)
-      ? existingParameters.filter((parameter: unknown) => !isBodyParameter(parameter))
-      : []
-
-    Reflect.defineMetadata(SWAGGER_API_PARAMETERS, parameters, descriptor.value)
-    apiBody(target, propertyKey, descriptor)
-  }
-}
-
-function isBodyParameter(value: unknown): boolean {
-  return typeof value === 'object' && value !== null && 'in' in value && value.in === 'body'
-}
 
 @TypedController('admin/posts', undefined, {
   tags: ['Admin Posts'],
@@ -92,53 +45,24 @@ export class PostController {
     private readonly postsMapper: PostsMapper,
   ) {}
 
-  @ApiPostMultipartBody(['title', 'content'])
-  @ApiConsumes('multipart/form-data')
   @TypedRoute.Post('', userPostSchema, { status: 201 })
-  @UseInterceptors(
-    FileInterceptor('coverImage', {
-      limits: {
-        fileSize: POST_COVER_IMAGE_MAX_SIZE_BYTES,
-      },
-    }),
-  )
+  @MultipartFile('coverImage', { maxSize: POST_COVER_IMAGE_MAX_SIZE_BYTES })
   async createPost(
     @Session() session: LoggedInBetterAuthSession,
-    @TypedMultipartBody(createPostSchema) body: CreatePostMultipart,
-    @UploadedFile() file?: Express.Multer.File,
+    @TypedMultipartBody(createPostSchema) body: CreatePostInput,
   ): Promise<UserPost> {
-    const coverImage = file ? parsePostImageFile(file) : undefined
-    const post = await this.postService.createPost(
-      session.user.id,
-      toCreatePostInput(body),
-      coverImage,
-    )
+    const post = await this.postService.createPost(session.user.id, body)
     return this.postsMapper.toUserPost(post)
   }
 
-  @ApiPostMultipartBody([])
-  @ApiConsumes('multipart/form-data')
   @TypedRoute.Put(':id', userPostSchema)
-  @UseInterceptors(
-    FileInterceptor('coverImage', {
-      limits: {
-        fileSize: POST_COVER_IMAGE_MAX_SIZE_BYTES,
-      },
-    }),
-  )
+  @MultipartFile('coverImage', { maxSize: POST_COVER_IMAGE_MAX_SIZE_BYTES })
   async updatePost(
     @Session() session: LoggedInBetterAuthSession,
     @TypedParam('id', z.string()) id: string,
-    @TypedMultipartBody(updatePostSchema) body: UpdatePostMultipart,
-    @UploadedFile() file?: Express.Multer.File,
+    @TypedMultipartBody(updatePostSchema) body: UpdatePostInput,
   ): Promise<UserPost> {
-    const coverImage = file ? parsePostImageFile(file) : undefined
-    const post = await this.postService.updatePost(
-      id,
-      session.user.id,
-      toUpdatePostInput(body),
-      coverImage,
-    )
+    const post = await this.postService.updatePost(id, session.user.id, body)
     return this.postsMapper.toUserPost(post)
   }
 

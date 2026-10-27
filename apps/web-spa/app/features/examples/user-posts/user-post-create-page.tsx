@@ -14,12 +14,7 @@ export default function UserPostCreatePage() {
   const { mutate: createPost, isPending } = useMutation({
     mutationFn: async (data: PostFormSubmitData) => {
       const response = await postControllerCreatePost({
-        body: {
-          title: data.title,
-          content: JSON.stringify(data.content),
-          tags: data.tags ? JSON.stringify(data.tags) : undefined,
-          coverImage: data.coverImage,
-        },
+        body: data,
       })
 
       if (response.error || !response.data) {

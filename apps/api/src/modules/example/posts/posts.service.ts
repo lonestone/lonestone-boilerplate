@@ -1,11 +1,10 @@
 import { EntityManager, FilterQuery, raw } from '@mikro-orm/core'
-import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import slugify from 'slugify'
 import { User } from '../../auth/auth.entity'
 import { buildOrderBy } from '../../db/query-order.util'
 import { Comment } from '../../example/comments/comments.entity'
 import { MediaService } from '../../media/media.service'
-import { StorageUpload } from '../../storage/storage.service'
 import {
   CreatePostInput,
   PostFiltering,
@@ -43,8 +42,6 @@ export interface PublicAuthorPostsResult {
 
 @Injectable()
 export class PostService {
-  private readonly logger = new Logger(PostService.name)
-
   constructor(
     private readonly em: EntityManager,
     private readonly mediaService: MediaService,
@@ -67,40 +64,38 @@ export class PostService {
     return tags
   }
 
-  async createPost(userId: string, data: CreatePostInput, image?: StorageUpload): Promise<Post> {
+  async createPost(userId: string, data: CreatePostInput): Promise<Post> {
     const user = await this.em.findOne(User, { id: userId })
     if (!user) throw new Error('User not found')
 
-    const coverImage = image ? await this.mediaService.create(image) : undefined
+    const post = new Post()
+    post.user = user
 
+    const version = new PostVersion()
+    version.post = post
+    version.title = data.title
+    version.content = data.content
+    post.versions.add(version)
+
+    if (data.tags) post.tags.set(await this.resolveTags(data.tags))
+
+    // Upload last: an error before this point leaves no file in the bucket.
+    const coverImage = data.coverImage
+      ? this.mediaService.attach(await this.mediaService.upload(data.coverImage))
+      : undefined
+    post.coverImage = coverImage
+
+    this.em.persist([post, version])
     try {
-      const post = new Post()
-      post.user = user
-      post.coverImage = coverImage
-
-      const version = new PostVersion()
-      version.post = post
-      version.title = data.title
-      version.content = data.content
-      post.versions.add(version)
-
-      if (data.tags) post.tags.set(await this.resolveTags(data.tags))
-
-      this.em.persist([post, version])
       await this.em.flush()
-      return post
     } catch (error: unknown) {
-      if (coverImage) await this.deleteCompensatingObject(coverImage.storageKey, error)
+      if (coverImage) await this.mediaService.remove(coverImage)
       throw error
     }
+    return post
   }
 
-  async updatePost(
-    postId: string,
-    userId: string,
-    data: UpdatePostInput,
-    image?: StorageUpload,
-  ): Promise<Post> {
+  async updatePost(postId: string, userId: string, data: UpdatePostInput): Promise<Post> {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
@@ -108,63 +103,67 @@ export class PostService {
     )
     if (!post) throw new NotFoundException('Post not found')
 
-    const previousCoverImage = post.coverImage
-    const coverImage = image ? await this.mediaService.create(image) : undefined
+    const latestVersion = await this.em.findOne(
+      PostVersion,
+      { post: post.id },
+      {
+        orderBy: { createdAt: 'DESC' },
+      },
+    )
+    if (!latestVersion) throw new Error('No version found')
+
+    // We create a new version only if the post is published and the last version
+    // was created before the publication
+    const shouldCreateNewVersion = post.publishedAt && post.publishedAt < latestVersion.createdAt
+
+    if (shouldCreateNewVersion) {
+      const version = new PostVersion()
+      version.post = post
+      version.title = data.title ?? latestVersion.title
+      version.content = data.content ?? latestVersion.content
+      post.versions.add(version)
+      this.em.persist(version)
+    } else {
+      if (data.title) latestVersion.title = data.title
+      if (data.content) latestVersion.content = data.content
+    }
+
+    if (data.tags) post.tags.set(await this.resolveTags(data.tags))
+
+    const previousCoverImage = data.coverImage ? post.coverImage : undefined
+    const coverImage = data.coverImage
+      ? this.mediaService.attach(await this.mediaService.upload(data.coverImage))
+      : undefined
+    if (coverImage) post.coverImage = coverImage
+    if (previousCoverImage) this.em.remove(previousCoverImage)
 
     try {
-      const latestVersion = await this.em.findOne(
-        PostVersion,
-        { post: post.id },
-        {
-          orderBy: { createdAt: 'DESC' },
-        },
-      )
-      if (!latestVersion) throw new Error('No version found')
-
-      // We create a new version only if the post is published and the last version
-      // was created before the publication
-      const shouldCreateNewVersion = post.publishedAt && post.publishedAt < latestVersion.createdAt
-
-      if (shouldCreateNewVersion) {
-        const version = new PostVersion()
-        version.post = post
-        version.title = data.title ?? latestVersion.title
-        version.content = data.content ?? latestVersion.content
-        post.versions.add(version)
-        this.em.persist(version)
-      } else {
-        if (data.title) latestVersion.title = data.title
-        if (data.content) latestVersion.content = data.content
-      }
-
-      if (coverImage) {
-        post.coverImage = coverImage
-        if (previousCoverImage) this.em.remove(previousCoverImage)
-      }
-      if (data.tags) post.tags.set(await this.resolveTags(data.tags))
-
       await this.em.flush()
     } catch (error: unknown) {
-      if (coverImage) await this.deleteCompensatingObject(coverImage.storageKey, error)
+      if (coverImage) await this.mediaService.remove(coverImage)
       throw error
     }
 
-    if (coverImage && previousCoverImage) {
-      await this.deleteStaleObject(previousCoverImage.storageKey)
-    }
-
+    // The old file goes only once its row is gone, so a failed save keeps the image working.
+    if (previousCoverImage) await this.mediaService.remove(previousCoverImage)
     return post
   }
 
   async removePostImage(postId: string, userId: string): Promise<void> {
-    const post = await this.findOwnedPost(postId, userId)
+    const post = await this.em.findOne(
+      Post,
+      { id: postId, user: userId },
+      { populate: ['coverImage'] },
+    )
+    if (!post) throw new NotFoundException('Post not found')
+
     const coverImage = post.coverImage
     if (!coverImage) throw new NotFoundException('Post cover image not found')
 
     post.coverImage = undefined
     this.em.remove(coverImage)
     await this.em.flush()
-    await this.deleteStaleObject(coverImage.storageKey)
+    await this.mediaService.remove(coverImage)
   }
 
   // One query for all posts in a page, instead of one count query per post.
@@ -431,45 +430,6 @@ export class PostService {
     return {
       post,
       commentCount,
-    }
-  }
-
-  private async findOwnedPost(postId: string, userId: string): Promise<Post> {
-    const post = await this.em.findOne(
-      Post,
-      { id: postId, user: userId },
-      { populate: ['coverImage'] },
-    )
-    if (!post) throw new NotFoundException('Post not found')
-
-    return post
-  }
-
-  private async deleteCompensatingObject(
-    storageKey: string,
-    persistenceError: unknown,
-  ): Promise<never> {
-    try {
-      await this.mediaService.deleteObject(storageKey)
-    } catch (cleanupError: unknown) {
-      throw new InternalServerErrorException('Failed to save post image metadata', {
-        cause: new AggregateError(
-          [persistenceError, cleanupError],
-          'Post image metadata save and object cleanup failed',
-        ),
-      })
-    }
-
-    throw new InternalServerErrorException('Failed to save post image metadata', {
-      cause: persistenceError,
-    })
-  }
-
-  private async deleteStaleObject(storageKey: string): Promise<void> {
-    try {
-      await this.mediaService.deleteObject(storageKey)
-    } catch (error: unknown) {
-      this.logger.error(`Failed to delete stale storage object ${storageKey}`, error)
     }
   }
 }

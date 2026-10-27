@@ -21,7 +21,7 @@ import { StorageModule } from '../../../storage/storage.module'
 import { initializeTestApp } from '../../../../test/helpers/test-app.helper'
 import { createRequest, TestRequest } from '../../../../test/helpers/test-auth.helper'
 import { createUserWithSession } from '../../../../test/helpers/test-user.helpers'
-import { POST_COVER_IMAGE_MAX_SIZE_BYTES } from '../image-file.util'
+import { POST_COVER_IMAGE_MAX_SIZE_BYTES } from '../contracts/posts.contract'
 import { PostModule } from '../posts.module'
 
 const MINIMAL_PNG = Buffer.from(
@@ -56,6 +56,10 @@ class InMemoryStorageProvider implements IStorageProvider {
       url: `${FAKE_STORAGE_ORIGIN}/${key}?X-Amz-Signature=fake`,
       expiresAt: new Date(Date.now() + 3600_000),
     }
+  }
+
+  get objectCount(): number {
+    return this.objects.size
   }
 
   /** Plays the bucket: returns the bytes a browser would get from a signed URL. */
@@ -104,6 +108,44 @@ describe('postController (e2e)', () => {
         type: 'draft',
       })
       expect(response.body).not.toHaveProperty('coverImageStorageKey')
+    })
+
+    it('accepts arrays sent the way the generated SDK sends them', async (context) => {
+      const { em, request } = context
+      const { session } = await createUserWithSession(em)
+
+      // One field per array item, object items as JSON (see formDataBodySerializer).
+      const response = await request
+        .withSession(session)
+        .post('/admin/posts')
+        .field('title', 'SDK Post')
+        .field('content', JSON.stringify({ type: 'text', data: 'First' }))
+        .field('content', JSON.stringify({ type: 'text', data: 'Second' }))
+        .field('tags', 'news')
+        .field('tags', '2026')
+
+      expect(response.status).toBe(201)
+      expect(response.body.content).toEqual([
+        { type: 'text', data: 'First' },
+        { type: 'text', data: 'Second' },
+      ])
+      expect(response.body.tags.map((tag: { name: string }) => tag.name).sort()).toEqual([
+        '2026',
+        'news',
+      ])
+    })
+
+    it('rejects content items that are not valid post content', async (context) => {
+      const { em, request } = context
+      const { session } = await createUserWithSession(em)
+
+      const response = await request
+        .withSession(session)
+        .post('/admin/posts')
+        .field('title', 'Bad Content')
+        .field('content', 'not json')
+
+      expect(response.status).toBe(400)
     })
 
     it('should return 401 when unauthenticated', async (context) => {
@@ -441,6 +483,20 @@ describe('postController images (e2e)', () => {
     expect(storageProvider.readSignedUrl(createResponse.body.coverImage.url)).toEqual(MINIMAL_PNG)
   })
 
+  it('deletes the uploaded object when saving the post fails', async (context) => {
+    const { session } = await createUserWithSession(context.em)
+    const expectedObjectCount = storageProvider.objectCount
+
+    // The title column is varchar(255): the insert fails and the transaction rolls back.
+    const response = await postFields(context.request.withSession(session).post('/admin/posts'), {
+      title: 'x'.repeat(300),
+      content: [{ type: 'text', data: 'content' }],
+    }).attach('coverImage', MINIMAL_PNG, { filename: 'cover.png', contentType: 'image/png' })
+
+    expect(response.status).toBe(500)
+    expect(storageProvider.objectCount).toBe(expectedObjectCount)
+  })
+
   it('rejects unauthenticated image requests', async (context) => {
     const postId = '44b82136-0dd7-4b5f-a36b-38b26a4941aa'
 
@@ -463,6 +519,20 @@ describe('postController images (e2e)', () => {
     }).attach('coverImage', Buffer.from('hello storage'), {
       filename: 'notes.txt',
       contentType: 'text/plain',
+    })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a non-image file sent with an image content type', async (context) => {
+    const { session } = await createUserWithSession(context.em)
+
+    const response = await postFields(context.request.withSession(session).post('/admin/posts'), {
+      title: 'Spoofed File',
+      content: [{ type: 'text', data: 'content' }],
+    }).attach('coverImage', Buffer.from('hello storage'), {
+      filename: 'cover.png',
+      contentType: 'image/png',
     })
 
     expect(response.status).toBe(400)

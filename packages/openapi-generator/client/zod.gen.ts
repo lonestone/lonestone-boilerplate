@@ -449,23 +449,25 @@ export const zPublicAuthorPostsSchema = z.object({
 /**
  * CreatePostSchema
  *
- * Multipart fields for creating a post. Send content and tags as JSON strings.
+ * Multipart fields for creating a post
  */
 export const zCreatePostSchema = z.object({
     title: z.string().min(1),
-    content: z.string().min(1),
-    tags: z.optional(z.string())
+    content: z.array(zPostContentSchema),
+    tags: z.optional(z.array(z.string())),
+    coverImage: z.optional(z.instanceof(Blob))
 });
 
 /**
  * UpdatePostSchema
  *
- * Multipart fields for updating a post. Omit coverImage to keep the current one. Send content and tags as JSON strings.
+ * Multipart fields for updating a post. Omit a field to keep its current value.
  */
 export const zUpdatePostSchema = z.object({
     title: z.optional(z.string().min(1)),
-    content: z.optional(z.string()),
-    tags: z.optional(z.string())
+    content: z.optional(z.array(zPostContentSchema)),
+    tags: z.optional(z.array(z.string())),
+    coverImage: z.optional(z.instanceof(Blob))
 });
 
 /**
@@ -1010,10 +1012,23 @@ export const zPostControllerGetUserPostsResponse = zUserPostsSchema;
 
 export const zPostControllerCreatePostData = z.object({
     body: z.object({
-        title: z.string(),
-        content: z.string(),
-        tags: z.optional(z.string()),
-        coverImage: z.optional(z.string())
+        title: z.string().min(1),
+        content: z.array(z.union([
+            z.object({
+                type: z.literal('text'),
+                data: z.string()
+            }),
+            z.object({
+                type: z.literal('image'),
+                data: z.string()
+            }),
+            z.object({
+                type: z.literal('video'),
+                data: z.string()
+            })
+        ])),
+        tags: z.optional(z.array(z.string())),
+        coverImage: z.optional(z.instanceof(Blob))
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never())
@@ -1039,10 +1054,23 @@ export const zPostControllerGetUserPostResponse = zUserPostSchema;
 
 export const zPostControllerUpdatePostData = z.object({
     body: z.object({
-        title: z.optional(z.string()),
-        content: z.optional(z.string()),
-        tags: z.optional(z.string()),
-        coverImage: z.optional(z.string())
+        title: z.optional(z.string().min(1)),
+        content: z.optional(z.array(z.union([
+            z.object({
+                type: z.literal('text'),
+                data: z.string()
+            }),
+            z.object({
+                type: z.literal('image'),
+                data: z.string()
+            }),
+            z.object({
+                type: z.literal('video'),
+                data: z.string()
+            })
+        ]))),
+        tags: z.optional(z.array(z.string())),
+        coverImage: z.optional(z.instanceof(Blob))
     }),
     path: z.object({
         id: z.string()

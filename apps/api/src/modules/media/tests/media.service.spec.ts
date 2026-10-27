@@ -4,11 +4,10 @@ import { StorageService } from '../../storage/storage.service'
 import { Media } from '../media.entity'
 import { MediaService } from '../media.service'
 
-const imageUpload = {
-  body: Buffer.from('image-bytes'),
-  filename: 'cover.png',
-  mimeType: 'image/png',
-  size: 11,
+const inputFile = new File([Buffer.from('image-bytes')], 'cover.png', { type: 'image/png' })
+
+function createMedia(storageKey: string): Media {
+  return Object.assign(new Media(), { storageKey })
 }
 
 describe('MediaService', () => {
@@ -17,51 +16,64 @@ describe('MediaService', () => {
   let service: MediaService
 
   beforeEach(() => {
-    em = {
-      persist: vi.fn(),
-      flush: vi.fn(),
-    } as unknown as EntityManager
+    em = { persist: vi.fn() } as unknown as EntityManager
     storageService = {
-      upload: vi.fn(),
-      delete: vi.fn(),
+      upload: vi.fn().mockResolvedValue({
+        key: 'new-key',
+        filename: 'cover.png',
+        mimeType: 'image/png',
+        size: 11,
+      }),
+      delete: vi.fn().mockResolvedValue(undefined),
     } as unknown as StorageService
     service = new MediaService(em, storageService)
   })
 
-  it('uploads the bytes and persists a media without flushing', async () => {
-    vi.mocked(storageService.upload).mockResolvedValue({
-      key: 'new-key',
-      filename: imageUpload.filename,
-      mimeType: imageUpload.mimeType,
-      size: imageUpload.size,
+  describe('upload', () => {
+    it('stores the file and returns a media that is not persisted yet', async () => {
+      const actualMedia = await service.upload(inputFile)
+
+      expect(storageService.upload).toHaveBeenCalledWith({
+        body: Buffer.from('image-bytes'),
+        filename: 'cover.png',
+        mimeType: 'image/png',
+        size: 11,
+      })
+      expect(actualMedia).toBeInstanceOf(Media)
+      expect(actualMedia).toMatchObject({ storageKey: 'new-key', filename: 'cover.png', size: 11 })
+      expect(em.persist).not.toHaveBeenCalled()
     })
 
-    const actualMedia = await service.create(imageUpload)
+    it('propagates a storage failure', async () => {
+      const expectedError = new Error('storage unavailable')
+      vi.mocked(storageService.upload).mockRejectedValue(expectedError)
 
-    expect(storageService.upload).toHaveBeenCalledWith(imageUpload)
-    expect(actualMedia).toBeInstanceOf(Media)
-    expect(actualMedia).toMatchObject({
-      storageKey: 'new-key',
-      filename: 'cover.png',
-      mimeType: 'image/png',
-      size: 11,
+      await expect(service.upload(inputFile)).rejects.toBe(expectedError)
     })
-    expect(em.persist).toHaveBeenCalledWith(actualMedia)
-    expect(em.flush).not.toHaveBeenCalled()
   })
 
-  it('does not persist a media when the upload fails', async () => {
-    const uploadError = new Error('storage unavailable')
-    vi.mocked(storageService.upload).mockRejectedValue(uploadError)
+  describe('attach', () => {
+    it('persists the media and returns it', () => {
+      const inputMedia = createMedia('new-key')
 
-    await expect(service.create(imageUpload)).rejects.toBe(uploadError)
+      const actualMedia = service.attach(inputMedia)
 
-    expect(em.persist).not.toHaveBeenCalled()
+      expect(em.persist).toHaveBeenCalledWith(inputMedia)
+      expect(actualMedia).toBe(inputMedia)
+    })
   })
 
-  it('deletes an object by storage key', async () => {
-    await service.deleteObject('stored-key')
+  describe('remove', () => {
+    it('deletes the file from the bucket', async () => {
+      await service.remove(createMedia('old-key'))
 
-    expect(storageService.delete).toHaveBeenCalledWith('stored-key')
+      expect(storageService.delete).toHaveBeenCalledWith('old-key')
+    })
+
+    it('does not throw when the deletion fails', async () => {
+      vi.mocked(storageService.delete).mockRejectedValue(new Error('storage unavailable'))
+
+      await expect(service.remove(createMedia('old-key'))).resolves.toBeUndefined()
+    })
   })
 })

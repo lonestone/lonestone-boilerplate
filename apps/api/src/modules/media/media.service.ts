@@ -1,33 +1,63 @@
 import { EntityManager } from '@mikro-orm/core'
-import { Injectable } from '@nestjs/common'
-import { StorageService, StorageUpload } from '../storage/storage.service'
+import { Injectable, Logger } from '@nestjs/common'
+import { StorageService } from '../storage/storage.service'
 import { Media } from './media.entity'
 
+/**
+ * Typical use, in the owner's service:
+ *
+ * @example
+ * const media = this.mediaService.attach(await this.mediaService.upload(file))
+ * post.coverImage = media
+ * try {
+ *   await this.em.flush()
+ * } catch (error) {
+ *   await this.mediaService.remove(media)
+ *   throw error
+ * }
+ */
 @Injectable()
 export class MediaService {
+  private readonly logger = new Logger(MediaService.name)
+
   constructor(
     private readonly em: EntityManager,
     private readonly storageService: StorageService,
   ) {}
 
-  /**
-   * Uploads the bytes and persists a new `Media` without flushing, so the caller
-   * can attach it to its own entity and commit both in one transaction.
-   */
-  async create(upload: StorageUpload): Promise<Media> {
-    const storedObject = await this.storageService.upload(upload)
+  /** Stores the file in the bucket and returns its `Media`, not yet persisted. */
+  async upload(file: File): Promise<Media> {
+    const storedObject = await this.storageService.upload({
+      body: Buffer.from(await file.arrayBuffer()),
+      filename: file.name,
+      mimeType: file.type,
+      size: file.size,
+    })
 
     const media = new Media()
     media.storageKey = storedObject.key
     media.filename = storedObject.filename
     media.mimeType = storedObject.mimeType
     media.size = storedObject.size
-    this.em.persist(media)
-
     return media
   }
 
-  async deleteObject(storageKey: string): Promise<void> {
-    await this.storageService.delete(storageKey)
+  /** Persists the media, without flushing, so it is saved with its owner. */
+  attach(media: Media): Media {
+    this.em.persist(media)
+    return media
+  }
+
+  /**
+   * Deletes the media's file from the bucket. Call it in a `catch` after a failed flush, or after
+   * the flush that removed the media row. It never throws, so it cannot hide the caller's error:
+   * a failure only leaves an orphan in the bucket, and is logged.
+   */
+  async remove(media: Media): Promise<void> {
+    try {
+      await this.storageService.delete(media.storageKey)
+    } catch (error: unknown) {
+      this.logger.error(`Failed to delete storage object ${media.storageKey}`, error)
+    }
   }
 }

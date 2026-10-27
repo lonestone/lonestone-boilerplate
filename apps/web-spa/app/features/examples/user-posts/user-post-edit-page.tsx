@@ -43,12 +43,7 @@ export default function UserPostEditPage() {
   const { mutate: updatePost, isPending } = useMutation({
     mutationFn: async (data: PostFormSubmitData) => {
       const response = await postControllerUpdatePost({
-        body: {
-          title: data.title,
-          content: JSON.stringify(data.content),
-          tags: data.tags ? JSON.stringify(data.tags) : undefined,
-          coverImage: data.coverImage,
-        },
+        body: data,
         path: {
           id: userPostId as string,
         },

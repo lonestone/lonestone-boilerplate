@@ -357,31 +357,98 @@
         "parameters": [],
         "requestBody": {
           "required": true,
+          "description": "Multipart fields for creating a post",
           "content": {
             "multipart/form-data": {
               "schema": {
                 "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "content": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "text"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "image"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "video"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "title": "PostContentSchema",
+                      "description": "Schema for content items (text, image, video)",
+                      "type": "object"
+                    }
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "coverImage": {
+                    "type": "string",
+                    "format": "binary",
+                    "contentEncoding": "binary",
+                    "maxLength": 10485760,
+                    "description": "Cover image: JPEG, PNG, GIF or WebP, 10 MiB max"
+                  }
+                },
                 "required": [
                   "title",
                   "content"
                 ],
-                "properties": {
-                  "title": {
-                    "type": "string"
-                  },
-                  "content": {
-                    "type": "string",
-                    "description": "JSON array of post content blocks"
-                  },
-                  "tags": {
-                    "type": "string",
-                    "description": "JSON array of tag names"
-                  },
-                  "coverImage": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
+                "additionalProperties": false,
+                "title": "CreatePostSchema",
+                "description": "Multipart fields for creating a post"
               }
             }
           }
@@ -484,28 +551,94 @@
         ],
         "requestBody": {
           "required": true,
+          "description": "Multipart fields for updating a post. Omit a field to keep its current value.",
           "content": {
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "required": [],
                 "properties": {
                   "title": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   },
                   "content": {
-                    "type": "string",
-                    "description": "JSON array of post content blocks"
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "text"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "image"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "video"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "title": "PostContentSchema",
+                      "description": "Schema for content items (text, image, video)",
+                      "type": "object"
+                    }
                   },
                   "tags": {
-                    "type": "string",
-                    "description": "JSON array of tag names"
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "coverImage": {
                     "type": "string",
-                    "format": "binary"
+                    "format": "binary",
+                    "contentEncoding": "binary",
+                    "maxLength": 10485760,
+                    "description": "Cover image: JPEG, PNG, GIF or WebP, 10 MiB max"
                   }
-                }
+                },
+                "additionalProperties": false,
+                "title": "UpdatePostSchema",
+                "description": "Multipart fields for updating a post. Omit a field to keep its current value."
               }
             }
           }
@@ -3723,11 +3856,23 @@
             "minLength": 1
           },
           "content": {
-            "type": "string",
-            "minLength": 1
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostContentSchema"
+            }
           },
           "tags": {
-            "type": "string"
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "coverImage": {
+            "type": "string",
+            "format": "binary",
+            "contentEncoding": "binary",
+            "maxLength": 10485760,
+            "description": "Cover image: JPEG, PNG, GIF or WebP, 10 MiB max"
           }
         },
         "required": [
@@ -3736,7 +3881,7 @@
         ],
         "additionalProperties": false,
         "title": "CreatePostSchema",
-        "description": "Multipart fields for creating a post. Send content and tags as JSON strings."
+        "description": "Multipart fields for creating a post"
       },
       "UpdatePostSchema": {
         "type": "object",
@@ -3746,15 +3891,28 @@
             "minLength": 1
           },
           "content": {
-            "type": "string"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostContentSchema"
+            }
           },
           "tags": {
-            "type": "string"
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "coverImage": {
+            "type": "string",
+            "format": "binary",
+            "contentEncoding": "binary",
+            "maxLength": 10485760,
+            "description": "Cover image: JPEG, PNG, GIF or WebP, 10 MiB max"
           }
         },
         "additionalProperties": false,
         "title": "UpdatePostSchema",
-        "description": "Multipart fields for updating a post. Omit coverImage to keep the current one. Send content and tags as JSON strings."
+        "description": "Multipart fields for updating a post. Omit a field to keep its current value."
       },
       "AiCoreMessage": {
         "type": "object",

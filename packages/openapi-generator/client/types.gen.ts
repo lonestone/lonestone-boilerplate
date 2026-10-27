@@ -516,23 +516,31 @@ export type PublicAuthorPostsSchema = {
 /**
  * CreatePostSchema
  *
- * Multipart fields for creating a post. Send content and tags as JSON strings.
+ * Multipart fields for creating a post
  */
 export type CreatePostSchema = {
     title: string;
-    content: string;
-    tags?: string;
+    content: Array<PostContentSchema>;
+    tags?: Array<string>;
+    /**
+     * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
+     */
+    coverImage?: Blob | File;
 };
 
 /**
  * UpdatePostSchema
  *
- * Multipart fields for updating a post. Omit coverImage to keep the current one. Send content and tags as JSON strings.
+ * Multipart fields for updating a post. Omit a field to keep its current value.
  */
 export type UpdatePostSchema = {
     title?: string;
-    content?: string;
-    tags?: string;
+    content?: Array<PostContentSchema>;
+    tags?: Array<string>;
+    /**
+     * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
+     */
+    coverImage?: Blob | File;
 };
 
 /**
@@ -999,16 +1007,32 @@ export type PostControllerGetUserPostsResponses = {
 export type PostControllerGetUserPostsResponse = PostControllerGetUserPostsResponses[keyof PostControllerGetUserPostsResponses];
 
 export type PostControllerCreatePostData = {
+    /**
+     * CreatePostSchema
+     *
+     * Multipart fields for creating a post
+     */
     body: {
         title: string;
         /**
-         * JSON array of post content blocks
+         * PostContentSchema
+         *
+         * Schema for content items (text, image, video)
          */
-        content: string;
+        content: Array<{
+            type: 'text';
+            data: string;
+        } | {
+            type: 'image';
+            data: string;
+        } | {
+            type: 'video';
+            data: string;
+        }>;
+        tags?: Array<string>;
         /**
-         * JSON array of tag names
+         * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
          */
-        tags?: string;
         coverImage?: Blob | File;
     };
     path?: never;
@@ -1044,16 +1068,32 @@ export type PostControllerGetUserPostResponses = {
 export type PostControllerGetUserPostResponse = PostControllerGetUserPostResponses[keyof PostControllerGetUserPostResponses];
 
 export type PostControllerUpdatePostData = {
+    /**
+     * UpdatePostSchema
+     *
+     * Multipart fields for updating a post. Omit a field to keep its current value.
+     */
     body: {
         title?: string;
         /**
-         * JSON array of post content blocks
+         * PostContentSchema
+         *
+         * Schema for content items (text, image, video)
          */
-        content?: string;
+        content?: Array<{
+            type: 'text';
+            data: string;
+        } | {
+            type: 'image';
+            data: string;
+        } | {
+            type: 'video';
+            data: string;
+        }>;
+        tags?: Array<string>;
         /**
-         * JSON array of tag names
+         * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
          */
-        tags?: string;
         coverImage?: Blob | File;
     };
     path: {
