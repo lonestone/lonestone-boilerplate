@@ -9,7 +9,9 @@ describe('S3StorageProvider with RustFS', () => {
   let provider: S3StorageProvider
 
   beforeAll(async () => {
-    container = await new GenericContainer('rustfs/rustfs:latest')
+    container = await new GenericContainer(
+      'rustfs/rustfs:1.0.0@sha256:8cc9801755448b71a786705ce76692c77e14936cccd87cf2fc31842e58f4d1ff',
+    )
       .withEnvironment({
         RUSTFS_ACCESS_KEY: 'rustfsadmin',
         RUSTFS_SECRET_KEY: 'rustfsadmin',
