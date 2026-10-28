@@ -14,7 +14,7 @@ Let an existing project know that the boilerplate now ships an opt-in S3 file st
 
 File storage was a documentation TODO. Projects that needed files each wrote their own S3 module, and the old test setup already exported `S3_*` variables for MinIO, so some projects carry their own implementation.
 
-The new layer splits storage into two modules. `StorageModule` moves bytes and signs download URLs, and knows nothing about the database. `MediaModule` owns a `media` table and keeps each row in sync with its object in the bucket, so business services never clean up objects themselves. Files are served through signed URLs, not streamed through the API. Signing is rounded to a fixed time window so the same URL comes back for a while and browsers can cache images.
+The new layer splits storage into two modules. `StorageModule` moves bytes and signs download URLs, and knows nothing about the database. `MediaModule` owns a `media` table. Its `MediaService` uploads, attaches and removes files but never flushes: the business service saves the row with its own changes, and removes the uploaded object if that save fails. Files are served through signed URLs, not streamed through the API. Signing is rounded to a fixed time window so the same URL comes back for a while and browsers can cache images.
 
 This is informational, not a migration. A project with its own S3 module has its own table, keys and routes. Replacing them means migrating stored data, and only a human can decide that. Storage stays disabled by default, so a project that ignores this intention is not affected.
 
