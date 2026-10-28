@@ -469,6 +469,15 @@ export const zPublicAuthorPostsSchema = z.object({
 });
 
 /**
+ * SetCoverImageSchema
+ *
+ * Multipart body for setting the cover image of a post
+ */
+export const zSetCoverImageSchema = z.object({
+    file: z.instanceof(Blob)
+});
+
+/**
  * AiCoreMessage
  *
  * A message in the conversation history following Vercel AI SDK patterns
@@ -1091,7 +1100,7 @@ export const zPostControllerRemoveCoverImageResponse = z.void();
 
 export const zPostControllerSetCoverImageData = z.object({
     body: z.object({
-        file: z.string()
+        file: z.instanceof(Blob)
     }),
     path: z.object({
         id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)

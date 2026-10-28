@@ -6,12 +6,12 @@ const GIF89A_SIGNATURE = Buffer.from('GIF89a')
 /** File types recognized from their first bytes. Add a signature here to accept a new type. */
 export type DetectableMimeType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
 
-export const IMAGE_MIME_TYPES: readonly DetectableMimeType[] = [
+export const IMAGE_MIME_TYPES: readonly string[] = [
   'image/jpeg',
   'image/png',
   'image/gif',
   'image/webp',
-]
+] satisfies DetectableMimeType[]
 
 function hasPrefix(buffer: Buffer, signature: Buffer): boolean {
   return buffer.length >= signature.length && buffer.subarray(0, signature.length).equals(signature)

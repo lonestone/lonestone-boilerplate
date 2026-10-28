@@ -6,6 +6,7 @@ import {
 } from '@lonestone/nzoth/server'
 import { z } from 'zod'
 import { mediaSchema } from '../../../media/contracts/media.contract'
+import { IMAGE_MIME_TYPES } from '../../../media/media-file-type.util'
 
 // 📖 See API Guidelines: Schema Definition Best Practices
 // https://github.com/lonestone/lonestone-boilerplate/blob/main/docs/api-guidelines.md#schema-definition-best-practices
@@ -105,6 +106,33 @@ export const updatePostSchema = z
   })
 
 export type UpdatePostInput = z.infer<typeof updatePostSchema>
+
+// --------------------
+// Cover image schema //
+// --------------------
+
+export const POST_COVER_IMAGE_MAX_SIZE_BYTES = 10 * 1024 * 1024
+
+// A refine rather than `.mime()`: `.mime()` emits an `anyOf` that turns the generated client type
+// into `unknown` instead of `Blob | File`.
+const coverImageSchema = z
+  .file()
+  .max(POST_COVER_IMAGE_MAX_SIZE_BYTES)
+  .refine((file) => IMAGE_MIME_TYPES.includes(file.type), {
+    message: `Unsupported image format. Accepted types: ${IMAGE_MIME_TYPES.join(', ')}`,
+  })
+  .meta({ description: 'Cover image: JPEG, PNG, GIF or WebP, 10 MiB max' })
+
+export const setCoverImageSchema = z
+  .object({
+    file: coverImageSchema,
+  })
+  .meta({
+    title: 'SetCoverImageSchema',
+    description: 'Multipart body for setting the cover image of a post',
+  })
+
+export type SetCoverImageInput = z.infer<typeof setCoverImageSchema>
 
 export const userPostSchema = z
   .object({

@@ -4,6 +4,7 @@ import {
   SortingParams,
   TypedBody,
   TypedController,
+  TypedMultipartBody,
   TypedParam,
   TypedRoute,
 } from '@lonestone/nzoth/server'
@@ -12,9 +13,7 @@ import { ApiNoContentResponse } from '@nestjs/swagger'
 import { AllowAnonymous, Session } from '@thallesp/nestjs-better-auth'
 import { z } from 'zod'
 import { LoggedInBetterAuthSession } from '../../auth/auth.config'
-import { IMAGE_MIME_TYPES } from '../../media/media-file-type.util'
-import { MediaUpload, MediaUploadRules, UploadedMedia } from '../../media/media-upload.decorator'
-import { StorageUpload } from '../../storage/storage.service'
+import { MultipartFile } from '../../media/multipart-file.decorator'
 import {
   CreatePostInput,
   createPostSchema,
@@ -23,11 +22,14 @@ import {
   postIdSchema,
   PostPagination,
   postPaginationSchema,
+  POST_COVER_IMAGE_MAX_SIZE_BYTES,
   PostSorting,
   postSortingSchema,
   publicAuthorPostsSchema,
   publicPostSchema,
   publicPostsSchema,
+  SetCoverImageInput,
+  setCoverImageSchema,
   UpdatePostInput,
   updatePostSchema,
   UserPost,
@@ -36,11 +38,6 @@ import {
 } from './contracts/posts.contract'
 import { PostsMapper } from './posts.mapper'
 import { PostService } from './posts.service'
-
-const POST_COVER_IMAGE_UPLOAD: MediaUploadRules = {
-  maxSizeBytes: 10 * 1024 * 1024,
-  mimeTypes: IMAGE_MIME_TYPES,
-}
 
 @TypedController('admin/posts', undefined, {
   tags: ['Admin Posts'],
@@ -71,13 +68,13 @@ export class PostController {
   }
 
   @TypedRoute.Put(':id/cover-image', userPostSchema)
-  @MediaUpload(POST_COVER_IMAGE_UPLOAD)
+  @MultipartFile('file', { maxSize: POST_COVER_IMAGE_MAX_SIZE_BYTES })
   async setCoverImage(
     @Session() session: LoggedInBetterAuthSession,
     @TypedParam('id', postIdSchema) id: string,
-    @UploadedMedia() image: StorageUpload,
+    @TypedMultipartBody(setCoverImageSchema) body: SetCoverImageInput,
   ): Promise<UserPost> {
-    const post = await this.postService.setCoverImage(id, session.user.id, image)
+    const post = await this.postService.setCoverImage(id, session.user.id, body.file)
     return this.postsMapper.toUserPost(post)
   }
 

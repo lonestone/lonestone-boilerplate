@@ -536,6 +536,18 @@ export type PublicAuthorPostsSchema = {
 };
 
 /**
+ * SetCoverImageSchema
+ *
+ * Multipart body for setting the cover image of a post
+ */
+export type SetCoverImageSchema = {
+    /**
+     * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
+     */
+    file: Blob | File;
+};
+
+/**
  * AiCoreMessage
  *
  * A message in the conversation history following Vercel AI SDK patterns
@@ -1115,9 +1127,14 @@ export type PostControllerRemoveCoverImageResponses = {
 export type PostControllerRemoveCoverImageResponse = PostControllerRemoveCoverImageResponses[keyof PostControllerRemoveCoverImageResponses];
 
 export type PostControllerSetCoverImageData = {
+    /**
+     * SetCoverImageSchema
+     *
+     * Multipart body for setting the cover image of a post
+     */
     body: {
         /**
-         * Accepted types: image/jpeg, image/png, image/gif, image/webp. Maximum size: 10485760 bytes.
+         * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
          */
         file: Blob | File;
     };

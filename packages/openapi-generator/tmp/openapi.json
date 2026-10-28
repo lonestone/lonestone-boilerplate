@@ -644,18 +644,24 @@
         ],
         "requestBody": {
           "required": true,
+          "description": "Multipart body for setting the cover image of a post",
           "content": {
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "required": ["file"],
                 "properties": {
                   "file": {
                     "type": "string",
                     "format": "binary",
-                    "description": "Accepted types: image/jpeg, image/png, image/gif, image/webp. Maximum size: 10485760 bytes."
+                    "contentEncoding": "binary",
+                    "maxLength": 10485760,
+                    "description": "Cover image: JPEG, PNG, GIF or WebP, 10 MiB max"
                   }
-                }
+                },
+                "required": ["file"],
+                "additionalProperties": false,
+                "title": "SetCoverImageSchema",
+                "description": "Multipart body for setting the cover image of a post"
               }
             }
           }
@@ -3547,6 +3553,22 @@
         "additionalProperties": false,
         "title": "PublicAuthorPostsSchema",
         "description": "A list of posts from a specific author"
+      },
+      "SetCoverImageSchema": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "contentEncoding": "binary",
+            "maxLength": 10485760,
+            "description": "Cover image: JPEG, PNG, GIF or WebP, 10 MiB max"
+          }
+        },
+        "required": ["file"],
+        "additionalProperties": false,
+        "title": "SetCoverImageSchema",
+        "description": "Multipart body for setting the cover image of a post"
       },
       "AiCoreMessage": {
         "type": "object",

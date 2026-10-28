@@ -489,7 +489,9 @@ describe('postController cover image (e2e)', () => {
       contentType: 'image/png',
     })
 
-    expect(response.status).toBe(415)
+    expect(response.status).toBe(400)
+    const postResponse = await context.request.withSession(session).get(`/admin/posts/${postId}`)
+    expect(postResponse.body).not.toHaveProperty('coverImage')
   })
 
   it('rejects a file above the size limit', async (context) => {

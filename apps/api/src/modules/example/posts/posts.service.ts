@@ -5,7 +5,6 @@ import { User } from '../../auth/auth.entity'
 import { buildOrderBy } from '../../db/query-order.util'
 import { Comment } from '../../example/comments/comments.entity'
 import { MediaService } from '../../media/media.service'
-import { StorageUpload } from '../../storage/storage.service'
 import {
   CreatePostInput,
   PostFiltering,
@@ -127,24 +126,34 @@ export class PostService {
     return post
   }
 
-  async setCoverImage(postId: string, userId: string, upload: StorageUpload): Promise<Post> {
+  async setCoverImage(postId: string, userId: string, file: File): Promise<Post> {
     const post = await this.findOwnedPost(postId, userId)
-    await this.mediaService.replace({
-      current: post.coverImage,
-      upload,
-      attach: (media) => (post.coverImage = media),
-    })
+    const previousCoverImage = post.coverImage
+    const coverImage = this.mediaService.attach(await this.mediaService.upload(file))
+    post.coverImage = coverImage
+    if (previousCoverImage) this.em.remove(previousCoverImage)
+
+    try {
+      await this.em.flush()
+    } catch (error: unknown) {
+      await this.mediaService.remove(coverImage)
+      throw error
+    }
+
+    // The old file goes only once its row is gone, so a failed save keeps the image working.
+    if (previousCoverImage) await this.mediaService.remove(previousCoverImage)
     return post
   }
 
   async removeCoverImage(postId: string, userId: string): Promise<void> {
     const post = await this.findOwnedPost(postId, userId)
-    if (!post.coverImage) throw new NotFoundException('Post cover image not found')
+    const coverImage = post.coverImage
+    if (!coverImage) throw new NotFoundException('Post cover image not found')
 
-    await this.mediaService.remove({
-      media: post.coverImage,
-      detach: () => (post.coverImage = undefined),
-    })
+    post.coverImage = undefined
+    this.em.remove(coverImage)
+    await this.em.flush()
+    await this.mediaService.remove(coverImage)
   }
 
   // One query for all posts in a page, instead of one count query per post.
