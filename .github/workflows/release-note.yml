@@ -11,6 +11,9 @@ permissions:
 jobs:
   release-note:
     name: Release note
+    # Only a Release PR needs the note. Every other PR skips the job here, so no runner starts and
+    # nothing is billed. A skipped job counts as a pass for a required check.
+    if: "contains(github.event.pull_request.labels.*.name, 'autorelease: pending')"
     runs-on: ubuntu-latest
     steps:
       # Optional by default. Set the repository variable REQUIRE_RELEASE_NOTE
