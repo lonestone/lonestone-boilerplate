@@ -22,8 +22,10 @@ jobs:
           node-version: 24.13.0
           pnpm-version: 10.28.2
 
+      # The lint only needs the root tooling. The isolated linker lets --filter skip the apps,
+      # which the hoisted linker from .npmrc would install anyway.
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile --filter . --config.node-linker=isolated
 
       - name: Typecheck PR lint script
         run: pnpm exec tsc -p scripts/tsconfig.json
