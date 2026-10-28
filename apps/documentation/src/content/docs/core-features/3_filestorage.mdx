@@ -1,155 +1,114 @@
 ---
 title: File Storage
-description: Store and serve files through a provider-neutral S3 module
+description: Store files in an S3-compatible bucket and serve them through signed URLs
 ---
 
-# File Storage
+Files live in an S3-compatible bucket: [RustFS](https://rustfs.com/) locally, any S3 provider in production. Storage is off by default, so a project without files never needs a bucket.
 
-The API includes provider-neutral S3 infrastructure. Storage is disabled by default, so an
-unavailable S3 service cannot prevent an application that does not use files from starting. File
-operations return `503 Service Unavailable` while storage is disabled.
+The [Posts example](https://github.com/lonestone/lonestone-boilerplate/tree/main/apps/api/src/modules/example/posts) uses it for an optional cover image.
 
-`StorageModule` is infrastructure-only. It exports `StorageService`, uses one bucket, and does not
-expose HTTP routes or provider internals. It moves bytes and signs download URLs. It knows nothing
-about the database.
+# ❓ How it works
 
-Files are not streamed through the API. Each API response that includes a file carries a signed
-URL, and the client loads the file straight from the bucket. The API only decides who gets a URL.
-Signing happens locally, without a call to the bucket.
+Two modules split the work:
 
-`MediaModule` sits on top of it and owns the `Media` table. One `Media` row is one stored file: its
-opaque storage key, original filename, MIME type, and size. It exports `MediaService` and
-`MediaMapper`, and has no controller. Business modules own their HTTP contracts, authorization
-rules, and the relation that points to a `Media` row.
+- `StorageModule` moves bytes in and out of the bucket and signs download URLs. It knows nothing about the database.
+- `MediaModule` owns the `media` table. One row is one stored file: its storage key, name, MIME type and size.
 
-## Configuration
+Your business module keeps the rest: routes, access rules, and the relation to `Media`.
 
-Configure the API with these provider-neutral variables:
+The API never streams files. Each response that includes a file carries a signed URL that expires (one hour by default), and the browser loads the file straight from the bucket. The same URL comes back for half its lifetime, so browsers can cache the file.
 
-- `STORAGE_ENABLED`: enable the configured storage provider. Defaults to `false`.
-- `STORAGE_BUCKET`: bucket name. Required when storage is enabled.
-- `STORAGE_ENDPOINT`: S3 endpoint. Leave it empty for AWS S3.
-- `STORAGE_REGION`: S3 region. Defaults to `us-east-1`.
-- `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY`: provider credentials. Required when
-  storage is enabled.
-- `STORAGE_FORCE_PATH_STYLE`: required by many self-hosted S3-compatible services, RustFS included.
-  Defaults to `false`.
-- `STORAGE_CREATE_BUCKET`: create the bucket during startup when it is missing. Defaults to `false`.
-- `STORAGE_SIGNED_URL_EXPIRES_IN`: lifetime of signed download URLs, in seconds. Defaults to `3600`.
-  The S3 limit is `604800` (7 days).
+:::caution
+Anyone holding a signed URL can read the file until it expires. Only map a `Media` for users allowed to see it.
+:::
 
-Credentials and endpoint have no default. The API refuses to start with `STORAGE_ENABLED=true` and
-missing credentials, instead of silently pointing at a local service. The values for the local
-RustFS live in `.env.example`.
+# 📝 How to use
 
-## Local RustFS
+Start RustFS with `pnpm docker:up`, then set `STORAGE_ENABLED=true` in `apps/api/.env`. The other `STORAGE_*` variables are listed in the [API README](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/README.md). The RustFS console runs on [http://localhost:9001](http://localhost:9001).
 
-Docker Compose provides RustFS as the local S3-compatible service. Its data is stored in the
-`rustfs_data` volume.
+To attach a file to an entity:
 
-```bash
-pnpm docker:up
-```
-
-The S3 endpoint is `http://localhost:9000`. The RustFS console is available at
-`http://localhost:9001`. Credentials come from the root `.env` file and are mapped to RustFS by
-Compose.
-
-## Use from API code
-
-Import `MediaModule` in a business module and inject `MediaService`. Business modules should
-depend on it instead of importing `StorageService`, the AWS SDK, or the S3 provider.
-
-Point to the file with a relation to `Media` rather than copying its columns onto the business
-entity. A `OneToOne` relation guarantees that one `Media` row belongs to a single owner:
+1. Point to it with a relation, not with copied columns:
 
 ```typescript
 @OneToOne(() => Media, { owner: true, nullable: true, fieldName: 'coverImageId' })
 coverImage?: Media
 ```
 
-A file lives in two places: a row in the database and an object in the bucket. `MediaService`
-gives you three steps, and your service chains them:
-
-- `upload` stores the file in the bucket and returns its `Media`, not yet persisted.
-- `attach` persists the `Media` without flushing, so it is saved with its owner.
-- `remove` deletes the object from the bucket. It never throws: a failure is logged and leaves an
-  orphan object, so it cannot hide the error you are handling.
-
-`MediaService` never flushes. Your service knows when to save, what to save with the file, and
-whether it runs in a transaction. So it flushes, and removes the new object in its own `catch`:
+2. Declare the file in the route's contract with `z.file()`. Nzoth validates it with the rest of the body and documents it in OpenAPI, so the generated SDK accepts a `File`. Check the type with `.refine()`: `.mime()` makes the generated client type `unknown`.
 
 ```typescript
-async setCoverImage(post: Post, file: File): Promise<void> {
-  const previous = post.coverImage
-  const media = this.mediaService.attach(await this.mediaService.upload(file))
-  post.coverImage = media
-  if (previous) this.em.remove(previous)
+export const setCoverImageSchema = z.object({
+  file: z
+    .file()
+    .max(10 * 1024 * 1024)
+    .refine((file) => IMAGE_MIME_TYPES.includes(file.type)),
+})
+```
 
-  try {
-    await this.em.flush()
-  } catch (error: unknown) {
-    await this.mediaService.remove(media)
-    throw error
-  }
+3. Add `@MultipartFile` on the route. It hands the uploaded file to `TypedMultipartBody` as a `File`, typed from its first bytes rather than from what the client claims. `maxSize` stops an oversized file before it is loaded in memory.
 
-  // The old object goes only once its row is gone, so a failed save keeps the image working.
-  if (previous) await this.mediaService.remove(previous)
+```typescript
+@TypedRoute.Put(':id/cover-image', userPostSchema)
+@MultipartFile('file', { maxSize: 10 * 1024 * 1024 })
+async setCoverImage(
+  @TypedParam('id', postIdSchema) id: string,
+  @TypedMultipartBody(setCoverImageSchema) body: SetCoverImageInput,
+) {}
+```
+
+4. In the service, upload the file, attach it, then save. `MediaService` never flushes: your service decides what to save with the file, and whether it runs in a transaction. If the save fails, remove the uploaded file yourself:
+
+```typescript
+const media = this.mediaService.attach(await this.mediaService.upload(file))
+post.coverImage = media
+try {
+  await this.em.flush()
+} catch (error) {
+  await this.mediaService.remove(media)
+  throw error
 }
 ```
 
-With `em.transactional()`, put the `try`/`catch` around the whole transaction: the commit can fail
-after a successful flush. If several methods repeat this sequence, extract it into a helper of
-your service.
+When you replace or delete a media, call `em.remove(media)` before the flush and `mediaService.remove(media)` after it, so a failed save keeps the old file. `mediaService.remove` never throws: a failure only leaves an orphan in the bucket, and is logged. With `em.transactional()`, put the `try`/`catch` around the whole transaction.
 
-Map the relation with `MediaMapper.toMedia` and reuse `mediaSchema` in your contracts. `toMedia` is
-async: it signs a download URL and returns it with its `expiresAt` date. The signed URL fixes the
-response `Content-Type` to the stored MIME type and sets an inline `Content-Disposition` with the
-original filename. The storage key is never a field of the contract.
+5. In the mapper, `MediaMapper.toOptionalMedia` signs a URL. Reuse `mediaSchema` in your response contract.
+
+On the frontend, pass the `File` to the SDK and put `coverImage.url` in an `<img>`. Refetch once `expiresAt` has passed.
+
+## Two ways to send a file
+
+The Posts example shows both, and the service has a single `updatePost` for them:
+
+- **A route of its own**, like `PUT /admin/posts/:id/cover-image`. The entity stays in JSON, and the file goes on its own route. Simplest when an entity has one file. Creating an entity with a file takes two requests.
+- **One multipart request**, like `PUT /admin/posts/:id/multipart`. The fields and the file go together. Useful for large forms, or several files on one entity. Declare array fields with `multipartArray(itemSchema)`: it reads the encoding the generated SDK sends, so the controller still gets typed arrays. Set `maxFields` on `@MultipartFile`, since text fields are rejected by default.
 
 ```typescript
-coverImage: post.coverImage ? await this.mediaMapper.toMedia(post.coverImage) : undefined,
+export const updatePostMultipartSchema = updatePostSchema.extend({
+  content: multipartArray(postContentSchema).optional(),
+  tags: multipartArray(z.string()).optional(),
+  coverImage: coverImageSchema.optional(),
+})
 ```
 
-Only call `toMedia` for users allowed to see the file. Anyone holding the URL can read the file
-until it expires.
+:::note
+While storage is disabled, uploads fail with `503`, and responses leave the file out.
+:::
 
-## Signed URLs and caching
+# 🚀 Production
 
-A URL that changed on every response would defeat every cache: the browser would download the
-image again on each refetch. To avoid that, signing starts from a fixed time window of half the URL
-lifetime. Every response within the same window returns exactly the same URL, so browsers and query
-caches reuse the file. Each URL handed out stays valid for at least half its lifetime: 30 minutes
-with the default of one hour.
+- Use a dedicated bucket and restricted credentials, and set `STORAGE_CREATE_BUCKET=false`. The API refuses to start with storage enabled and no credentials.
+- AWS S3 expects `STORAGE_FORCE_PATH_STYLE=false`.
+- Browsers must reach the bucket at the `STORAGE_ENDPOINT` host, because the host is part of the signature. A private hostname, like a Docker service name, gives URLs that browsers cannot open.
+- Do not cache a server-rendered page for longer than half the URL lifetime, or its images break.
+- Match upload size limits with your reverse proxy and platform limits.
 
-Signed URLs also ask the bucket to answer with `Cache-Control: private, max-age=<lifetime>,
-immutable`. Storage keys are never reused, so the bytes behind a URL never change.
+# 🗑️ How to remove
 
-Two rules follow for clients:
+Leave `STORAGE_ENABLED=false` if you only want it off. To remove it entirely:
 
-- Refetch the entity to get a new URL once `expiresAt` has passed.
-- Do not cache a server-rendered page for longer than half the URL lifetime. Otherwise the page can
-  outlive the URLs it contains, and its images break.
-
-## Production
-
-Use a dedicated bucket and restricted credentials. Provision the bucket with your infrastructure
-and keep `STORAGE_CREATE_BUCKET=false`. Configure the provider endpoint, region, TLS, retention,
-backups, and lifecycle rules according to the chosen service. Domain modules should set upload size
-limits that also match reverse proxy and platform limits.
-
-AWS S3 normally uses virtual-hosted addressing, so keep `STORAGE_FORCE_PATH_STYLE=false`. Enable it
-only when the selected compatible provider requires it.
-
-Signed URLs use the host of `STORAGE_ENDPOINT`, and the host is part of the signature. Browsers must
-reach the bucket at that same address. Locally, the API and the browser both use
-`http://localhost:9000`. If the API reaches the bucket through a private hostname, such as a Docker
-service name, browsers cannot open the URLs. Rewriting the host after signing breaks the signature.
-
-## Remove storage
-
-If you do not need files, leave `STORAGE_ENABLED=false`. To remove the infrastructure, remove every
-relation to `Media`, delete `apps/api/src/modules/media` and `apps/api/src/modules/storage`, and
-create a migration that drops the `media` table. Then remove the AWS SDK packages
-(`@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner`) and `testcontainers` if nothing else uses
-it. Finally, remove the `STORAGE_*` variables and the RustFS Compose service and volume.
+1. Remove the `coverImage` relation and routes from posts, and create a migration that drops the `media` table.
+2. Delete `apps/api/src/modules/media` and `apps/api/src/modules/storage`.
+3. Remove `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`, `@types/multer` and `testcontainers` if nothing else uses them.
+4. Remove the `STORAGE_*` variables and the RustFS service and volume from Docker Compose.
+5. Regenerate the OpenAPI client, and remove the cover image from the frontends.

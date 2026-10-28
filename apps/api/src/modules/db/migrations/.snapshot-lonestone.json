@@ -275,22 +275,22 @@
           "length": 255,
           "mappedType": "string"
         },
-        "coverImage": {
-          "name": "coverImage",
-          "type": "varchar(255)",
+        "coverImageId": {
+          "name": "coverImageId",
+          "type": "uuid",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "unique": false,
-          "length": 255,
+          "unique": true,
+          "length": null,
           "precision": null,
           "scale": null,
           "default": null,
           "comment": null,
           "collation": null,
           "enumItems": [],
-          "mappedType": "string"
+          "mappedType": "uuid"
         },
         "likesCount": {
           "name": "likesCount",
@@ -346,6 +346,14 @@
           "unique": true
         },
         {
+          "columnNames": ["coverImageId"],
+          "composite": false,
+          "constraint": true,
+          "keyName": "post_coverImageId_unique",
+          "primary": false,
+          "unique": true
+        },
+        {
           "keyName": "post_pkey",
           "columnNames": ["id"],
           "composite": false,
@@ -363,6 +371,14 @@
           "referencedColumnNames": ["id"],
           "referencedTableName": "public.user",
           "updateRule": "cascade"
+        },
+        "post_coverImageId_foreign": {
+          "columnNames": ["coverImageId"],
+          "constraintName": "post_coverImageId_foreign",
+          "localTableName": "public.post",
+          "referencedColumnNames": ["id"],
+          "referencedTableName": "public.media",
+          "deleteRule": "set null"
         }
       },
       "nativeEnums": {}

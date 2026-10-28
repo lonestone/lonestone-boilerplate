@@ -5,11 +5,13 @@ import {
   ManyToMany,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryKey,
   Property,
   Unique,
 } from '@mikro-orm/decorators/legacy'
 import { User } from '../../../auth/auth.entity'
+import { Media } from '../../../media/media.entity'
 import { Comment } from '../../comments/comments.entity'
 import { Tag } from '../../tags/tag.entity'
 import { PostVersion } from './post-version.entity'
@@ -44,8 +46,8 @@ export class Post {
   @Index()
   slug?: string
 
-  @Property({ nullable: true })
-  coverImage?: string
+  @OneToOne(() => Media, { owner: true, nullable: true, fieldName: 'coverImageId' })
+  coverImage?: Media
 
   @Property({ default: 0 })
   likesCount: number = 0
