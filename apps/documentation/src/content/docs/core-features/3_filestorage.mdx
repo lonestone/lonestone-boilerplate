@@ -76,6 +76,21 @@ When you replace or delete a media, call `em.remove(media)` before the flush and
 
 On the frontend, pass the `File` to the SDK and put `coverImage.url` in an `<img>`. Refetch once `expiresAt` has passed.
 
+## Two ways to send a file
+
+The Posts example shows both, and the service has a single `updatePost` for them:
+
+- **A route of its own**, like `PUT /admin/posts/:id/cover-image`. The entity stays in JSON, and the file goes on its own route. Simplest when an entity has one file. Creating an entity with a file takes two requests.
+- **One multipart request**, like `PUT /admin/posts/:id/multipart`. The fields and the file go together. Useful for large forms, or several files on one entity. Declare array fields with `multipartArray(itemSchema)`: it reads the encoding the generated SDK sends, so the controller still gets typed arrays. Set `maxFields` on `@MultipartFile`, since text fields are rejected by default.
+
+```typescript
+export const updatePostMultipartSchema = updatePostSchema.extend({
+  content: multipartArray(postContentSchema).optional(),
+  tags: multipartArray(z.string()).optional(),
+  coverImage: coverImageSchema.optional(),
+})
+```
+
 :::note
 While storage is disabled, uploads fail with `503`, and responses leave the file out.
 :::

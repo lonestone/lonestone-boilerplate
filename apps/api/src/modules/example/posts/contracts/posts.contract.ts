@@ -7,6 +7,7 @@ import {
 import { z } from 'zod'
 import { mediaSchema } from '../../../media/contracts/media.contract'
 import { IMAGE_MIME_TYPES } from '../../../media/media-file-type.util'
+import { multipartArray } from '../../../media/multipart-array.schema'
 
 // 📖 See API Guidelines: Schema Definition Best Practices
 // https://github.com/lonestone/lonestone-boilerplate/blob/main/docs/api-guidelines.md#schema-definition-best-practices
@@ -133,6 +134,21 @@ export const setCoverImageSchema = z
   })
 
 export type SetCoverImageInput = z.infer<typeof setCoverImageSchema>
+
+// The same update in one multipart request, with an optional cover image.
+// Array fields use `multipartArray`, so the controller still receives typed arrays.
+export const updatePostMultipartSchema = updatePostSchema
+  .extend({
+    content: multipartArray(postContentSchema).optional(),
+    tags: multipartArray(z.string()).optional(),
+    coverImage: coverImageSchema.optional(),
+  })
+  .meta({
+    title: 'UpdatePostMultipartSchema',
+    description: 'Multipart body for updating a post and its cover image in one request',
+  })
+
+export type UpdatePostMultipartInput = z.infer<typeof updatePostMultipartSchema>
 
 export const userPostSchema = z
   .object({

@@ -15,6 +15,11 @@ import {
 import { Tag } from '../tags/tag.entity'
 import { Post, PostVersion } from './posts.entity'
 
+/** An update from the JSON route, or from the multipart route with an optional cover image. */
+export interface UpdatePostData extends UpdatePostInput {
+  coverImage?: File
+}
+
 export interface UserPostsResult {
   posts: Post[]
   total: number
@@ -84,7 +89,7 @@ export class PostService {
     return post
   }
 
-  async updatePost(postId: string, userId: string, data: UpdatePostInput): Promise<Post> {
+  async updatePost(postId: string, userId: string, data: UpdatePostData): Promise<Post> {
     const post = await this.em.findOne(
       Post,
       { id: postId, user: userId },
@@ -112,36 +117,21 @@ export class PostService {
       version.content = data.content ?? latestVersion.content
       post.versions.add(version)
       this.em.persist(version)
-      await this.em.flush()
     } else {
       // Otherwise we update the last version
       if (data.title) latestVersion.title = data.title
       if (data.content) latestVersion.content = data.content
-      await this.em.flush()
     }
 
     if (data.tags) post.tags.set(await this.resolveTags(data.tags))
-    await this.em.flush()
 
+    await this.flushWithCoverImage(post, data.coverImage)
     return post
   }
 
   async setCoverImage(postId: string, userId: string, file: File): Promise<Post> {
     const post = await this.findOwnedPost(postId, userId)
-    const previousCoverImage = post.coverImage
-    const coverImage = this.mediaService.attach(await this.mediaService.upload(file))
-    post.coverImage = coverImage
-    if (previousCoverImage) this.em.remove(previousCoverImage)
-
-    try {
-      await this.em.flush()
-    } catch (error: unknown) {
-      await this.mediaService.remove(coverImage)
-      throw error
-    }
-
-    // The old file goes only once its row is gone, so a failed save keeps the image working.
-    if (previousCoverImage) await this.mediaService.remove(previousCoverImage)
+    await this.flushWithCoverImage(post, file)
     return post
   }
 
@@ -421,6 +411,29 @@ export class PostService {
       post,
       commentCount,
     }
+  }
+
+  /**
+   * Saves the post's pending changes, with a new cover image when a file is given. The uploaded
+   * file is removed if the save fails. The previous file is removed only once the save succeeded,
+   * so a failed save keeps the current image working.
+   */
+  private async flushWithCoverImage(post: Post, file?: File): Promise<void> {
+    const previousCoverImage = file ? post.coverImage : undefined
+    const coverImage = file
+      ? this.mediaService.attach(await this.mediaService.upload(file))
+      : undefined
+    if (coverImage) post.coverImage = coverImage
+    if (previousCoverImage) this.em.remove(previousCoverImage)
+
+    try {
+      await this.em.flush()
+    } catch (error: unknown) {
+      if (coverImage) await this.mediaService.remove(coverImage)
+      throw error
+    }
+
+    if (previousCoverImage) await this.mediaService.remove(previousCoverImage)
   }
 
   private async findOwnedPost(postId: string, userId: string): Promise<Post> {

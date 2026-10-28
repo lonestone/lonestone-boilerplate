@@ -31,6 +31,8 @@ import {
   SetCoverImageInput,
   setCoverImageSchema,
   UpdatePostInput,
+  UpdatePostMultipartInput,
+  updatePostMultipartSchema,
   updatePostSchema,
   UserPost,
   userPostSchema,
@@ -38,6 +40,9 @@ import {
 } from './contracts/posts.contract'
 import { PostsMapper } from './posts.mapper'
 import { PostService } from './posts.service'
+
+// Title, then one field per content item and per tag.
+const UPDATE_POST_MULTIPART_MAX_FIELDS = 100
 
 @TypedController('admin/posts', undefined, {
   tags: ['Admin Posts'],
@@ -62,6 +67,29 @@ export class PostController {
     @Session() session: LoggedInBetterAuthSession,
     @TypedParam('id', z.string()) id: string,
     @TypedBody(updatePostSchema) body: UpdatePostInput,
+  ): Promise<UserPost> {
+    const post = await this.postService.updatePost(id, session.user.id, body)
+    return this.postsMapper.toUserPost(post)
+  }
+
+  /**
+   * The same update as `PUT /:id`, sent as `multipart/form-data` with an optional cover image.
+   *
+   * Two ways to send a file exist in this example. `PUT /:id/cover-image` keeps the post in JSON
+   * and sends the file on its own route: simplest when one entity has one file. This route sends
+   * everything in one request: useful for large forms, or several files on one entity. It stays
+   * typed: `updatePostMultipartSchema` declares the file with `z.file()` and the arrays with
+   * `multipartArray`, so the controller receives the same typed input as the JSON route.
+   */
+  @TypedRoute.Put(':id/multipart', userPostSchema)
+  @MultipartFile('coverImage', {
+    maxSize: POST_COVER_IMAGE_MAX_SIZE_BYTES,
+    maxFields: UPDATE_POST_MULTIPART_MAX_FIELDS,
+  })
+  async updatePostViaMultipart(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedParam('id', postIdSchema) id: string,
+    @TypedMultipartBody(updatePostMultipartSchema) body: UpdatePostMultipartInput,
   ): Promise<UserPost> {
     const post = await this.postService.updatePost(id, session.user.id, body)
     return this.postsMapper.toUserPost(post)

@@ -469,6 +469,18 @@ export const zPublicAuthorPostsSchema = z.object({
 });
 
 /**
+ * UpdatePostMultipartSchema
+ *
+ * Multipart body for updating a post and its cover image in one request
+ */
+export const zUpdatePostMultipartSchema = z.object({
+    title: z.optional(z.string().min(1)),
+    content: z.optional(z.array(zPostContentSchema)),
+    tags: z.optional(z.array(z.string())),
+    coverImage: z.optional(z.instanceof(Blob))
+});
+
+/**
  * SetCoverImageSchema
  *
  * Multipart body for setting the cover image of a post
@@ -1087,6 +1099,37 @@ export const zPostControllerUpdatePostData = z.object({
  * Schema for a user's post
  */
 export const zPostControllerUpdatePostResponse = zUserPostSchema;
+
+export const zPostControllerUpdatePostViaMultipartData = z.object({
+    body: z.object({
+        title: z.optional(z.string().min(1)),
+        content: z.optional(z.array(z.union([
+            z.object({
+                type: z.literal('text'),
+                data: z.string()
+            }),
+            z.object({
+                type: z.literal('image'),
+                data: z.string()
+            }),
+            z.object({
+                type: z.literal('video'),
+                data: z.string()
+            })
+        ]))),
+        tags: z.optional(z.array(z.string())),
+        coverImage: z.optional(z.instanceof(Blob))
+    }),
+    path: z.object({
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+/**
+ * Schema for a user's post
+ */
+export const zPostControllerUpdatePostViaMultipartResponse = zUserPostSchema;
 
 export const zPostControllerRemoveCoverImageData = z.object({
     body: z.optional(z.never()),

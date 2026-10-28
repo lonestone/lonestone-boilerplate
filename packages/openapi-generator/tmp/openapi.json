@@ -624,6 +624,123 @@
         }
       }
     },
+    "/api/admin/posts/{id}/multipart": {
+      "put": {
+        "operationId": "PostController_updatePostViaMultipart",
+        "tags": ["Admin Posts"],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Post identifier"
+            },
+            "description": "Post identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Multipart body for updating a post and its cover image in one request",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "content": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "text"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["type", "data"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "image"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["type", "data"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "video"
+                            },
+                            "data": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["type", "data"],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "title": "PostContentSchema",
+                      "description": "Schema for content items (text, image, video)",
+                      "type": "object"
+                    }
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "coverImage": {
+                    "type": "string",
+                    "format": "binary",
+                    "contentEncoding": "binary",
+                    "maxLength": 10485760,
+                    "description": "Cover image: JPEG, PNG, GIF or WebP, 10 MiB max"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdatePostMultipartSchema",
+                "description": "Multipart body for updating a post and its cover image in one request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema for a user's post",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPostSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/posts/{id}/cover-image": {
       "put": {
         "operationId": "PostController_setCoverImage",
@@ -3553,6 +3670,37 @@
         "additionalProperties": false,
         "title": "PublicAuthorPostsSchema",
         "description": "A list of posts from a specific author"
+      },
+      "UpdatePostMultipartSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostContentSchema"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "coverImage": {
+            "type": "string",
+            "format": "binary",
+            "contentEncoding": "binary",
+            "maxLength": 10485760,
+            "description": "Cover image: JPEG, PNG, GIF or WebP, 10 MiB max"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdatePostMultipartSchema",
+        "description": "Multipart body for updating a post and its cover image in one request"
       },
       "SetCoverImageSchema": {
         "type": "object",

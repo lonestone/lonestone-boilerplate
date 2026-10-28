@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
  * - PATCH /admin/posts/:id/publish - Publish a post
  * - PATCH /admin/posts/:id/unpublish - Unpublish a post
  * - PUT and DELETE /admin/posts/:id/cover-image - Set and remove the cover image
+ * - PUT /admin/posts/:id/multipart - Update a post and its cover image in one multipart request
  * - Auth guard behavior (401 when unauthenticated)
  */
 import {
@@ -39,8 +40,10 @@ const FAKE_STORAGE_ORIGIN = 'https://storage.test'
 
 class InMemoryStorageProvider implements IStorageProvider {
   private readonly objects = new Map<string, Buffer>()
+  uploadCount = 0
 
   async upload(input: StorageProviderUploadInput): Promise<void> {
+    this.uploadCount += 1
     this.objects.set(input.key, input.body)
   }
 
@@ -53,6 +56,10 @@ class InMemoryStorageProvider implements IStorageProvider {
       url: `${FAKE_STORAGE_ORIGIN}/${key}?X-Amz-Signature=fake`,
       expiresAt: new Date(Date.now() + 3600_000),
     }
+  }
+
+  get objectCount(): number {
+    return this.objects.size
   }
 
   /** Plays the bucket: returns the bytes a browser would get from a signed URL. */
@@ -90,6 +97,24 @@ function uploadCoverImage(
     .withSession(session)
     .put(`/admin/posts/${postId}/cover-image`)
     .attach('file', input.body, { filename: input.filename, contentType: input.contentType })
+}
+
+/** Sends the fields the way the generated SDK does: one field per array item, objects as JSON. */
+function updatePostViaMultipart(
+  request: TestRequest,
+  session: BetterAuthSession,
+  postId: string,
+  input: { title?: string; content?: { type: 'text'; data: string }[]; tags?: string[] },
+) {
+  let multipartRequest = request.withSession(session).put(`/admin/posts/${postId}/multipart`)
+  if (input.title) multipartRequest = multipartRequest.field('title', input.title)
+  for (const item of input.content ?? []) {
+    multipartRequest = multipartRequest.field('content', JSON.stringify(item))
+  }
+  for (const tag of input.tags ?? []) {
+    multipartRequest = multipartRequest.field('tags', tag)
+  }
+  return multipartRequest
 }
 
 describe('postController (e2e)', () => {
@@ -505,5 +530,119 @@ describe('postController cover image (e2e)', () => {
     })
 
     expect(response.status).toBe(413)
+  })
+
+  describe('pUT /admin/posts/:id/multipart', () => {
+    it('updates a post and replaces its cover image in one request', async (context) => {
+      const { session } = await createUserWithSession(context.em)
+      const postId = await createPost(context.request, session)
+      const firstResponse = await uploadCoverImage(context.request, session, postId)
+
+      const response = await updatePostViaMultipart(context.request, session, postId, {
+        title: 'Multipart title',
+        content: [
+          { type: 'text', data: 'First' },
+          { type: 'text', data: 'Second' },
+        ],
+        tags: ['news', '2026'],
+      }).attach('coverImage', MINIMAL_JPEG, { filename: 'cover.jpg', contentType: 'image/jpeg' })
+
+      expect(response.status).toBe(200)
+      expect(response.body).toMatchObject({
+        title: 'Multipart title',
+        content: [
+          { type: 'text', data: 'First' },
+          { type: 'text', data: 'Second' },
+        ],
+        coverImage: { filename: 'cover.jpg', mimeType: 'image/jpeg' },
+      })
+      expect(response.body.tags.map((tag: { name: string }) => tag.name).sort()).toEqual([
+        '2026',
+        'news',
+      ])
+      expect(storageProvider.readSignedUrl(response.body.coverImage.url)).toEqual(MINIMAL_JPEG)
+      expect(storageProvider.readSignedUrl(firstResponse.body.coverImage.url)).toBeUndefined()
+      expect(storageProvider.objectCount).toBe(1)
+    })
+
+    it('updates a post without a file and keeps its cover image', async (context) => {
+      const { session } = await createUserWithSession(context.em)
+      const postId = await createPost(context.request, session)
+      const uploadResponse = await uploadCoverImage(context.request, session, postId)
+
+      const response = await updatePostViaMultipart(context.request, session, postId, {
+        title: 'Text only',
+      })
+
+      expect(response.status).toBe(200)
+      expect(response.body).toMatchObject({
+        title: 'Text only',
+        coverImage: { id: uploadResponse.body.coverImage.id },
+      })
+    })
+
+    it('rejects a file that is not a supported image and leaves the post unchanged', async (context) => {
+      const { session } = await createUserWithSession(context.em)
+      const postId = await createPost(context.request, session)
+
+      const response = await updatePostViaMultipart(context.request, session, postId, {
+        title: 'Should not be saved',
+      }).attach('coverImage', Buffer.from('hello storage'), {
+        filename: 'notes.png',
+        contentType: 'image/png',
+      })
+
+      expect(response.status).toBe(400)
+      const postResponse = await context.request.withSession(session).get(`/admin/posts/${postId}`)
+      expect(postResponse.body.title).toBe('Illustrated Post')
+      expect(storageProvider.objectCount).toBe(0)
+    })
+
+    it('rejects content that is not valid post content', async (context) => {
+      const { session } = await createUserWithSession(context.em)
+      const postId = await createPost(context.request, session)
+
+      const response = await context.request
+        .withSession(session)
+        .put(`/admin/posts/${postId}/multipart`)
+        .field('content', 'not json')
+
+      expect(response.status).toBe(400)
+    })
+
+    it('removes the uploaded file and keeps the current image when the save fails', async (context) => {
+      const { session } = await createUserWithSession(context.em)
+      const postId = await createPost(context.request, session)
+      const uploadResponse = await uploadCoverImage(context.request, session, postId)
+
+      // A tag longer than its column makes the database reject the save, after the upload.
+      const response = await updatePostViaMultipart(context.request, session, postId, {
+        title: 'Should not be saved',
+        tags: ['x'.repeat(300)],
+      }).attach('coverImage', MINIMAL_JPEG, { filename: 'cover.jpg', contentType: 'image/jpeg' })
+
+      expect(response.status).toBe(500)
+      expect(storageProvider.uploadCount).toBe(2)
+      expect(storageProvider.objectCount).toBe(1)
+      const postResponse = await context.request.withSession(session).get(`/admin/posts/${postId}`)
+      expect(postResponse.body).toMatchObject({
+        title: 'Illustrated Post',
+        coverImage: { id: uploadResponse.body.coverImage.id },
+      })
+      expect(storageProvider.readSignedUrl(postResponse.body.coverImage.url)).toEqual(MINIMAL_PNG)
+    })
+
+    it('returns not found when another user updates the post', async (context) => {
+      const { session: ownerSession } = await createUserWithSession(context.em, { name: 'Owner' })
+      const { session: otherSession } = await createUserWithSession(context.em, { name: 'Other' })
+      const postId = await createPost(context.request, ownerSession)
+
+      const response = await updatePostViaMultipart(context.request, otherSession, postId, {
+        title: 'Hijacked',
+      }).attach('coverImage', MINIMAL_PNG, { filename: 'cover.png', contentType: 'image/png' })
+
+      expect(response.status).toBe(404)
+      expect(storageProvider.objectCount).toBe(0)
+    })
   })
 })

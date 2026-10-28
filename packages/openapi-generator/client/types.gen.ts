@@ -536,6 +536,21 @@ export type PublicAuthorPostsSchema = {
 };
 
 /**
+ * UpdatePostMultipartSchema
+ *
+ * Multipart body for updating a post and its cover image in one request
+ */
+export type UpdatePostMultipartSchema = {
+    title?: string;
+    content?: Array<PostContentSchema>;
+    tags?: Array<string>;
+    /**
+     * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
+     */
+    coverImage?: Blob | File;
+};
+
+/**
  * SetCoverImageSchema
  *
  * Multipart body for setting the cover image of a post
@@ -1107,6 +1122,54 @@ export type PostControllerUpdatePostResponses = {
 };
 
 export type PostControllerUpdatePostResponse = PostControllerUpdatePostResponses[keyof PostControllerUpdatePostResponses];
+
+export type PostControllerUpdatePostViaMultipartData = {
+    /**
+     * UpdatePostMultipartSchema
+     *
+     * Multipart body for updating a post and its cover image in one request
+     */
+    body: {
+        title?: string;
+        /**
+         * PostContentSchema
+         *
+         * Schema for content items (text, image, video)
+         */
+        content?: Array<{
+            type: 'text';
+            data: string;
+        } | {
+            type: 'image';
+            data: string;
+        } | {
+            type: 'video';
+            data: string;
+        }>;
+        tags?: Array<string>;
+        /**
+         * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
+         */
+        coverImage?: Blob | File;
+    };
+    path: {
+        /**
+         * Post identifier
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/admin/posts/{id}/multipart';
+};
+
+export type PostControllerUpdatePostViaMultipartResponses = {
+    /**
+     * Schema for a user's post
+     */
+    200: UserPostSchema;
+};
+
+export type PostControllerUpdatePostViaMultipartResponse = PostControllerUpdatePostViaMultipartResponses[keyof PostControllerUpdatePostViaMultipartResponses];
 
 export type PostControllerRemoveCoverImageData = {
     body?: never;
