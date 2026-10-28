@@ -69,32 +69,38 @@ coverImage?: Media
 ```
 
 A file lives in two places: a row in the database and an object in the bucket. `MediaService`
-keeps them in sync, so business services never clean up objects themselves:
+gives you three steps, and your service chains them:
 
-- `replace` uploads the new file, lets you attach it, and flushes. If the flush fails, it deletes
-  the new object and rethrows the original error. Once committed, it deletes the previous object.
-  Leave `current` empty to attach a first file.
-- `remove` lets you detach the file, deletes the row, and deletes the object after the commit.
+- `upload` stores the file in the bucket and returns its `Media`, not yet persisted.
+- `attach` persists the `Media` without flushing, so it is saved with its owner.
+- `remove` deletes the object from the bucket. It never throws: a failure is logged and leaves an
+  orphan object, so it cannot hide the error you are handling.
+
+`MediaService` never flushes. Your service knows when to save, what to save with the file, and
+whether it runs in a transaction. So it flushes, and removes the new object in its own `catch`:
 
 ```typescript
-async setCoverImage(post: Post, upload: StorageUpload): Promise<void> {
-  await this.mediaService.replace({
-    current: post.coverImage,
-    upload,
-    attach: (media) => (post.coverImage = media),
-  })
-}
+async setCoverImage(post: Post, file: File): Promise<void> {
+  const previous = post.coverImage
+  const media = this.mediaService.attach(await this.mediaService.upload(file))
+  post.coverImage = media
+  if (previous) this.em.remove(previous)
 
-async removeCoverImage(post: Post, coverImage: Media): Promise<void> {
-  await this.mediaService.remove({
-    media: coverImage,
-    detach: () => (post.coverImage = undefined),
-  })
+  try {
+    await this.em.flush()
+  } catch (error: unknown) {
+    await this.mediaService.remove(media)
+    throw error
+  }
+
+  // The old object goes only once its row is gone, so a failed save keeps the image working.
+  if (previous) await this.mediaService.remove(previous)
 }
 ```
 
-An object that fails to delete after a commit is only logged: the database is already right, and
-failing the request would undo nothing.
+With `em.transactional()`, put the `try`/`catch` around the whole transaction: the commit can fail
+after a successful flush. If several methods repeat this sequence, extract it into a helper of
+your service.
 
 Map the relation with `MediaMapper.toMedia` and reuse `mediaSchema` in your contracts. `toMedia` is
 async: it signs a download URL and returns it with its `expiresAt` date. The signed URL fixes the
