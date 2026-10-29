@@ -3,7 +3,13 @@ import { hashPassword } from 'better-auth/crypto'
 import { Account, User } from './auth.entity'
 
 /**
- * Creates a test user
+ * Creates a user who can log in with a password: a `User` plus its credential `Account`.
+ *
+ * This stays a plain async function instead of a MikroORM `Factory` class (the
+ * convention for every other entity, see `posts.factory.ts`): hashing the password
+ * is async, a factory's `definition()` is not, and seeders rely on it reusing the
+ * user when the email already exists.
+ *
  * @param em The EntityManager instance
  * @param overrides Options to customize the user
  * @returns The created user

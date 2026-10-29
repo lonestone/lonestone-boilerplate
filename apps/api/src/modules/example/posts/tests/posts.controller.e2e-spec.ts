@@ -11,7 +11,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { initializeTestApp } from '../../../../test/helpers/test-app.helper'
 import { createRequest } from '../../../../test/helpers/test-auth.helper'
 import { createUserWithSession } from '../../../../test/helpers/test-user.helpers'
+import { createUserData } from '../../../auth/auth.factory'
 import { CreatePostInput } from '../contracts/posts.contract'
+import { PostFactory, PostVersionFactory } from '../posts.factory'
 import { PostModule } from '../posts.module'
 
 describe('postController (e2e)', () => {
@@ -70,34 +72,22 @@ describe('postController (e2e)', () => {
   describe('pATCH /admin/posts/:id/publish', () => {
     it('should publish a post', async (context) => {
       const { em, request } = context
-      // Arrange
-      const { session } = await createUserWithSession(em)
+      // Arrange - a draft post titled "Test Post"
+      const { user, session } = await createUserWithSession(em)
+      const post = new PostFactory(em).makeOne({ user })
+      new PostVersionFactory(em).makeOne({ post, title: 'Test Post' })
+      await em.flush()
 
-      // First create a post
-      const createResponse = await request
-        .withSession(session)
-        .post('/admin/posts')
-        .send({
-          title: 'Test Post',
-          content: [
-            {
-              type: 'text',
-              data: 'This is a test post content',
-            },
-          ],
-        })
-      const postId = createResponse.body.id
-
-      // Act - publish it
+      // Act
       const publishResponse = await request
         .withSession(session)
-        .patch(`/admin/posts/${postId}/publish`)
+        .patch(`/admin/posts/${post.id}/publish`)
 
       // Assert
       expect(publishResponse.body).toMatchObject({
-        id: postId,
+        id: post.id,
         type: 'published',
-        slug: `test-post-${postId.slice(0, 8)}`,
+        slug: `test-post-${post.id.slice(0, 8)}`,
         publishedAt: expect.any(String),
       })
     })
@@ -106,34 +96,20 @@ describe('postController (e2e)', () => {
   describe('pATCH /admin/posts/:id/unpublish', () => {
     it('should unpublish a post', async (context) => {
       const { em, request } = context
-      // Arrange
-      const { session } = await createUserWithSession(em)
+      // Arrange - a published post
+      const { user, session } = await createUserWithSession(em)
+      const post = new PostFactory(em).makeOne({ user, slug: 'published-post' })
+      new PostVersionFactory(em).makeOne({ post })
+      post.publishedAt = new Date()
+      await em.flush()
 
-      // First create a post
-      const createResponse = await request
-        .withSession(session)
-        .post('/admin/posts')
-        .send({
-          title: 'Test Post',
-          content: [
-            {
-              type: 'text',
-              data: 'This is a test post content',
-            },
-          ],
-        })
-      const postId = createResponse.body.id
-
-      // Publish it
-      await request.withSession(session).patch(`/admin/posts/${postId}/publish`)
-
-      // Act - unpublish it
-      await request.withSession(session).patch(`/admin/posts/${postId}/unpublish`)
+      // Act
+      await request.withSession(session).patch(`/admin/posts/${post.id}/unpublish`)
 
       // Assert
-      const unpublishResponse = await request.withSession(session).get(`/admin/posts/${postId}`)
+      const unpublishResponse = await request.withSession(session).get(`/admin/posts/${post.id}`)
       expect(unpublishResponse.body).toMatchObject({
-        id: postId,
+        id: post.id,
         type: 'draft',
         publishedAt: null,
       })
@@ -143,23 +119,16 @@ describe('postController (e2e)', () => {
   describe('pOST /public/posts/:slug/like', () => {
     it('should increment likes and return the public post', async (context) => {
       const { em, request } = context
-      // Arrange - create + publish a post
-      const { session } = await createUserWithSession(em)
-      const createResponse = await request
-        .withSession(session)
-        .post('/admin/posts')
-        .send({
-          title: 'Likeable Post',
-          content: [{ type: 'text', data: 'Content worth liking.' }],
-        })
-      const postId = createResponse.body.id
-      const publishResponse = await request
-        .withSession(session)
-        .patch(`/admin/posts/${postId}/publish`)
-      const slug = publishResponse.body.slug
+      // Arrange - a published post titled "Likeable Post"
+      const user = await createUserData(em)
+      const post = new PostFactory(em).makeOne({ user, slug: 'likeable-post' })
+      new PostVersionFactory(em).makeOne({ post, title: 'Likeable Post' })
+      // Publish after the version exists: public pages only show versions written before publication.
+      post.publishedAt = new Date()
+      await em.flush()
 
       // Act - anonymous like (no session)
-      const likeResponse = await request.post(`/public/posts/${slug}/like`)
+      const likeResponse = await request.post('/public/posts/likeable-post/like')
 
       // Assert - 200 (not 404) and the mapped public post with incremented count
       expect(likeResponse.status).toBe(200)
@@ -173,17 +142,11 @@ describe('postController (e2e)', () => {
   describe('session flexibility', () => {
     it('should isolate posts per user', async (context) => {
       const { em, request } = context
-      // Arrange - User A creates a post
-      const { session: sessionA } = await createUserWithSession(em, { name: 'Alice' })
-      const createAlice = await request
-        .withSession(sessionA)
-        .post('/admin/posts')
-        .send({
-          title: 'Alice Post',
-          content: [{ type: 'text', data: 'content' }],
-        })
-      expect(createAlice.status).toBe(201)
-      expect(createAlice.body.id).toEqual(expect.any(String))
+      // Arrange - User A owns a post
+      const alice = await createUserData(em, { name: 'Alice' })
+      const post = new PostFactory(em).makeOne({ user: alice })
+      new PostVersionFactory(em).makeOne({ post, title: 'Alice Post' })
+      await em.flush()
 
       // Arrange - User B
       const { session: sessionB } = await createUserWithSession(em, { name: 'Bob' })
