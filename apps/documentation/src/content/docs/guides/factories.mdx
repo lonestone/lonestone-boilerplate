@@ -1,0 +1,124 @@
+---
+title: Entity factories
+description: Build test and seed data with MikroORM factories and Faker
+---
+
+A factory builds an entity with realistic default values. Tests and seeders use the same factories, so test data and seed data are built the same way.
+
+The point is short tests. A test passes only the values it checks. Everything else comes from the factory. When you read `createOne({ title: 'Test Post' })`, you know the title matters to that test and nothing else does.
+
+## Where factories live
+
+Each module keeps its factories in `<module>.factory.ts`, next to its entities:
+
+```
+modules/example/posts/
+├── entities/
+│   ├── post.entity.ts
+│   └── post-version.entity.ts
+├── posts.entity.ts
+└── posts.factory.ts      # PostFactory, PostVersionFactory
+```
+
+There is one factory class per entity. A module with several entities exports several factories from the same file.
+
+## Writing a factory
+
+Extend `Factory` from `@mikro-orm/seeder`. Set `model` to the entity class. Return the default values from `definition()`, using `@faker-js/faker` for anything that does not need a fixed value:
+
+```typescript
+import { faker } from '@faker-js/faker'
+import type { EntityData } from '@mikro-orm/core'
+import { Factory } from '@mikro-orm/seeder'
+import { PostVersion } from './posts.entity'
+
+export class PostVersionFactory extends Factory<PostVersion> {
+  model = PostVersion
+
+  protected definition(): EntityData<PostVersion> {
+    return {
+      title: faker.lorem.sentence({ min: 3, max: 6 }),
+      content: [{ type: 'text', data: faker.lorem.paragraphs(2) }],
+    }
+  }
+}
+```
+
+Rules:
+
+- **Respect the entity constraints.** Fill every required column, keep values inside their length limits, and make unique columns unique (for example with `faker.string.uuid()` in a slug).
+- **Do not invent required relations.** A `Post` needs an owner, and a `PostVersion` needs a post. The factory does not create them behind your back: the caller passes them (`{ user }`, `{ post }`). A hidden parent makes tests harder to read and creates rows nobody asked for.
+- **Leave out what the entity already defaults.** `createdAt = new Date()` on the entity is enough; the factory does not need to repeat it.
+- **Keep `definition()` synchronous.** MikroORM calls it without `await`. Data that needs async work (a hashed password, for example) belongs in a plain async function. See `createUserData` in `auth.factory.ts`.
+
+## Using a factory in a test
+
+Create the factory with the test's `EntityManager`:
+
+```typescript
+const { user, session } = await createUserWithSession(em)
+
+// Persist one post and flush it right away.
+const post = await new PostFactory(em).createOne({ user })
+```
+
+The four methods differ only in how many entities they build and whether they flush:
+
+| Method               | Builds | Persists | Flushes |
+| -------------------- | ------ | -------- | ------- |
+| `makeOne(overrides)` | one    | yes      | no      |
+| `make(n, overrides)` | `n`    | yes      | no      |
+| `createOne(...)`     | one    | yes      | yes     |
+| `create(n, ...)`     | `n`    | yes      | yes     |
+
+Use `makeOne()` to build several related entities, then flush once:
+
+```typescript
+const post = new PostFactory(em).makeOne({ user, slug: 'likeable-post' })
+new PostVersionFactory(em).makeOne({ post, title: 'Likeable Post' })
+// Publish after the version exists: public pages only show versions written before publication.
+post.publishedAt = new Date()
+await em.flush()
+```
+
+A factory gives valid rows, not a valid story. When a business rule links two values (here, a version must be older than the publication), set them in the order the rule expects.
+
+Use `.each()` to attach children to every entity a factory builds:
+
+```typescript
+const posts = await new PostFactory(em)
+  .each((post) => new PostVersionFactory(em).makeOne({ post }))
+  .create(3, { user })
+```
+
+Overrides replace the factory's defaults key by key. Pass only the values the test asserts on.
+
+## Using a factory in a seeder
+
+A seeder receives an `EntityManager` too, so the calls are the same:
+
+```typescript
+export class MinimalSeeder extends Seeder {
+  async run(em: EntityManager): Promise<void> {
+    const user = await createUserData(em, { email: 'test@example.com' })
+
+    const post = new PostFactory(em).makeOne({ user })
+    new PostVersionFactory(em).makeOne({ post, title: 'Test Post' })
+    new CommentFactory(em).makeOne({ post, user })
+
+    await em.flush()
+  }
+}
+```
+
+A seeder that needs curated content (real titles, fixed tags) passes it as overrides. The factory still fills the rest.
+
+## Users
+
+Users are the exception. `createUserData` in `apps/api/src/modules/auth/auth.factory.ts` stays a plain async function, for three reasons:
+
+- Better Auth needs a hashed password, and hashing is async. `definition()` cannot wait for it.
+- A user who can log in needs two rows: a `User` and a credential `Account`.
+- Seeders call it with fixed emails and expect it to reuse an existing user instead of failing on the unique email.
+
+In e2e tests, call `createUserWithSession(em)` from `src/test/helpers/test-user.helpers.ts`. It creates the user and a matching session.
