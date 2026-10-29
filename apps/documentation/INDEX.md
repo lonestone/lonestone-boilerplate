@@ -39,6 +39,7 @@
 - [api-testing.mdx](./src/content/docs/guides/api-testing.mdx) - Guide to test the API using Vitest
 - [database-management.mdx](./src/content/docs/guides/database-management.mdx) - Guide to manage the database
 - [encrypt-env.mdx](./src/content/docs/guides/encrypt-env.mdx) - Setup env file encryption
+- [factories.mdx](./src/content/docs/guides/factories.mdx) - Build test and seed data with MikroORM factories and Faker
 - [feature-flags.mdx](./src/content/docs/guides/feature-flags.mdx) - Ship a merged change dark with a single env-var check
 - [generating-types.mdx](./src/content/docs/guides/generating-types.mdx) - Generate types and SDKs from the OpenAPI schema
 

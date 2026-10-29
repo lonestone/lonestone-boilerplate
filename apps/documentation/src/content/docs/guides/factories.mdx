@@ -1,0 +1,49 @@
+---
+title: Entity factories
+description: Build test and seed data with MikroORM factories and Faker
+---
+
+A factory builds an entity with realistic default values. Tests and seeders share it. A test passes only the values it checks, so a reader sees what matters.
+
+## Where factories live
+
+Each module keeps its factories in `<module>.factory.ts`, next to its entities. One class per entity. See `apps/api/src/modules/example/posts/posts.factory.ts`.
+
+## Writing a factory
+
+Extend `Factory` from `@mikro-orm/seeder`, set `model`, and return defaults from `definition()` with Faker:
+
+```typescript
+export class PostVersionFactory extends Factory<PostVersion> {
+  model = PostVersion
+
+  protected definition(): EntityData<PostVersion> {
+    return {
+      title: faker.lorem.sentence({ min: 3, max: 6 }),
+      content: [{ type: 'text', data: faker.lorem.paragraphs(2) }],
+    }
+  }
+}
+```
+
+Fill every required column. Do not invent required parents: the caller passes `{ user }` or `{ post }`.
+
+## Using a factory
+
+Pass the test's (or the seeder's) `EntityManager`. Overrides replace the defaults key by key:
+
+```typescript
+const post = await new PostFactory(em).createOne({ user })
+```
+
+`makeOne()` persists without flushing, so you can build related entities and flush once. `createOne()` persists and flushes. `make(n)` and `create(n)` do the same for several entities.
+
+```typescript
+const post = new PostFactory(em).makeOne({ user })
+new PostVersionFactory(em).makeOne({ post, title: 'Test Post' })
+await em.flush()
+```
+
+## Users
+
+Users have no factory class. Use `createUserData` from `auth.factory.ts`: Better Auth needs an async password hash and an `Account`, which `definition()` cannot provide.

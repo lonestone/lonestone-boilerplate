@@ -140,4 +140,4 @@ describe('PostService', () => {
 2. **Isolation** - Chaque test a sa propre DB, utiliser `context.em` pour les données
 3. **Sessions par requête** - Utiliser `request.withSession(session)` pour les tests parallèles
 4. **Stocker l'app** - Toujours mettre `context.app = app` pour le cleanup automatique
-5. **Factories** - Utiliser les factories dans `src/factories/` pour créer les données de test
+5. **Factories** - Créer les données de test avec les factories du module (`<module>.factory.ts`, par exemple `PostFactory`) et `createUserData` pour les utilisateurs. Voir le guide « Entity factories » de la documentation
