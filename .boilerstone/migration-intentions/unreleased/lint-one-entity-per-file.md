@@ -52,7 +52,7 @@ The backend reference states the rule since #192, but nothing enforced it: a gen
 
 - `pnpm lint` passes.
 - `pnpm typecheck` passes.
-- The API starts, and `pnpm --filter=api migration:create` (or the project's equivalent) reports no change.
+- The API starts, and `pnpm --filter=api db:migrate:create` reports no change.
 - The API tests pass.
 
 ## Record Result
