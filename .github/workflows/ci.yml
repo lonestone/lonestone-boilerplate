@@ -5,10 +5,22 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# GitHub bills each job in whole minutes. A new push to a pull request cancels the run of the
+# previous push. Every push to main has its own group, so no run on main is ever cancelled.
+# A draft pull request gets no run, because a branch that is pushed often would bill a full run
+# on every push. Marking the pull request ready for review starts the run.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   setup:
     name: 🛠️ Setup
+    # Every other job needs this one, so skipping it skips the whole run. A skipped job counts as a
+    # pass for a required check.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     outputs:
       node-version: 24.13.0
