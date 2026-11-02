@@ -203,7 +203,7 @@ export function isSafeRelativePath(path: string): boolean {
   )
 }
 
-/** `--app-id` for `appId`. */
+/** `--web-app` for `webApp`. */
 export function getOptionFlag(name: string): string {
   return `--${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`
 }

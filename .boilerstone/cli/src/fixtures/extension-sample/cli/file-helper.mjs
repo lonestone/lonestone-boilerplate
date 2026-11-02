@@ -1,5 +1,5 @@
 // Option helper of the sample extension, for the CLI tests.
-// suggest: prints assets/icon.txt when the project has it; crashes when the
+// suggest: prints assets/image.txt when the project has it; crashes when the
 // project has assets/crash-suggest.
 // check: refuses a file starting with "bad", crashes on a file starting with
 // "crash", hangs on a file starting with "hang".
@@ -11,8 +11,8 @@ if (command === 'suggest') {
   if (existsSync('assets/crash-suggest')) {
     process.exit(3)
   }
-  if (existsSync('assets/icon.txt')) {
-    console.log('assets/icon.txt')
+  if (existsSync('assets/image.txt')) {
+    console.log('assets/image.txt')
   }
 } else if (command === 'check') {
   const content = readFileSync(value, 'utf-8')

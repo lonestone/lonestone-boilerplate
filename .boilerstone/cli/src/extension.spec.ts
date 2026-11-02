@@ -86,20 +86,20 @@ describe('boilerstone-cli extension', () => {
 
     const result = runCli(
       root,
-      ['extension', 'add', 'capacitor', '--app-id', 'com.acme.app', '--platforms', 'ios', '--yes'],
+      ['extension', 'add', 'capacitor', '--namespace', 'acme.shop', '--features', 'chat', '--yes'],
       sampleAsCapacitor(),
     )
 
     expect(result.status, result.output).toBe(0)
     expect(result.output).toContain('✓ capacitor local installed')
-    expect(result.output).toContain('Run the web-spa app with id com.acme.app')
-    expect(existsSync(join(root, 'apps/web-spa/com.acme.app.txt'))).toBe(true)
-    expect(existsSync(join(root, 'apps/web-spa/android-only.txt'))).toBe(false)
+    expect(result.output).toContain('Run the web-spa app with id acme.shop')
+    expect(existsSync(join(root, 'apps/web-spa/acme.shop.txt'))).toBe(true)
+    expect(existsSync(join(root, 'apps/web-spa/search-only.txt'))).toBe(false)
     expect(trackingState.read(root)?.extensions).toEqual([
       {
         name: 'capacitor',
         version: 'local',
-        options: { app: 'web-spa', appId: 'com.acme.app', platforms: ['ios'] },
+        options: { app: 'web-spa', namespace: 'acme.shop', features: ['chat'] },
         installedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       },
     ])
@@ -113,7 +113,7 @@ describe('boilerstone-cli extension', () => {
 
     const result = runCli(
       root,
-      ['extension', 'add', 'capacitor', '--app-id', 'com.acme.app', '--yes'],
+      ['extension', 'add', 'capacitor', '--namespace', 'acme.shop', '--yes'],
       sampleAsCapacitor(),
     )
 
@@ -138,7 +138,7 @@ describe('boilerstone-cli extension', () => {
 
     const result = runCli(
       root,
-      ['extension', 'add', 'capacitor', '--app-id', 'com.acme.app', '--yes'],
+      ['extension', 'add', 'capacitor', '--namespace', 'acme.shop', '--yes'],
       pathToFileURL(repository).href,
     )
 
@@ -172,7 +172,7 @@ describe('boilerstone-cli extension', () => {
 
     const result = runCli(
       root,
-      ['extension', 'add', 'capacitor', '--app-id', 'com.acme.app', '--yes'],
+      ['extension', 'add', 'capacitor', '--namespace', 'acme.shop', '--yes'],
       sampleAsCapacitor(),
     )
 
@@ -187,7 +187,7 @@ describe('boilerstone-cli extension', () => {
   it('refuses a second installation', () => {
     const root = createSampleProject()
     const extension = sampleAsCapacitor()
-    const args = ['extension', 'add', 'capacitor', '--app-id', 'com.acme.app', '--yes']
+    const args = ['extension', 'add', 'capacitor', '--namespace', 'acme.shop', '--yes']
     expect(runCli(root, args, extension).status).toBe(0)
     git(root, ['add', '-A'])
     git(root, ['commit', '--quiet', '-m', 'added'])
@@ -206,19 +206,19 @@ describe('boilerstone-cli extension', () => {
     )
 
     expect(result.status).toBe(1)
-    expect(result.output).toContain('--app-id is required: reverse-domain id')
+    expect(result.output).toContain('--namespace is required: dotted namespace')
   })
 
   it('refuses an option the extension does not declare', () => {
     const result = runCli(
       createSampleProject(),
-      ['extension', 'add', 'capacitor', '--app-id', 'com.acme.app', '--color', 'red', '--yes'],
+      ['extension', 'add', 'capacitor', '--namespace', 'acme.shop', '--color', 'red', '--yes'],
       sampleAsCapacitor(),
     )
 
     expect(result.status).toBe(1)
     expect(result.output).toContain(
-      'Unknown option --color. Options of capacitor: --app, --app-id, --platforms',
+      'Unknown option --color. Options of capacitor: --app, --namespace, --features',
     )
   })
 })

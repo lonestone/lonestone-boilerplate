@@ -9,23 +9,23 @@
       "type": "choice",
       "choices": "$webApps",
       "required": true,
-      "message": "Web app to wrap"
+      "message": "Web app to extend"
     },
     {
-      "name": "appId",
+      "name": "namespace",
       "type": "string",
       "required": true,
       "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
-      "patternHint": "reverse-domain id, lowercase, e.g. com.acme.app",
+      "patternHint": "dotted namespace, lowercase, e.g. acme.shop",
       "forbiddenSegments": ["class", "new"],
-      "message": "App id"
+      "message": "Namespace"
     },
     {
-      "name": "platforms",
+      "name": "features",
       "type": "list",
-      "choices": ["android", "ios"],
-      "default": ["android", "ios"],
-      "message": "Platforms"
+      "choices": ["search", "chat"],
+      "default": ["search", "chat"],
+      "message": "Features"
     }
   ],
   "preconditions": [
@@ -46,9 +46,9 @@
     { "type": "copy", "from": "templates/app", "to": "apps/{{app}}", "render": true },
     {
       "type": "copy",
-      "from": "templates/android-only.txt",
-      "to": "apps/{{app}}/android-only.txt",
-      "when": { "platforms": "android" }
+      "from": "templates/search-only.txt",
+      "to": "apps/{{app}}/search-only.txt",
+      "when": { "features": "search" }
     },
     {
       "type": "copy",
@@ -61,7 +61,7 @@
       "type": "patch",
       "file": "apps/{{app}}/main.txt",
       "action": "prepend",
-      "text": "import native\n"
+      "text": "import sample\n"
     },
     {
       "type": "patch",
@@ -75,7 +75,7 @@
       "file": "apps/{{app}}/main.txt",
       "find": "// end",
       "action": "before",
-      "text": "// {{appId}}\n"
+      "text": "// {{namespace}}\n"
     },
     {
       "type": "patch",
@@ -87,14 +87,14 @@
     {
       "type": "json-merge",
       "file": "apps/{{app}}/package.json",
-      "merge": { "scripts": { "sample": "echo {{appId}}" }, "keywords": ["sample"] }
+      "merge": { "scripts": { "sample": "echo {{namespace}}" }, "keywords": ["sample"] }
     },
     {
       "type": "env-list-append",
       "files": [".env.example"],
       "optional": [".env"],
       "key": "TRUSTED_ORIGINS",
-      "values": ["capacitor://localhost", "https://localhost"]
+      "values": ["sample://localhost", "https://localhost"]
     },
     { "type": "gitignore", "file": ".gitignore", "lines": ["apps/{{app}}/generated.txt"] },
     {
@@ -107,5 +107,5 @@
   ],
   "docs": "https://example.com/sample",
   "docsUrl": "https://example.com/sample/online",
-  "nextSteps": ["Run the {{app}} app with id {{appId}}"]
+  "nextSteps": ["Run the {{app}} app with id {{namespace}}"]
 }

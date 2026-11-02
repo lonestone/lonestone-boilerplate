@@ -35,8 +35,8 @@ const VARIABLES: TemplateVariables = {
   packageScope: '@acme',
   app: 'web-spa',
   appPackage: '@acme/web-spa',
-  appId: 'com.acme.app',
-  platforms: ['android', 'ios'],
+  namespace: 'acme.shop',
+  features: ['search', 'chat'],
 }
 
 function sampleManifest(
@@ -84,7 +84,7 @@ describe('checkSteps', () => {
       join(root, 'apps/web-spa/package.json'),
       JSON.stringify({ name: '@acme/web-spa', scripts: { sample: 'something else' } }),
     )
-    writeFileSync(join(root, 'apps/web-spa/com.acme.app.txt'), 'already here\n')
+    writeFileSync(join(root, 'apps/web-spa/acme.shop.txt'), 'already here\n')
     rmSync(join(root, '.env.example'))
     commitAll(root)
     const manifest = sampleManifest((raw) => {
@@ -94,7 +94,7 @@ describe('checkSteps', () => {
     const issues = checkSteps(context(root, manifest))
 
     expect(issues).toEqual([
-      expect.stringContaining('apps/web-spa/com.acme.app.txt already exists'),
+      expect.stringContaining('apps/web-spa/acme.shop.txt already exists'),
       expect.stringContaining('expected text "const a = 1" found 0 times'),
       expect.stringContaining('expected text "// end" found 2 times'),
       expect.stringContaining('expected text "// end" found 2 times'),
@@ -143,26 +143,24 @@ describe('applySteps', () => {
 
     const result = applySteps(context(root), silent())
 
-    expect(read(root, 'apps/web-spa/com.acme.app.txt')).toBe(
-      'id=com.acme.app scope=@acme project=acme\n',
-    )
+    expect(read(root, 'apps/web-spa/acme.shop.txt')).toBe('id=acme.shop scope=@acme project=acme\n')
     expect(read(root, 'apps/web-spa/config/sample.json')).toBe('{ "app": "@acme/web-spa" }\n')
-    expect(read(root, 'apps/web-spa/android-only.txt')).toBe('android only\n')
+    expect(read(root, 'apps/web-spa/search-only.txt')).toBe('search only\n')
     expect(read(root, 'apps/web-spa/logo.txt')).toBe('logo\n')
     expect(read(root, 'apps/web-spa/main.txt')).toBe(
-      'import native\nconst a = 2\n// com.acme.app\n// end\n// after\n',
+      'import sample\nconst a = 2\n// acme.shop\n// end\n// after\n',
     )
     expect(JSON.parse(read(root, 'apps/web-spa/package.json'))).toEqual({
       name: '@acme/web-spa',
       private: true,
-      scripts: { dev: 'vite', sample: 'echo com.acme.app' },
+      scripts: { dev: 'vite', sample: 'echo acme.shop' },
       keywords: ['sample'],
     })
     expect(read(root, '.env.example')).toBe(
-      'TRUSTED_ORIGINS=http://localhost:5173,capacitor://localhost,https://localhost\n',
+      'TRUSTED_ORIGINS=http://localhost:5173,sample://localhost,https://localhost\n',
     )
     expect(read(root, '.env')).toBe(
-      'TRUSTED_ORIGINS=http://localhost:5173,https://localhost,capacitor://localhost\n',
+      'TRUSTED_ORIGINS=http://localhost:5173,https://localhost,sample://localhost\n',
     )
     expect(read(root, '.gitignore')).toBe(
       'node_modules\n\n# Added by the sample extension\napps/web-spa/generated.txt\n',
@@ -174,9 +172,9 @@ describe('applySteps', () => {
   it('honours list and pathExists conditions', () => {
     const root = createSampleProject()
 
-    applySteps(context(root, sampleManifest(), { ...VARIABLES, platforms: ['ios'] }), silent())
+    applySteps(context(root, sampleManifest(), { ...VARIABLES, features: ['chat'] }), silent())
 
-    expect(existsSync(join(root, 'apps/web-spa/android-only.txt'))).toBe(false)
+    expect(existsSync(join(root, 'apps/web-spa/search-only.txt'))).toBe(false)
     expect(existsSync(join(root, 'apps/web-spa/logo.txt'))).toBe(false)
   })
 
@@ -194,7 +192,7 @@ describe('applySteps', () => {
 
     applySteps(context(root, manifest), silent())
 
-    expect(existsSync(join(root, 'apps/web-spa/com.acme.app.txt'))).toBe(true)
+    expect(existsSync(join(root, 'apps/web-spa/acme.shop.txt'))).toBe(true)
     expect(existsSync(join(root, 'apps/web-spa/config/sample.json'))).toBe(false)
   })
 
@@ -208,7 +206,7 @@ describe('applySteps', () => {
       raw.steps.push(
         {
           type: 'copy',
-          from: 'templates/android-only.txt',
+          from: 'templates/search-only.txt',
           to: 'apps/{{app}}/overwritten/file.txt',
           ifExists: 'overwrite',
         },
@@ -253,13 +251,13 @@ describe('applySteps', () => {
         type: 'env-list-append',
         files: ['.env.example'],
         key: 'TRUSTED_ORIGINS',
-        values: ['{{appId}}://localhost'],
+        values: ['{{namespace}}://localhost'],
       })
     })
 
     applySteps(context(root, manifest), silent())
 
-    expect(read(root, '.env.example')).toContain(',com.acme.app://localhost\n')
+    expect(read(root, '.env.example')).toContain(',acme.shop://localhost\n')
   })
 
   it('refuses a path that leaves the project once the variables are rendered', () => {
@@ -267,14 +265,14 @@ describe('applySteps', () => {
     const manifest = sampleManifest((raw) => {
       raw.steps.splice(0, raw.steps.length, {
         type: 'copy',
-        from: 'templates/android-only.txt',
-        to: 'apps/{{app}}/android-only.txt',
+        from: 'templates/search-only.txt',
+        to: 'apps/{{app}}/search-only.txt',
       })
     })
     const outsideContext = context(root, manifest, { ...VARIABLES, app: '../../outside' })
 
     expect(checkSteps(outsideContext)).toEqual([
-      expect.stringContaining('apps/../../outside/android-only.txt is not a relative path'),
+      expect.stringContaining('apps/../../outside/search-only.txt is not a relative path'),
     ])
     expect(() => applySteps(outsideContext, silent())).toThrow(StepFailedError)
     expect(existsSync(join(root, '../outside'))).toBe(false)
@@ -386,9 +384,9 @@ describe('appendEnvList', () => {
   it('appends only the missing values and keeps the quotes', () => {
     const content = 'A=1\nTRUSTED_ORIGINS="http://a,https://b"\nB=2\n'
 
-    const result = appendEnvList(content, 'TRUSTED_ORIGINS', ['https://b', 'capacitor://localhost'])
+    const result = appendEnvList(content, 'TRUSTED_ORIGINS', ['https://b', 'sample://localhost'])
 
-    expect(result).toBe('A=1\nTRUSTED_ORIGINS="http://a,https://b,capacitor://localhost"\nB=2\n')
+    expect(result).toBe('A=1\nTRUSTED_ORIGINS="http://a,https://b,sample://localhost"\nB=2\n')
   })
 
   it('fills an empty value', () => {

@@ -26,7 +26,7 @@ describe('parseExtensionManifest', () => {
 
     expect(manifest.name).toBe('sample')
     expect(manifest.compatibility.boilerplate).toEqual({ min: '1.0.0', below: '2.0.0' })
-    expect(manifest.options.map((option) => option.name)).toEqual(['app', 'appId', 'platforms'])
+    expect(manifest.options.map((option) => option.name)).toEqual(['app', 'namespace', 'features'])
     expect(manifest.steps).toHaveLength(11)
   })
 
@@ -75,16 +75,16 @@ describe('parseExtensionManifest', () => {
         ...sampleManifest(),
         options: [
           ...(sampleManifest().options as unknown[]),
-          { name: 'icon', type: 'path', message: 'Icon', helper: 'cli/file-helper.mjs' },
+          { name: 'image', type: 'path', message: 'Image', helper: 'cli/file-helper.mjs' },
         ],
       },
       'x',
     )
 
     expect(manifest.options.at(-1)).toEqual({
-      name: 'icon',
+      name: 'image',
       type: 'path',
-      message: 'Icon',
+      message: 'Image',
       helper: 'cli/file-helper.mjs',
     })
   })
@@ -97,12 +97,12 @@ describe('parseExtensionManifest', () => {
 
     expect(() =>
       parseExtensionManifest(
-        withOption({ name: 'icon', type: 'path', message: 'Icon', helper: '../helper.mjs' }),
+        withOption({ name: 'image', type: 'path', message: 'Image', helper: '../helper.mjs' }),
         'x',
       ),
     ).toThrow("options[3].helper: path must be relative and must not contain '..'")
     expect(() =>
-      parseExtensionManifest(withOption({ name: 'icon', type: 'file', message: 'Icon' }), 'x'),
+      parseExtensionManifest(withOption({ name: 'image', type: 'file', message: 'Image' }), 'x'),
     ).toThrow('options[3].type must be choice, string, list or path')
   })
 
@@ -220,7 +220,7 @@ describe('parseExtensionManifest', () => {
 
 describe('getOptionFlag', () => {
   it('derives the kebab-case flag from the option name', () => {
-    expect(getOptionFlag('appId')).toBe('--app-id')
+    expect(getOptionFlag('namespace')).toBe('--namespace')
     expect(getOptionFlag('app')).toBe('--app')
     expect(getOptionFlag('appDisplayName')).toBe('--app-display-name')
   })
@@ -240,8 +240,8 @@ describe('isCompatible', () => {
 describe('renderTemplate', () => {
   it('replaces variables and joins lists with commas', () => {
     expect(
-      renderTemplate('{{app}}:{{platforms}}', { app: 'web-spa', platforms: ['android', 'ios'] }),
-    ).toBe('web-spa:android,ios')
+      renderTemplate('{{app}}:{{features}}', { app: 'web-spa', features: ['search', 'chat'] }),
+    ).toBe('web-spa:search,chat')
   })
 
   it('fails on a variable without a value', () => {
