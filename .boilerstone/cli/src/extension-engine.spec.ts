@@ -30,6 +30,9 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+/** First line of the fixture files whose content the tests compare. */
+const FIXTURE_NOTE = 'Test fixture of the CLI specs only: never installed in a real project.'
+
 const VARIABLES: TemplateVariables = {
   projectName: 'acme',
   packageScope: '@acme',
@@ -143,9 +146,14 @@ describe('applySteps', () => {
 
     const result = applySteps(context(root), silent())
 
-    expect(read(root, 'apps/web-spa/acme.shop.txt')).toBe('id=acme.shop scope=@acme project=acme\n')
-    expect(read(root, 'apps/web-spa/config/sample.json')).toBe('{ "app": "@acme/web-spa" }\n')
-    expect(read(root, 'apps/web-spa/search-only.txt')).toBe('search only\n')
+    expect(read(root, 'apps/web-spa/acme.shop.txt')).toBe(
+      `${FIXTURE_NOTE}\nid=acme.shop scope=@acme project=acme\n`,
+    )
+    expect(JSON.parse(read(root, 'apps/web-spa/config/sample.json'))).toEqual({
+      '//': FIXTURE_NOTE,
+      app: '@acme/web-spa',
+    })
+    expect(read(root, 'apps/web-spa/search-only.txt')).toBe(`${FIXTURE_NOTE}\nsearch only\n`)
     expect(read(root, 'apps/web-spa/logo.txt')).toBe('logo\n')
     expect(read(root, 'apps/web-spa/main.txt')).toBe(
       'import sample\nconst a = 2\n// acme.shop\n// end\n// after\n',

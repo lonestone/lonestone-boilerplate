@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "sample",
-  "description": "Sample extension used by the CLI specs",
+  "description": "Fake extension for the CLI specs only: never installed in a real project",
   "compatibility": { "boilerplate": { "min": "1.0.0", "below": "2.0.0" } },
   "options": [
     {

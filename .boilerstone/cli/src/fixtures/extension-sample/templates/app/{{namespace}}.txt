@@ -1,1 +1,2 @@
+Test fixture of the CLI specs only: never installed in a real project.
 id={{namespace}} scope={{packageScope}} project={{projectName}}

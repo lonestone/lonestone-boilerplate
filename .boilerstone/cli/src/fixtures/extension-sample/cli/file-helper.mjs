@@ -1,4 +1,5 @@
-// Option helper of the sample extension, for the CLI tests.
+// Test fixture of the CLI specs only: never installed in a real project.
+// Option helper of the sample extension.
 // suggest: prints assets/image.txt when the project has it; crashes when the
 // project has assets/crash-suggest.
 // check: refuses a file starting with "bad", crashes on a file starting with

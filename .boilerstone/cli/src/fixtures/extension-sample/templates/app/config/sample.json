@@ -1,1 +1,4 @@
-{ "app": "{{appPackage}}" }
+{
+  "//": "Test fixture of the CLI specs only: never installed in a real project.",
+  "app": "{{appPackage}}"
+}
