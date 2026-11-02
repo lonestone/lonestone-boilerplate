@@ -185,6 +185,14 @@
       "schema": "public",
       "indexes": [
         {
+          "columnNames": ["userId"],
+          "composite": false,
+          "keyName": "session_userId_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
           "columnNames": ["token"],
           "composite": false,
           "keyName": "session_token_unique",
@@ -723,6 +731,14 @@
       "name": "account",
       "schema": "public",
       "indexes": [
+        {
+          "columnNames": ["userId"],
+          "composite": false,
+          "keyName": "account_userId_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
         {
           "keyName": "account_pkey",
           "columnNames": ["id"],

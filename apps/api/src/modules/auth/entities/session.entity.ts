@@ -1,4 +1,11 @@
-import { Entity, ManyToOne, PrimaryKey, Property, Unique } from '@mikro-orm/decorators/legacy'
+import {
+  Entity,
+  Index,
+  ManyToOne,
+  PrimaryKey,
+  Property,
+  Unique,
+} from '@mikro-orm/decorators/legacy'
 import { User } from './user.entity'
 
 @Entity({ tableName: 'session' })
@@ -26,5 +33,6 @@ export class Session {
   userAgent?: string
 
   @ManyToOne(() => User, { fieldName: 'userId' })
+  @Index()
   user!: User
 }
