@@ -40,9 +40,18 @@ Il y a aussi une raison technique : un merge fait avec le `GITHUB_TOKEN` par dé
 Le workflow `.github/workflows/push-to-ghcr.yml` construit une image Docker sur GHCR pour chaque app exécutable : API, web-spa et web-ssr. Si un Dockerfile manque (par exemple parce que vous avez supprimé une app), le workflow l'ignore simplement — pas besoin de l'éditer.
 
 - Un push sur `main` produit une image taguée avec le SHA pour chaque app.
-- Un tag `v*` produit `{{version}}`, `{{major}}.{{minor}}` et `latest` pour chaque app.
+- Une release produit `{{version}}`, `{{major}}.{{minor}}` et `latest` pour chaque app.
 
 Notez que `latest` pointe vers la dernière **release**, pas vers le dernier merge sur `main`.
+
+Release Please crée son tag `v*` avec le `GITHUB_TOKEN` par défaut, et GitHub ne lance aucun workflow pour un tag poussé ainsi. Le workflow **Release Please** construit donc lui-même les images de la release : son job `release-images` appelle `push-to-ghcr.yml` avec le nouveau tag. Ce build se trouve dans le run Release Please, pas dans un run **Build Docker to GHCR** séparé.
+
+Deux autres chemins construisent encore les images de version :
+
+- **Un tag `v*` poussé par une personne** lance directement **Build Docker to GHCR**.
+- **À la main** : Actions → **Build Docker to GHCR** → Run workflow, avec le tag de la release (`v1.3.0`) dans le champ `tag`. C'est le moyen de reconstruire une release dont le build a échoué.
+
+Les apps se construisent en parallèle, et l'échec d'une app n'arrête pas les autres. Un build de release raté peut donc laisser certaines apps taguées `1.3.0` et pas d'autres. Promote vérifie que chaque image dont il a besoin existe avant de changer quoi que ce soit : un jeu incomplet n'atteint jamais un environnement. Reconstruisez la release à la main, puis promouvez.
 
 La configuration par environnement (URL de l'API, secrets, etc.) reste dans Dokploy, pas dans l'image.
 
@@ -87,7 +96,7 @@ Ne changez pas la version à la main dans Dokploy : le run du workflow est la tr
 
 Deux prérequis :
 
-- Attendez que **Build Docker to GHCR** soit terminé pour le tag.
+- Attendez que les images de la release soient construites : le job **Build the release images** du run Release Please. Promote s'arrête sans toucher à Dokploy si une image manque.
 - Chaque app Dokploy du mapping doit utiliser le provider Docker (pas Git), avec des identifiants capables de tirer depuis GHCR.
 
 :::note[Autres hébergeurs]
@@ -102,7 +111,7 @@ Lancer Promote à la main après chaque release est le défaut assumé, mais on 
 gh variable set PROMOTE_ON_RELEASE --body production
 ```
 
-Une fois les images du tag construites, `promote-on-release.yml` déclenche Promote pour cet environnement avec la version publiée. Merger la Release PR devient de fait le bouton de mise en prod — un humain la merge toujours ; seul ce qui se passe *après* est automatisé.
+Une fois les images de la release construites, `promote-on-release.yml` déclenche Promote pour cet environnement avec la version publiée. Merger la Release PR devient de fait le bouton de mise en prod — un humain la merge toujours ; seul ce qui se passe *après* est automatisé.
 
 Si votre équipe veut garder la release et le déploiement comme deux consentements séparés, ajoutez des **required reviewers** sur le GitHub Environment : le run Promote déclenché se met alors en pause sur un bouton « Approve and deploy » dans GitHub au lieu de déployer immédiatement, avec la trace de qui a approuvé.
 

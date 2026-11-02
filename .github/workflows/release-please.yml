@@ -73,6 +73,36 @@ jobs:
           mv "${NOTES_FILE}.out" "$NOTES_FILE"
           gh release edit "$TAG" --notes-file "$NOTES_FILE"
 
+  # Builds the version images of the new tag. Called from here because the tag,
+  # pushed with GITHUB_TOKEN, starts no workflow on its own.
+  # Runs even if the release note mirror failed: the tag exists.
+  # To rebuild them later, run "Build Docker to GHCR" by hand with the tag.
+  release-images:
+    name: Build the release images
+    needs: release-please
+    if: ${{ !cancelled() && needs.release-please.outputs.release_created == 'true' }}
+    # The ceiling for the called job: build-and-push-image asks for all four.
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    uses: ./.github/workflows/push-to-ghcr.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+
+  # Opt-in deploy once every release image is built. Does nothing while the
+  # repository variable PROMOTE_ON_RELEASE is unset.
+  promote-release:
+    name: Promote on release
+    needs: [release-please, release-images]
+    if: ${{ !cancelled() && needs.release-images.result == 'success' }}
+    permissions:
+      actions: write
+    uses: ./.github/workflows/promote-on-release.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+
   # Producer-only: generated projects keep this workflow but skip this job.
   # Same workflow run as the tag (GITHUB_TOKEN tag pushes do not start a
   # second workflow). Split from release-please so a failed publish can be

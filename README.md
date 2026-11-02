@@ -233,7 +233,7 @@ For more information, see the [GitHub Actions documentation](.github/ACTIONS.md)
 The CD workflow (`push-to-ghcr.yml`) builds an image per runnable app (API, web-spa, web-ssr) and pushes them to GHCR.
 
 - A push to `main` produces a SHA-tagged image for each app.
-- A `v*` tag produces versioned images (`1.2.3`, `1.2`, and `latest`) for each app.
+- A release produces versioned images (`1.2.3`, `1.2`, and `latest`) for each app. The Release Please workflow calls this build itself, because a tag pushed with `GITHUB_TOKEN` starts no workflow.
 
 Whether a project versions, and what each environment runs, is documented in [Release and versioning](apps/documentation/src/content/docs/references/1_release_and_versionning.mdx). That page also covers the **Promote** workflow, which deploys one released version to one Dokploy environment — the same version for every mapped app.
 
