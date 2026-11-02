@@ -25,6 +25,9 @@ pnpm dlx @lonestone/boilerstone-cli onboard
 
 # Stage an upgrade (does not edit app code)
 pnpm dlx @lonestone/boilerstone-cli upgrade
+
+# Add an extension, e.g. native Android and iOS apps (inside a project)
+pnpm boilerplate extension add capacitor
 ```
 
 Pinning a version, forks, what `bootstrap` does, and the v1.0.0 catch-up caveat: [how-it-works.md](./docs/how-it-works.md#onboarding).

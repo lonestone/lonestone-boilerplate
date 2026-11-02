@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "name": "sample",
+  "description": "Sample extension used by the CLI specs",
+  "compatibility": { "boilerplate": { "min": "1.0.0", "below": "2.0.0" } },
+  "options": [
+    {
+      "name": "app",
+      "type": "choice",
+      "choices": "$webApps",
+      "required": true,
+      "message": "Web app to wrap"
+    },
+    {
+      "name": "appId",
+      "type": "string",
+      "required": true,
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "patternHint": "reverse-domain id, lowercase, e.g. com.acme.app",
+      "forbiddenSegments": ["class", "new"],
+      "message": "App id"
+    },
+    {
+      "name": "platforms",
+      "type": "list",
+      "choices": ["android", "ios"],
+      "default": ["android", "ios"],
+      "message": "Platforms"
+    }
+  ],
+  "preconditions": [
+    { "type": "clean-tree" },
+    { "type": "not-installed" },
+    {
+      "type": "any-of-paths",
+      "paths": ["apps/web-spa", "apps/web-ssr"],
+      "message": "This extension needs web-spa or web-ssr"
+    },
+    {
+      "type": "path-exists",
+      "path": "apps/{{app}}/package.json",
+      "message": "apps/{{app}} not found"
+    }
+  ],
+  "steps": [
+    { "type": "copy", "from": "templates/app", "to": "apps/{{app}}", "render": true },
+    {
+      "type": "copy",
+      "from": "templates/android-only.txt",
+      "to": "apps/{{app}}/android-only.txt",
+      "when": { "platforms": "android" }
+    },
+    {
+      "type": "copy",
+      "fromProject": "assets/logo.txt",
+      "to": "apps/{{app}}/logo.txt",
+      "ifExists": "skip",
+      "when": { "pathExists": "assets/logo.txt" }
+    },
+    {
+      "type": "patch",
+      "file": "apps/{{app}}/main.txt",
+      "action": "prepend",
+      "text": "import native\n"
+    },
+    {
+      "type": "patch",
+      "file": "apps/{{app}}/main.txt",
+      "find": "const a = 1",
+      "action": "replace",
+      "text": "const a = 2"
+    },
+    {
+      "type": "patch",
+      "file": "apps/{{app}}/main.txt",
+      "find": "// end",
+      "action": "before",
+      "text": "// {{appId}}\n"
+    },
+    {
+      "type": "patch",
+      "file": "apps/{{app}}/main.txt",
+      "find": "// end",
+      "action": "after",
+      "text": "\n// after"
+    },
+    {
+      "type": "json-merge",
+      "file": "apps/{{app}}/package.json",
+      "merge": { "scripts": { "sample": "echo {{appId}}" }, "keywords": ["sample"] }
+    },
+    {
+      "type": "env-list-append",
+      "files": [".env.example"],
+      "optional": [".env"],
+      "key": "TRUSTED_ORIGINS",
+      "values": ["capacitor://localhost", "https://localhost"]
+    },
+    { "type": "gitignore", "file": ".gitignore", "lines": ["apps/{{app}}/generated.txt"] },
+    {
+      "type": "run",
+      "command": "node",
+      "args": ["-e", "require('node:fs').writeFileSync('generated.txt', 'ok')"],
+      "cwd": "apps/{{app}}",
+      "creates": ["apps/{{app}}/generated.txt"]
+    }
+  ],
+  "docs": "https://example.com/sample",
+  "docsUrl": "https://example.com/sample/online",
+  "nextSteps": ["Run the {{app}} app with id {{appId}}"]
+}

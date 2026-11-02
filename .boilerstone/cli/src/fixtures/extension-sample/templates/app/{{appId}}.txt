@@ -1,0 +1,1 @@
+id={{appId}} scope={{packageScope}} project={{projectName}}

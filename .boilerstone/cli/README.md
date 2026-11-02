@@ -10,6 +10,6 @@ pnpm dlx @lonestone/boilerstone-cli init my-app
 pnpm dlx @lonestone/boilerstone-cli onboard
 ```
 
-Inside a project, `pnpm rock` sets up your machine and `pnpm boilerplate upgrade` prepares an upgrade.
+Inside a project, `pnpm rock` sets up your machine, `pnpm boilerplate upgrade` prepares an upgrade, and `pnpm boilerplate extension add <name>` adds an extension (`pnpm boilerplate extension list` shows them, e.g. `capacitor` for native Android and iOS apps).
 
 Every command and flow, with a map of what each one reads and writes: [Boilerstone CLI documentation](https://lonestone.github.io/lonestone-boilerplate/references/2_boilerstone-cli/). `pnpm dlx @lonestone/boilerstone-cli --help` lists the commands and options.

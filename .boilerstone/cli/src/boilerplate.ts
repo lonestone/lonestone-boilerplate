@@ -8,7 +8,7 @@ import type {
 } from './boilerplate-core.js'
 import type { TrackingState } from './tracking-state.js'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
@@ -37,26 +37,26 @@ import {
   stripBoilerstoneProducerArtifacts,
   stripProducerOnlyBlocks,
 } from './generate.js'
-import { colorize, isolatedGitEnv, movePath, runFileSync } from './utils.js'
+import {
+  colorize,
+  findUpwards,
+  isolatedGitEnv,
+  movePath,
+  resolveProjectPath,
+  runFileSync,
+  runGit,
+} from './utils.js'
 import { trackingState } from './tracking-state.js'
 
 const __filename = fileURLToPath(import.meta.url)
 
 function resolveDefaultProjectRoot(): string {
-  let dir = process.cwd()
-  while (true) {
-    if (
-      existsSync(join(dir, '.boilerstone', 'migration-intentions')) ||
-      existsSync(join(dir, '.boilerstone', 'boilerplate.json'))
-    ) {
-      return dir
-    }
-    const parent = dirname(dir)
-    if (parent === dir) {
-      return process.cwd()
-    }
-    dir = parent
-  }
+  return (
+    findUpwards(process.cwd(), [
+      join('.boilerstone', 'migration-intentions'),
+      join('.boilerstone', 'boilerplate.json'),
+    ]) ?? process.cwd()
+  )
 }
 
 const projectRoot = resolveDefaultProjectRoot()
@@ -78,10 +78,6 @@ async function prompt(message: string, initial: string): Promise<string> {
   }
 }
 
-function getProjectPath(projectPath: string): string {
-  return isAbsolute(projectPath) ? projectPath : resolve(process.cwd(), projectPath)
-}
-
 function normalizeSemanticVersion(version: string, label: 'source' | 'target'): string {
   if (!/^v?\d+\.\d+\.\d+$/.test(version)) {
     throw new Error(`Invalid ${label} version: ${version}`)
@@ -90,11 +86,7 @@ function normalizeSemanticVersion(version: string, label: 'source' | 'target'): 
 }
 
 function runGitCommand(args: string[], cwd = projectRoot): string {
-  return runFileSync('git', args, {
-    cwd,
-    env: isolatedGitEnv(),
-    stdio: ['ignore', 'pipe', 'pipe'],
-  }).trim()
+  return runGit(args, cwd)
 }
 
 function getConfiguredBoilerplateRemote(): string {
@@ -911,7 +903,7 @@ function isValidIntentionId(id: string): boolean {
 }
 
 function cmdUpgradeRecord(options: UpgradeRecordCommandOptions): void {
-  const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
+  const absolutePath = options.projectPath ? resolveProjectPath(options.projectPath) : projectRoot
   const currentState = trackingState.read(absolutePath)
   if (!currentState) {
     throw new Error(`No boilerplate.json found in ${absolutePath}`)
@@ -941,7 +933,7 @@ function cmdUpgradeRecord(options: UpgradeRecordCommandOptions): void {
 }
 
 function finishUpgrade(options: UpgradeFinishCommandOptions): UpgradePathResolution {
-  const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
+  const absolutePath = options.projectPath ? resolveProjectPath(options.projectPath) : projectRoot
   const targetVersion = options.targetVersion.replace(/^v/, '')
   let resolution: UpgradePathResolution
   try {
@@ -1033,7 +1025,7 @@ function detectSourceVersion(
 async function cmdBootstrap(projectPath: string): Promise<void> {
   console.log(`\n${colorize('🪨  Onboarding project to the boilerplate upgrade system', 'cyan')}\n`)
 
-  const root = getProjectPath(projectPath)
+  const root = resolveProjectPath(projectPath)
   const dir = join(root, '.boilerstone')
 
   if (!existsSync(dir)) {
@@ -1112,7 +1104,7 @@ async function cmdBootstrap(projectPath: string): Promise<void> {
 async function cmdUpgradeInit(projectPath: string): Promise<void> {
   console.log(`\n${colorize('🔧 Initializing Boilerplate Tracking', 'cyan')}\n`)
 
-  const absolutePath = getProjectPath(projectPath)
+  const absolutePath = resolveProjectPath(projectPath)
 
   if (!existsSync(absolutePath)) {
     console.error(`  ${colorize('❌', 'red')} Project path not found: ${absolutePath}`)
@@ -1379,8 +1371,8 @@ function computeAvailableUpgradePath(options: ResolveUpgradePathOptions): Upgrad
 }
 
 function resolveUpgradePath(options: ResolveUpgradePathRequest): UpgradePathResolution {
-  const absolutePath = getProjectPath(options.projectPath)
-  const producerPath = options.producerPath ? getProjectPath(options.producerPath) : projectRoot
+  const absolutePath = resolveProjectPath(options.projectPath)
+  const producerPath = options.producerPath ? resolveProjectPath(options.producerPath) : projectRoot
   const state = trackingState.read(absolutePath)
   const sourceVersionInput = options.sourceVersion ?? state?.source.currentVersion
   if (!sourceVersionInput) {
@@ -1465,7 +1457,7 @@ function resolveUpgradePath(options: ResolveUpgradePathRequest): UpgradePathReso
 }
 
 function cmdUpgradePath(options: UpgradePathCommandOptions): void {
-  const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
+  const absolutePath = options.projectPath ? resolveProjectPath(options.projectPath) : projectRoot
   const resolution = resolveUpgradePath({
     projectPath: absolutePath,
     sourceVersion: options.fromVersion || undefined,
@@ -1560,7 +1552,7 @@ function cmdUpgradePath(options: UpgradePathCommandOptions): void {
 }
 
 function cmdUpgradeStatus(projectPath: string, json = false): void {
-  const absolutePath = projectPath ? getProjectPath(projectPath) : projectRoot
+  const absolutePath = projectPath ? resolveProjectPath(projectPath) : projectRoot
   const state = trackingState.read(absolutePath)
   const report = createHealthReport(absolutePath)
 
@@ -1903,7 +1895,7 @@ function stageUpgradeWorkspace(options: StageUpgradeWorkspaceOptions): void {
 }
 
 async function prepareUpgrade(options: PrepareUpgradeRequest): Promise<PreparedUpgrade> {
-  const absolutePath = options.projectPath ? getProjectPath(options.projectPath) : projectRoot
+  const absolutePath = options.projectPath ? resolveProjectPath(options.projectPath) : projectRoot
   const state = trackingState.read(absolutePath)
   if (!state) {
     throw new Error(
@@ -2199,6 +2191,8 @@ ${colorize('Commands:', 'cyan')}
   ${colorize('upgrade record', 'bright')}             Record an applied/skipped intention in boilerplate.json
   ${colorize('upgrade finish', 'bright')}             Set source.currentVersion after all intentions are resolved
   ${colorize('upgrade status', 'bright')}             Show tracking state and upgrade readiness
+  ${colorize('extension list', 'bright')}             List the extensions a project can add
+  ${colorize('extension add <name>', 'bright')}       Add an extension (see ${colorize('extension help', 'dim')})
 ${colorize('Options:', 'cyan')}
 
   ${colorize('--project <path>', 'bright')}           Consumer project to operate on (default: this repository)
