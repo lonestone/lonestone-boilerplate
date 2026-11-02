@@ -4,6 +4,7 @@ domain: ci
 classification: migration
 requires:
   - v1.1.0/adopt-release-please
+pr: 200
 ---
 
 # Build the release images from the Release Please run
