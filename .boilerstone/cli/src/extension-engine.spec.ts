@@ -8,6 +8,7 @@ import {
   checkSteps,
   listSteps,
   mergeJson,
+  planChanges,
   StepFailedError,
   type EngineContext,
 } from './extension-engine'
@@ -223,7 +224,7 @@ describe('applySteps', () => {
     expect(existsSync(join(root, 'apps/web-spa/config'))).toBe(false)
   })
 
-  it('names the failing step and its hint', () => {
+  it('names the failing step and its hint, and says the changes were rolled back', () => {
     const root = createSampleProject()
     const manifest = sampleManifest((raw) => {
       raw.steps.push({
@@ -241,6 +242,7 @@ describe('applySteps', () => {
       expect(String(error)).toContain('run node -e process.exit(3)')
       expect(String(error)).toContain('exit code 3')
       expect(String(error)).toContain('Try again')
+      expect(String(error)).toContain('Every change was rolled back.')
     }
   })
 
@@ -322,6 +324,53 @@ describe('listSteps', () => {
     })
 
     expect(listSteps(context(root, manifest))).toContain('patch apps/web-spa/logo.txt')
+  })
+
+  it('runs a pathMissing step only while the file is missing', () => {
+    const root = createSampleProject()
+    const manifest = sampleManifest((raw) => {
+      raw.steps.push(
+        {
+          type: 'json-merge',
+          file: 'apps/{{app}}/when-missing.json',
+          merge: {},
+          when: { pathMissing: 'apps/{{app}}/nope.txt' },
+        },
+        {
+          type: 'json-merge',
+          file: 'apps/{{app}}/when-present.json',
+          merge: {},
+          when: { pathMissing: 'apps/{{app}}/main.txt' },
+        },
+      )
+    })
+
+    const steps = listSteps(context(root, manifest))
+
+    expect(steps).toContain('update apps/web-spa/when-missing.json')
+    expect(steps).not.toContain('update apps/web-spa/when-present.json')
+  })
+})
+
+describe('planChanges', () => {
+  it('lists the files the steps add and modify, and the commands they run, as applying does', () => {
+    const root = createSampleProject()
+
+    const plan = planChanges(context(root))
+    applySteps(context(root), silent())
+
+    const lines = (args: string[]) => git(root, args).split('\n').filter(Boolean)
+    expect(plan.added).toEqual(
+      lines(['ls-files', '--others', '--exclude-standard']).filter(
+        (path) => path !== 'apps/web-spa/generated.txt',
+      ),
+    )
+    expect(plan.modified).toEqual(lines(['diff', '--name-only']))
+    expect(plan.added.length).toBeGreaterThan(0)
+    expect(plan.modified.length).toBeGreaterThan(0)
+    expect(plan.commands).toEqual([
+      "node -e require('node:fs').writeFileSync('generated.txt', 'ok')",
+    ])
   })
 })
 

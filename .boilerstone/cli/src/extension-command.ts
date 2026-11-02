@@ -6,13 +6,21 @@
  * terminal, then defaults), checks every precondition and step, and only then
  * writes. The installation is recorded in `.boilerstone/boilerplate.json`.
  */
+import type { SpawnSyncReturns } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { homedir, tmpdir } from 'node:os'
+import { isAbsolute, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { WEB_APPS } from './apps.js'
 import { compareVersions } from './boilerplate-core.js'
-import { applySteps, checkSteps, listSteps, type EngineContext } from './extension-engine.js'
+import {
+  applySteps,
+  checkSteps,
+  isConditionMet,
+  planChanges,
+  type EngineContext,
+  type PlannedChanges,
+} from './extension-engine.js'
 import {
   describeRange,
   EXTENSION_MANIFEST_FILE,
@@ -37,6 +45,7 @@ import {
   describeError,
   findUpwards,
   info,
+  isolatedGitEnv,
   ok,
   resolveProjectPath,
   runGit,
@@ -290,7 +299,7 @@ function getBuiltinVariables(projectRoot: string, app: string | undefined): Temp
   const packageScope = appPackage?.startsWith('@')
     ? appPackage.split('/')[0]
     : `@${projectName.replace(/^@/, '').split('/')[0]}`
-  return { projectName, packageScope, app: app ?? '', appPackage: appPackage ?? '' }
+  return { projectName, projectRoot, packageScope, app: app ?? '', appPackage: appPackage ?? '' }
 }
 
 function renderDefault(
@@ -341,33 +350,184 @@ async function resolveOptionValue(options: {
   return option.type === 'list' ? [] : ''
 }
 
+/** Time limit of one call to an option helper. */
+export const HELPER_TIMEOUT_MS = 10_000
+
+/** A path typed by the user: `~/` is the home folder, a relative path starts at `cwd`. */
+export function resolvePathAnswer(value: string, cwd: string): string {
+  if (value === '~' || value.startsWith('~/')) {
+    return join(homedir(), value.slice(1))
+  }
+  return isAbsolute(value) ? value : resolve(cwd, value)
+}
+
+interface HelperContext {
+  extensionRoot: string
+  projectRoot: string
+  variables: TemplateVariables
+  timeoutMs: number
+}
+
+function runHelper(
+  helper: string,
+  args: string[],
+  context: HelperContext,
+): SpawnSyncReturns<string | Buffer> {
+  return spawnProcessSync(process.execPath, [join(context.extensionRoot, helper), ...args], {
+    cwd: context.projectRoot,
+    encoding: 'utf-8',
+    timeout: context.timeoutMs,
+  })
+}
+
+/**
+ * The helper's suggested answer, or undefined. The suggestion of a path option
+ * is relative to the project root and is given relative to `cwd`; any other
+ * option takes it as it is.
+ */
+function suggestAnswer(
+  option: ExtensionOption,
+  helper: string,
+  context: HelperContext,
+  cwd: string,
+): string | undefined {
+  const app = context.variables.app
+  const result = runHelper(
+    helper,
+    [
+      'suggest',
+      '--project',
+      context.projectRoot,
+      ...(typeof app === 'string' ? ['--app', app] : []),
+    ],
+    context,
+  )
+  const suggestion = result.status === 0 ? String(result.stdout).trim().split('\n')[0] : ''
+  if (!suggestion || option.type !== 'path') {
+    return suggestion || undefined
+  }
+  return relative(cwd, resolve(context.projectRoot, suggestion))
+}
+
+/** Returns an error message, or null when the file exists and the helper accepts it. */
+function checkPathAnswer(
+  option: ExtensionOption,
+  path: string,
+  context: HelperContext | undefined,
+): string | null {
+  if (!existsSync(path)) {
+    return `${path}: file not found`
+  }
+  if (!statSync(path).isFile()) {
+    return `${path}: is a folder, not a file`
+  }
+  if (!option.helper || !context) {
+    return null
+  }
+  const result = runHelper(option.helper, ['check', path], context)
+  if (result.status === 0) {
+    return null
+  }
+  const reason = String(result.stderr).trim().split('\n')[0]
+  if (result.status === 1 && reason) {
+    return reason
+  }
+  const cause = result.error ? describeError(result.error) : `exit code ${result.status ?? 'none'}`
+  return `${path}: ${option.helper} could not check it (${cause})`
+}
+
+/**
+ * The value of one option: the flag, else an answer, else the default. A path
+ * resolves to an absolute path that must exist and pass the option's helper.
+ * A refused answer is asked again in a terminal; a refused flag or default throws.
+ */
+async function askOptionValue(request: {
+  option: ExtensionOption
+  choices: string[] | undefined
+  flagValue: string | undefined
+  initial: OptionValue | undefined
+  interactive: boolean
+  cwd: string
+  helperContext: HelperContext | undefined
+}): Promise<OptionValue> {
+  const { option, choices, flagValue, initial, interactive, cwd, helperContext } = request
+  for (;;) {
+    const answer = await resolveOptionValue({ option, choices, flagValue, initial, interactive })
+    const { value, problem } = checkOptionAnswer(option, answer, choices, cwd, helperContext)
+    if (!problem) {
+      return value
+    }
+    if (!interactive || flagValue !== undefined) {
+      throw new Error(problem)
+    }
+    console.error(`  ${colorize('✗', 'red')} ${problem}`)
+  }
+}
+
+/** The answer, resolved for a path option, and why it is refused, if it is. */
+function checkOptionAnswer(
+  option: ExtensionOption,
+  answer: OptionValue,
+  choices: string[] | undefined,
+  cwd: string,
+  helperContext: HelperContext | undefined,
+): { value: OptionValue; problem: string | null } {
+  if (option.required || answer.length > 0) {
+    const problem = validateOptionValue(option, answer, choices)
+    if (problem) {
+      return { value: answer, problem }
+    }
+  }
+  if (option.type !== 'path' || typeof answer !== 'string' || answer === '') {
+    return { value: answer, problem: null }
+  }
+  const path = resolvePathAnswer(answer, cwd)
+  return { value: path, problem: checkPathAnswer(option, path, helperContext) }
+}
+
 /**
  * Option values from flags, then a prompt when a terminal is available, then
- * the default. Throws on a missing required option or an invalid value.
+ * the default. Throws on a missing required option or an invalid value. An
+ * interactive answer that is refused is asked again.
  */
 export async function resolveVariables(options: {
   manifest: ExtensionManifest
   projectRoot: string
   flags: Map<string, string>
   interactive: boolean
+  /** Needed to run option helpers. */
+  extensionRoot?: string
+  /** Where relative paths start; the current folder by default. */
+  cwd?: string
+  /** Time limit of one helper call; HELPER_TIMEOUT_MS by default. */
+  helperTimeoutMs?: number
 }): Promise<TemplateVariables> {
-  const { manifest, projectRoot, flags, interactive } = options
+  const { manifest, projectRoot, flags, interactive, extensionRoot } = options
+  const cwd = options.cwd ?? process.cwd()
   const variables: TemplateVariables = getBuiltinVariables(projectRoot, undefined)
-  for (const option of manifest.options) {
-    const choices = getOptionChoices(option, projectRoot)
-    const value = await resolveOptionValue({
-      option,
-      choices,
-      flagValue: flags.get(getOptionFlag(option.name)),
-      initial: renderDefault(option, variables),
-      interactive,
-    })
-    if (option.required || value.length > 0) {
-      const problem = validateOptionValue(option, value, choices)
-      if (problem) {
-        throw new Error(problem)
+  const helperContext = extensionRoot
+    ? {
+        extensionRoot,
+        projectRoot,
+        variables,
+        timeoutMs: options.helperTimeoutMs ?? HELPER_TIMEOUT_MS,
       }
+    : undefined
+  for (const option of manifest.options) {
+    const flagValue = flags.get(getOptionFlag(option.name))
+    let initial = renderDefault(option, variables)
+    if (option.helper && helperContext && flagValue === undefined) {
+      initial = suggestAnswer(option, option.helper, helperContext, cwd) ?? initial
     }
+    const value = await askOptionValue({
+      option,
+      choices: getOptionChoices(option, projectRoot),
+      flagValue,
+      initial,
+      interactive,
+      cwd,
+      helperContext,
+    })
     variables[option.name] = value
     if (option.name === 'app' && typeof value === 'string') {
       Object.assign(variables, getBuiltinVariables(projectRoot, value))
@@ -544,6 +704,7 @@ async function prepareInstall(options: {
     projectRoot: project.root,
     flags: parsed.values,
     interactive,
+    extensionRoot: source.root,
   })
   const context: EngineContext = {
     projectRoot: project.root,
@@ -564,11 +725,26 @@ async function prepareInstall(options: {
   return context
 }
 
-async function confirmPlan(context: EngineContext, interactive: boolean): Promise<boolean> {
+function printPlannedChanges({ added, modified, commands }: PlannedChanges): void {
   console.log(`\n${colorize('Planned changes:', 'cyan')}`)
-  for (const label of listSteps(context)) {
-    console.log(`  ${colorize('•', 'dim')} ${label}`)
+  const groups: [string, string[]][] = [
+    ['Files to add', added],
+    ['Files to modify', modified],
+    ['Commands to run', commands],
+  ]
+  for (const [title, items] of groups) {
+    if (items.length === 0) {
+      continue
+    }
+    console.log(`  ${title} (${items.length}):`)
+    for (const item of items) {
+      console.log(`    ${colorize('•', 'dim')} ${item}`)
+    }
   }
+}
+
+async function confirmPlan(context: EngineContext, interactive: boolean): Promise<boolean> {
+  printPlannedChanges(planChanges(context))
   if (!interactive) {
     return true
   }
@@ -615,28 +791,113 @@ function formatChangedFiles(projectRoot: string, files: string[]): void {
   }
 }
 
-function printSummary(project: Project, source: ExtensionSource, context: EngineContext): void {
-  const { manifest } = source
-  console.log('')
-  ok(`${manifest.name} ${source.version} installed`)
+export type CommitResult =
+  | { committed: true; message: string }
+  | { committed: false; message: string; output: string }
+
+/**
+ * Commits everything the installation changed, with the project's own git
+ * identity and hooks. The tree was clean before (clean-tree precondition), so
+ * the commit holds the installation only.
+ */
+export function commitInstallation(projectRoot: string, message: string): CommitResult {
+  runGit(['add', '-A'], projectRoot)
+  const result = spawnProcessSync('git', ['commit', '--quiet', '-m', message], {
+    cwd: projectRoot,
+    env: isolatedGitEnv(),
+    encoding: 'utf-8',
+  })
+  return result.status === 0
+    ? { committed: true, message }
+    : { committed: false, message, output: `${result.stdout ?? ''}${result.stderr ?? ''}`.trim() }
+}
+
+interface InstallCommitRequest {
+  manifest: ExtensionManifest
+  projectRoot: string
+  variables: TemplateVariables
+}
+
+/**
+ * Commits the install when the manifest gives a `commitMessage` and requires a
+ * clean tree: only then does the commit hold the install alone.
+ */
+export function commitInstallIfAsked({
+  manifest,
+  projectRoot,
+  variables,
+}: InstallCommitRequest): CommitResult | undefined {
+  const hasCleanTreePrecondition = manifest.preconditions.some(
+    (precondition) => precondition.type === 'clean-tree',
+  )
+  if (!manifest.commitMessage || !hasCleanTreePrecondition) {
+    return undefined
+  }
+  return commitInstallation(projectRoot, renderTemplate(manifest.commitMessage, variables))
+}
+
+/** The commit of the install, or the files it changed when there is no commit. */
+export function printInstallChanges(projectRoot: string, commit: CommitResult | undefined): void {
   try {
-    const changes = runGit(['status', '--short'], project.root, { trimStart: false })
+    if (commit?.committed) {
+      const files = runGit(['show', '--name-status', '--format=', 'HEAD'], projectRoot)
+      console.log(`\n${colorize('Committed:', 'cyan')} ${commit.message}\n${files}`)
+      return
+    }
+    if (commit) {
+      console.log(
+        `\n  ${colorize('⚠', 'yellow')} git refused the commit${commit.output ? `:\n${commit.output}` : ''}\n  Commit by hand: git add -A && git commit -m "${commit.message}"`,
+      )
+    }
+    const changes = runGit(['status', '--short'], projectRoot, { trimStart: false })
     if (changes) {
       console.log(`\n${colorize('Changed files:', 'cyan')}\n${changes}`)
     }
   } catch {
     // Not a git repository: nothing more to show.
   }
-  if (manifest.nextSteps?.length) {
+}
+
+/** The next steps whose condition holds in the installed project, numbered. */
+export function listNextSteps(context: EngineContext): string[] {
+  return (context.manifest.nextSteps ?? [])
+    .filter((step) => isConditionMet(step.when, context))
+    .map((step, index) => `${index + 1}. ${renderTemplate(step.text, context.variables)}`)
+}
+
+/** The documentation copied into the project, else the one online. */
+export function describeDocs(context: EngineContext): string | undefined {
+  const { docs, docsUrl } = context.manifest
+  const local = docs === undefined ? undefined : renderTemplate(docs, context.variables)
+  if (local && existsSync(join(context.projectRoot, local))) {
+    return local
+  }
+  return docsUrl ?? local
+}
+
+interface InstallSummary {
+  project: Project
+  source: ExtensionSource
+  context: EngineContext
+  /** The commit of the install, when the manifest asks for one. */
+  commit?: CommitResult
+}
+
+function printSummary({ project, source, context, commit }: InstallSummary): void {
+  const { manifest } = source
+  console.log('')
+  ok(`${manifest.name} ${source.version} installed`)
+  printInstallChanges(project.root, commit)
+  const nextSteps = listNextSteps(context)
+  if (nextSteps.length > 0) {
     console.log(`\n${colorize('Next steps:', 'cyan')}`)
-    for (const line of manifest.nextSteps) {
-      console.log(`  ${renderTemplate(line, context.variables)}`)
+    for (const line of nextSteps) {
+      console.log(`  ${line}`)
     }
   }
-  if (manifest.docs) {
-    console.log(
-      `\n${colorize('Documentation:', 'cyan')} ${renderTemplate(manifest.docs, context.variables)}`,
-    )
+  const docs = describeDocs(context)
+  if (docs) {
+    console.log(`\n${colorize('Documentation:', 'cyan')} ${docs}`)
   }
 }
 
@@ -668,15 +929,21 @@ async function cmdAdd(parsed: ParsedArgs): Promise<void> {
       return
     }
     console.log('')
+    const hasCleanTreePrecondition = source.manifest.preconditions.some(
+      (precondition) => precondition.type === 'clean-tree',
+    )
     const { changedFiles } = applySteps(context, {
       log: (label) => info(label),
-      gitRollback: source.manifest.preconditions.some(
-        (precondition) => precondition.type === 'clean-tree',
-      ),
+      gitRollback: hasCleanTreePrecondition,
       record: () => recordInstallation(project, source, context),
     })
     formatChangedFiles(project.root, [...changedFiles, STATE_FILE])
-    printSummary(project, source, context)
+    const commit = commitInstallIfAsked({
+      manifest: source.manifest,
+      projectRoot: project.root,
+      variables: context.variables,
+    })
+    printSummary({ project, source, context, commit })
   } finally {
     source.cleanup()
   }

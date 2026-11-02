@@ -36,10 +36,107 @@ describe('parseExtensionManifest', () => {
     )
   })
 
+  it('reads plain and conditional next steps', () => {
+    const manifest = parseExtensionManifest(
+      {
+        ...sampleManifest(),
+        nextSteps: ['Commit', { text: 'Wire the API', when: { pathMissing: 'api/auth.ts' } }],
+      },
+      'x',
+    )
+
+    expect(manifest.nextSteps).toEqual([
+      { text: 'Commit' },
+      { text: 'Wire the API', when: { pathMissing: 'api/auth.ts' } },
+    ])
+  })
+
+  it('refuses a next step without text or with an unknown condition', () => {
+    expect(() =>
+      parseExtensionManifest({ ...sampleManifest(), nextSteps: [{ when: {} }] }, 'x'),
+    ).toThrow('nextSteps[0] must be a string, or an object with a text and a when')
+    expect(() =>
+      parseExtensionManifest(
+        { ...sampleManifest(), nextSteps: [{ text: 'a', when: { nope: 'b' } }] },
+        'x',
+      ),
+    ).toThrow("when: unknown option 'nope'")
+    expect(() =>
+      parseExtensionManifest(
+        { ...sampleManifest(), nextSteps: [{ text: 'a', when: { pathMissing: '../a' } }] },
+        'x',
+      ),
+    ).toThrow("nextSteps[0].when.pathMissing: path must be relative and must not contain '..'")
+  })
+
+  it('reads a path option and its helper', () => {
+    const manifest = parseExtensionManifest(
+      {
+        ...sampleManifest(),
+        options: [
+          ...(sampleManifest().options as unknown[]),
+          { name: 'icon', type: 'path', message: 'Icon', helper: 'cli/file-helper.mjs' },
+        ],
+      },
+      'x',
+    )
+
+    expect(manifest.options.at(-1)).toEqual({
+      name: 'icon',
+      type: 'path',
+      message: 'Icon',
+      helper: 'cli/file-helper.mjs',
+    })
+  })
+
+  it('refuses a helper outside the extension and an unknown option type', () => {
+    const withOption = (option: Record<string, unknown>): Record<string, unknown> => ({
+      ...sampleManifest(),
+      options: [...(sampleManifest().options as unknown[]), option],
+    })
+
+    expect(() =>
+      parseExtensionManifest(
+        withOption({ name: 'icon', type: 'path', message: 'Icon', helper: '../helper.mjs' }),
+        'x',
+      ),
+    ).toThrow("options[3].helper: path must be relative and must not contain '..'")
+    expect(() =>
+      parseExtensionManifest(withOption({ name: 'icon', type: 'file', message: 'Icon' }), 'x'),
+    ).toThrow('options[3].type must be choice, string, list or path')
+  })
+
   it('refuses an unknown step type', () => {
     expect(() => parseExtensionManifest(withSteps([{ type: 'delete', file: 'a' }]), 'x')).toThrow(
       "steps[0]: unknown step type 'delete'",
     )
+  })
+
+  it('refuses an unknown property at every level, so a typo cannot change the install', () => {
+    const manifest = sampleManifest()
+    const [option] = manifest.options as Record<string, unknown>[]
+    const run = () =>
+      parseExtensionManifest(
+        {
+          ...manifest,
+          $schema: './extension.schema.json',
+          comment: 'x',
+          compatibility: { boilerplate: { min: '1.0.0', max: '2.0.0' } },
+          options: [{ ...option, hint: 'x' }],
+          preconditions: [{ type: 'clean-tree', strict: true }],
+          nextSteps: [{ text: 'a', if: 'b' }],
+          steps: [{ type: 'copy', from: 'templates/app', to: 'out', ifExist: 'skip' }],
+        },
+        'x',
+      )
+
+    expect(run).toThrow("manifest: unknown property 'comment'")
+    expect(run).toThrow("compatibility.boilerplate: unknown property 'max'")
+    expect(run).toThrow("options[0]: unknown property 'hint'")
+    expect(run).toThrow("preconditions[0]: unknown property 'strict'")
+    expect(run).toThrow("nextSteps[0]: unknown property 'if'")
+    expect(run).toThrow("steps[0]: unknown property 'ifExist'")
+    expect(run).not.toThrow('$schema')
   })
 
   it('refuses an unknown template variable', () => {
@@ -49,6 +146,32 @@ describe('parseExtensionManifest', () => {
         'x',
       ),
     ).toThrow('unknown template variable {{nope}}')
+  })
+
+  it('accepts the built-in variables, the absolute project root included', () => {
+    const inputManifest = withSteps([
+      {
+        type: 'gitignore',
+        file: '.gitignore',
+        lines: ['{{projectName}} {{projectRoot}} {{packageScope}} {{app}} {{appPackage}}'],
+      },
+    ])
+
+    expect(() => parseExtensionManifest(inputManifest, 'x')).not.toThrow()
+  })
+
+  it('reads the commit message, whose variables must be known', () => {
+    const inputManifest = { ...sampleManifest(), commitMessage: 'feat({{app}}): add the sample' }
+
+    expect(parseExtensionManifest(inputManifest, 'x').commitMessage).toBe(
+      'feat({{app}}): add the sample',
+    )
+    expect(() =>
+      parseExtensionManifest({ ...inputManifest, commitMessage: 'feat: {{nope}}' }, 'x'),
+    ).toThrow('unknown template variable {{nope}}')
+    expect(() => parseExtensionManifest({ ...inputManifest, commitMessage: 3 }, 'x')).toThrow(
+      'commitMessage',
+    )
   })
 
   it('refuses paths that leave the project or the extension', () => {

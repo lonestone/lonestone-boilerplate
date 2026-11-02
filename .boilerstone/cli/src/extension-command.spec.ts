@@ -1,8 +1,12 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-const prompts = vi.hoisted(() => ({ select: vi.fn(async () => 'web-ssr') }))
+const prompts = vi.hoisted(() => ({
+  select: vi.fn(async () => 'web-ssr'),
+  input: vi.fn(async (): Promise<string> => ''),
+}))
 
 vi.mock('./prompts', () => ({
   // Like Enquirer, turns the choices it gets into objects.
@@ -18,15 +22,23 @@ vi.mock('./prompts', () => ({
     }
   }),
   MultiSelect: vi.fn(),
-  Input: vi.fn(),
+  Input: vi.fn(function Input(options: unknown) {
+    return { run: () => prompts.input(options) }
+  }),
   Confirm: vi.fn(),
 }))
 
 import {
   checkPreconditions,
+  commitInstallation,
+  commitInstallIfAsked,
+  describeDocs,
+  listNextSteps,
   listReleaseTags,
   loadExtensionSource,
   parseExtensionArgs,
+  printInstallChanges,
+  resolvePathAnswer,
   resolveVariables,
 } from './extension-command'
 import { parseExtensionManifest, type ExtensionManifest } from './extension-manifest'
@@ -42,13 +54,19 @@ import { trackingState } from './tracking-state'
 afterEach(() => {
   removeTemporaryPaths()
   prompts.select.mockClear()
+  prompts.input.mockReset()
+  vi.restoreAllMocks()
 })
 
+function sampleRaw(): Record<string, unknown> {
+  return JSON.parse(readFileSync(join(SAMPLE_EXTENSION, 'extension.json'), 'utf-8')) as Record<
+    string,
+    unknown
+  >
+}
+
 function sampleManifest(): ExtensionManifest {
-  return parseExtensionManifest(
-    JSON.parse(readFileSync(join(SAMPLE_EXTENSION, 'extension.json'), 'utf-8')),
-    'sample',
-  )
+  return parseExtensionManifest(sampleRaw(), 'sample')
 }
 
 function flags(values: Record<string, string>): Map<string, string> {
@@ -190,6 +208,7 @@ describe('resolveVariables', () => {
 
     expect(variables).toEqual({
       projectName: 'acme',
+      projectRoot: root,
       packageScope: '@acme',
       app: 'web-ssr',
       appPackage: '@acme/web-ssr',
@@ -361,5 +380,325 @@ describe('checkPreconditions', () => {
     const root = createSampleProject({ apps: [] })
 
     expect(check(root)).toContain('This extension needs web-spa or web-ssr')
+  })
+})
+
+describe('listNextSteps', () => {
+  function nextStepsContext(root: string, raw: Record<string, unknown>) {
+    const manifest = parseExtensionManifest({ ...sampleRaw(), ...raw }, 'sample')
+    return {
+      projectRoot: root,
+      extensionRoot: SAMPLE_EXTENSION,
+      manifest,
+      variables: { projectName: 'acme', app: 'web-spa', appPackage: '@acme/web-spa' },
+    }
+  }
+
+  it('keeps the steps whose condition holds and numbers them without gaps', () => {
+    const root = createSampleProject()
+
+    const steps = listNextSteps(
+      nextStepsContext(root, {
+        nextSteps: [
+          'Commit',
+          { text: 'Wire {{app}} by hand', when: { pathMissing: 'apps/{{app}}/auth.ts' } },
+          { text: 'Never shown', when: { pathMissing: 'apps/{{app}}/main.txt' } },
+          'Run {{appPackage}}',
+        ],
+      }),
+    )
+
+    expect(steps).toEqual(['1. Commit', '2. Wire web-spa by hand', '3. Run @acme/web-spa'])
+  })
+
+  it('points at the online docs when the docs page was not copied into the project', () => {
+    const root = createSampleProject()
+    const raw = { docs: 'apps/docs/{{app}}.mdx', docsUrl: 'https://example.com/docs' }
+
+    expect(describeDocs(nextStepsContext(root, raw))).toBe('https://example.com/docs')
+    mkdirSync(join(root, 'apps/docs'), { recursive: true })
+    writeFileSync(join(root, 'apps/docs/web-spa.mdx'), '# Docs\n')
+    expect(describeDocs(nextStepsContext(root, raw))).toBe('apps/docs/web-spa.mdx')
+  })
+})
+
+describe('resolveVariables with a path option', () => {
+  function pathManifest(option: Record<string, unknown> = {}): ExtensionManifest {
+    return parseExtensionManifest(
+      {
+        ...sampleRaw(),
+        options: [
+          ...(sampleRaw().options as unknown[]),
+          {
+            name: 'icon',
+            type: 'path',
+            message: 'Icon file',
+            helper: 'cli/file-helper.mjs',
+            ...option,
+          },
+        ],
+      },
+      'sample',
+    )
+  }
+
+  function resolveIcon(root: string, icon: Record<string, string>, interactive = false) {
+    return resolveVariables({
+      helperTimeoutMs: 2000,
+      manifest: pathManifest(),
+      projectRoot: root,
+      extensionRoot: SAMPLE_EXTENSION,
+      flags: flags({
+        '--app': 'web-spa',
+        '--app-id': 'com.acme.app',
+        '--platforms': 'android',
+        ...icon,
+      }),
+      interactive,
+      cwd: root,
+    })
+  }
+
+  it('resolves a relative or ~/ answer to an absolute path', async () => {
+    const root = createSampleProject()
+    writeFileSync(join(root, 'good.txt'), 'good\n')
+
+    const variables = await resolveIcon(root, { '--icon': 'good.txt' })
+
+    expect(variables.icon).toBe(join(root, 'good.txt'))
+    expect(resolvePathAnswer('~/icon.png', root)).toBe(join(homedir(), 'icon.png'))
+  })
+
+  it('refuses a missing file, a folder and an answer the helper refuses', async () => {
+    const root = createSampleProject()
+    writeFileSync(join(root, 'bad.txt'), 'bad\n')
+    writeFileSync(join(root, 'crash.txt'), 'crash\n')
+
+    await expect(resolveIcon(root, { '--icon': 'nope.txt' })).rejects.toThrow(
+      `${join(root, 'nope.txt')}: file not found`,
+    )
+    await expect(resolveIcon(root, { '--icon': 'apps' })).rejects.toThrow(
+      `${join(root, 'apps')}: is a folder, not a file`,
+    )
+    await expect(resolveIcon(root, { '--icon': 'bad.txt' })).rejects.toThrow(
+      `${join(root, 'bad.txt')}: not a good file`,
+    )
+    await expect(resolveIcon(root, { '--icon': 'crash.txt' })).rejects.toThrow(
+      'cli/file-helper.mjs could not check',
+    )
+  })
+
+  it('takes a path with spaces as typed', async () => {
+    const root = createSampleProject()
+    mkdirSync(join(root, 'my design'))
+    writeFileSync(join(root, 'my design/app icon.txt'), 'good\n')
+
+    const variables = await resolveIcon(root, { '--icon': 'my design/app icon.txt' })
+
+    expect(variables.icon).toBe(join(root, 'my design/app icon.txt'))
+  })
+
+  it('refuses an answer the helper takes too long to check, naming the helper', async () => {
+    const root = createSampleProject()
+    writeFileSync(join(root, 'hang.txt'), 'hang\n')
+
+    await expect(resolveIcon(root, { '--icon': 'hang.txt' })).rejects.toThrow(
+      `${join(root, 'hang.txt')}: cli/file-helper.mjs could not check it`,
+    )
+  })
+
+  it('asks without a default when the helper cannot suggest one', async () => {
+    const root = createSampleProject()
+    mkdirSync(join(root, 'assets'))
+    writeFileSync(join(root, 'assets/icon.txt'), 'good\n')
+    writeFileSync(join(root, 'assets/crash-suggest'), '')
+    prompts.input.mockResolvedValueOnce('')
+
+    const variables = await resolveIcon(root, {}, true)
+
+    expect(prompts.input).toHaveBeenCalledWith(
+      expect.not.objectContaining({ initial: expect.anything() }),
+    )
+    expect(variables.icon).toBe('')
+  })
+
+  it('leaves an empty answer empty, without calling the helper', async () => {
+    const root = createSampleProject()
+
+    const variables = await resolveIcon(root, { '--icon': '' })
+
+    expect(variables.icon).toBe('')
+  })
+
+  it('pre-fills the question with the suggestion and asks again after a refusal', async () => {
+    const root = createSampleProject()
+    mkdirSync(join(root, 'assets'))
+    writeFileSync(join(root, 'assets/icon.txt'), 'good\n')
+    writeFileSync(join(root, 'bad.txt'), 'bad\n')
+    prompts.input.mockResolvedValueOnce('bad.txt').mockResolvedValueOnce('assets/icon.txt')
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    const variables = await resolveIcon(root, {}, true)
+
+    expect(prompts.input).toHaveBeenCalledTimes(2)
+    expect(prompts.input).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ initial: join('assets', 'icon.txt') }),
+    )
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('not a good file'))
+    expect(variables.icon).toBe(join(root, 'assets/icon.txt'))
+  })
+
+  it('takes the suggestion without a terminal', async () => {
+    const root = createSampleProject()
+    mkdirSync(join(root, 'assets'))
+    writeFileSync(join(root, 'assets/icon.txt'), 'good\n')
+
+    const variables = await resolveIcon(root, {})
+
+    expect(variables.icon).toBe(join(root, 'assets/icon.txt'))
+  })
+})
+
+describe('resolveVariables with a helper on a text option', () => {
+  it('takes the suggestion as it is, not as a path, from any folder', async () => {
+    const root = createSampleProject()
+    mkdirSync(join(root, 'assets'))
+    writeFileSync(join(root, 'assets/name.txt'), 'Step up\n')
+    const inputManifest = parseExtensionManifest(
+      {
+        ...sampleRaw(),
+        options: [
+          ...(sampleRaw().options as unknown[]),
+          { name: 'label', type: 'string', message: 'Label', helper: 'cli/name-helper.mjs' },
+        ],
+      },
+      'sample',
+    )
+
+    const actualVariables = await resolveVariables({
+      helperTimeoutMs: 2000,
+      manifest: inputManifest,
+      projectRoot: root,
+      extensionRoot: SAMPLE_EXTENSION,
+      flags: flags({ '--app': 'web-spa', '--app-id': 'com.acme.app', '--platforms': 'android' }),
+      interactive: false,
+      cwd: join(root, 'assets'),
+    })
+
+    expect(actualVariables.label).toBe('Step up')
+  })
+})
+
+describe('commitInstallation', () => {
+  /** A committed sample project with uncommitted changes, and a git identity as on a developer machine. */
+  function createChangedProject(): string {
+    const inputRoot = createSampleProject()
+    writeFileSync(join(inputRoot, 'apps/web-spa/native.txt'), 'native\n')
+    writeFileSync(join(inputRoot, '.env.example'), 'TRUSTED_ORIGINS=capacitor://localhost\n')
+    vi.stubEnv('GIT_AUTHOR_NAME', 'Dev')
+    vi.stubEnv('GIT_AUTHOR_EMAIL', 'dev@example.com')
+    vi.stubEnv('GIT_COMMITTER_NAME', 'Dev')
+    vi.stubEnv('GIT_COMMITTER_EMAIL', 'dev@example.com')
+    vi.stubEnv('GIT_CONFIG_COUNT', '1')
+    vi.stubEnv('GIT_CONFIG_KEY_0', 'commit.gpgsign')
+    vi.stubEnv('GIT_CONFIG_VALUE_0', 'false')
+    return inputRoot
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('commits every change of the installation, new files included', () => {
+    const inputRoot = createChangedProject()
+
+    const actualResult = commitInstallation(inputRoot, 'feat(frontend): add native apps')
+
+    expect(actualResult).toEqual({ committed: true, message: 'feat(frontend): add native apps' })
+    expect(git(inputRoot, ['log', '-1', '--format=%s']).trim()).toBe(
+      'feat(frontend): add native apps',
+    )
+    expect(git(inputRoot, ['status', '--porcelain'])).toBe('')
+  })
+
+  it('commits only when the manifest gives a message and requires a clean tree', () => {
+    const inputRoot = createChangedProject()
+    const inputVariables = { projectName: 'acme', projectRoot: inputRoot, app: 'web-spa' }
+    const inputManifestWithoutMessage = sampleManifest()
+    const inputManifestWithoutCleanTree: ExtensionManifest = {
+      ...inputManifestWithoutMessage,
+      commitMessage: 'feat({{app}}): add the sample',
+      preconditions: inputManifestWithoutMessage.preconditions.filter(
+        (precondition) => precondition.type !== 'clean-tree',
+      ),
+    }
+
+    expect(
+      commitInstallIfAsked({
+        manifest: inputManifestWithoutMessage,
+        projectRoot: inputRoot,
+        variables: inputVariables,
+      }),
+    ).toBeUndefined()
+    expect(
+      commitInstallIfAsked({
+        manifest: inputManifestWithoutCleanTree,
+        projectRoot: inputRoot,
+        variables: inputVariables,
+      }),
+    ).toBeUndefined()
+    expect(git(inputRoot, ['log', '-1', '--format=%s']).trim()).toBe('init')
+
+    const actualResult = commitInstallIfAsked({
+      manifest: { ...inputManifestWithoutMessage, commitMessage: 'feat({{app}}): add the sample' },
+      projectRoot: inputRoot,
+      variables: inputVariables,
+    })
+
+    expect(actualResult).toEqual({ committed: true, message: 'feat(web-spa): add the sample' })
+  })
+
+  it('shows the commit, or how to commit by hand when git refused it', () => {
+    const inputRoot = createChangedProject()
+    const mockLog = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+
+    printInstallChanges(inputRoot, {
+      committed: false,
+      message: 'feat(frontend): add native apps',
+      output: 'subject may not be empty',
+    })
+    const actualRefused = mockLog.mock.calls.flat().join('\n')
+    commitInstallation(inputRoot, 'feat(frontend): add native apps')
+    mockLog.mockClear()
+    printInstallChanges(inputRoot, { committed: true, message: 'feat(frontend): add native apps' })
+    const actualCommitted = mockLog.mock.calls.flat().join('\n')
+
+    expect(actualRefused).toContain('git refused the commit')
+    expect(actualRefused).toContain('subject may not be empty')
+    expect(actualRefused).toContain(
+      'Commit by hand: git add -A && git commit -m "feat(frontend): add native apps"',
+    )
+    expect(actualRefused).toContain('apps/web-spa/native.txt')
+    expect(actualCommitted).toContain('Committed:')
+    expect(actualCommitted).toContain('feat(frontend): add native apps')
+    expect(actualCommitted).toContain('apps/web-spa/native.txt')
+  })
+
+  it('leaves the changes staged and returns the output when a hook refuses the commit', () => {
+    const inputRoot = createChangedProject()
+    const mockHook = join(inputRoot, '.git/hooks/commit-msg')
+    writeFileSync(mockHook, '#!/bin/sh\necho "subject must not be sentence-case" >&2\nexit 1\n')
+    chmodSync(mockHook, 0o755)
+
+    const actualResult = commitInstallation(inputRoot, 'Add native apps')
+
+    expect(actualResult).toEqual({
+      committed: false,
+      message: 'Add native apps',
+      output: expect.stringContaining('subject must not be sentence-case'),
+    })
+    expect(git(inputRoot, ['log', '-1', '--format=%s']).trim()).toBe('init')
+    expect(git(inputRoot, ['status', '--porcelain'])).toContain('apps/web-spa/native.txt')
   })
 })

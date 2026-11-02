@@ -14,14 +14,21 @@ export const EXTENSION_MANIFEST_FILE = 'extension.json'
 export const WEB_APPS_CHOICES = '$webApps'
 
 /** Variables every template can use, on top of the option values. */
-export const BUILTIN_VARIABLES = ['projectName', 'packageScope', 'app', 'appPackage'] as const
+export const BUILTIN_VARIABLES = [
+  'projectName',
+  'projectRoot',
+  'packageScope',
+  'app',
+  'appPackage',
+] as const
 
 export type OptionValue = string | string[]
 export type TemplateVariables = Record<string, OptionValue>
 
 export interface ExtensionOption {
   name: string
-  type: 'choice' | 'string' | 'list'
+  /** `path`: a file path, resolved to an absolute path before the steps see it. */
+  type: 'choice' | 'string' | 'list' | 'path'
   message: string
   choices?: string[] | typeof WEB_APPS_CHOICES
   default?: OptionValue
@@ -29,6 +36,11 @@ export interface ExtensionOption {
   patternHint?: string
   forbiddenSegments?: string[]
   required?: boolean
+  /**
+   * Script of the extension, relative to its root, that suggests the default
+   * answer (`suggest`) and checks an answer (`check <value>`).
+   */
+  helper?: string
 }
 
 export type Precondition =
@@ -39,9 +51,16 @@ export type Precondition =
 
 /**
  * Conditions of a step, all of which must hold. A key is an option name
- * (a list option matches when it contains the value), or `pathExists`.
+ * (a list option matches when it contains the value), `pathExists` or
+ * `pathMissing`.
  */
 export type StepCondition = Record<string, string>
+
+/** A line of the next steps printed after the install, shown when `when` holds. */
+export interface NextStep {
+  text: string
+  when?: StepCondition
+}
 
 interface StepBase {
   when?: StepCondition
@@ -126,7 +145,12 @@ export interface ExtensionManifest {
   docs?: string
   /** The documentation online, for when the install stops before copying `docs`. */
   docsUrl?: string
-  nextSteps?: string[]
+  nextSteps?: NextStep[]
+  /**
+   * Message of the commit the CLI makes once the extension is installed and
+   * recorded; without it, the changes are left for the developer to commit.
+   */
+  commitMessage?: string
 }
 
 const VERSION_PATTERN = /^\d+\.\d+\.\d+$/
@@ -141,6 +165,32 @@ function isStringArray(value: unknown): value is string[] {
 
 function isStringRecord(value: unknown): value is Record<string, string> {
   return isRecord(value) && Object.values(value).every((item) => typeof item === 'string')
+}
+
+const STEP_BASE_KEYS = ['type', 'when', 'phase']
+
+/** Keys each step type accepts, as in `extension.schema.json`. */
+const STEP_KEYS: Record<ExtensionStep['type'], string[]> = {
+  copy: ['from', 'fromProject', 'to', 'render', 'ifExists', 'requires'],
+  patch: ['file', 'find', 'action', 'text'],
+  'json-merge': ['file', 'merge'],
+  'env-list-append': ['files', 'optional', 'key', 'values'],
+  gitignore: ['file', 'lines'],
+  run: ['command', 'args', 'cwd', 'creates', 'allowFailure', 'failureHint'],
+}
+
+/** Reports the keys a manifest object does not know, so a typo cannot change the install silently. */
+function checkKnownKeys(
+  value: Record<string, unknown>,
+  known: readonly string[],
+  path: string,
+  issues: Issues,
+): void {
+  for (const key of Object.keys(value)) {
+    if (!known.includes(key)) {
+      issues.push(`${path}: unknown property '${key}'`)
+    }
+  }
 }
 
 export function isSafeRelativePath(path: string): boolean {
@@ -304,14 +354,33 @@ function parseOption(value: unknown, path: string, issues: Issues): ExtensionOpt
     issues.push(`${path} must be an object`)
     return { name: '', type: 'string', message: '' }
   }
+  checkKnownKeys(
+    value,
+    [
+      'name',
+      'type',
+      'message',
+      'choices',
+      'default',
+      'pattern',
+      'patternHint',
+      'forbiddenSegments',
+      'required',
+      'helper',
+    ],
+    path,
+    issues,
+  )
   const name = requireString(value, 'name', path, issues)
   if (name && !/^[a-z][A-Za-z0-9]*$/.test(name)) {
     issues.push(`${path}.name must be camelCase`)
   }
   const type = value.type
-  if (type !== 'choice' && type !== 'string' && type !== 'list') {
-    issues.push(`${path}.type must be choice, string or list`)
+  if (type !== 'choice' && type !== 'string' && type !== 'list' && type !== 'path') {
+    issues.push(`${path}.type must be choice, string, list or path`)
   }
+  const helper = readOptionalString(value, 'helper', path, issues)
+  checkPath(helper, `${path}.helper`, issues)
   const choices = checkOptionChoices(value, path, issues)
   const pattern = readOptionPattern(value, path, issues)
   const defaultValue = value.default
@@ -338,6 +407,7 @@ function parseOption(value: unknown, path: string, issues: Issues): ExtensionOpt
       ? { forbiddenSegments: value.forbiddenSegments }
       : {}),
     ...(value.required === true ? { required: true } : {}),
+    ...(helper !== undefined ? { helper } : {}),
   }
 }
 
@@ -349,8 +419,10 @@ function parsePrecondition(value: unknown, path: string, issues: Issues): Precon
   switch (value.type) {
     case 'clean-tree':
     case 'not-installed':
+      checkKnownKeys(value, ['type'], path, issues)
       return { type: value.type }
     case 'path-exists': {
+      checkKnownKeys(value, ['type', 'path', 'message'], path, issues)
       const target = requireString(value, 'path', path, issues)
       checkPath(target, `${path}.path`, issues)
       return {
@@ -360,6 +432,7 @@ function parsePrecondition(value: unknown, path: string, issues: Issues): Precon
       }
     }
     case 'any-of-paths': {
+      checkKnownKeys(value, ['type', 'paths', 'message'], path, issues)
       const paths = requireStringArray(value, 'paths', path, issues)
       paths.forEach((item, index) => checkPath(item, `${path}.paths[${index}]`, issues))
       return {
@@ -374,14 +447,35 @@ function parsePrecondition(value: unknown, path: string, issues: Issues): Precon
   }
 }
 
+function parseCondition(value: unknown, path: string, issues: Issues): StepCondition | undefined {
+  if (!isStringRecord(value)) {
+    issues.push(`${path}.when must map option names, pathExists or pathMissing to strings`)
+    return undefined
+  }
+  checkPath(value.pathExists, `${path}.when.pathExists`, issues)
+  checkPath(value.pathMissing, `${path}.when.pathMissing`, issues)
+  return value
+}
+
+function parseNextStep(value: unknown, path: string, issues: Issues): NextStep {
+  if (typeof value === 'string') {
+    return { text: value }
+  }
+  if (!isRecord(value) || typeof value.text !== 'string') {
+    issues.push(`${path} must be a string, or an object with a text and a when`)
+    return { text: '' }
+  }
+  checkKnownKeys(value, ['text', 'when'], path, issues)
+  const when = value.when === undefined ? undefined : parseCondition(value.when, path, issues)
+  return { text: value.text, ...(when ? { when } : {}) }
+}
+
 function parseStepBase(value: Record<string, unknown>, path: string, issues: Issues): StepBase {
   const base: StepBase = {}
   if (value.when !== undefined) {
-    if (!isStringRecord(value.when)) {
-      issues.push(`${path}.when must map option names or pathExists to strings`)
-    } else {
-      base.when = value.when
-      checkPath(base.when.pathExists, `${path}.when.pathExists`, issues)
+    const when = parseCondition(value.when, path, issues)
+    if (when) {
+      base.when = when
     }
   }
   if (value.phase !== undefined) {
@@ -581,6 +675,12 @@ function parseStep(value: unknown, path: string, issues: Issues): ExtensionStep 
     issues.push(`${path}: unknown step type '${String(value.type)}'`)
     return null
   }
+  checkKnownKeys(
+    value,
+    [...STEP_BASE_KEYS, ...STEP_KEYS[value.type as ExtensionStep['type']]],
+    path,
+    issues,
+  )
   return parser(value, path, issues, parseStepBase(value, path, issues))
 }
 
@@ -591,6 +691,8 @@ function parseCompatibility(value: unknown, issues: Issues): CompatibilityRange 
     issues.push('compatibility.boilerplate is required')
     return range
   }
+  checkKnownKeys(value as Record<string, unknown>, ['boilerplate'], 'compatibility', issues)
+  checkKnownKeys(boilerplate, ['min', 'below'], 'compatibility.boilerplate', issues)
   if (typeof boilerplate.min !== 'string' || !VERSION_PATTERN.test(boilerplate.min)) {
     issues.push('compatibility.boilerplate.min must be a version (X.Y.Z)')
   } else {
@@ -637,6 +739,7 @@ function checkTemplateVariables(
       manifest.steps,
       manifest.docs,
       manifest.nextSteps,
+      manifest.commitMessage,
     ],
     used,
   )
@@ -645,9 +748,9 @@ function checkTemplateVariables(
       issues.push(`unknown template variable {{${variable}}}`)
     }
   }
-  for (const step of manifest.steps) {
-    for (const key of Object.keys(step.when ?? {})) {
-      if (key !== 'pathExists' && !optionNames.includes(key)) {
+  for (const { when } of [...manifest.steps, ...(manifest.nextSteps ?? [])]) {
+    for (const key of Object.keys(when ?? {})) {
+      if (key !== 'pathExists' && key !== 'pathMissing' && !optionNames.includes(key)) {
         issues.push(`when: unknown option '${key}'`)
       }
     }
@@ -663,6 +766,25 @@ export function parseExtensionManifest(value: unknown, source: string): Extensio
     throw new Error(`Invalid extension manifest (${source}): expected a JSON object`)
   }
   const issues: Issues = []
+  checkKnownKeys(
+    value,
+    [
+      '$schema',
+      'schemaVersion',
+      'name',
+      'description',
+      'compatibility',
+      'options',
+      'preconditions',
+      'steps',
+      'docs',
+      'docsUrl',
+      'nextSteps',
+      'commitMessage',
+    ],
+    'manifest',
+    issues,
+  )
   if (value.schemaVersion !== 1) {
     issues.push('schemaVersion must be 1')
   }
@@ -675,10 +797,17 @@ export function parseExtensionManifest(value: unknown, source: string): Extensio
   }
   const docs = readOptionalString(value, 'docs', 'manifest', issues)
   const docsUrl = readOptionalString(value, 'docsUrl', 'manifest', issues)
-  const nextSteps =
-    value.nextSteps === undefined
-      ? undefined
-      : requireStringArray(value, 'nextSteps', 'manifest', issues)
+  const commitMessage = readOptionalString(value, 'commitMessage', 'manifest', issues)
+  let nextSteps: NextStep[] | undefined
+  if (value.nextSteps !== undefined) {
+    if (Array.isArray(value.nextSteps)) {
+      nextSteps = value.nextSteps.map((item, index) =>
+        parseNextStep(item, `nextSteps[${index}]`, issues),
+      )
+    } else {
+      issues.push('manifest.nextSteps must be an array')
+    }
+  }
   const manifest = {
     name,
     description: requireString(value, 'description', 'manifest', issues),
@@ -693,6 +822,7 @@ export function parseExtensionManifest(value: unknown, source: string): Extensio
     ...(docs !== undefined ? { docs } : {}),
     ...(docsUrl !== undefined ? { docsUrl } : {}),
     ...(nextSteps !== undefined ? { nextSteps } : {}),
+    ...(commitMessage !== undefined ? { commitMessage } : {}),
   }
   checkTemplateVariables(manifest, issues)
 

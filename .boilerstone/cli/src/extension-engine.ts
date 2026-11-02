@@ -23,6 +23,7 @@ import {
   type JsonMergeStep,
   type PatchStep,
   type RunStep,
+  type StepCondition,
   type TemplateVariables,
 } from './extension-manifest.js'
 import {
@@ -66,6 +67,8 @@ interface FileOverlay {
   exists: (path: string) => boolean
   read: (path: string) => string | null
   write: (path: string, content: string) => void
+  /** Paths written so far, with their final content. */
+  written: () => Map<string, string | null>
 }
 
 /** Writes to the project and remembers what to restore. */
@@ -96,6 +99,7 @@ function createFileOverlay(root: string): FileOverlay {
     write: (path, content) => {
       files.set(path, content)
     },
+    written: () => files,
   }
 }
 
@@ -136,15 +140,30 @@ export function describeStep(step: ExtensionStep, variables: TemplateVariables):
   }
 }
 
-function stepApplies(step: ExtensionStep, context: EngineContext, overlay?: FileOverlay): boolean {
-  return Object.entries(step.when ?? {}).every(([key, expected]) => {
+/** Whether every entry of `when` holds, files read from the overlay when there is one. */
+export function isConditionMet(
+  when: StepCondition | undefined,
+  context: EngineContext,
+  overlay?: FileOverlay,
+): boolean {
+  const exists = (expected: string): boolean => {
+    const path = renderPath(expected, context)
+    return overlay ? overlay.exists(path) : existsSync(join(context.projectRoot, path))
+  }
+  return Object.entries(when ?? {}).every(([key, expected]) => {
     if (key === 'pathExists') {
-      const path = renderPath(expected, context)
-      return overlay ? overlay.exists(path) : existsSync(join(context.projectRoot, path))
+      return exists(expected)
+    }
+    if (key === 'pathMissing') {
+      return !exists(expected)
     }
     const value = context.variables[key]
     return Array.isArray(value) ? value.includes(expected) : value === expected
   })
+}
+
+function stepApplies(step: ExtensionStep, context: EngineContext, overlay?: FileOverlay): boolean {
+  return isConditionMet(step.when, context, overlay)
 }
 
 /** The files a copy step writes, after `requires` filtering. */
@@ -479,23 +498,58 @@ function checkStep(
  * Runs every step on the overlay, so a `pathExists` condition sees the files
  * the previous steps create, as it will when the steps are applied.
  */
-function simulateSteps(context: EngineContext): { labels: string[]; issues: string[] } {
+function simulateSteps(context: EngineContext): {
+  labels: string[]
+  issues: string[]
+  overlay: FileOverlay
+  commands: string[]
+} {
   const overlay = createFileOverlay(context.projectRoot)
   const labels: string[] = []
   const issues: string[] = []
+  const commands: string[] = []
   for (const step of context.manifest.steps) {
     const label = describeStep(step, context.variables)
     const fail: Fail = (problem) => issues.push(`${label}: ${problem}`)
     try {
       if (stepApplies(step, context, overlay)) {
         labels.push(label)
+        if (step.type === 'run') {
+          commands.push([step.command, ...step.args.map((arg) => render(arg, context))].join(' '))
+        }
         checkStep(step, context, overlay, fail)
       }
     } catch (error) {
       fail(describeError(error))
     }
   }
-  return { labels, issues }
+  return { labels, issues, overlay, commands }
+}
+
+export interface PlannedChanges {
+  added: string[]
+  modified: string[]
+  commands: string[]
+}
+
+/**
+ * What the steps will do to this project: the files they add, the files they
+ * modify, and the commands they run, in order. Files that only the commands
+ * create are not listed.
+ */
+export function planChanges(context: EngineContext): PlannedChanges {
+  const { overlay, commands } = simulateSteps(context)
+  const added: string[] = []
+  const modified: string[] = []
+  for (const [path, content] of overlay.written()) {
+    const absolute = join(context.projectRoot, path)
+    if (!existsSync(absolute)) {
+      added.push(path)
+    } else if (content !== readFileSync(absolute, 'utf-8')) {
+      modified.push(path)
+    }
+  }
+  return { added: added.sort(), modified: modified.sort(), commands }
 }
 
 /** Labels of the steps that apply to this project, in order. */
@@ -685,7 +739,7 @@ export function applySteps(context: EngineContext, options: ApplyOptions): Apply
       const restore =
         problems.length > 0
           ? `\n  The project could not be fully restored: ${problems.join('; ')}`
-          : ''
+          : '\n  Every change was rolled back.'
       throw new StepFailedError(`${failure}: ${describeError(error)}${restore}`, { cause: error })
     }
   }
