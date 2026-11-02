@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { authClient } from '@/lib/auth-client'
@@ -30,9 +30,15 @@ export default function AuthVerifyEmailPage() {
     },
   })
 
+  // React's StrictMode runs this effect twice on mount. Verifying the same
+  // token twice is harmless by default, but with Better Auth's
+  // `autoSignInAfterVerification` each call opens its own session.
+  const verifiedTokenRef = useRef<string | null>(null)
+
   useEffect(() => {
     const token = searchParams.get('token')
-    if (token) {
+    if (token && verifiedTokenRef.current !== token) {
+      verifiedTokenRef.current = token
       verifyEmailMutation(token)
     }
     // oxlint-disable-next-line react-hooks/exhaustive-deps
