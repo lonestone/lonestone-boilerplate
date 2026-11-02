@@ -69,7 +69,7 @@ Meanwhile, staging has been redeployed on every merge. Production hasn't moved �
 
 The client validated the features on staging; Pierrick decides to ship. He opens the Release PR — the version bump and the changelog are already there. His remaining work is the human part: he writes the release note (`releases/v1.3.0.mdx` in the docs app) — a few sentences on why this release exists and what it changes for users. A CI check can make this note mandatory; the boilerplate repository enforces it. He merges.
 
-Release-please tags `v1.3.0`, creates the GitHub Release (its body mirrored from the MDX), and the tag triggers the Docker build: images `1.3.0`, `1.3`, `latest` land in GHCR. Production still hasn't moved. Pierrick runs the **Promote** workflow from GitHub, picks `production` and `1.3.0`, and Dokploy pulls that image.
+Release-please tags `v1.3.0`, creates the GitHub Release (its body mirrored from the MDX), and the same run builds the Docker images: images `1.3.0`, `1.3`, `latest` land in GHCR. Production still hasn't moved. Pierrick runs the **Promote** workflow from GitHub, picks `production` and `1.3.0`, and Dokploy pulls that image.
 
 ```mermaid
 gitGraph
@@ -218,7 +218,7 @@ The same system runs in both places, with a few producer-only pieces:
 | Generated `CHANGELOG.md` | ✔ | ✔ when versioned |
 | Release notes in the docs app | ✔ (enforced) | ✔ when versioned (opt-in enforcement) |
 | Release-time intention plumbing on the Release PR | ✔ | ✘ |
-| Tag-triggered GHCR images | ✔ | Recommended when versioned |
+| Versioned GHCR images | ✔ | Recommended when versioned |
 | Promote workflow | optional | Recommended when versioned and Dokploy pulls images |
 | `CONTRIBUTING.md` | ✔ | ✔ shipped; personalize scopes via `commitlint.config.ts` |
 | GitHub settings script | ✔ | ✔ (run once at project setup) |

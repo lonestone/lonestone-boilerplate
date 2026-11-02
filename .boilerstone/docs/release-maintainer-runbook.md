@@ -127,6 +127,8 @@ pnpm boilerplate upgrade prepare --to X.Y.Z --fetch
 
 Never move a published tag. If a pushed tag turns out to be wrong, publish a new patch version instead. Do not publish the CLI by hand as part of a normal release.
 
+The same run builds the version images (`X.Y.Z`, `X.Y`, `latest`) in its **Build the release images** job. It cannot be a separate workflow: Release Please pushes the tag with `GITHUB_TOKEN`, and GitHub starts no workflow for such a push. If that job fails, re-run its failed jobs, or run **Build Docker to GHCR** by hand with `tag` set to `vX.Y.Z`. Promote refuses a version whose images are not all on GHCR.
+
 If `publish-cli` fails, re-run only that job. It is separate from release-please, so the tag is not touched. The manual fallback from the tagged commit is `pnpm --filter @lonestone/boilerstone-cli publish --access public --no-git-checks`.
 
 The package version is bumped with the boilerplate on the Release PR (`.boilerstone/cli/package.json`, via `extra-files` in `release-please-config.json`).
