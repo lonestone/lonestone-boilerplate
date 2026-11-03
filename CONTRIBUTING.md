@@ -70,6 +70,10 @@ If a badly written message reaches `main` anyway, there is a correction tool tha
 
 This splits the git record from the parsed record, so it is an escape hatch, not a normal-flow tool. In normal flow, fix the description *before* merging.
 
+## Content written for agents
+
+A skill, a migration intention, `AGENTS.md` or any page an agent reads goes through the `writing-for-agents` skill before its pull request: pointers, steps and their completion criteria, one source of truth per meaning, no no-ops.
+
 ## Repository settings
 
 A new GitHub repository needs squash-only merges and the default squash message **pull request title and description**. That setting is load-bearing: without it, the title and description never become the commit.
