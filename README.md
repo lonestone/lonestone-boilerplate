@@ -47,7 +47,7 @@ See the [Project Structure](apps/documentation/src/content/docs/explanations/1_a
 
 ## 📋 Prerequisites
 
-- [Node.js](https://nodejs.org/) (version 24.13.0)
+- [Node.js](https://nodejs.org/) (version 24.22.2)
 - [PNPM](https://pnpm.io/) (version 10.28.2)
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
 
@@ -103,7 +103,7 @@ Ensure you have the correct Node.js and pnpm versions (see the root `package.jso
 You can use [fnm](https://github.com/Schniz/fnm) for managing your node version
 
 ```bash
-fnm use 24.13.0
+fnm use 24.22.2
 npm i -g pnpm@10.28.2
 ```
 

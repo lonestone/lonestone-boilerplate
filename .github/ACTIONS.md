@@ -38,7 +38,7 @@ It includes the following jobs:
 
 The workflow uses:
 
-- Node.js 24.13.0
+- Node.js 24.22.2
 - pnpm 10.28.2
 - Cache for pnpm dependencies
 - Official actions for checkout, plus the local `setup-node-pnpm` composite action
