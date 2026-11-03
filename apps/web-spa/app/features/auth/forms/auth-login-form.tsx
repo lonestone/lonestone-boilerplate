@@ -42,15 +42,17 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({ onSubmit, isPendin
           render={({ field }) => (
             <FormItem>
               <FormLabel htmlFor="email">{t('auth.login.email')}</FormLabel>
-              <FormControl>
-                <Input
-                  id="email"
-                  {...field}
-                  type="email"
-                  autoComplete="email"
-                  placeholder="your@email.com"
-                />
-              </FormControl>
+              <FormControl
+                render={
+                  <Input
+                    id="email"
+                    {...field}
+                    type="email"
+                    autoComplete="email"
+                    placeholder="your@email.com"
+                  />
+                }
+              />
               <FormMessage />
             </FormItem>
           )}
@@ -66,15 +68,17 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({ onSubmit, isPendin
                   {t('auth.login.forgotPassword')}
                 </Link>
               </div>
-              <FormControl>
-                <Input
-                  id="password"
-                  {...field}
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  type="password"
-                />
-              </FormControl>
+              <FormControl
+                render={
+                  <Input
+                    id="password"
+                    {...field}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    type="password"
+                  />
+                }
+              />
               <FormMessage />
             </FormItem>
           )}

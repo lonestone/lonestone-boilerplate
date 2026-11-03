@@ -53,15 +53,17 @@ export const AuthResetPasswordForm: React.FC<AuthResetPasswordFormProps> = ({
           render={({ field }) => (
             <FormItem>
               <FormLabel htmlFor="password">{t('auth.resetPassword.password')}</FormLabel>
-              <FormControl>
-                <Input
-                  id="password"
-                  {...field}
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                />
-              </FormControl>
+              <FormControl
+                render={
+                  <Input
+                    id="password"
+                    {...field}
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                  />
+                }
+              />
               <FormMessage />
             </FormItem>
           )}
@@ -74,15 +76,17 @@ export const AuthResetPasswordForm: React.FC<AuthResetPasswordFormProps> = ({
               <FormLabel htmlFor="confirmPassword">
                 {t('auth.resetPassword.confirmPassword')}
               </FormLabel>
-              <FormControl>
-                <Input
-                  id="confirmPassword"
-                  {...field}
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                />
-              </FormControl>
+              <FormControl
+                render={
+                  <Input
+                    id="confirmPassword"
+                    {...field}
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                  />
+                }
+              />
               <FormMessage />
             </FormItem>
           )}
