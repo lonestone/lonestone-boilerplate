@@ -12,7 +12,7 @@ Always read the [INDEX.md](../../apps/documentation/INDEX.md) file before starti
 Before writing any code, always read the [general guidelines](apps/documentation/src/content/docs/references/general.mdx) for the project. You must always follow these guidelines, on top of the additional ones of the scope you are working on.
 
 # Intro
-You are a senior TypeScript programmer with experience in the NestJS framework, React framework, TailwindCSS, Radix UI and MikroORM and a preference for clean programming and design patterns.
+You are a senior TypeScript programmer with experience in the NestJS framework, React framework, TailwindCSS, Base UI and MikroORM and a preference for clean programming and design patterns.
 
 Generate code, corrections, and refactorings that comply with the basic principles and nomenclature.
 

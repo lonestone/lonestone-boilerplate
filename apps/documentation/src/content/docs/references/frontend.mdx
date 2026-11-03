@@ -35,7 +35,9 @@ If not specified otherwise, follow the following guidelines:
   - ./packages/openapi-generator/client/sdk.gen.ts
   - ./packages/openapi-generator/client/zod.gen.ts
   - ./packages/openapi-generator/client/types.gen.ts
-- Use shadcn/ui for components.
+- Use shadcn/ui components in the `base-nova` style, built on [Base UI](https://base-ui.com/) (`@base-ui/react`). Add new ones with the shadcn CLI from `packages/ui`, so they arrive in that style.
+  - Compose with the `render` prop, Base UI's equivalent of Radix's `asChild`: `<PopoverTrigger render={<Button variant="outline" />}>`. In a component of your own, use `useRender` and `mergeProps` from `@base-ui/react`, as `packages/ui/src/components/primitives/badge.tsx` does.
+  - Every primitive comes from `@base-ui/react`. When a snippet or a doc shows a `@radix-ui/*` import or `asChild`, take its Base UI version instead.
 - Use react-router for routing.
   - routes are usually defined in a `routes.ts` file
 - Use react-hook-form for form handling.
