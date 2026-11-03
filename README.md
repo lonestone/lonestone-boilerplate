@@ -96,6 +96,17 @@ pnpm boilerplate upgrade
 
 The upgrade command stages release intentions and references on a dedicated branch; it does not overwrite application code automatically. See [Boilerplate upgrades](apps/documentation/src/content/docs/explanations/7_boilerplate-upgrades.mdx) in the documentation app, or the [`.boilerstone/` overview](.boilerstone/README.md) and [upgrade runbook](.boilerstone/docs/upgrade-runbook.md).
 
+### Add an extension
+
+Extensions add a whole feature to a project in one reviewable commit. At the root of the project:
+
+```bash
+pnpm boilerplate extension list
+pnpm boilerplate extension add capacitor   # native Android and iOS apps from web-spa or web-ssr
+```
+
+See [Extensions](apps/documentation/src/content/docs/references/2_boilerstone-cli.mdx) in the CLI reference.
+
 ### Prerequisites and manual setup
 
 Ensure you have the correct Node.js and pnpm versions (see the root `package.json` file's `engines` property).

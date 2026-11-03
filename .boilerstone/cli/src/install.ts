@@ -18,9 +18,11 @@ import {
   canReadTty,
   colorize,
   getCliVersion,
+  info,
   isolatedGitEnv,
   movePath,
-  runFileSync,
+  ok,
+  runGit,
   spawnProcessSync,
 } from './utils.js'
 
@@ -31,14 +33,6 @@ interface InstallerOptions {
   /** The raw `--apps` value, parsed later. Undefined when `--apps` was not passed. */
   apps?: string
   positionals: string[]
-}
-
-function info(message: string): void {
-  console.log(`${colorize('→', 'cyan')} ${message}`)
-}
-
-function ok(message: string): void {
-  console.log(`${colorize('✓', 'green')} ${message}`)
 }
 
 function die(message: string): never {
@@ -57,14 +51,6 @@ function gitEnv(): NodeJS.ProcessEnv {
   return isolatedGitEnv()
 }
 
-function runGit(args: string[], cwd?: string): string {
-  return runFileSync('git', args, {
-    cwd,
-    env: gitEnv(),
-    stdio: ['ignore', 'pipe', 'pipe'],
-  }).trim()
-}
-
 function tryRunPnpm(args: string[], cwd: string, env: NodeJS.ProcessEnv = {}): boolean {
   const result = spawnProcessSync('pnpm', args, {
     cwd,
@@ -80,7 +66,7 @@ function runPnpm(args: string[], cwd: string, env: NodeJS.ProcessEnv = {}): void
   }
 }
 
-function cloneRelease(
+export function cloneRelease(
   repoUrl: string,
   ref: string,
   target: string,

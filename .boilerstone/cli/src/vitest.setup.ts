@@ -10,6 +10,7 @@ for (const name of [
   'BOILERPLATE_SOURCE_VERSION',
   'BOILERPLATE_SOURCE_COMMIT',
   'BOILERPLATE_INSTALLER_ONBOARD',
+  'BOILERSTONE_EXTENSION_REPO',
 ]) {
   delete process.env[name]
 }

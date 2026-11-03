@@ -629,6 +629,10 @@ export const content: Content = {
       text: 'The upgrade commands accept `--project <path>`. Otherwise they look for the project from the current folder.',
     },
     {
+      title: 'Add an extension',
+      text: '`pnpm boilerplate extension list` shows the extensions, `pnpm boilerplate extension add <name>` adds one, e.g. `capacitor` for native Android and iOS apps. It checks the whole project before writing, undoes everything if a step fails, and records the extension in `boilerplate.json`.',
+    },
+    {
       title: 'Undo everything',
       text: 'During an upgrade: leave the branch, delete it, and remove `.boilerstone/upgrade/`. To leave the system: delete `.boilerstone/` and the `boilerplate` script.',
     },
