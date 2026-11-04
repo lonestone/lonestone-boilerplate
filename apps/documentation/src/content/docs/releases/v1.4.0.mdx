@@ -1,0 +1,26 @@
+---
+title: 1.4.0
+description: Release images are built for real, the UI package finishes its move to Base UI, and the API gets entity factories for tests and seeders
+---
+
+This release exists for three reasons. Merging a Release PR now builds the version images, which it never did before. The UI package no longer depends on Radix. And API tests and seeders get one way to build their data.
+
+Until now, a merged Release PR left only the `sha-…` image of the merge commit on GHCR. Release Please pushes its tag with `GITHUB_TOKEN`, and GitHub starts no workflow for such a push. The Release Please run now builds the `X.Y.Z`, `X.Y` and `latest` images itself, and Promote refuses a version whose images are not all on GHCR. The v1.1.0, v1.2.0 and v1.3.0 releases have no version image. A person can build one by running **Build Docker to GHCR** with the tag.
+
+The UI package now composes its components through Base UI's `render` prop. `FormControl` takes its control the same way:
+
+```tsx
+<FormControl render={<Input {...field} />} />
+```
+
+The API now has one MikroORM `Factory` per example entity. Tests and seeders pass only the values they check, and Faker fills the rest. The guide is in the documentation app.
+
+The generated list of changes is in [`CHANGELOG.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CHANGELOG.md). The reasons behind each change are in the body of its squash commit.
+
+## What this means for consumer projects
+
+- **`ui-base-ui-finish` breaks `FormControl` callers on purpose.** `FormControl` has no `children` prop any more, so an old call fails to type-check. Every call moves to `render`. The project's own components that use `asChild` need the same change.
+- **`build-release-images-from-release-please` only matters to versioned projects.** A project without `release-please.yml` skips it. A project that already makes release tags start workflows another way can keep that.
+- **`api-entity-factories` adds a convention, not a rule.** A project with its own test-data approach records it as skipped.
+- **Four small intentions each close one gap.** `gitattributes-generated-client` collapses the generated client in pull request diffs. `lint-one-entity-per-file` makes oxlint fail when an entity file declares several classes, which MikroORM would skip without a warning. `pr-lint-root-install` makes the PR title check install only the root tooling. `verify-email-once` stops the verify-email page from sending its token twice under StrictMode.
+- **The other changes need nothing from an existing project.** The documentation fixes and the npm publishing change have no intention.

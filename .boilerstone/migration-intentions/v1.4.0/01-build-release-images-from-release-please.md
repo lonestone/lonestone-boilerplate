@@ -1,5 +1,5 @@
 ---
-id: unreleased/build-release-images-from-release-please
+id: v1.4.0/build-release-images-from-release-please
 domain: ci
 classification: migration
 requires:

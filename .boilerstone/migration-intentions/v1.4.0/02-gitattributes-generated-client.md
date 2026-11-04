@@ -1,5 +1,5 @@
 ---
-id: unreleased/gitattributes-generated-client
+id: v1.4.0/gitattributes-generated-client
 domain: tooling
 classification: migration
 ---

@@ -1,5 +1,5 @@
 ---
-id: unreleased/verify-email-once
+id: v1.4.0/verify-email-once
 domain: frontend
 classification: migration
 ---
@@ -49,4 +49,4 @@ In development, StrictMode mounts the page twice, so the effect sent the same to
 
 ## Record Result
 
-Run `pnpm boilerplate upgrade record --id unreleased/verify-email-once --applied` (the id becomes `vX.Y.Z/verify-email-once` once released).
+Run `pnpm boilerplate upgrade record --id vX.Y.Z/verify-email-once --applied` after validation passes, or record it as skipped with a reason.
