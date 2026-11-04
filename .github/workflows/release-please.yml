@@ -132,7 +132,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24.13.0
+          node-version: 24.22.2
 
       - name: Verify the CLI version matches the tag
         run: |
