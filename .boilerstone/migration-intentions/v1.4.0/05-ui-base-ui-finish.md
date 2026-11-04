@@ -1,5 +1,5 @@
 ---
-id: unreleased/ui-base-ui-finish
+id: v1.4.0/ui-base-ui-finish
 domain: frontend
 classification: migration
 ---
@@ -65,4 +65,4 @@ shadcn now ships its components on Base UI, and Radix is no longer actively main
 
 ## Record Result
 
-Run `pnpm boilerplate upgrade record --id unreleased/ui-base-ui-finish --applied` (the id becomes `vX.Y.Z/ui-base-ui-finish` once released).
+Run `pnpm boilerplate upgrade record --id vX.Y.Z/ui-base-ui-finish --applied` after validation passes, or record it as skipped with a reason.

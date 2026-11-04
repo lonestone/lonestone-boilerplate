@@ -1,5 +1,5 @@
 ---
-id: unreleased/pr-lint-root-install
+id: v1.4.0/pr-lint-root-install
 domain: ci
 classification: migration
 requires:

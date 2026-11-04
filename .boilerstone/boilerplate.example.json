@@ -3,7 +3,7 @@
   "source": {
     "repository": "lonestone/lonestone-boilerplate",
     "remote": "https://github.com/lonestone/lonestone-boilerplate.git",
-    "currentVersion": "1.2.0"
+    "currentVersion": "1.4.0"
   },
   "apps": ["web-spa", "web-ssr"],
   "trackedDomains": [

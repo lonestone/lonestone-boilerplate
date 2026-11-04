@@ -1,5 +1,5 @@
 ---
-id: unreleased/lint-one-entity-per-file
+id: v1.4.0/lint-one-entity-per-file
 domain: tooling
 classification: migration
 requires:
@@ -35,7 +35,7 @@ The backend reference states the rule since #192, but nothing enforced it: a gen
    Done when: a scratch `apps/api/src/scratch.entity.ts` with two exported classes makes `pnpm lint` fail on `max-classes-per-file`. Delete the scratch file.
 
 2. **Entity files** — signal: `pnpm lint` reports `max-classes-per-file` on an existing entity file.
-   Split it like `apps/api/src/modules/posts/`: one class per file under `<module>/entities/<name>.entity.ts`, and keep the old file as a re-export so imports do not change. Type a relation to an entity of a sibling file as `Rel<…>` when the import is circular.
+   Split it like `apps/api/src/modules/example/posts/`: one class per file under `<module>/entities/<name>.entity.ts`, and keep the old file as a re-export so imports do not change. Type a relation to an entity of a sibling file as `Rel<…>` when the import is circular.
    Done when: `pnpm lint` reports no `max-classes-per-file`.
 
 ## Out of Scope
@@ -46,7 +46,7 @@ The backend reference states the rule since #192, but nothing enforced it: a gen
 ## Reference Paths
 
 - `.oxlintrc.json` — **adapt**
-- `apps/api/src/modules/posts/` — **adapt**
+- `apps/api/src/modules/example/posts/` — **adapt**
 
 ## Validation
 
