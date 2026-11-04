@@ -31,6 +31,8 @@ ${colorize('Options:', 'cyan')}
   ${colorize('--ref <vX.Y.Z>', 'bright')}          Optional for init/onboard; must be this CLI's version
   ${colorize('--apps <list>', 'bright')}           init only: web apps to include (web-spa, web-ssr, comma separated, or none)
                           Without it, init asks about each one, or keeps all when it cannot ask
+  ${colorize('--public-docs <yes|no>', 'bright')}  init only: publish the documentation on GitHub Pages? No removes the deploy workflow
+                          Without it, init asks, or answers yes when it cannot ask
   ${colorize('--project <path>', 'bright')}        Project root (default: current directory)
 
 ${colorize('Examples:', 'cyan')}

@@ -32,6 +32,9 @@ export const PRODUCER_FILES_TO_REMOVE = [
   ...PRODUCER_ARTIFACTS.map((artifact) => `.boilerstone/${artifact}`),
 ]
 
+/** Publishes the documentation app to GitHub Pages. Fails on a repository without Pages. */
+export const DOCS_DEPLOY_WORKFLOW = '.github/workflows/deploy-docs.yml'
+
 export interface GenerateProjectOptions {
   projectName: string
   /** Release the project is generated from; `rock` is pinned to it. */
@@ -44,6 +47,11 @@ export interface GenerateProjectOptions {
    * Left undefined, nothing is removed and no `apps` field is recorded.
    */
   apps?: readonly WebApp[]
+  /**
+   * Whether the project publishes its documentation on GitHub Pages. False removes the
+   * deploy workflow. Left undefined, the workflow is kept.
+   */
+  publicDocs?: boolean
 }
 
 function readJson<T>(filePath: string): T {
@@ -464,6 +472,9 @@ export function generateProject(rootPath: string, options: GenerateProjectOption
   stripCliPackageReferences(rootPath)
   if (options.apps !== undefined) {
     pruneUnselectedApps(rootPath, options.apps)
+  }
+  if (options.publicDocs === false) {
+    removePaths(rootPath, [DOCS_DEPLOY_WORKFLOW])
   }
   renameWorkspace(rootPath, options.projectName)
   wirePublishedCli(rootPath, options.sourceVersion)
