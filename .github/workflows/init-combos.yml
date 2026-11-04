@@ -1,8 +1,9 @@
 name: Init combos
 
 # Producer-only: generates a project for each `init --apps` choice from this
-# checkout and checks that it installs, lints, typechecks and builds. The job
-# only runs in the boilerplate repository.
+# checkout and checks that it installs, lints, typechecks and builds. The four
+# choices also cover both answers to `--public-docs`. The job only runs in the
+# boilerplate repository.
 on:
   pull_request:
     paths:
@@ -42,11 +43,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        apps:
-          - web-spa,web-ssr
-          - web-spa
-          - web-ssr
-          - none
+        include:
+          - apps: web-spa,web-ssr
+            public-docs: 'yes'
+          - apps: web-spa
+            public-docs: 'no'
+          - apps: web-ssr
+            public-docs: 'yes'
+          - apps: none
+            public-docs: 'no'
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -65,7 +70,8 @@ jobs:
       - name: 📚 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🧩 Generate and check a project with --apps ${{ matrix.apps }}
+      - name: 🧩 Generate and check a project with --apps ${{ matrix.apps }} --public-docs ${{ matrix.public-docs }}
         env:
           APPS: ${{ matrix.apps }}
-        run: pnpm exec tsx .boilerstone/cli/scripts/check-combo.ts --apps "$APPS"
+          PUBLIC_DOCS: ${{ matrix.public-docs }}
+        run: pnpm exec tsx .boilerstone/cli/scripts/check-combo.ts --apps "$APPS" --public-docs "$PUBLIC_DOCS"

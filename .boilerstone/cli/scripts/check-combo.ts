@@ -3,7 +3,10 @@
  * proves that it installs, lints, typechecks and builds.
  *
  *   pnpm exec tsx .boilerstone/cli/scripts/check-combo.ts --apps web-spa,web-ssr
- *   pnpm exec tsx .boilerstone/cli/scripts/check-combo.ts --apps none
+ *   pnpm exec tsx .boilerstone/cli/scripts/check-combo.ts --apps none --public-docs no
+ *
+ * `--public-docs yes|no` (default yes) is the answer to the documentation
+ * question: no must remove the GitHub Pages deploy workflow, yes must keep it.
  *
  * It copies the files git knows about (tracked, or untracked and not ignored),
  * so local changes that are not committed yet are tested too. It does not run
@@ -32,7 +35,7 @@ import {
   WEB_APPS,
   type WebApp,
 } from '../src/apps.js'
-import { generateProject } from '../src/generate.js'
+import { DOCS_DEPLOY_WORKFLOW, generateProject } from '../src/generate.js'
 import { isolatedGitEnv } from '../src/utils.js'
 
 const PROJECT_NAME = 'combo-app'
@@ -51,25 +54,41 @@ function pathSegments(path: string): string[] {
   return path.split(/[\\/]/)
 }
 
-function readAppsArgument(argv: readonly string[]): WebApp[] {
-  let value: string | undefined
+interface ComboArguments {
+  apps: WebApp[]
+  publicDocs: boolean
+}
+
+function readArguments(argv: readonly string[]): ComboArguments {
+  let apps: string | undefined
+  let publicDocs = 'yes'
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]
     if (argument === '--apps') {
-      value = argv[index + 1]
+      apps = argv[index + 1]
       index += 1
     } else if (argument.startsWith('--apps=')) {
-      value = argument.slice('--apps='.length)
+      apps = argument.slice('--apps='.length)
+    } else if (argument === '--public-docs') {
+      publicDocs = argv[index + 1] ?? ''
+      index += 1
+    } else if (argument.startsWith('--public-docs=')) {
+      publicDocs = argument.slice('--public-docs='.length)
     } else {
-      throw new Error(`Unknown argument '${argument}'. Usage: check-combo.ts --apps <list|none>`)
+      throw new Error(
+        `Unknown argument '${argument}'. Usage: check-combo.ts --apps <list|none> [--public-docs yes|no]`,
+      )
     }
   }
-  if (value === undefined) {
+  if (apps === undefined) {
     throw new Error(
-      'Missing --apps. Usage: check-combo.ts --apps <web-spa,web-ssr|web-spa|web-ssr|none>',
+      'Missing --apps. Usage: check-combo.ts --apps <web-spa,web-ssr|web-spa|web-ssr|none> [--public-docs yes|no]',
     )
   }
-  return parseAppsOption(value)
+  if (publicDocs !== 'yes' && publicDocs !== 'no') {
+    throw new Error('--public-docs needs a value: yes or no')
+  }
+  return { apps: parseAppsOption(apps), publicDocs: publicDocs === 'yes' }
 }
 
 function copyWorkingTree(from: string, to: string): number {
@@ -165,8 +184,16 @@ function removedFolders(apps: readonly WebApp[]): string[] {
 }
 
 /** Checks the project right after generation, before anything is installed. */
-function checkStructure(project: string, apps: readonly WebApp[]): string[] {
+function checkStructure(project: string, apps: readonly WebApp[], publicDocs: boolean): string[] {
   const problems: string[] = []
+
+  if (existsSync(join(project, DOCS_DEPLOY_WORKFLOW)) !== publicDocs) {
+    problems.push(
+      publicDocs
+        ? `${DOCS_DEPLOY_WORKFLOW} is missing, but the documentation is public`
+        : `${DOCS_DEPLOY_WORKFLOW} still exists, but the documentation is not public`,
+    )
+  }
 
   for (const [folder, kept] of Object.entries(expectedFolders(apps))) {
     const exists = existsSync(join(project, folder))
@@ -238,13 +265,14 @@ function formatDuration(milliseconds: number): string {
 function main(): void {
   const startedAt = Date.now()
   let apps: WebApp[]
+  let publicDocs: boolean
   try {
-    apps = readAppsArgument(process.argv.slice(2))
+    ;({ apps, publicDocs } = readArguments(process.argv.slice(2)))
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     process.exit(1)
   }
-  const choice = apps.length > 0 ? apps.join(',') : 'none'
+  const choice = `${apps.length > 0 ? apps.join(',') : 'none'} --public-docs ${publicDocs ? 'yes' : 'no'}`
 
   const tempRoot = mkdtempSync(join(tmpdir(), 'check-combo-'))
   const project = join(tempRoot, PROJECT_NAME)
@@ -255,10 +283,15 @@ function main(): void {
     const copied = copyWorkingTree(repoRoot, project)
     console.log(`Copied ${copied} files from ${repoRoot}`)
 
-    generateProject(project, { projectName: PROJECT_NAME, sourceVersion: cliVersion, apps })
+    generateProject(project, {
+      projectName: PROJECT_NAME,
+      sourceVersion: cliVersion,
+      apps,
+      publicDocs,
+    })
     failOnProblems(
       'The generated project is not what this choice should give',
-      checkStructure(project, apps),
+      checkStructure(project, apps, publicDocs),
     )
 
     runStep(project, 'git init', ['git', 'init', '-q'])

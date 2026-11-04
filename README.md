@@ -77,6 +77,12 @@ pnpm dlx @lonestone/boilerstone-cli init my-project --apps none
 
 Without `--apps`, the CLI asks one yes/no question per web app. If it cannot ask (no terminal), it keeps both. The API and the documentation are always included. A shared package under `packages/` (`ui`, `i18n`, `openapi-generator`) is removed when no remaining app uses it, so `--apps none` removes all three. The choice is saved in `.boilerstone/boilerplate.json`.
 
+The boilerplate publishes its documentation on GitHub Pages with the `deploy-docs.yml` workflow. `init` asks whether your project will publish its documentation publicly. Answer no, or pass `--public-docs no`, and the workflow is removed, so it does not fail on a repository without Pages. The documentation app stays. Without the flag, `init` asks, and answers yes when it cannot ask.
+
+```bash
+pnpm dlx @lonestone/boilerstone-cli init my-project --public-docs no
+```
+
 A CLI only generates its own release: each release's layout is what that CLI knows. Releases published before the CLI existed (v1.0.0, v1.1.0) cannot be used to create a new project.
 
 ### Onboard an existing project

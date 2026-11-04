@@ -168,6 +168,7 @@ function createTemplateWithWebApps(): string {
   const templatePath = createPublishedCliTemplate()
   writeFixtureFile(templatePath, 'apps/web-spa/package.json', '{"name":"@boilerstone/web-spa"}\n')
   writeFixtureFile(templatePath, 'apps/web-ssr/package.json', '{"name":"@boilerstone/web-ssr"}\n')
+  writeFixtureFile(templatePath, '.github/workflows/deploy-docs.yml', 'name: Deploy docs\n')
   return templatePath
 }
 
@@ -494,6 +495,54 @@ describe('init app selection', () => {
       for (const webApp of ['web-spa', 'web-ssr']) {
         expect(existsSync(join(result.appPath, 'apps', webApp)), webApp).toBe(apps.includes(webApp))
       }
+    } finally {
+      result.cleanup()
+    }
+  })
+
+  // No terminal here, so a run without --public-docs keeps the workflow.
+  it.each([
+    ['without --public-docs and without a terminal', [], true],
+    ['--public-docs yes', ['--public-docs', 'yes'], true],
+    ['--public-docs=no', ['--public-docs=no'], false],
+    ['--public-docs no', ['--public-docs', 'no'], false],
+  ])('keeps or removes the docs deploy workflow (%s)', (_label, args, kept) => {
+    const result = runInitWithWebApps(args)
+
+    try {
+      expect(result.status, result.stderr).toBe(0)
+      expect(existsSync(join(result.appPath, '.github/workflows/deploy-docs.yml'))).toBe(kept)
+      expect(existsSync(join(result.appPath, 'apps/api'))).toBe(true)
+    } finally {
+      result.cleanup()
+    }
+  })
+
+  it.each([
+    ['an unknown value', ['--public-docs', 'maybe']],
+    ['a missing value', ['--public-docs']],
+    ['an empty value', ['--public-docs=']],
+    ['a flag where the value should be', ['--public-docs', '--apps', 'none']],
+  ])('rejects %s of --public-docs before any git or pnpm call', (_label, args) => {
+    const result = runInstaller(['init', 'app', ...args])
+
+    try {
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('--public-docs needs a value: yes or no')
+      expect(result.commandLog).toBe('')
+      expect(existsSync(join(result.fixturePath, 'app'))).toBe(false)
+    } finally {
+      result.cleanup()
+    }
+  })
+
+  it('refuses --public-docs outside init before any git or pnpm call', () => {
+    const result = runInstaller(['onboard', '--public-docs', 'no'], { prepare: existingProject })
+
+    try {
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('--public-docs only applies to init')
+      expect(result.commandLog).toBe('')
     } finally {
       result.cleanup()
     }
