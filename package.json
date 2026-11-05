@@ -8,6 +8,7 @@
   "author": "",
   "type": "module",
   "scripts": {
+    "prepare": "node -e \"require('fs').existsSync('.git')&&require('child_process').execSync('lefthook install',{stdio:'inherit'})\"",
     "rock": "boilerstone-cli rock",
     "boilerplate": "boilerstone-cli",
     "dev": "pnpm --parallel dev",
