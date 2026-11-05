@@ -158,7 +158,7 @@ Dans ce système, aucun environnement ne possède de branche. `main` produit des
 
 ### Pourquoi lefthook plutôt que husky
 
-Un seul binaire, un seul `lefthook.yml`, des hooks parallèles, pas de couplage au script `prepare`. Fonctionnellement équivalent pour notre besoin — une question de goût, mais assumée.
+Un seul binaire, un seul `lefthook.yml`, des hooks parallèles. Le script `prepare` de la racine pose les hooks à chaque `pnpm install`. Fonctionnellement équivalent pour notre besoin — une question de goût, mais assumée.
 
 ### Pourquoi les feature flags avant les cherry-picks
 
