@@ -1,7 +1,15 @@
+# Quiet output: print only failures, without ANSI colors. Agents read this output.
+output:
+  - failure
+colors: false
+
 commit-msg:
   jobs:
     - name: commitlint
       run: pnpm exec commitlint --edit "{1}"
+      env:
+        NO_COLOR: '1'
+        FORCE_COLOR: '0'
 
 pre-push:
   follow: true
@@ -12,5 +20,11 @@ pre-push:
         jobs:
           - name: lint
             run: pnpm lint
+            env:
+              NO_COLOR: '1'
+              FORCE_COLOR: '0'
           - name: typecheck
             run: pnpm typecheck
+            env:
+              NO_COLOR: '1'
+              FORCE_COLOR: '0'
