@@ -19,7 +19,7 @@ This is the web frontend application of our project, built with modern React and
 ## Prerequisites
 
 Before you begin, ensure you have installed:
-- [Node.js](https://nodejs.org/) (version 24.13.0)
+- [Node.js](https://nodejs.org/) (version 24.22.2)
 - [pnpm](https://pnpm.io/) (version 10.28.2)
 
 ## Getting Started

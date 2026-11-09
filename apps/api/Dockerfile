@@ -1,5 +1,5 @@
 # Stage 1: base
-FROM node:24.13-alpine AS base
+FROM node:24.22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 # Use pnpm version according to our package.json, if not the pnpm store will not be in synced later on, resulting in errors

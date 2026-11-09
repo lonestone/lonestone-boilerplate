@@ -29,7 +29,7 @@ jobs:
         with:
           path: apps/documentation
           package-manager: pnpm@10.28.2
-          node-version: 24.13.0
+          node-version: 24.22.2
   deploy:
     runs-on: ubuntu-latest
     needs: build
