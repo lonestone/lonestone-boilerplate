@@ -79,6 +79,27 @@ Then follow these steps (adapt as needed):
   - `PUT` for full updates
   - `PATCH` for partial updates
   - `DELETE` for removing resources
+- From about three query parameters up, stop stacking `@TypedQuery` decorators. Declare one Zod object schema in the contract and take it whole with `@TypedQueryObject(schema)` (from `@lonestone/nzoth/server`). The schema is the single, validated contract of the query string.
+
+```typescript
+// Avoid: one decorator per parameter
+@Get()
+search(
+  @TypedQuery('q', z.string()) q: string,
+  @TypedQuery('tags', z.array(z.string()).optional()) tags?: string[],
+  @TypedQuery('page', z.coerce.number().optional()) page?: number,
+) {}
+
+// Prefer: one schema, one parameter
+const searchQuerySchema = z.object({
+  q: z.string(),
+  tags: z.array(z.string()).optional(),
+  page: z.coerce.number().optional(),
+})
+
+@Get()
+search(@TypedQueryObject(searchQuerySchema) query: z.infer<typeof searchQuerySchema>) {}
+```
 
 ### Request Validation
 
@@ -193,6 +214,18 @@ export const userResponseSchema = z
 
 - Services should usually return entities, to be used accross other services without the need to transform contract back to entities (or re-fetch from the database). If the project aims for a full hexagonal architecture, you can return contracts from the services but they should be different from the contracts used in the controller.
 
+- Do not create a service for a plain join table (one that only links two entities). Set its rows inside the `wrap(entity).assign(...)` of the patch of the entity that owns the relation, so everything is written in the same `flush()`. If several places need the same assignment, extract it into a function.
+- Create a service for a join table only when it is rich: several columns of its own, or behaviour of its own.
+
+```typescript
+async update(id: string, data: UpdatePost) {
+  const post = await this.em.findOneOrFail(Post, id)
+  wrap(post).assign({ title: data.title, tags: data.tagIds }) // join rows follow
+  await this.em.flush() // one flush, one transaction
+  return post
+}
+```
+
 ### Response Mappers
 
 - It's a good practise to use a mapper to transform the entity to the contract in the controller.
@@ -247,6 +280,7 @@ export class User {
 - Ensure you have a MikroORM Context. Mikro provides one for each request by default, but if you call a method from a CRON you'll need to create one or use the EnsureRequestContext decorator.
 - Optimize queries for performance
 - Use pagination for large result sets
+- No raw SQL. Use the EntityManager (`find`, `findOne`, `count`, `nativeUpdate`) or the MikroORM QueryBuilder (`em.createQueryBuilder(Entity)`). Raw SQL is only allowed for something neither can express. Write a comment that says what it is, and keep it as small as you can. A SQL fragment inside a MikroORM call, such as `raw('"likesCount" + 1')` in a `nativeUpdate`, is fine.
 
 ### Seeders
 
