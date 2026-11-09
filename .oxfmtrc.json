@@ -15,6 +15,7 @@
     "**/.astro/**",
     "node_modules/**",
     "**/.worktrees/**",
+    "CHANGELOG.md",
     "CLAUDE.md",
     "AGENTS.md",
     "**/README.md",

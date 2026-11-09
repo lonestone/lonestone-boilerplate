@@ -32,9 +32,9 @@ gitGraph
 
 ### Mardi — Pierrick merge
 
-Le titre de la PR est `feat(auth): add session revocation endpoint` — la CI a vérifié que c'est un en-tête conventionnel valide, car ce titre est sur le point de devenir permanent. Quand la PR est prête, Pierrick dit à son agent « finalise cette PR ». L'agent — en suivant le skill `finalize-pr`, sur la machine de Pierrick — lit le diff complet et rédige la **description de la PR** comme futur corps du commit : un court paragraphe sur le *pourquoi* la révocation utilise des vérifications de type tombstone plutôt que des suppressions de session. Rien d'autre — pas de captures d'écran, pas de checklist ; les échanges de review vivent dans les commentaires. Un check CI valide la description et passe au vert.
+Le titre de la PR est `feat(auth): add session revocation endpoint` — la CI a vérifié que c'est un en-tête conventionnel valide, car ce titre est sur le point de devenir permanent. Quand la PR est prête, Pierrick dit à son agent « finalise cette PR ». L'agent — en suivant le skill `finalize-pr`, sur la machine de Pierrick — lit le diff complet et rédige la **description de la PR** comme futur corps du commit : un court paragraphe sur le _pourquoi_ la révocation utilise des vérifications de type tombstone plutôt que des suppressions de session. Rien d'autre — pas de captures d'écran, pas de checklist ; les échanges de review vivent dans les commentaires. Un check CI valide la description et passe au vert.
 
-Ensuite, n'importe qui peut merger, depuis n'importe où. Le dépôt est configuré pour que le message du commit de squash soit *toujours* « titre de la PR + description de la PR » — le bouton de merge GitHub, `gh` et l'auto-merge produisent tous le même commit soigné. Il n'y a aucun message à composer au moment du merge, donc aucun moyen de le rater. Pierrick clique sur le bouton. La branche meurt. Les quatre sujets WIP ne suivent **pas** — « wip endpoint » et « typo in guard » n'apprennent rien à un futur lecteur que le diff et la justification ne disent déjà.
+Ensuite, n'importe qui peut merger, depuis n'importe où. Le dépôt est configuré pour que le message du commit de squash soit _toujours_ « titre de la PR + description de la PR » — le bouton de merge GitHub, `gh` et l'auto-merge produisent tous le même commit soigné. Il n'y a aucun message à composer au moment du merge, donc aucun moyen de le rater. Pierrick clique sur le bouton. La branche meurt. Les quatre sujets WIP ne suivent **pas** — « wip endpoint » et « typo in guard » n'apprennent rien à un futur lecteur que le diff et la justification ne disent déjà.
 
 `main` a maintenant **un** nouveau commit :
 
@@ -91,11 +91,11 @@ GitHub est bienvenu comme **lieu d'édition** et comme **miroir**, mais il n'est
 
 Nous mergeons chaque pull request en squash : le message du commit de squash est le seul artefact écrit à la main par PR. Tout le reste en dérive :
 
-| Niveau de zoom | Artefact | Écrit par | Contient |
-| --- | --- | --- | --- |
-| Implémentation | Message du commit de squash | Agent guidé par un humain, à la finalisation de la PR | Ce qui a changé et **pourquoi** |
-| Inventaire | `CHANGELOG.md` | Généré | Une ligne par changement, liens vers les commits |
-| Release | Note dans `apps/documentation/src/content/docs/releases/` | Humain (souvent un brouillon d'agent) | Pourquoi cette release existe |
+| Niveau de zoom | Artefact                                                  | Écrit par                                             | Contient                                         |
+| -------------- | --------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------ |
+| Implémentation | Message du commit de squash                               | Agent guidé par un humain, à la finalisation de la PR | Ce qui a changé et **pourquoi**                  |
+| Inventaire     | `CHANGELOG.md`                                            | Généré                                                | Une ligne par changement, liens vers les commits |
+| Release        | Note dans `apps/documentation/src/content/docs/releases/` | Humain (souvent un brouillon d'agent)                 | Pourquoi cette release existe                    |
 
 La justification est écrite **une seule fois**, dans le corps du commit. Le changelog ne la duplique pas — il pointe vers le commit, et `git show` est à un saut de distance. Une seconde copie dériverait.
 
@@ -104,7 +104,7 @@ La justification est écrite **une seule fois**, dans le corps du commit. Le cha
 release-please analyse le message du commit de squash avec des règles précises. Les connaître explique plusieurs de nos conventions :
 
 - La **ligne de sujet** est analysée comme un commit conventionnel : une entrée de changelog, comptée dans le calcul de version.
-- Un **paragraphe du corps qui commence sans puce, après une ligne vide, par un type standard** (`fix(api): …`) est analysé comme un changement *supplémentaire* : sa propre ligne de changelog, comptée dans la version. C'est ainsi qu'une PR déclare deux changements.
+- Un **paragraphe du corps qui commence sans puce, après une ligne vide, par un type standard** (`fix(api): …`) est analysé comme un changement _supplémentaire_ : sa propre ligne de changelog, comptée dans la version. C'est ainsi qu'une PR déclare deux changements.
 - **Les lignes à puces (`* fix: typo`) ne matchent jamais.** Si la liste de commits auto-générée par GitHub se glisse un jour dans un merge, elle est invisible pour le parseur — un problème d'hygiène, pas un incident de versionnement.
 - Le token `BREAKING-CHANGE:` matche **n'importe où** dans le corps, même au milieu d'une phrase, et force une release majeure. C'est pourquoi nos règles d'agents toujours actives en avertissent : c'est une syntaxe valide qu'aucun linter ne peut distinguer de la prose.
 
@@ -130,7 +130,7 @@ Les **scopes** des commits sont les domaines du projet, définis une seule fois 
 
 ### Pourquoi nous laissons un outil écrire le changelog
 
-Nous interdisions les changelogs générés. Cette règle date d'avant les commits écrits par agents : à l'époque, générer voulait dire compiler des sujets WIP brouillons en bruit. Avec des messages de squash soignés, le changelog généré *est* l'inventaire soigné — la granularité est décidée par l'auteur (un paragraphe par changement) et les raisons vivent dans les corps de commits, à un lien de distance. Les deux arguments pour la curation manuelle ont disparu, la règle aussi.
+Nous interdisions les changelogs générés. Cette règle date d'avant les commits écrits par agents : à l'époque, générer voulait dire compiler des sujets WIP brouillons en bruit. Avec des messages de squash soignés, le changelog généré _est_ l'inventaire soigné — la granularité est décidée par l'auteur (un paragraphe par changement) et les raisons vivent dans les corps de commits, à un lien de distance. Les deux arguments pour la curation manuelle ont disparu, la règle aussi.
 
 ### Pourquoi la Release PR se rebase à chaque push
 
@@ -146,9 +146,9 @@ Une ligne de changelog ne peut pas dire « ces cinq PR ensemble livrent X » —
 
 ### Pourquoi un humain merge la Release PR
 
-Nous avons envisagé de merger automatiquement la Release PR quand ses checks sont verts, et nous avons rejeté l'idée. Des checks verts signifient que la PR a le *droit* de merger, pas que l'équipe veut publier ce lot. Un projet qui veut chaque merge en production devrait simplement rester en mode « sans versions » plutôt que d'automatiser la seule porte humaine que le versionnement existe à fournir.
+Nous avons envisagé de merger automatiquement la Release PR quand ses checks sont verts, et nous avons rejeté l'idée. Des checks verts signifient que la PR a le _droit_ de merger, pas que l'équipe veut publier ce lot. Un projet qui veut chaque merge en production devrait simplement rester en mode « sans versions » plutôt que d'automatiser la seule porte humaine que le versionnement existe à fournir.
 
-Ce qui *peut* être automatisé, c'est tout ce qui suit ce clic : avec [`PROMOTE_ON_RELEASE`](/lonestone-boilerplate/fr/references/1_release_and_versionning#promouvoir-automatiquement-à-la-release), merger la Release PR enchaîne directement sur le déploiement — avec, en option, une pause sur un bouton GitHub « Approve and deploy » quand l'environnement a des required reviewers. La porte se déplace au bon endroit ; elle ne disparaît pas.
+Ce qui _peut_ être automatisé, c'est tout ce qui suit ce clic : avec [`PROMOTE_ON_RELEASE`](/lonestone-boilerplate/fr/references/1_release_and_versionning#promouvoir-automatiquement-à-la-release), merger la Release PR enchaîne directement sur le déploiement — avec, en option, une pause sur un bouton GitHub « Approve and deploy » quand l'environnement a des required reviewers. La porte se déplace au bon endroit ; elle ne disparaît pas.
 
 ### Pourquoi les environnements de déploiement ne possèdent pas de branche
 
@@ -209,19 +209,19 @@ flowchart TD
 
 Le même système tourne des deux côtés, avec quelques pièces réservées au producteur :
 
-| Pièce | Dépôt boilerplate | Projet consommateur |
-| --- | --- | --- |
-| Conventional commits, commitlint, lefthook | ✔ | ✔ (édite le tableau des scopes) |
-| Lint du titre + description de PR | ✔ | ✔ |
-| Gate d'intention (`unreleased/` ou label `no-intention`) | ✔ | ✘ (pas de machinerie d'intentions) |
-| release-please | ✔, versionné | Optionnel : off (sans versions) ou on |
-| `CHANGELOG.md` généré | ✔ | ✔ si versionné |
-| Notes de release dans l'app de docs | ✔ (imposées) | ✔ si versionné (imposition opt-in) |
-| Plomberie des intentions sur la Release PR | ✔ | ✘ |
-| Images GHCR versionnées | ✔ | Recommandé si versionné |
-| Workflow Promote | optionnel | Recommandé si versionné et Dokploy tire les images |
-| `CONTRIBUTING.md` | ✔ | ✔ livré ; personnaliser les scopes via `commitlint.config.ts` |
-| Script de réglages GitHub | ✔ | ✔ (une fois à la création du projet) |
+| Pièce                                                    | Dépôt boilerplate | Projet consommateur                                           |
+| -------------------------------------------------------- | ----------------- | ------------------------------------------------------------- |
+| Conventional commits, commitlint, lefthook               | ✔                 | ✔ (édite le tableau des scopes)                               |
+| Lint du titre + description de PR                        | ✔                 | ✔                                                             |
+| Gate d'intention (`unreleased/` ou label `no-intention`) | ✔                 | ✘ (pas de machinerie d'intentions)                            |
+| release-please                                           | ✔, versionné      | Optionnel : off (sans versions) ou on                         |
+| `CHANGELOG.md` généré                                    | ✔                 | ✔ si versionné                                                |
+| Notes de release dans l'app de docs                      | ✔ (imposées)      | ✔ si versionné (imposition opt-in)                            |
+| Plomberie des intentions sur la Release PR               | ✔                 | ✘                                                             |
+| Images GHCR versionnées                                  | ✔                 | Recommandé si versionné                                       |
+| Workflow Promote                                         | optionnel         | Recommandé si versionné et Dokploy tire les images            |
+| `CONTRIBUTING.md`                                        | ✔                 | ✔ livré ; personnaliser les scopes via `commitlint.config.ts` |
+| Script de réglages GitHub                                | ✔                 | ✔ (une fois à la création du projet)                          |
 
 Sur le dépôt du boilerplate, une PR qui change quelque chose que les consommateurs doivent adapter porte aussi son **intention de migration** — écrite dans la même PR, par l'auteur qui a le contexte, pas reconstruite à la release par le mainteneur. Le travail du mainteneur sur la Release PR est de la plomberie : ordonner les intentions en attente et vérifier leur fraîcheur. La note de release humaine peut être rédigée plus tôt, sur une PR normale, tant que le travail est encore frais. Voir le [runbook du mainteneur de release](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md).
 

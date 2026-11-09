@@ -14,6 +14,8 @@ It includes the following jobs:
 
 - Checks the code with Oxlint.
 - Command: `pnpm lint`
+- Checks the formatting with Oxfmt.
+- Command: `pnpm fmt:check`
 
 #### Knip
 
