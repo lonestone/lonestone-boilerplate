@@ -158,7 +158,7 @@ In this system, no environment owns a branch. `main` produces artifacts (builds,
 
 ### Why lefthook rather than husky
 
-Single binary, one `lefthook.yml`, parallel hooks, no `prepare`-script coupling. Functionally equivalent for our need — a taste call, but a deliberate one.
+Single binary, one `lefthook.yml`, parallel hooks. The root `prepare` script installs the hooks on `pnpm install`. Functionally equivalent for our need — a taste call, but a deliberate one.
 
 ### Why feature flags before cherry-picks
 
