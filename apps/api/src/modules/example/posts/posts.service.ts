@@ -362,6 +362,7 @@ export class PostService {
 
     if (!post) throw new NotFoundException(`Post not found: ${slug}`)
 
+    // A SQL fragment inside a MikroORM call is allowed: see "Queries" in references/backend.mdx.
     await this.em.nativeUpdate(Post, { id: post.id }, { likesCount: raw('"likesCount" + 1') })
     await this.em.refresh(post, { populate: ['user', 'versions', 'tags'] })
 
