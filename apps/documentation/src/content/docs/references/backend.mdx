@@ -241,10 +241,17 @@ export class User {
 ### Queries
 
 - Use the EntityManager for database operations
-- Use transactions for operations that modify multiple entities. MikroORM wraps each operation in a transaction by default, if they come from a controller.
+- A request does not run in a transaction. Each `em.flush()` runs in its own transaction, and that is all the default gives you.
+- One `flush()` in a method is atomic: leave it as is. Two or more `flush()` calls in one method are not atomic, so decorate the method with `@Transactional()` (from `@mikro-orm/decorators/legacy`; the class needs an `em` property). It joins a transaction that is already open. Do not wrap every method in `em.transactional()`.
+- Replace a collection with `em.assign(entity, { tags })` or `entity.tags.set(items)`. Do not remove and add items by hand: `set` skips the write when nothing changed.
 - Ensure you have a MikroORM Context. Mikro provides one for each request by default, but if you call a method from a CRON you'll need to create one or use the EnsureRequestContext decorator.
 - Optimize queries for performance
 - Use pagination for large result sets
+
+### Seeders
+
+- A seeder gives volume. Generate it with the factories and Faker, in batches (`make(n)`, then one `flush()`).
+- Do not write one case per rule or per screen by hand. The tests cover the rules; each test builds its own data.
 
 ## Authentication & Authorization
 
@@ -291,3 +298,4 @@ export class PublicController {
 - Use vitest for testing
 - Mock external dependencies
 - Build test data with the module factories, and pass only the values the test checks. See [Entity factories](/lonestone-boilerplate/guides/factories)
+- Write each test in three parts: arrange (create its own data with the factories), act, assert. Do not share a data set between tests, and do not call a seeder from a test: a shared set hides what each test depends on.
