@@ -44,7 +44,7 @@ Not every PR yields an intention. Refactors and boilerplate-internal CI take the
 
 ## Drafting the release note (before or on the Release PR)
 
-The note is a file: `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`. The CI check on the Release PR only cares that this file exists on the PR HEAD. It does not care *when* it was written.
+The note is a file: `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`. The CI check on the Release PR only cares that this file exists on the PR HEAD. It does not care _when_ it was written.
 
 Write it as soon as you know why the bundle exists — on a regular PR into `main`, or later on the Release PR. Waiting for the Release PR to exist first is a circle: that PR only appears after a push to `main`, and the story is easiest to write while the work is still fresh.
 

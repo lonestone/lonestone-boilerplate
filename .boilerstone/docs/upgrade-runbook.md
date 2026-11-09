@@ -63,9 +63,9 @@ Work through `upgrade-session.md`. Agents must never decide apply/skip alone.
 2. Inspect the project for greppable signals (scripts, deps, configs, adapters).
 3. Present a short table to the human:
 
-   | Intention | Proposal | Why (one observable signal) |
-   |---|---|---|
-   | `vX.Y.Z/slug` | **apply** / **skip** / **ask** | … |
+   | Intention     | Proposal                       | Why (one observable signal) |
+   | ------------- | ------------------------------ | --------------------------- |
+   | `vX.Y.Z/slug` | **apply** / **skip** / **ask** | …                           |
 
 4. **Anti-pattern — never do this:** proposing "skip" because the project is still on the tool or pattern the intention replaces. That's backwards — replacing it is the whole point of the intention.
    - Still on ESLint/Prettier → evidence to **apply** oxlint/oxfmt, not skip.

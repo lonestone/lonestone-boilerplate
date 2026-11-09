@@ -1,21 +1,21 @@
 # Architecture & design decisions
 
-> Maintainer note (producer-only; removed from consumer projects). This page records *why* the system is built the way it is, so future changes don't accidentally undo a deliberate choice. For what the system does, read [how-it-works.md](./how-it-works.md); for the execution procedure, [upgrade-runbook.md](./upgrade-runbook.md).
+> Maintainer note (producer-only; removed from consumer projects). This page records _why_ the system is built the way it is, so future changes don't accidentally undo a deliberate choice. For what the system does, read [how-it-works.md](./how-it-works.md); for the execution procedure, [upgrade-runbook.md](./upgrade-runbook.md).
 
 ## Design decisions
 
-| Decision | Why |
-| --- | --- |
-| Ship intentions (meaning), not diffs | The consumer's code has diverged; replaying a diff would overwrite business logic. |
-| Git tags are the source of truth for releases | A project forked at an old version doesn't have newer files on disk, but the tag does. Disk is only a fallback for drafts not yet tagged. |
-| Tool-agnostic markdown + JSON | The same artifacts work for a human and for any agent. No tool lock-in. |
-| Skills are thin shims | [`SKILL.md`](../../.claude/skills/boilerstone-upgrade/SKILL.md) holds no process of its own — it points at the runbook, so the process has one home. |
-| Pure logic isolated from I/O | `computeUpgradePath` in `boilerplate-core.ts` is side-effect-free and easy to test; `resolveUpgradePath` in `boilerplate.ts` owns everything stateful behind one interface. |
-| Safety-first git policy | Refuse a dirty worktree, work on a dedicated branch, never auto-push/merge/stash, one commit per risky intention (small supervised batches allowed), and `breaking-manual` always stops for a human. |
-| Removable in one move | `rm -rf .boilerstone` plus dropping the `boilerplate` script detaches the system. Nothing else depends on it — keep it that way. |
-| Executor-independent protocol | Intentions, provenance, `copy`/`adapt` policy, tracking state, and session progress are all markdown/JSON produced by the CLI. Humans and AI skills are just adapters over that protocol. |
-| Atomic preparation | `prepareUpgrade` builds and validates in a temporary directory before creating the branch or publishing the workspace. A failure leaves no partial workspace and never overwrites progress. |
-| Deep tracking-state lifecycle | Everything about `boilerplate.json` — creation, validation, recording, finalization, persistence — lives behind the `trackingState` interface; commands only present its results. |
+| Decision                                      | Why                                                                                                                                                                                                  |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ship intentions (meaning), not diffs          | The consumer's code has diverged; replaying a diff would overwrite business logic.                                                                                                                   |
+| Git tags are the source of truth for releases | A project forked at an old version doesn't have newer files on disk, but the tag does. Disk is only a fallback for drafts not yet tagged.                                                            |
+| Tool-agnostic markdown + JSON                 | The same artifacts work for a human and for any agent. No tool lock-in.                                                                                                                              |
+| Skills are thin shims                         | [`SKILL.md`](../../.claude/skills/boilerstone-upgrade/SKILL.md) holds no process of its own — it points at the runbook, so the process has one home.                                                 |
+| Pure logic isolated from I/O                  | `computeUpgradePath` in `boilerplate-core.ts` is side-effect-free and easy to test; `resolveUpgradePath` in `boilerplate.ts` owns everything stateful behind one interface.                          |
+| Safety-first git policy                       | Refuse a dirty worktree, work on a dedicated branch, never auto-push/merge/stash, one commit per risky intention (small supervised batches allowed), and `breaking-manual` always stops for a human. |
+| Removable in one move                         | `rm -rf .boilerstone` plus dropping the `boilerplate` script detaches the system. Nothing else depends on it — keep it that way.                                                                     |
+| Executor-independent protocol                 | Intentions, provenance, `copy`/`adapt` policy, tracking state, and session progress are all markdown/JSON produced by the CLI. Humans and AI skills are just adapters over that protocol.            |
+| Atomic preparation                            | `prepareUpgrade` builds and validates in a temporary directory before creating the branch or publishing the workspace. A failure leaves no partial workspace and never overwrites progress.          |
+| Deep tracking-state lifecycle                 | Everything about `boilerplate.json` — creation, validation, recording, finalization, persistence — lives behind the `trackingState` interface; commands only present its results.                    |
 
 ## Upgrade resolution
 

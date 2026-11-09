@@ -32,9 +32,9 @@ gitGraph
 
 ### Tuesday — Pierrick merges
 
-The PR title is `feat(auth): add session revocation endpoint` — CI checked that it is a valid conventional header, because this title is about to become permanent. When the PR is ready, Pierrick tells his agent "finalize this PR". The agent — following the `finalize-pr` skill, on Pierrick's machine — reads the full diff and writes the **PR description** as the future commit body: a short paragraph on *why* revocation uses tombstone checks instead of session deletes. Nothing else — no screenshots, no checklist; review chatter lives in comments. A CI check lints the description and goes green.
+The PR title is `feat(auth): add session revocation endpoint` — CI checked that it is a valid conventional header, because this title is about to become permanent. When the PR is ready, Pierrick tells his agent "finalize this PR". The agent — following the `finalize-pr` skill, on Pierrick's machine — reads the full diff and writes the **PR description** as the future commit body: a short paragraph on _why_ revocation uses tombstone checks instead of session deletes. Nothing else — no screenshots, no checklist; review chatter lives in comments. A CI check lints the description and goes green.
 
-Then anyone can merge, from anywhere. The repository is configured so the squash commit message is *always* "PR title + PR description" — the GitHub merge button, `gh`, and auto-merge all produce the same curated commit. There is no message to compose at merge time, so there is no way to fumble it. Pierrick clicks the button. The branch dies. The four WIP subjects do **not** ride along — "wip endpoint" and "typo in guard" tell a future reader nothing the diff and the rationale don't.
+Then anyone can merge, from anywhere. The repository is configured so the squash commit message is _always_ "PR title + PR description" — the GitHub merge button, `gh`, and auto-merge all produce the same curated commit. There is no message to compose at merge time, so there is no way to fumble it. Pierrick clicks the button. The branch dies. The four WIP subjects do **not** ride along — "wip endpoint" and "typo in guard" tell a future reader nothing the diff and the rationale don't.
 
 `main` now has **one** new commit:
 
@@ -91,11 +91,11 @@ GitHub is welcome as an **editing venue** and a **mirror**, but it is never the 
 
 We squash-merge every pull request, so the squash commit message is the one hand-written artifact per pull request. Everything else derives from it:
 
-| Zoom | Artifact | Who writes it | What it holds |
-| --- | --- | --- | --- |
-| Implementation | Squash commit message | Human-guided, at pull request finalization | What changed and **why** |
-| Inventory | `CHANGELOG.md` | Generated | One line per change, links to commits |
-| Release | Note in `apps/documentation/src/content/docs/releases/` | Human (often agent-drafted) | Why this release exists |
+| Zoom           | Artifact                                                | Who writes it                              | What it holds                         |
+| -------------- | ------------------------------------------------------- | ------------------------------------------ | ------------------------------------- |
+| Implementation | Squash commit message                                   | Human-guided, at pull request finalization | What changed and **why**              |
+| Inventory      | `CHANGELOG.md`                                          | Generated                                  | One line per change, links to commits |
+| Release        | Note in `apps/documentation/src/content/docs/releases/` | Human (often agent-drafted)                | Why this release exists               |
 
 The rationale is written **once**, in the commit body. The changelog does not copy it — it links to the commit, and `git show` is one hop away. A second copy would drift.
 
@@ -104,7 +104,7 @@ The rationale is written **once**, in the commit body. The changelog does not co
 release-please parses the squash commit message with precise rules. Knowing them explains several of our conventions:
 
 - The **subject line** is parsed as a conventional commit: one changelog entry, counted in the version math.
-- A body **paragraph that starts unbulleted, after a blank line, with a standard type** (`fix(api): …`) is parsed as an *additional* change: its own changelog line, counted in the version. That is how one PR declares two changes.
+- A body **paragraph that starts unbulleted, after a blank line, with a standard type** (`fix(api): …`) is parsed as an _additional_ change: its own changelog line, counted in the version. That is how one PR declares two changes.
 - **Bulleted lines (`* fix: typo`) never match.** If GitHub's auto-generated commit list ever slips into a merge, it is invisible to the parser — a hygiene problem, not a versioning incident.
 - The token `BREAKING-CHANGE:` matches **anywhere** in the body, even mid-sentence, and forces a major release. That is why our always-on agent rules warn about it: it is valid syntax that no linter can distinguish from prose.
 
@@ -130,7 +130,7 @@ Commit **scopes** are the project's domains, defined once in `commitlint.config.
 
 ### Why we let a tool write the changelog
 
-We used to forbid generated changelogs. That rule predates agent-written commits: back then, generation meant compiling messy WIP subjects into noise. With curated squash messages, the generated changelog *is* the curated inventory — the granularity is decided by the author (one paragraph per change) and the reasons live in commit bodies, one link away. The two arguments for hand-curation disappeared, so the rule did too.
+We used to forbid generated changelogs. That rule predates agent-written commits: back then, generation meant compiling messy WIP subjects into noise. With curated squash messages, the generated changelog _is_ the curated inventory — the granularity is decided by the author (one paragraph per change) and the reasons live in commit bodies, one link away. The two arguments for hand-curation disappeared, so the rule did too.
 
 ### Why the Release PR rebases on every push
 
@@ -146,9 +146,9 @@ A changelog line cannot say "these five PRs together deliver X" — that context
 
 ### Why a human merges the Release PR
 
-We considered auto-merging the Release PR when its checks are green, and rejected it. Green checks mean the PR is *allowed* to merge, not that the team wants this bundle released. A project that wants every merge in production should simply stay in the "without versions" mode rather than automate away the one human gate that versioning exists to provide.
+We considered auto-merging the Release PR when its checks are green, and rejected it. Green checks mean the PR is _allowed_ to merge, not that the team wants this bundle released. A project that wants every merge in production should simply stay in the "without versions" mode rather than automate away the one human gate that versioning exists to provide.
 
-What *can* be automated is everything after that click: with [`PROMOTE_ON_RELEASE`](/lonestone-boilerplate/references/1_release_and_versionning#promote-automatically-on-release), merging the Release PR chains straight into the deploy — optionally pausing on a GitHub "Approve and deploy" button when the environment has required reviewers. The gate moves to a better place; it does not disappear.
+What _can_ be automated is everything after that click: with [`PROMOTE_ON_RELEASE`](/lonestone-boilerplate/references/1_release_and_versionning#promote-automatically-on-release), merging the Release PR chains straight into the deploy — optionally pausing on a GitHub "Approve and deploy" button when the environment has required reviewers. The gate moves to a better place; it does not disappear.
 
 ### Why deployment environments don't own branches
 
@@ -209,19 +209,19 @@ flowchart TD
 
 The same system runs in both places, with a few producer-only pieces:
 
-| Piece | Boilerplate repo | Consumer project |
-| --- | --- | --- |
-| Conventional commits, commitlint, lefthook | ✔ | ✔ (edits the scopes array) |
-| PR title + description lint | ✔ | ✔ |
-| Intention gate (`unreleased/` or `no-intention` label) | ✔ | ✘ (no intention machinery) |
-| release-please | ✔, versioned | Optional: off (without versions) or on |
-| Generated `CHANGELOG.md` | ✔ | ✔ when versioned |
-| Release notes in the docs app | ✔ (enforced) | ✔ when versioned (opt-in enforcement) |
-| Release-time intention plumbing on the Release PR | ✔ | ✘ |
-| Versioned GHCR images | ✔ | Recommended when versioned |
-| Promote workflow | optional | Recommended when versioned and Dokploy pulls images |
-| `CONTRIBUTING.md` | ✔ | ✔ shipped; personalize scopes via `commitlint.config.ts` |
-| GitHub settings script | ✔ | ✔ (run once at project setup) |
+| Piece                                                  | Boilerplate repo | Consumer project                                         |
+| ------------------------------------------------------ | ---------------- | -------------------------------------------------------- |
+| Conventional commits, commitlint, lefthook             | ✔                | ✔ (edits the scopes array)                               |
+| PR title + description lint                            | ✔                | ✔                                                        |
+| Intention gate (`unreleased/` or `no-intention` label) | ✔                | ✘ (no intention machinery)                               |
+| release-please                                         | ✔, versioned     | Optional: off (without versions) or on                   |
+| Generated `CHANGELOG.md`                               | ✔                | ✔ when versioned                                         |
+| Release notes in the docs app                          | ✔ (enforced)     | ✔ when versioned (opt-in enforcement)                    |
+| Release-time intention plumbing on the Release PR      | ✔                | ✘                                                        |
+| Versioned GHCR images                                  | ✔                | Recommended when versioned                               |
+| Promote workflow                                       | optional         | Recommended when versioned and Dokploy pulls images      |
+| `CONTRIBUTING.md`                                      | ✔                | ✔ shipped; personalize scopes via `commitlint.config.ts` |
+| GitHub settings script                                 | ✔                | ✔ (run once at project setup)                            |
 
 On the boilerplate repository, a PR that changes something consumers must adapt to also carries its **migration intention** — written in the same PR, by the author who has the context, not reconstructed at release time by the maintainer. The maintainer's job on the Release PR is plumbing: ordering the staged intentions and checking staleness. The human release note can be drafted earlier, on a regular PR, so the story is written while the work is still fresh. See the [release maintainer runbook](https://github.com/lonestone/lonestone-boilerplate/blob/main/.boilerstone/docs/release-maintainer-runbook.md).
 

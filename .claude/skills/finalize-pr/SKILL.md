@@ -26,7 +26,7 @@ Run the transformation in `CONTRIBUTING.md` (messy WIP commits → one curated s
 2. Decide the consumer-visible changes this PR lands. One primary change = the title. Each additional one = one unbulleted conventional paragraph in the description. Drop the rest of the WIP history — "wip", "fmt", tests-only, and fix-of-the-fix subjects do not ride along.
 3. Set the **title** to a valid conventional header with a valid scope from `commitlint.config.ts`.
 4. Write the **description** as the future commit body:
-   - Rationale prose first: why this approach, what was rejected. Distill WIP commit *bodies* by judgment; do not concatenate subjects.
+   - Rationale prose first: why this approach, what was rejected. Distill WIP commit _bodies_ by judgment; do not concatenate subjects.
    - Then, after a blank line, one unbulleted conventional paragraph per extra consumer-visible change (`fix(api): …`).
    - No screenshots, checklists, or review chatter (those stay in comments).
    - Keep, or add, a `Co-Authored-By:` trailer at the very end for each AI agent that wrote part of the change (look at the WIP commit trailers and at the existing description). Never drop one while rewriting.
