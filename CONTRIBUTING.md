@@ -8,6 +8,8 @@ Valid types and scopes live in [`commitlint.config.ts`](./commitlint.config.ts).
 
 We follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). Every message looks like `type(scope): description`. A local git hook (lefthook) runs commitlint on the message. `pnpm install` installs the hooks for you (root `prepare` script). If it fails, the error tells you which rule broke; the allowed values are in `commitlint.config.ts`. Pre-push runs lint and typecheck; tests run in CI. Those hooks are the same on Windows, macOS, and Linux.
 
+The scopes are the `SCOPES` array in `commitlint.config.ts`, and the types are the `TYPES` array in the same file. Commitlint also limits the header and every line of the body and footer to 100 characters (rules from `@commitlint/config-conventional`). Wrap long body lines.
+
 **WIP commits on your branch only need that format.** Half-steps, typo fixes, and "wip" subjects are fine. They will never land on `main` as commits. We squash. Their messages die with them unless you deliberately promote the _content_ into the pull request description.
 
 The subject says what changed. The **body** says why: the approach you took, what you rejected, and the constraint that drove it. Write a body whenever the commit makes a decision.
