@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import process from 'node:process'
+import { parseArgs } from 'node:util'
 import lint from '@commitlint/lint'
 import load from '@commitlint/load'
 import type { QualifiedConfig } from '@commitlint/types'
@@ -111,8 +112,36 @@ function containsBreakingChangeToken(text: string): boolean {
   return text.includes(BREAKING_CHANGE_TOKEN)
 }
 
-function resolveEventPath(): string {
-  const fromArg = process.argv[2]
+function parseCliArguments(): {
+  title: string | undefined
+  bodyFile: string | undefined
+  positionals: string[]
+} {
+  const { values, positionals } = parseArgs({
+    args: process.argv.slice(2),
+    allowPositionals: true,
+    options: {
+      title: { type: 'string' },
+      'body-file': { type: 'string' },
+    },
+  })
+  return { title: values.title, bodyFile: values['body-file'], positionals }
+}
+
+function readLocalPullRequest(
+  title: string | undefined,
+  bodyFile: string | undefined,
+): PullRequestPayload {
+  if (title === undefined || bodyFile === undefined) {
+    throw new Error('Local mode needs both --title "<title>" and --body-file <file> (- for stdin).')
+  }
+  // File descriptor 0 is stdin.
+  const body = readFileSync(bodyFile === '-' ? 0 : resolve(bodyFile), 'utf8')
+  return { title, body, draft: false }
+}
+
+function resolveEventPath(positionals: string[]): string {
+  const fromArg = positionals[0]
   if (fromArg !== undefined && fromArg !== '') {
     return resolve(fromArg)
   }
@@ -253,8 +282,14 @@ function printIssues(issues: LintIssue[]): void {
 }
 
 async function main(): Promise<void> {
-  const eventPath = resolveEventPath()
-  const pullRequest = readPullRequest(eventPath)
+  const { title, bodyFile, positionals } = parseCliArguments()
+  const isLocalMode = title !== undefined || bodyFile !== undefined
+  if (isLocalMode && positionals.length > 0) {
+    throw new Error('Pass either an event file or --title with --body-file, not both.')
+  }
+  const pullRequest = isLocalMode
+    ? readLocalPullRequest(title, bodyFile)
+    : readPullRequest(resolveEventPath(positionals))
   const config = await load()
   const issues = await collectIssues(pullRequest, config)
 
