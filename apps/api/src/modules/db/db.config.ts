@@ -1,10 +1,10 @@
 import type { Options } from '@mikro-orm/postgresql'
 import { EntityCaseNamingStrategy } from '@mikro-orm/core'
 import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy'
-import { Migrator } from '@mikro-orm/migrations'
 import { defineConfig } from '@mikro-orm/postgresql'
 import { SeedManager } from '@mikro-orm/seeder'
 import { config } from '../../config/env.config'
+import { Migrator } from './entity-snapshot-migrator'
 
 type CreateMikroOrmOptions = {
   isTest?: boolean
