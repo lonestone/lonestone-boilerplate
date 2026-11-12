@@ -50,6 +50,8 @@ Drop the rest of the WIP history. Subjects like "wip endpoint" or "fmt" describe
 
 **Screenshots, checklists, and review chatter go in comments**, never in the description. They would otherwise land in `git log`.
 
+Before `gh pr create`, run the same check as CI on the text you are about to submit: `pnpm lint:pr --title "<title>" --body-file <file>` (`--body-file -` reads the description from stdin). Without it, a bad description fails only in CI.
+
 Draft pull requests may have an empty description. Finalization fills it in. A non-draft pull request must have a non-empty description.
 
 Never write `BREAKING-CHANGE:` in the description unless you intend to force a major release.

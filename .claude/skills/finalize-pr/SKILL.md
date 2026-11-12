@@ -31,8 +31,7 @@ Run the transformation in `CONTRIBUTING.md` (messy WIP commits → one curated s
    - No screenshots, checklists, or review chatter (those stay in comments).
    - Keep, or add, a `Co-Authored-By:` trailer at the very end for each AI agent that wrote part of the change (look at the WIP commit trailers and at the existing description). Never drop one while rewriting.
 5. Scan the title and description for accidental `BREAKING-CHANGE:`. Never write that token unless the user intends to force a major. Prefer `type(scope)!:` in the title for an intentional major.
-6. Validate locally before applying. `pnpm lint:pr <event.json>` runs the same check as CI on a GitHub event file:
-   `{"pull_request": {"title": "...", "body": "...", "draft": false}}`. Fix every error it reports.
+6. Validate locally before applying. `pnpm lint:pr --title "..." --body-file <file>` runs the same check as CI on the text you wrote (`--body-file -` reads stdin). Fix every error it reports.
 7. Apply both with `gh pr edit --title "..." --body-file <file>`.
 
 Wait for the **PR lint** check triggered by the edit, and report its result. If it fails, the error is the fix — edit and retry.
