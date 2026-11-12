@@ -284,6 +284,9 @@ function printIssues(issues: LintIssue[]): void {
 async function main(): Promise<void> {
   const { title, bodyFile, positionals } = parseCliArguments()
   const isLocalMode = title !== undefined || bodyFile !== undefined
+  if (isLocalMode && positionals.length > 0) {
+    throw new Error('Pass either an event file or --title with --body-file, not both.')
+  }
   const pullRequest = isLocalMode
     ? readLocalPullRequest(title, bodyFile)
     : readPullRequest(resolveEventPath(positionals))
