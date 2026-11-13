@@ -1,4 +1,4 @@
-import { Entity, ManyToOne, PrimaryKey, Property } from '@mikro-orm/decorators/legacy'
+import { Entity, Index, ManyToOne, PrimaryKey, Property } from '@mikro-orm/decorators/legacy'
 import { User } from './user.entity'
 
 @Entity({ tableName: 'account' })
@@ -13,6 +13,7 @@ export class Account {
   providerId!: string
 
   @ManyToOne(() => User, { fieldName: 'userId' })
+  @Index()
   user!: User
 
   @Property({ nullable: true })
