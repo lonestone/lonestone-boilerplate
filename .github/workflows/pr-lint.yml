@@ -8,6 +8,11 @@ permissions:
   contents: read
   pull-requests: read
 
+# Each edit of the title or the description starts a run. Only the last one matters.
+concurrency:
+  group: pr-lint-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: PR title and description
