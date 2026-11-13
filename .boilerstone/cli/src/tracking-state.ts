@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { BOILERPLATE_REMOTE } from './boilerplate-core.js'
+import { isRecord } from './utils.js'
 
 interface AppliedIntention {
   id: string
@@ -11,6 +12,15 @@ interface AppliedIntention {
 interface SkippedIntention {
   id: string
   reason: string
+}
+
+/** An extension added with `extension add`. */
+interface InstalledExtension {
+  name: string
+  /** Extension release without the leading v, or `local` for a working copy. */
+  version: string
+  options: Record<string, string | string[]>
+  installedAt: string
 }
 
 interface TrackingState {
@@ -26,6 +36,8 @@ interface TrackingState {
    * Missing means unknown, for example a project that was onboarded.
    */
   apps?: string[]
+  /** Missing means no extension was ever added. */
+  extensions?: InstalledExtension[]
   trackedDomains: string[]
   intentions: {
     applied: AppliedIntention[]
@@ -76,10 +88,6 @@ function compareVersions(a: string, b: string): number {
   return 0
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 function isValidDate(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return false
@@ -110,6 +118,7 @@ function normalize(
     'schemaVersion',
     'source',
     'apps',
+    'extensions',
     'trackedDomains',
     'intentions',
   ])) {
@@ -157,6 +166,32 @@ function normalize(
     (!Array.isArray(state.apps) || state.apps.some((app) => typeof app !== 'string' || !app))
   ) {
     invalid('apps must be an array of non-empty strings')
+  }
+  if (state.extensions !== undefined) {
+    if (!Array.isArray(state.extensions)) {
+      invalid('extensions must be an array')
+    }
+    const names = new Set<string>()
+    for (const [index, extension] of (state.extensions as unknown[]).entries()) {
+      if (
+        !isRecord(extension) ||
+        typeof extension.name !== 'string' ||
+        !extension.name ||
+        typeof extension.version !== 'string' ||
+        !extension.version ||
+        !isRecord(extension.options) ||
+        !isValidDate(extension.installedAt)
+      ) {
+        invalid(
+          `extensions[${index}] needs a name, a version, an options object and an installedAt YYYY-MM-DD date`,
+        )
+      }
+      const name = (extension as { name: string }).name
+      if (names.has(name)) {
+        invalid(`duplicate extension: ${name}`)
+      }
+      names.add(name)
+    }
   }
   const domainValues = Array.isArray(state.trackedDomains)
     ? state.trackedDomains
@@ -243,6 +278,9 @@ function normalize(
       currentVersion: currentVersion.replace(/^v(?=\d)/, ''),
     },
     ...(Array.isArray(state.apps) ? { apps: [...state.apps] } : {}),
+    ...(Array.isArray(state.extensions)
+      ? { extensions: (state.extensions as InstalledExtension[]).map((item) => ({ ...item })) }
+      : {}),
     intentions: {
       ...intentions,
       applied: normalizedApplied,
@@ -322,6 +360,29 @@ function record(state: TrackingState, outcome: IntentionOutcome): TrackingState 
   return normalize({ ...currentState, intentions }, 'intention outcome')
 }
 
+function addExtension(
+  state: TrackingState,
+  extension: Omit<InstalledExtension, 'installedAt'> & { installedAt?: string },
+): TrackingState {
+  const currentState = normalize(state, 'tracking state')
+  if (currentState.extensions?.some((entry) => entry.name === extension.name)) {
+    throw new Error(`Extension already recorded: ${extension.name}`)
+  }
+  return normalize(
+    {
+      ...currentState,
+      extensions: [
+        ...(currentState.extensions ?? []),
+        {
+          ...extension,
+          installedAt: extension.installedAt ?? new Date().toISOString().slice(0, 10),
+        },
+      ],
+    },
+    'extension record',
+  )
+}
+
 function finish(state: TrackingState, targetVersion: string): TrackingState {
   const currentState = normalize(state, 'tracking state')
   const nextState = normalize(
@@ -352,6 +413,6 @@ function write(projectPath: string, state: TrackingState): void {
   }
 }
 
-const trackingState = { create, finish, read, record, write }
+const trackingState = { addExtension, create, finish, read, record, write }
 
-export { trackingState, type TrackingState }
+export { trackingState, type InstalledExtension, type TrackingState }

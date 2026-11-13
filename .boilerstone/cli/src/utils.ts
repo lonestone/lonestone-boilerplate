@@ -5,7 +5,17 @@ import {
   type SpawnSyncOptions,
   type SpawnSyncReturns,
 } from 'node:child_process'
-import { closeSync, cpSync, openSync, readFileSync, renameSync, rmSync } from 'node:fs'
+import {
+  closeSync,
+  cpSync,
+  existsSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+} from 'node:fs'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
@@ -139,4 +149,73 @@ export function movePath(source: string, destination: string): void {
     cpSync(source, destination, { recursive: true })
     rmSync(source, { recursive: true, force: true })
   }
+}
+
+export function info(message: string): void {
+  console.log(`${colorize('→', 'cyan')} ${message}`)
+}
+
+export function ok(message: string): void {
+  console.log(`${colorize('✓', 'green')} ${message}`)
+}
+
+/**
+ * Runs git in `cwd`, whatever repository invoked the CLI, and returns its
+ * trimmed output. `trimStart: false` keeps leading spaces that carry meaning,
+ * as in `git status --short`.
+ */
+export function runGit(
+  args: string[],
+  cwd?: string,
+  { trimStart = true }: { trimStart?: boolean } = {},
+): string {
+  const output = runFileSync('git', args, {
+    cwd,
+    env: isolatedGitEnv(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  return trimStart ? output.trim() : output.trimEnd()
+}
+
+/** First folder from `start` upwards that holds one of `markers` (relative paths), or null. */
+export function findUpwards(start: string, markers: readonly string[]): string | null {
+  let directory = start
+  while (true) {
+    if (markers.some((marker) => existsSync(join(directory, marker)))) {
+      return directory
+    }
+    const parent = dirname(directory)
+    if (parent === directory) {
+      return null
+    }
+    directory = parent
+  }
+}
+
+/** A `--project` value as an absolute path, relative paths being relative to the current folder. */
+export function resolveProjectPath(projectPath: string): string {
+  return isAbsolute(projectPath) ? projectPath : resolve(process.cwd(), projectPath)
+}
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** Files under `rootPath/directory`, as paths relative to `rootPath`. */
+export function listFilesRecursively(rootPath: string, directory: string): string[] {
+  const absolute = join(rootPath, directory)
+  if (!existsSync(absolute)) {
+    return []
+  }
+  return readdirSync(absolute, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name)
+    if (entry.isDirectory()) {
+      return listFilesRecursively(rootPath, path)
+    }
+    return entry.isFile() ? [path] : []
+  })
+}
+
+export function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }

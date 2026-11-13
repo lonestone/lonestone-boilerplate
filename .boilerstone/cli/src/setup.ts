@@ -10,36 +10,10 @@ import {
 import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import Enquirer from 'enquirer'
 import { CLI_PACKAGE_NAME } from './boilerplate-core.js'
 import { hasTemplateScope, isBoilerplateMaintainerCheckout } from './generate.js'
+import { Confirm, Input } from './prompts.js'
 import { colorize } from './utils.js'
-
-interface InputPromptOptions {
-  message: string
-  initial?: string
-}
-
-interface ConfirmPromptOptions {
-  name: string
-  message: string
-  initial?: boolean
-}
-
-interface InputPrompt {
-  run: () => Promise<string>
-}
-
-interface ConfirmPrompt {
-  run: () => Promise<boolean>
-}
-
-interface EnquirerConstructors {
-  Input: new (options: InputPromptOptions) => InputPrompt
-  Confirm: new (options: ConfirmPromptOptions) => ConfirmPrompt
-}
-
-const { Input, Confirm } = Enquirer as unknown as EnquirerConstructors
 
 const __filename = fileURLToPath(import.meta.url)
 const projectRoot = process.cwd()

@@ -25,3 +25,20 @@ For why the upgrade system exists, read [Boilerplate upgrades](/lonestone-boiler
 ## Good to know
 
 <CliCards />
+
+## Extensions
+
+An extension adds a whole feature to a generated project in one reviewable commit. Run the commands at the root of the project:
+
+```bash
+pnpm boilerplate extension list
+pnpm boilerplate extension add capacitor
+```
+
+| Extension | What it adds | Documentation |
+| --- | --- | --- |
+| `capacitor` | Native Android and iOS apps built from `web-spa` or `web-ssr` | added to the project as **Adding features → Native Android and iOS apps** |
+
+`extension add` fetches the newest release of the extension that supports the project's boilerplate version (`--ref vX.Y.Z` to pick one). It asks for the extension's options, or reads them from flags (`--app-id com.acme.app`); with `--yes` and every option given, it asks nothing. It refuses to run on uncommitted changes, checks every precondition and every file it will change before writing anything, and puts the project back as it was if a step fails. The installation is recorded in the `extensions` field of `.boilerstone/boilerplate.json`.
+
+`BOILERSTONE_EXTENSION_REPO=<url or path>` installs from a fork or from a local checkout of the extension (used as it is, uncommitted changes included).

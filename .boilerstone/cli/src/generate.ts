@@ -11,7 +11,7 @@ import {
 } from './boilerplate-core.js'
 import { pruneWorkspace } from './prune-workspace.js'
 import { trackingState } from './tracking-state.js'
-import { colorize, isolatedGitEnv, runFileSync } from './utils.js'
+import { colorize, isolatedGitEnv, listFilesRecursively, runFileSync } from './utils.js'
 
 const TEMPLATE_SCOPE = '@boilerstone'
 
@@ -193,20 +193,6 @@ export function stripProducerOnlyBlocksFromText(text: string, label: string): st
     throw new Error(`${label}:${openedAt}: producer-only block never closed`)
   }
   return kept.join('\n')
-}
-
-function listFilesRecursively(rootPath: string, directory: string): string[] {
-  const absolute = join(rootPath, directory)
-  if (!existsSync(absolute)) {
-    return []
-  }
-  return readdirSync(absolute, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(directory, entry.name)
-    if (entry.isDirectory()) {
-      return listFilesRecursively(rootPath, path)
-    }
-    return entry.isFile() ? [path] : []
-  })
 }
 
 /**

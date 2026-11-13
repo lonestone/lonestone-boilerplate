@@ -1,6 +1,7 @@
 import process from 'node:process'
 import { CLI_BIN_NAME, CLI_PACKAGE_NAME } from './boilerplate-core.js'
 import { runBoilerplateCli } from './boilerplate.js'
+import { runExtensionCli } from './extension-command.js'
 import { runInstaller, printInstallerUsage } from './install.js'
 import { runSetup } from './setup.js'
 import { colorize, getCliVersion } from './utils.js'
@@ -17,6 +18,10 @@ ${colorize('Project commands:', 'cyan')}
   ${colorize('onboard', 'bright')}                 Add the upgrade system to an existing project
   ${colorize('rock', 'bright')}                    Set up the local dev environment: .env files, Docker, migrations (pnpm rock)
   ${colorize('upgrade [version]', 'bright')}       Stage a boilerplate upgrade (default: latest)
+
+${colorize('Extension commands:', 'cyan')}
+  ${colorize('extension list', 'bright')}          List the extensions a project can add
+  ${colorize('extension add <name>', 'bright')}    Add an extension, e.g. capacitor (native Android and iOS apps)
 
 ${colorize('Upgrade commands:', 'cyan')}
   ${colorize('bootstrap', 'bright')}               Wire an already-fetched .boilerstone/ directory
@@ -42,6 +47,7 @@ ${colorize('Examples:', 'cyan')}
   ${colorize(`pnpm dlx ${CLI_PACKAGE_NAME} init my-app --apps none`, 'dim')}   ${colorize('(API only)', 'dim')}
   ${colorize(`pnpm dlx ${CLI_PACKAGE_NAME} onboard`, 'dim')}
   ${colorize('pnpm boilerplate upgrade', 'dim')}   ${colorize('(inside a project)', 'dim')}
+  ${colorize('pnpm boilerplate extension add capacitor', 'dim')}   ${colorize('(inside a project)', 'dim')}
 `)
 }
 
@@ -66,6 +72,11 @@ async function main(): Promise<void> {
 
   if (command === 'init' || command === 'onboard') {
     await runInstaller(args)
+    return
+  }
+
+  if (command === 'extension') {
+    await runExtensionCli(args.slice(1))
     return
   }
 
