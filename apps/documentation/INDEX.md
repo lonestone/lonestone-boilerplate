@@ -13,7 +13,7 @@
 - [0_env-file.mdx](./src/content/docs/core-features/0_env-file.mdx) - Guide to manage .env files
 - [1_auth.mdx](./src/content/docs/core-features/1_auth.mdx) - How the authentication system works, how to use it. Better Auth explanation.
 - [2_monitoring.mdx](./src/content/docs/core-features/2_monitoring.mdx) - How to report errors, log traces and monitor your project with Sentry
-- [3_filestorage.mdx](./src/content/docs/core-features/3_filestorage.mdx) - File storage explanation
+- [3_filestorage.mdx](./src/content/docs/core-features/3_filestorage.mdx) - Store and serve files through a provider-neutral S3 module
 - [4_ai.mdx](./src/content/docs/core-features/4_ai.mdx) - How to use LLMs in your code (Langfuse, Vercel AI SDK, etc.)
 - [5_email.mdx](./src/content/docs/core-features/5_email.mdx) - Email explanation
 - [99_examples.mdx](./src/content/docs/core-features/99_examples.mdx) - Provided examples

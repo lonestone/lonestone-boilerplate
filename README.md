@@ -164,6 +164,7 @@ The project uses Docker Compose to provide the following services:
 
 - PostgreSQL - Database server
 - MailDev - SMTP server for development (not to be used in production!)
+- RustFS - S3-compatible object storage for local development
 
 ## ⌨️ Useful Commands
 

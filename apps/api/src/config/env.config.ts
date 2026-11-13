@@ -60,6 +60,17 @@ export const configValidationSchema = z.object({
   EMAIL_PASSWORD: z.string().optional(),
   EMAIL_FROM: z.string().email().default('noreply@lonestone.io'),
 
+  // Storage
+  STORAGE_ENABLED: z.stringbool().default(false),
+  STORAGE_BUCKET: z.string().min(1).optional(), // Required when storage is enabled
+  STORAGE_ENDPOINT: z.url().optional(), // Leave empty for AWS S3
+  STORAGE_REGION: z.string().min(1).default('us-east-1'),
+  STORAGE_ACCESS_KEY_ID: z.string().min(1).optional(), // Required when storage is enabled
+  STORAGE_SECRET_ACCESS_KEY: z.string().min(1).optional(), // Required when storage is enabled
+  STORAGE_FORCE_PATH_STYLE: z.stringbool().default(false),
+  STORAGE_CREATE_BUCKET: z.stringbool().default(false),
+  STORAGE_SIGNED_URL_EXPIRES_IN: z.coerce.number().int().min(1).max(604800).default(3600),
+
   // AI Providers
   OPENAI_API_KEY: z.string().optional(), // OpenAI
   ANTHROPIC_API_KEY: z.string().optional(), // Anthropic
@@ -84,6 +95,34 @@ if (!configParsed.success) {
   throw new Error(
     `Invalid environment variables: ${JSON.stringify(z.treeifyError(configParsed.error), null, 4)}`,
   )
+}
+
+// Credentials have no default, so a deployment cannot silently point at the local RustFS.
+function getStorageConfig(data: ConfigSchema) {
+  if (!data.STORAGE_ENABLED) return { enabled: false as const }
+
+  const {
+    STORAGE_BUCKET: bucket,
+    STORAGE_ACCESS_KEY_ID: accessKeyId,
+    STORAGE_SECRET_ACCESS_KEY: secretAccessKey,
+  } = data
+  if (!bucket || !accessKeyId || !secretAccessKey) {
+    throw new Error(
+      'STORAGE_BUCKET, STORAGE_ACCESS_KEY_ID and STORAGE_SECRET_ACCESS_KEY are required when STORAGE_ENABLED=true',
+    )
+  }
+
+  return {
+    enabled: true as const,
+    bucket,
+    endpoint: data.STORAGE_ENDPOINT,
+    region: data.STORAGE_REGION,
+    accessKeyId,
+    secretAccessKey,
+    forcePathStyle: data.STORAGE_FORCE_PATH_STYLE,
+    createBucket: data.STORAGE_CREATE_BUCKET,
+    signedUrlExpiresIn: data.STORAGE_SIGNED_URL_EXPIRES_IN,
+  }
 }
 
 export const config = {
@@ -113,6 +152,7 @@ export const config = {
     password: configParsed.data.EMAIL_PASSWORD,
     from: configParsed.data.EMAIL_FROM,
   },
+  storage: getStorageConfig(configParsed.data),
   clients: {
     webApp: {
       url: configParsed.data.CLIENTS_WEB_APP_URL,
