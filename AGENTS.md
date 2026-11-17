@@ -23,4 +23,4 @@ You must always follow these guidelines.
 Before committing or opening a PR, read `CONTRIBUTING.md` and follow it.
 Never write the token `BREAKING-CHANGE:` in a commit message unless you intend to force a major release.
 
-Formatting happens at commit time. The pre-commit hook runs oxfmt on the staged files. Never run a formatter by hand. That means no `pnpm fmt`, and no Prettier.
+The only formatter in this repo is oxfmt. It runs on save in the editor, with `pnpm fmt`, and in the pre-commit hook on the staged files. Never use Prettier or any other formatter.

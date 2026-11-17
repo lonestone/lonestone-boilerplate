@@ -15,7 +15,7 @@ A pre-commit hook formats the staged files with Oxfmt, and a commit fails when l
 
 ## Why
 
-An agent once ran `pnpm exec prettier --write` on whole folders. Prettier was only a transitive dependency with no config in the repo, so it rewrote 32 files that already followed `.oxfmtrc.json`. Nothing stopped it. Formatting now happens at commit time, on the staged files only, with the project's own formatter.
+An agent once ran `pnpm exec prettier --write` on whole folders. Prettier was only a transitive dependency with no config in the repo, so it rewrote 32 files that already followed `.oxfmtrc.json`. Nothing stopped it. The project now says that oxfmt is the only formatter, and a pre-commit hook runs it on the staged files only.
 
 In a worktree without `pnpm install`, the lefthook hook script found no binary and let the commit pass without any check. `assert_lefthook_installed: true` makes that case fail with a clear message instead.
 
@@ -44,9 +44,9 @@ The hook passes `--no-error-on-unmatched-pattern`. A staged file that Oxfmt igno
    Run `pnpm install` (or `pnpm run prepare`). The `prepare` script comes from `unreleased/install-lefthook-hooks`. Existing worktrees need this once, because the assertion is written into the hook script at install time.
    Done when: that file exists, and a badly formatted staged file is fixed by `git commit`.
 
-3. **The rule in the agent and contributor docs** — signal: `AGENTS.md` (and `CLAUDE.md`, if the project keeps a copy) and `CONTRIBUTING.md` do not say that formatting happens at commit time.
-   Add the one line from the staged references. Where `README.md` tells people to run `pnpm fmt`, replace it with the same message.
-   Done when: `rg -i "never run a formatter" AGENTS.md CONTRIBUTING.md` matches in each file.
+3. **The rule in the agent and contributor docs** — signal: `AGENTS.md` (and `CLAUDE.md`, if the project keeps a copy) and `CONTRIBUTING.md` do not say that oxfmt is the only formatter.
+   Add the one line from the staged references. Where `README.md` lists the format command, keep `pnpm fmt` and say that the hook also formats staged files.
+   Done when: `rg -i "only formatter" AGENTS.md CONTRIBUTING.md` matches in each file.
 
 ## Out of Scope
 
