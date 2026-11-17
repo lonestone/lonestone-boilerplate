@@ -19,7 +19,9 @@ An agent once ran `pnpm exec prettier --write` on whole folders. Prettier was on
 
 In a worktree without `pnpm install`, the lefthook hook script found no binary and let the commit pass without any check. `assert_lefthook_installed: true` makes that case fail with a clear message instead.
 
-The hook only reformats files that are staged. Files outside the index are never touched. It passes `--no-error-on-unmatched-pattern` so a staged file that Oxfmt ignores (for example `CHANGELOG.md`) does not fail the commit.
+The hook only reformats staged files. Files with nothing staged are never touched. A file that is only partly staged is restaged whole, so its unstaged changes join the commit.
+
+The hook passes `--no-error-on-unmatched-pattern`. A staged file that Oxfmt ignores, such as `CHANGELOG.md`, then does not fail the commit.
 
 ## Applies When
 
@@ -38,13 +40,13 @@ The hook only reformats files that are staged. Files outside the index are never
    Add the `pre-commit` job and the `assert_lefthook_installed: true` setting from the staged reference. Keep the project's own jobs, and the quiet output settings that `unreleased/ci-fmt-check-quiet-hooks` adds. Adjust the `glob` if the project formats other file types.
    Done when: `rg "assert_lefthook_installed" lefthook.yml` matches and `rg "oxfmt" lefthook.yml` matches.
 
-2. **Hooks reinstalled** — signal: `.git/hooks/pre-commit` does not exist.
+2. **Hooks reinstalled** — signal: the file printed by `git rev-parse --git-path hooks/pre-commit` does not exist.
    Run `pnpm install` (or `pnpm run prepare`). The `prepare` script comes from `unreleased/install-lefthook-hooks`. Existing worktrees need this once, because the assertion is written into the hook script at install time.
-   Done when: a badly formatted staged file is fixed by `git commit`.
+   Done when: that file exists, and a badly formatted staged file is fixed by `git commit`.
 
 3. **The rule in the agent and contributor docs** — signal: `AGENTS.md` (and `CLAUDE.md`, if the project keeps a copy) and `CONTRIBUTING.md` do not say that formatting happens at commit time.
    Add the one line from the staged references. Where `README.md` tells people to run `pnpm fmt`, replace it with the same message.
-   Done when: `rg "never run a formatter" AGENTS.md CONTRIBUTING.md` matches.
+   Done when: `rg -i "never run a formatter" AGENTS.md CONTRIBUTING.md` matches in each file.
 
 ## Out of Scope
 
@@ -56,12 +58,14 @@ The hook only reformats files that are staged. Files outside the index are never
 
 - `lefthook.yml` — **adapt**
 - `AGENTS.md` — **adapt**
+- `CLAUDE.md` — **adapt**
 - `CONTRIBUTING.md` — **adapt**
+- `README.md` — **adapt**
 
 ## Validation
 
 - Stage a badly formatted `.ts` file and commit it: the committed version is formatted.
-- A file that is modified but not staged is left as it was.
+- A file that is modified but has nothing staged is left as it was.
 - In a worktree without `pnpm install`, `git commit` fails and says that lefthook is not installed.
 
 ## Record Result
