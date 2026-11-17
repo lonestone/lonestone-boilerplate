@@ -178,7 +178,7 @@ The project uses Docker Compose to provide the following services:
 - **Start development**: `pnpm dev`
 - **Build applications**: `pnpm build`
 - **Lint applications**: `pnpm lint`
-- **Format code**: `pnpm fmt`
+- **Format code**: nothing to run. The pre-commit hook formats staged files; never run a formatter by hand
 - **Generate OpenAPI clients**: `pnpm generate`
 
 ### Database (API)
