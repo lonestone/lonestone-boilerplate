@@ -34,8 +34,8 @@ GitHub bills each job in whole minutes, and a private repository has a monthly a
    Done when: `rg "pull_request.draft" .github/workflows/ci.yml` matches, and every job either has the condition or needs a job that has it.
 
 2. **Superseded pushes** — signal: `rg "concurrency" .github/workflows/ci.yml` returns nothing.
-   Add the `concurrency` block of the reference `ci.yml`. A pull request has one group and cancels its previous run. A push to `main` has its own group by commit, so no run on `main` is ever cancelled.
-   Done when: `rg "cancel-in-progress" .github/workflows/ci.yml` matches and the value is true only for a pull request.
+   Add the `concurrency` block of the reference `ci.yml`. A pull request has one group and cancels its previous run. A push to `main` has one group by ref and cancels the run of `main` that is still going.
+   Done when: `rg "cancel-in-progress" .github/workflows/ci.yml` matches and the value is `true`.
 
 3. **PR lint** — signal: `rg "concurrency" .github/workflows/pr-lint.yml` returns nothing.
    Add the `concurrency` block of the reference `pr-lint.yml`. Do not touch the `types` list: a required check must report on every new commit, and `scripts/github-repo-settings.md` asks for this one to be required.
