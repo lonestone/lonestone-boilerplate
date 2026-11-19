@@ -1,5 +1,5 @@
 ---
-id: unreleased/s3-file-storage
+id: v1.5.0/s3-file-storage
 domain: storage
 classification: informational
 ---

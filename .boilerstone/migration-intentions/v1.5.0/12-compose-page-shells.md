@@ -1,5 +1,5 @@
 ---
-id: unreleased/compose-page-shells
+id: v1.5.0/compose-page-shells
 domain: frontend
 classification: migration
 ---

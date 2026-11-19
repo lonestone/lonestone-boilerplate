@@ -1,5 +1,5 @@
 ---
-id: unreleased/ci-fmt-check-quiet-hooks
+id: v1.5.0/ci-fmt-check-quiet-hooks
 domain: tooling
 classification: migration
 ---

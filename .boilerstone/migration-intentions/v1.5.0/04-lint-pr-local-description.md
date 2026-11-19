@@ -1,5 +1,5 @@
 ---
-id: unreleased/lint-pr-local-description
+id: v1.5.0/lint-pr-local-description
 domain: tooling
 classification: migration
 requires:

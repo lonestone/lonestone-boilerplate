@@ -1,5 +1,5 @@
 ---
-id: unreleased/one-source-agent-instructions
+id: v1.5.0/one-source-agent-instructions
 domain: docker-env
 classification: migration
 ---
