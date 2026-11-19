@@ -4,7 +4,7 @@ import { Factory } from '@mikro-orm/seeder'
 import { Post, PostVersion } from './posts.entity'
 
 /**
- * Builds a draft post with a cover image.
+ * Builds a draft post without a cover image: the image is a stored `Media`, not a URL.
  * The owner is required and never invented: pass `{ user }`.
  * A post has no title of its own; add a version with `PostVersionFactory`.
  */
@@ -12,9 +12,7 @@ export class PostFactory extends Factory<Post> {
   model = Post
 
   protected definition(): EntityData<Post> {
-    return {
-      coverImage: `https://picsum.photos/seed/${faker.string.alphanumeric(8)}/1200/630`,
-    }
+    return {}
   }
 }
 

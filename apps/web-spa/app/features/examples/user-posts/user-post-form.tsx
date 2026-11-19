@@ -3,7 +3,7 @@ import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { cn } from '@boilerstone/ui/lib/utils'
 import { Image, Loader2, MoveDown, MoveUp, Plus, Trash2, Type, Video, X } from 'lucide-react'
-import { useState } from 'react'
+import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 
@@ -15,23 +15,36 @@ interface PostContentItem {
 interface PostFormData {
   title: string
   content: PostContentItem[]
-  coverImage?: string
   tags?: string[]
 }
 
+export type PostFormSubmitData = {
+  title: string
+  content: PostContentItem[]
+  tags?: string[]
+  /** A file replaces the cover image, `null` removes it, `undefined` keeps it. */
+  coverImage?: File | null
+}
+
 interface UserPostFormProps {
-  onSubmit: (data: PostFormData) => Promise<void>
+  onSubmit: (data: PostFormSubmitData) => Promise<void>
   initialData?: PostFormData
+  existingImageSrc?: string
   isSubmitting?: boolean
 }
 
 export default function UserPostForm({
   onSubmit,
   initialData,
+  existingImageSrc,
   isSubmitting = false,
 }: UserPostFormProps) {
   const { t } = useTranslation()
   const [activeContentType, setActiveContentType] = useState<'text' | 'image' | 'video'>('text')
+  const [coverImage, setCoverImage] = useState<File | null | undefined>(undefined)
+  const [imagePreview, setImagePreview] = useState<string | undefined>(existingImageSrc)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const objectUrlRef = useRef<string | undefined>(undefined)
   const [tagsText, setTagsText] = useState<string>((initialData?.tags ?? []).join(', '))
 
   const {
@@ -43,7 +56,6 @@ export default function UserPostForm({
     defaultValues: initialData || {
       title: '',
       content: [{ type: 'text', data: '' }],
-      coverImage: '',
       tags: [],
     },
   })
@@ -53,13 +65,47 @@ export default function UserPostForm({
     name: 'content',
   })
 
+  const releaseObjectUrl = () => {
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
+    objectUrlRef.current = undefined
+  }
+
+  useEffect(() => releaseObjectUrl, [])
+
+  const handleCoverImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    releaseObjectUrl()
+    objectUrlRef.current = URL.createObjectURL(file)
+    setCoverImage(file)
+    setImagePreview(objectUrlRef.current)
+  }
+
+  // Nothing reaches the server before Save: the cross cancels a new file, or marks the
+  // current image for removal.
+  const handleCoverImageClear = () => {
+    releaseObjectUrl()
+    if (fileInputRef.current) fileInputRef.current.value = ''
+
+    if (coverImage instanceof File) {
+      setCoverImage(undefined)
+      setImagePreview(existingImageSrc)
+    } else {
+      setCoverImage(null)
+      setImagePreview(undefined)
+    }
+  }
+
   const handleFormSubmit = async (data: PostFormData) => {
     try {
       await onSubmit({
-        ...data,
-        coverImage: data.coverImage?.trim() ? data.coverImage.trim() : undefined,
+        title: data.title,
+        content: data.content,
         tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
+        coverImage,
       })
+      setCoverImage(undefined)
     } catch (error) {
       console.error('Error submitting form:', error)
     }
@@ -96,12 +142,32 @@ export default function UserPostForm({
             {t('posts.form.coverImage')}
           </label>
           <Input
+            ref={fileInputRef}
             id="coverImage"
-            type="url"
-            placeholder={t('posts.form.coverImagePlaceholder')}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
             className="w-full"
-            {...register('coverImage')}
+            onChange={handleCoverImageChange}
           />
+          {imagePreview && (
+            <div className="mt-2 relative rounded-md overflow-hidden border">
+              <img
+                src={imagePreview}
+                alt={t('posts.form.imagePreviewAlt')}
+                className="max-h-[200px] w-full object-cover"
+              />
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                className="absolute top-2 right-2 size-7 opacity-80 hover:opacity-100"
+                onClick={handleCoverImageClear}
+                aria-label={t('posts.form.clearImage')}
+              >
+                <X className="size-3.5" />
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">

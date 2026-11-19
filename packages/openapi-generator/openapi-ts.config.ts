@@ -21,6 +21,13 @@ export default defineConfig({
       name: '@hey-api/sdk',
       transformer: true,
     },
-    'zod',
+    {
+      name: 'zod',
+      '~resolvers': {
+        // Multipart file fields are `format: binary`. Without this, zod.gen.ts validates them as strings.
+        string: ({ $, schema, symbols }) =>
+          schema.format === 'binary' ? $(symbols.z).attr('instanceof').call($('Blob')) : undefined,
+      },
+    },
   ],
 })
