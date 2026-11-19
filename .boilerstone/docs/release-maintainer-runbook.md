@@ -44,7 +44,7 @@ Not every PR yields an intention. Refactors and boilerplate-internal CI take the
 
 ## Drafting the release note (before or on the Release PR)
 
-The note is a file: `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`. The CI check on the Release PR only cares that this file exists on the PR HEAD. It does not care *when* it was written.
+The note is a file: `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`. The CI check on the Release PR only cares that this file exists on the PR HEAD. It does not care _when_ it was written.
 
 Write it as soon as you know why the bundle exists — on a regular PR into `main`, or later on the Release PR. Waiting for the Release PR to exist first is a circle: that PR only appears after a push to `main`, and the story is easiest to write while the work is still fresh.
 
@@ -126,6 +126,8 @@ pnpm boilerplate upgrade prepare --to X.Y.Z --fetch
 ```
 
 Never move a published tag. If a pushed tag turns out to be wrong, publish a new patch version instead. Do not publish the CLI by hand as part of a normal release.
+
+The same run builds the version images (`X.Y.Z`, `X.Y`, `latest`) in its **Build the release images** job. It cannot be a separate workflow: Release Please pushes the tag with `GITHUB_TOKEN`, and GitHub starts no workflow for such a push. If that job fails, re-run its failed jobs, or run **Build Docker to GHCR** by hand with `tag` set to `vX.Y.Z`. Promote refuses a version whose images are not all on GHCR.
 
 If `publish-cli` fails, re-run only that job. It is separate from release-please, so the tag is not touched. The manual fallback from the tagged commit is `pnpm --filter @lonestone/boilerstone-cli publish --access public --no-git-checks`.
 

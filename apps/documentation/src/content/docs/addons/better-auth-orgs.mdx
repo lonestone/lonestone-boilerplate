@@ -213,7 +213,7 @@ The Organizations plugin is now configured and operational. You can create organ
 
 Better Auth provides a complete set of [methods](https://www.better-auth.com/docs/plugins/organization#api-reference) to interact with organization entities (create, update, delete, invite members, etc.).
 
-However, you may need to implement custom business logic specific to your application. In this case, you can create your own methods in `auth.service.ts` to handle organization-related operations that go beyond what Better Auth provides out of the box.
+However, you may need to implement custom business logic specific to your application. In this case, create your own Nest providers/services (or call `AuthService` from `@thallesp/nestjs-better-auth`) to handle organization-related operations that go beyond what Better Auth provides out of the box.
 
 **Example:**
 

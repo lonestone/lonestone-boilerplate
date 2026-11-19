@@ -1,4 +1,3 @@
-import type { UpdatePostSchema } from '@boilerstone/openapi-generator'
 import { PageHeader } from '@boilerstone/ui/components/app/page'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
@@ -7,11 +6,12 @@ import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import {
   usePublishUserPost,
+  useSaveUserPostCoverImage,
   useUnpublishUserPost,
   useUpdateUserPost,
   useUserPost,
 } from './hooks/use-user-posts'
-import UserPostForm, { UserPostFormSkeleton } from './user-post-form'
+import UserPostForm, { UserPostFormSkeleton, type PostFormSubmitData } from './user-post-form'
 
 export default function UserPostEditPage() {
   const { userPostId } = useParams()
@@ -20,15 +20,22 @@ export default function UserPostEditPage() {
 
   const { data: post, isLoading, isError } = useUserPost(id)
 
-  const { mutate: updatePost, isPending } = useUpdateUserPost(id)
+  const { mutateAsync: updatePost, isPending: isUpdating } = useUpdateUserPost(id)
+  const { mutateAsync: saveCoverImage, isPending: isSavingCoverImage } = useSaveUserPostCoverImage()
   const { mutate: publishPost, isPending: isPublishing } = usePublishUserPost(id)
   const { mutate: unpublishPost, isPending: isUnpublishing } = useUnpublishUserPost(id)
+  const isPending = isUpdating || isSavingCoverImage
 
-  const onSubmit = (data: UpdatePostSchema) => {
-    updatePost(data, {
-      onSuccess: () => toast.success(t('toasts.postUpdated')),
-      onError: () => toast.error(t('toasts.postUpdateError')),
-    })
+  // Awaited and rethrown: the form keeps the chosen image until the save succeeds.
+  const onSubmit = async ({ coverImage, ...body }: PostFormSubmitData) => {
+    try {
+      await updatePost(body)
+      if (coverImage !== undefined) await saveCoverImage({ id, coverImage })
+      toast.success(t('toasts.postUpdated'))
+    } catch (error) {
+      toast.error(t('toasts.postUpdateError'))
+      throw error
+    }
   }
 
   const onPublish = () => {
@@ -76,9 +83,9 @@ export default function UserPostEditPage() {
         initialData={{
           title: post?.title ?? '',
           content: post?.content ?? [],
-          coverImage: post?.coverImage ?? '',
           tags: post?.tags?.map((tag) => tag.name) ?? [],
         }}
+        existingImageSrc={post?.coverImage?.url}
         isSubmitting={isPending}
       />
     </div>

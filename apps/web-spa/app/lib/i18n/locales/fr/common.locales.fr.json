@@ -120,6 +120,7 @@
     "postUnpublished": "Article dépublié",
     "postCreateError": "Échec de la création de l'article",
     "postUpdateError": "Échec de la sauvegarde de l'article",
+    "postCoverImageError": "Article enregistré, mais l'image de couverture n'a pas pu être enregistrée",
     "postPublishError": "Échec de la publication de l'article",
     "postUnpublishError": "Échec de la dépublication de l'article"
   },
@@ -259,8 +260,7 @@
       "titlePlaceholder": "Entrez un titre accrocheur...",
       "titleRequired": "Le titre est requis",
       "titleMinLength": "Le titre doit contenir au moins 3 caractères",
-      "coverImage": "URL de l'image de couverture",
-      "coverImagePlaceholder": "https://images.example.com/cover.jpg",
+      "coverImage": "Image de couverture",
       "tags": "Tags",
       "tagsPlaceholder": "Séparés par des virgules, ex. TypeScript, React",
       "content": "Contenu",

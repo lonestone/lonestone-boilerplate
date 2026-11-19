@@ -29,7 +29,7 @@ After years using GraphQL, we went back to REST (you can find the reasoning in t
 - [React 19](https://react.dev/) - JavaScript library for building user interfaces
 - [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
-- [Shadcn UI](https://ui.shadcn.com/) - Reusable components built with Radix UI and Tailwind CSS
+- [Shadcn UI](https://ui.shadcn.com/) - Reusable components built with Base UI and Tailwind CSS
 - [React Router v8](https://reactrouter.com/) - Declarative routing for React
 - [TanStack Query](https://tanstack.com/query/latest) - Powerful asynchronous state management
 - [React Hook Form](https://react-hook-form.com/) - React form management
@@ -46,8 +46,12 @@ After years using GraphQL, we went back to REST (you can find the reasoning in t
 
 - [Docker](https://www.docker.com/) - Containerization platform
 - [PostgreSQL](https://www.postgresql.org/) - Relational database management system
-- [MinIO](https://min.io/) - S3-compatible object storage
+- [RustFS](https://rustfs.com/) - S3-compatible object storage for local development
 - [DotenvX](https://dotenvx.com/) - Environment variables management
+
+Optional infrastructure is registered only when its feature is enabled. For example, storage does
+not inspect a bucket until `STORAGE_ENABLED=true`. The low-level storage module exposes a service
+to domain modules, while domain modules own HTTP routes, database relations, and authorization.
 
 ## Project Structure
 
@@ -62,6 +66,5 @@ lonestone/
 │   ├── ui/                # Reusable UI components (shadcn/ui)
 │   ├── i18n/              # Shared frontend i18n
 │   └── openapi-generator/ # OpenAPI client generator
-├── docs/                  # Optional project-specific documentation
 └── .github/               # GitHub Actions workflows
 ```

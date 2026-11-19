@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish, for example v1.3.0
+        required: true
+        type: string
 
 # A human merges the Release PR from the GitHub UI as themselves.
 # Do not auto-merge it. Green checks are not consent to ship.
@@ -16,6 +22,7 @@ permissions:
 jobs:
   release-please:
     name: Release Please
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -66,6 +73,36 @@ jobs:
           mv "${NOTES_FILE}.out" "$NOTES_FILE"
           gh release edit "$TAG" --notes-file "$NOTES_FILE"
 
+  # Builds the version images of the new tag. Called from here because the tag,
+  # pushed with GITHUB_TOKEN, starts no workflow on its own.
+  # Runs even if the release note mirror failed: the tag exists.
+  # To rebuild them later, run "Build Docker to GHCR" by hand with the tag.
+  release-images:
+    name: Build the release images
+    needs: release-please
+    if: ${{ !cancelled() && needs.release-please.outputs.release_created == 'true' }}
+    # The ceiling for the called job: build-and-push-image asks for all four.
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    uses: ./.github/workflows/push-to-ghcr.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+
+  # Opt-in deploy once every release image is built. Does nothing while the
+  # repository variable PROMOTE_ON_RELEASE is unset.
+  promote-release:
+    name: Promote on release
+    needs: [release-please, release-images]
+    if: ${{ !cancelled() && needs.release-images.result == 'success' }}
+    permissions:
+      actions: write
+    uses: ./.github/workflows/promote-on-release.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+
   # Producer-only: generated projects keep this workflow but skip this job.
   # Same workflow run as the tag (GITHUB_TOKEN tag pushes do not start a
   # second workflow). Split from release-please so a failed publish can be
@@ -73,16 +110,18 @@ jobs:
   publish-cli:
     name: Publish @lonestone/boilerstone-cli
     needs: release-please
-    if: ${{ always() && !cancelled() && needs.release-please.outputs.release_created == 'true' && github.repository == 'lonestone/lonestone-boilerplate' }}
+    if: ${{ always() && !cancelled() && github.repository == 'lonestone/lonestone-boilerplate' && (needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || needs.release-please.outputs.tag_name }}
     steps:
       - name: Checkout the tagged commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ env.TAG }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -93,15 +132,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24.13.0
-          # Lets npm read NODE_AUTH_TOKEN from the generated .npmrc.
-          registry-url: https://registry.npmjs.org
+          node-version: 24.22.2
 
       - name: Verify the CLI version matches the tag
-        env:
-          TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
           set -euo pipefail
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "tag must look like v1.2.3, got '${TAG}'"
+            exit 1
+          fi
           VERSION="${TAG#v}"
           CLI_VERSION="$(node -p "require('./.boilerstone/cli/package.json').version")"
           if [[ "$CLI_VERSION" != "$VERSION" ]]; then
@@ -121,12 +160,14 @@ jobs:
       - name: Check the CLI is built
         run: test -f .boilerstone/cli/dist/bin.js
 
+      # npm trades the id-token above for a publish token. That only works
+      # while npmjs.com lists a trusted publisher for this package with
+      # repository lonestone/lonestone-boilerplate, workflow release-please.yml,
+      # no environment, and npm publish allowed. A new trusted publisher
+      # expires unless a publish validates it within 48 hours. When the trade
+      # fails, npm only says ENEEDAUTH; the verbose log prints the reason.
       - name: Publish @lonestone/boilerstone-cli
         run: pnpm --filter @lonestone/boilerstone-cli publish --access public --no-git-checks
         env:
-          # npm only accepts a trusted publisher on a package that already
-          # exists, so the first release publishes with this token. After
-          # that, npm uses trusted publishing (id-token above) and the secret
-          # can be deleted.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_LOGLEVEL: verbose
           NPM_CONFIG_PROVENANCE: true

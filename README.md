@@ -47,7 +47,7 @@ See the [Project Structure](apps/documentation/src/content/docs/explanations/1_a
 
 ## 📋 Prerequisites
 
-- [Node.js](https://nodejs.org/) (version 24.13.0)
+- [Node.js](https://nodejs.org/) (version 24.22.2)
 - [PNPM](https://pnpm.io/) (version 10.28.2)
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
 
@@ -77,6 +77,12 @@ pnpm dlx @lonestone/boilerstone-cli init my-project --apps none
 
 Without `--apps`, the CLI asks one yes/no question per web app. If it cannot ask (no terminal), it keeps both. The API and the documentation are always included. A shared package under `packages/` (`ui`, `i18n`, `openapi-generator`) is removed when no remaining app uses it, so `--apps none` removes all three. The choice is saved in `.boilerstone/boilerplate.json`.
 
+The boilerplate publishes its documentation on GitHub Pages with the `deploy-docs.yml` workflow. `init` asks whether your project will publish its documentation publicly. Answer no, or pass `--public-docs no`, and the workflow is removed, so it does not fail on a repository without Pages. The documentation app stays. Without the flag, `init` asks, and answers yes when it cannot ask.
+
+```bash
+pnpm dlx @lonestone/boilerstone-cli init my-project --public-docs no
+```
+
 A CLI only generates its own release: each release's layout is what that CLI knows. Releases published before the CLI existed (v1.0.0, v1.1.0) cannot be used to create a new project.
 
 ### Onboard an existing project
@@ -103,7 +109,7 @@ Ensure you have the correct Node.js and pnpm versions (see the root `package.jso
 You can use [fnm](https://github.com/Schniz/fnm) for managing your node version
 
 ```bash
-fnm use 24.13.0
+fnm use 24.22.2
 npm i -g pnpm@10.28.2
 ```
 
@@ -158,6 +164,7 @@ The project uses Docker Compose to provide the following services:
 
 - PostgreSQL - Database server
 - MailDev - SMTP server for development (not to be used in production!)
+- RustFS - S3-compatible object storage for local development
 
 ## ⌨️ Useful Commands
 
@@ -209,6 +216,7 @@ cd apps/api && pnpm dev
 ### Shared Packages
 
 - UI -> Reusable UI components built with shadcn/ui.
+- i18n -> Shared frontend internationalization.
 - OpenAPI Generator -> contains the generator plus the generated types, validators and sdk for frontend-backend communication. Imported by the frontend apps.
 
 ## 🔄 Continuous Integration (CI)
@@ -232,7 +240,7 @@ For more information, see the [GitHub Actions documentation](.github/ACTIONS.md)
 The CD workflow (`push-to-ghcr.yml`) builds an image per runnable app (API, web-spa, web-ssr) and pushes them to GHCR.
 
 - A push to `main` produces a SHA-tagged image for each app.
-- A `v*` tag produces versioned images (`1.2.3`, `1.2`, and `latest`) for each app.
+- A release produces versioned images (`1.2.3`, `1.2`, and `latest`) for each app. The Release Please workflow calls this build itself, because a tag pushed with `GITHUB_TOKEN` starts no workflow.
 
 Whether a project versions, and what each environment runs, is documented in [Release and versioning](apps/documentation/src/content/docs/references/1_release_and_versionning.mdx). That page also covers the **Promote** workflow, which deploys one released version to one Dokploy environment — the same version for every mapped app.
 

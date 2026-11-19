@@ -41,6 +41,10 @@ Search `apps/web-spa` and `apps/web-ssr` when those apps exist, otherwise the pr
    Compose `Pagination`, `PaginationContent`, `PaginationItem`, `PaginationPrevious`, and `PaginationNext`. Keep the page number, the range, and the labels in the page.
    Done when: the journal list, the author page, and the dashboard posts list render that tree, and none of them imports `Pager`.
 
+4. **App components barrel** — signal: a file imports from `@boilerstone/ui/components/app` with no subpath. The UI package no longer exports that entry.
+   Import each component from its own file, for example `@boilerstone/ui/components/app/fade-in-image`.
+   Done when: no file imports `@boilerstone/ui/components/app` without a subpath.
+
 ## Out of Scope
 
 - The signed-in sidebar (`AppLayout` and the dashboard sidebar). It already is a shell.

@@ -28,6 +28,8 @@ concurrency:
 
 permissions:
   contents: read
+  # Read GHCR to check each image exists before Dokploy is touched.
+  packages: read
 
 jobs:
   promote:
@@ -118,6 +120,24 @@ jobs:
 
           open(dest, "w", encoding="utf-8").writelines(rows)
           PY
+
+          # Check every image first, so a missing one changes no application.
+          # A release build that failed for one app leaves the others tagged.
+          echo "${GH_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin > /dev/null
+          missing=0
+          while read -r _ image; do
+            if docker manifest inspect "${image}" > /dev/null 2>&1; then
+              echo "Found ${image}"
+            else
+              echo "Missing ${image}"
+              missing=1
+            fi
+          done < "${map_file}"
+          if [[ "${missing}" != 0 ]]; then
+            echo "Some images of version ${VERSION} are not on GHCR. Dokploy was not changed."
+            echo "For a release, rebuild them: Actions -> Build Docker to GHCR -> Run workflow, with tag v${VERSION}."
+            exit 1
+          fi
 
           base="${DOKPLOY_URL%/}"
           base="${base%/api}"

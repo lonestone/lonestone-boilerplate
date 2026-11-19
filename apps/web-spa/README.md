@@ -12,7 +12,7 @@ This is the web frontend application of our project, built with modern React and
 - [React 19](https://react.dev/) - A JavaScript library for building user interfaces
 - [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
 - [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework
-- [Shadcn UI](https://ui.shadcn.com/) - Re-usable components built with Radix UI and Tailwind CSS
+- [Shadcn UI](https://ui.shadcn.com/) - Re-usable components built with Base UI and Tailwind CSS
 - [React Router v8](https://reactrouter.com/) - Declarative routing for React
 - [TanStack Query](https://tanstack.com/query/latest) - Powerful asynchronous state management
 - [TanStack Table](https://tanstack.com/table/latest) - Headless UI for building powerful tables
@@ -22,7 +22,7 @@ This is the web frontend application of our project, built with modern React and
 ## Prerequisites
 
 Before you begin, ensure you have installed:
-- [Node.js](https://nodejs.org/) (version 24.13.0)
+- [Node.js](https://nodejs.org/) (version 24.22.2)
 - [pnpm](https://pnpm.io/) (version 10.28.2)
 
 ## Getting Started
@@ -48,7 +48,6 @@ The application will be available at `http://localhost:5173`
 
 - `pnpm dev` - Start the development server
 - `pnpm build` - Build the application for production
-- `pnpm preview` - Preview the production build locally
 
 ## Project Structure
 

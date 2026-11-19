@@ -2,10 +2,16 @@ name: Promote on release
 
 # Opt-in bridge between "the release exists" and "an environment runs it".
 #
-# When the tag images finish building, this workflow dispatches Promote for
+# When the release images are built, this workflow dispatches Promote for
 # the environment named in the repository variable PROMOTE_ON_RELEASE
 # (staging or production). Leave the variable unset to keep deploys fully
 # manual (Actions -> Promote).
+#
+# Two ways in:
+# - release-please.yml calls it after its release-images job. That build runs
+#   inside the Release Please run, so workflow_run below never sees it.
+# - workflow_run covers a v* tag pushed by a person: that push starts
+#   "Build Docker to GHCR" on its own.
 #
 # This does NOT auto-merge the Release PR: a human still merges it, and that
 # merge stays the release consent. To keep a separate deploy consent, add
@@ -14,6 +20,12 @@ name: Promote on release
 # immediately.
 
 on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag whose images were just built, for example v1.3.0
+        type: string
+        required: true
   workflow_run:
     workflows: ['Build Docker to GHCR']
     types: [completed]
@@ -24,20 +36,27 @@ permissions:
 jobs:
   dispatch:
     name: Dispatch Promote
-    # Only after a successful image build for a v* tag push.
+    # Called with a release tag, or after a successful image build for a tag
+    # pushed by a person. The step below checks the tag is a real version.
     if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      startsWith(github.event.workflow_run.head_branch, 'v')
+      inputs.tag != '' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        startsWith(github.event.workflow_run.head_branch, 'v'))
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
       TARGET: ${{ vars.PROMOTE_ON_RELEASE }}
-      TAG: ${{ github.event.workflow_run.head_branch }}
+      TAG: ${{ inputs.tag || github.event.workflow_run.head_branch }}
     steps:
       - name: Dispatch Promote for the released version
         run: |
           set -euo pipefail
+
+          if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "'${TAG}' is not a release version (v1.2.3). Nothing to promote."
+            exit 0
+          fi
 
           if [[ -z "${TARGET}" ]]; then
             echo "Repository variable PROMOTE_ON_RELEASE is not set. Deploys stay manual: Actions -> Promote."
@@ -53,6 +72,8 @@ jobs:
 
           version="${TAG#v}"
           echo "Images for ${TAG} are built. Dispatching Promote: ${version} -> ${TARGET}."
+          # GITHUB_TOKEN may start a workflow_dispatch run: it is the exception
+          # to the rule that its events start no workflow.
           gh workflow run promote.yml \
             --repo "${GITHUB_REPOSITORY}" \
             -f "environment=${TARGET}" \

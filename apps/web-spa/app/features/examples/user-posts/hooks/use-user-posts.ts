@@ -4,6 +4,8 @@ import {
   postControllerGetUserPost,
   postControllerGetUserPosts,
   postControllerPublishPost,
+  postControllerRemoveCoverImage,
+  postControllerSetCoverImage,
   postControllerUnpublishPost,
   postControllerUpdatePost,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
@@ -92,6 +94,31 @@ export function useUpdateUserPost(id: string) {
       return data
     },
     onSuccess: () => invalidatePost(queryClient, id),
+  })
+}
+
+export interface SaveUserPostCoverImageInput {
+  id: string
+  /** A file replaces the cover image, `null` removes it. */
+  coverImage: File | null
+}
+
+// Runs after the post itself is saved, so it takes the id at call time: a new post has none before.
+export function useSaveUserPostCoverImage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, coverImage }: SaveUserPostCoverImageInput) => {
+      if (coverImage) {
+        await postControllerSetCoverImage({
+          path: { id },
+          body: { file: coverImage },
+          throwOnError: true,
+        })
+      } else {
+        await postControllerRemoveCoverImage({ path: { id }, throwOnError: true })
+      }
+    },
+    onSuccess: (_data, { id }) => invalidatePost(queryClient, id),
   })
 }
 

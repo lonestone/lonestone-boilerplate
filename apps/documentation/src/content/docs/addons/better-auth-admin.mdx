@@ -19,8 +19,6 @@ Here is the file structure we will modify:
 apps/api/src/
 ├── modules/auth/
 │   ├── auth.entity.ts              (to update)
-│   ├── auth.guard.ts               (to update)
-│   ├── auth.decorator.ts           (to update)
 │   └── auth.config.ts              (to update)
 ```
 
@@ -186,114 +184,35 @@ The Admin plugin is now configured and operational. You can manage user roles, b
 
 ### NestJS Decorators & Guards
 
-The boilerplate already provides authentication decorators and guards. You can extend them to handle admin-specific logic.
+With `@thallesp/nestjs-better-auth`, prefer the built-in `@Roles()` decorator (admin plugin `user.role`) instead of forking `AuthGuard`.
 
-**Add admin-related decorators:**
-
-```typescript title="apps/api/src/modules/auth/auth.decorator.ts"
-import { SetMetadata } from '@nestjs/common'
-
-// ... your existing decorators (@Session, @Public, etc.)
-
-/**
- * Decorator to mark routes that require super admin access
- */
-export const SuperAdmin = () => SetMetadata('SUPER_ADMIN', true)
-```
-
-**Extend the AuthGuard to check admin permissions:**
-
-```typescript title="apps/api/src/modules/auth/auth.guard.ts"
-import type { CanActivate, ExecutionContext } from '@nestjs/common'
-import { EntityManager } from '@mikro-orm/postgresql'
-import { Injectable, UnauthorizedException } from '@nestjs/common'
-import { Reflector } from '@nestjs/core'
-import { fromNodeHeaders } from 'better-auth/node'
-import { BetterAuthSession } from 'src/modules/auth/auth.config'
-import { AuthService } from 'src/modules/auth/auth.service'
-
-export interface AuthenticatedRequest extends Request {
-  session: NonNullable<BetterAuthSession>
-}
-
-@Injectable()
-export class AuthGuard implements CanActivate {
-  constructor(
-    private readonly reflector: Reflector,
-    private readonly authService: AuthService,
-    private readonly em: EntityManager,
-  ) {}
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    try {
-      const request = context.switchToHttp().getRequest()
-      const session = await this.authService.api.getSession({
-        headers: fromNodeHeaders(request.headers),
-      })
-
-      request.session = session
-      request.user = session?.user ?? null
-
-      // If user is super admin, skip all guards
-      const isAdmin = session?.user?.role === 'admin'
-      if (isAdmin) {
-        return true
-      }
-
-      // Public routes guard
-      const isPublic = this.reflector.get('PUBLIC', context.getHandler())
-      if (isPublic) {
-        return true
-      }
-
-      // Super admin guard
-      const superAdminGuard = this.reflector.get('SUPER_ADMIN', context.getHandler())
-      if (superAdminGuard) {
-        if (!session) {
-          throw new UnauthorizedException('Authentication required')
-        }
-        if (!isAdmin) {
-          throw new UnauthorizedException('Admin access required')
-        }
-      }
-
-      // Default: require authentication
-      if (!session) {
-        throw new UnauthorizedException()
-      }
-
-      return true
-    } catch (error) {
-      console.error(error)
-      throw new UnauthorizedException()
-    }
-  }
-}
-```
-
-**Usage in your controllers:**
+**Protect admin routes:**
 
 ```typescript
 import { Controller, Get, Post, Body, Param } from '@nestjs/common'
-import { SuperAdmin } from './auth/auth.decorator'
+import { Roles, Session } from '@thallesp/nestjs-better-auth'
+import { LoggedInBetterAuthSession } from '../../modules/auth/auth.config'
 
 @Controller('admin')
 export class AdminController {
   @Get('users')
-  @SuperAdmin()
-  async listUsers() {
-    // Only admins can access this endpoint
+  @Roles(['admin'])
+  async listUsers(@Session() session: LoggedInBetterAuthSession) {
+    // Only users with role "admin" can access this endpoint
     return this.userService.findAll()
   }
 
   @Post('users/:id/ban')
-  @SuperAdmin()
+  @Roles(['admin'])
   async banUser(@Param('id') userId: string, @Body() dto: BanUserDto) {
-    // Only admins can ban users
     return this.userService.ban(userId, dto)
   }
 }
 ```
+
+For organization-scoped roles, use `@OrgRoles()` / `@RequireActiveOrg()` from the same package (see the [organizations addon](/lonestone-boilerplate/addons/better-auth-orgs)).
+
+You can still call Better Auth admin APIs via the injectable `AuthService` from `@thallesp/nestjs-better-auth` (`authService.api` / `authService.instance`).
 
 ### Frontend admin UI examples
 

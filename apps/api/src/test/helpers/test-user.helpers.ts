@@ -1,7 +1,8 @@
 // TEST HELPERS
 //
 // Role-based session helpers to reduce boilerplate in e2e tests.
-// Use factories (src/factories/) for entity creation; these helpers combine user + session.
+// Build other entities with the module factories (`<module>.factory.ts`, e.g. PostFactory);
+// these helpers combine user + session.
 
 import type { EntityManager } from '@mikro-orm/core'
 import type { BetterAuthSession } from '../../modules/auth/auth.config'

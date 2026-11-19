@@ -1,14 +1,114 @@
 ---
 title: File Storage
-description: File storage explanation
+description: Store files in an S3-compatible bucket and serve them through signed URLs
 ---
 
-🚧 TODO
+Files live in an S3-compatible bucket: [RustFS](https://rustfs.com/) locally, any S3 provider in production. Storage is off by default, so a project without files never needs a bucket.
 
-# File Storage
+The [Posts example](https://github.com/lonestone/lonestone-boilerplate/tree/main/apps/api/src/modules/example/posts) uses it for an optional cover image.
 
-## S3 module
+# ❓ How it works
 
-## MinIO
+Two modules split the work:
 
-## Production setup
+- `StorageModule` moves bytes in and out of the bucket and signs download URLs. It knows nothing about the database.
+- `MediaModule` owns the `media` table. One row is one stored file: its storage key, name, MIME type and size.
+
+Your business module keeps the rest: routes, access rules, and the relation to `Media`.
+
+The API never streams files. Each response that includes a file carries a signed URL that expires (one hour by default), and the browser loads the file straight from the bucket. The same URL comes back for half its lifetime, so browsers can cache the file.
+
+:::caution
+Anyone holding a signed URL can read the file until it expires. Only map a `Media` for users allowed to see it.
+:::
+
+# 📝 How to use
+
+Start RustFS with `pnpm docker:up`, then set `STORAGE_ENABLED=true` in `apps/api/.env`. The other `STORAGE_*` variables are listed in the [API README](https://github.com/lonestone/lonestone-boilerplate/blob/main/apps/api/README.md). The RustFS console runs on [http://localhost:9001](http://localhost:9001).
+
+To attach a file to an entity:
+
+1. Point to it with a relation, not with copied columns:
+
+```typescript
+@OneToOne(() => Media, { owner: true, nullable: true, fieldName: 'coverImageId' })
+coverImage?: Media
+```
+
+2. Declare the file in the route's contract with `z.file()`. Nzoth validates it with the rest of the body and documents it in OpenAPI, so the generated SDK accepts a `File`. Check the type with `.refine()`: `.mime()` makes the generated client type `unknown`.
+
+```typescript
+export const setCoverImageSchema = z.object({
+  file: z
+    .file()
+    .max(10 * 1024 * 1024)
+    .refine((file) => IMAGE_MIME_TYPES.includes(file.type)),
+})
+```
+
+3. Add `@MultipartFile` on the route. It hands the uploaded file to `TypedMultipartBody` as a `File`, typed from its first bytes rather than from what the client claims. `maxSize` stops an oversized file before it is loaded in memory.
+
+```typescript
+@TypedRoute.Put(':id/cover-image', userPostSchema)
+@MultipartFile('file', { maxSize: 10 * 1024 * 1024 })
+async setCoverImage(
+  @TypedParam('id', postIdSchema) id: string,
+  @TypedMultipartBody(setCoverImageSchema) body: SetCoverImageInput,
+) {}
+```
+
+4. In the service, upload the file, attach it, then save. `MediaService` never flushes: your service decides what to save with the file, and whether it runs in a transaction. If the save fails, remove the uploaded file yourself:
+
+```typescript
+const media = this.mediaService.attach(await this.mediaService.upload(file))
+post.coverImage = media
+try {
+  await this.em.flush()
+} catch (error) {
+  await this.mediaService.remove(media)
+  throw error
+}
+```
+
+When you replace or delete a media, call `em.remove(media)` before the flush and `mediaService.remove(media)` after it, so a failed save keeps the old file. `mediaService.remove` never throws: a failure only leaves an orphan in the bucket, and is logged. With `em.transactional()`, put the `try`/`catch` around the whole transaction.
+
+5. In the mapper, `MediaMapper.toOptionalMedia` signs a URL. Reuse `mediaSchema` in your response contract.
+
+On the frontend, pass the `File` to the SDK and put `coverImage.url` in an `<img>`. Refetch once `expiresAt` has passed.
+
+## Two ways to send a file
+
+The Posts example shows both, and the service has a single `updatePost` for them:
+
+- **A route of its own**, like `PUT /admin/posts/:id/cover-image`. The entity stays in JSON, and the file goes on its own route. Simplest when an entity has one file. Creating an entity with a file takes two requests.
+- **One multipart request**, like `PUT /admin/posts/:id/multipart`. The fields and the file go together. Useful for large forms, or several files on one entity. Declare array fields with `multipartArray(itemSchema)`: it reads the encoding the generated SDK sends, so the controller still gets typed arrays. Set `maxFields` on `@MultipartFile`, since text fields are rejected by default.
+
+```typescript
+export const updatePostMultipartSchema = updatePostSchema.extend({
+  content: multipartArray(postContentSchema).optional(),
+  tags: multipartArray(z.string()).optional(),
+  coverImage: coverImageSchema.optional(),
+})
+```
+
+:::note
+While storage is disabled, uploads fail with `503`, and responses leave the file out.
+:::
+
+# 🚀 Production
+
+- Use a dedicated bucket and restricted credentials, and set `STORAGE_CREATE_BUCKET=false`. The API refuses to start with storage enabled and no credentials.
+- AWS S3 expects `STORAGE_FORCE_PATH_STYLE=false`.
+- Browsers must reach the bucket at the `STORAGE_ENDPOINT` host, because the host is part of the signature. A private hostname, like a Docker service name, gives URLs that browsers cannot open.
+- Do not cache a server-rendered page for longer than half the URL lifetime, or its images break.
+- Match upload size limits with your reverse proxy and platform limits.
+
+# 🗑️ How to remove
+
+Leave `STORAGE_ENABLED=false` if you only want it off. To remove it entirely:
+
+1. Remove the `coverImage` relation and routes from posts, and create a migration that drops the `media` table.
+2. Delete `apps/api/src/modules/media` and `apps/api/src/modules/storage`.
+3. Remove `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`, `@types/multer` and `testcontainers` if nothing else uses them.
+4. Remove the `STORAGE_*` variables and the RustFS service and volume from Docker Compose.
+5. Regenerate the OpenAPI client, and remove the cover image from the frontends.
