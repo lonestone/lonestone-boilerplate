@@ -14,7 +14,7 @@ classification: migration
 
 Two worktrees of one repo got the same Docker Compose project name, because Compose takes it from the folder name by default and the fixed `container_name` entries made it worse. A `docker compose down` in a worktree of another project deleted the database of the main checkout. The worktrees also fought for the ports written in `.env` (database, API, mail, storage, and the two web dev servers), and a worktree without `pnpm install` let commits pass without the lefthook checks.
 
-The two commands fix all three. Create copies the `.env` files of the main checkout (or the `.env.example` files), sets `COMPOSE_PROJECT_NAME=<repo>-<name>`, picks ports that are free on the machine and unused by other worktrees (web dev ports included), rewrites the local URLs that carry those ports (`TRUSTED_ORIGINS`, `VITE_API_URL`, `API_BASE_URL`), and runs `pnpm install`. Remove stops the stack by the exact project name read from the worktree `.env`, never by a pattern, refuses to run when the name is missing or equals the main checkout's, and stops when there are uncommitted changes or real unpushed work. A branch whose files are already the same in `origin/main` (squash merge) counts as integrated. It keeps the branch and the Docker volumes.
+The two commands fix all three. Create copies the `.env` files of the main checkout (or the `.env.example` files), sets `COMPOSE_PROJECT_NAME=<repo>-<name>`, picks ports that are free on the machine and unused by other worktrees (web dev ports included), rewrites the local URLs that carry those ports (`TRUSTED_ORIGINS`, `VITE_API_URL`, `API_BASE_URL`), and runs `pnpm install`. Remove stops the stack by the exact project name read from the worktree `.env`, never by a pattern, leaves Docker alone when the name is missing, refuses to run when it equals the main checkout's, and stops when there are uncommitted changes or real unpushed work. A branch whose work is already in `origin/main` (every commit has a twin, or after a squash merge the files it touches are the same) counts as integrated. It keeps the branch and the Docker volumes.
 
 One script with two subcommands was chosen over two scripts so both share the same rules for names and env files. Plain `git worktree add` was rejected: it cannot tell worktrees apart.
 
@@ -39,9 +39,9 @@ One script with two subcommands was chosen over two scripts so both share the sa
    Add `"worktree:create": "tsx ./scripts/worktree.ts create"` and `"worktree:remove": "tsx ./scripts/worktree.ts remove"`.
    Done when: `rg "worktree:create" package.json` matches.
 
-3. **The web dev ports** — signal: `vite.config.ts` of a web app hard-codes `server.port`, or the root `.env.example` has no `WEB_SPA_PORT` and `WEB_SSR_PORT`.
-   Read the port from the root `.env` with `loadEnv(..., '../..', 'WEB_SPA_PORT')` (default unchanged), and add the keys to `.env.example`. Add the keys to `DEFAULT_PORTS` in the script.
-   Done when: `rg "WEB_SPA_PORT|WEB_SSR_PORT" .env.example apps/*/vite.config.ts` matches.
+3. **The web dev ports** — signal: `vite.config.ts` of a web app hard-codes `server.port`, or does not read `WEB_SPA_PORT` / `WEB_SSR_PORT` from the root `.env`.
+   Read the port from the root `.env` with `loadEnv(..., '../..', 'WEB_SPA_PORT')` and keep the literal `port: <number>` as the default (the init CLI rewrites it). Do not add the keys to `.env.example`: the script writes them in a worktree's root `.env`. Add the keys to `DEFAULT_PORTS` in the script.
+   Done when: `rg "WEB_SPA_PORT|WEB_SSR_PORT" apps/*/vite.config.ts` matches.
 
 4. **Worktrees are ignored by the tools** — signal: `.worktrees/` is missing from `.gitignore`, or from the ignore lists of oxlint, oxfmt and knip.
    Add it where it is missing.
@@ -60,7 +60,6 @@ One script with two subcommands was chosen over two scripts so both share the sa
 
 - `scripts/worktree.ts` — **copy**
 - `package.json` — **adapt**
-- `.env.example` — **adapt**
 - `apps/web-spa/vite.config.ts` — **adapt**
 - `apps/web-ssr/vite.config.ts` — **adapt**
 - `AGENTS.md` — **adapt**

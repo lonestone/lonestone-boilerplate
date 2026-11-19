@@ -41,8 +41,8 @@ worktree:remove
   deletes Docker volumes (drop them yourself with "docker volume rm" if you want).
   It stops and says why when the worktree has uncommitted changes, or when its
   branch has commits that are not pushed. A branch whose work is already in
-  origin/main (for example after a squash merge) counts as done: the files it
-  touches are the same in origin/main, so nothing would be lost.
+  origin/main counts as done (every commit has a twin there, or, after a squash
+  merge, the files it touches are the same in origin/main): nothing would be lost.
 `
 
 const ENV_FILES = [
@@ -303,20 +303,23 @@ function findUnpushedProblem(target: string, branch: string): string | null {
 }
 
 /**
- * True when the work of the branch is already in the base branch, for example after
- * a squash merge: every file the branch touches is the same in origin/main.
+ * True when the work of the branch is already in origin/main: every commit has a
+ * twin there (git cherry), or, after a squash merge, every file the branch touches
+ * is the same in origin/main.
  */
 function isIntegrated(target: string, mainRoot: string): boolean {
   tryGit(['fetch', '--quiet', 'origin'], mainRoot)
-  const baseRef = ['origin/main', 'main'].find(
-    (ref) => tryGit(['rev-parse', '--verify', '--quiet', ref], mainRoot) !== null,
-  )
-  if (baseRef === undefined) {
+  const baseRef = 'origin/main'
+  if (tryGit(['rev-parse', '--verify', '--quiet', baseRef], mainRoot) === null) {
     return false
   }
   const mergeBase = tryGit(['merge-base', baseRef, 'HEAD'], target)
   if (mergeBase === null) {
     return false
+  }
+  const cherry = tryGit(['cherry', baseRef, 'HEAD'], target)
+  if (cherry !== null && !cherry.split('\n').some((line) => line.startsWith('+'))) {
+    return true
   }
   const touched = git(['diff', '--name-only', mergeBase, 'HEAD'], target)
     .split('\n')
@@ -324,7 +327,12 @@ function isIntegrated(target: string, mainRoot: string): boolean {
   if (touched.length === 0) {
     return true
   }
-  return tryGit(['diff', '--quiet', baseRef, 'HEAD', '--', ...touched], target) !== null
+  return (
+    tryGit(
+      ['--literal-pathspecs', 'diff', '--quiet', baseRef, 'HEAD', '--', ...touched],
+      target,
+    ) !== null
+  )
 }
 
 function remove(name: string): void {
