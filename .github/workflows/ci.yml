@@ -9,8 +9,7 @@ on:
 
 # GitHub bills each job in whole minutes. A new push to a pull request cancels the run of the
 # previous push. A new push to main cancels the run of main that is still going, so a series of
-# merges in a row leaves one run, for the last commit. CI still runs on main: only runs that a
-# newer push has made out of date are cancelled.
+# merges in a row leaves one run, for the last commit. CI still runs on main.
 # A draft pull request gets no run, because a branch that is pushed often would bill a full run
 # on every push. Marking the pull request ready for review starts the run.
 concurrency:

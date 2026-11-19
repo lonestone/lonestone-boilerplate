@@ -12,7 +12,7 @@ A new push to `main` cancels the CI run of `main` that is still going. When seve
 
 ## Why
 
-Each push to `main` had its own concurrency group, so no run on `main` was ever cancelled. Merges in a row each ran a full CI that a later merge made out of date, and GitHub bills every job in whole minutes.
+Each push to `main` had its own concurrency group, so no run on `main` was ever cancelled. Merges in a row each ran a full CI that a later merge made out of date, and GitHub bills every job in whole minutes (see `ci-skip-draft-pull-requests`).
 
 ## Applies When
 
@@ -27,7 +27,7 @@ Each push to `main` had its own concurrency group, so no run on `main` was ever 
 ## Observable Gaps
 
 1. **Runs on main are never cancelled** — signal: `rg "github.sha|github.event_name == 'pull_request'" .github/workflows/ci.yml` matches in the `concurrency` block.
-   Set `group: ci-${{ github.event.pull_request.number || github.ref }}` and `cancel-in-progress: true`. Update the comment above the block to say that a new push to `main` cancels the run of `main` that is still going.
+   Copy the `group` and `cancel-in-progress` lines of the `concurrency` block of the reference `.github/workflows/ci.yml`, and the comment above it.
    Done when: the `concurrency` block of `.github/workflows/ci.yml` matches the reference.
 
 ## Out of Scope
