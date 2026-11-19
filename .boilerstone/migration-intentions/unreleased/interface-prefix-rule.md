@@ -12,11 +12,7 @@ The project guide states one rule for interface and type names: PascalCase, with
 
 ## Why
 
-The boilerplate once asked for an `I` prefix on every interface. No interface followed it, so commit `1c77be3` dropped the rule. An `I` prefix suggests that a class will implement the interface. That is only useful for a contract with several implementations.
-
-The guide now states the rule in one place. The backend page no longer repeats the naming line on its own.
-
-Existing names stay as they are. Each project decides whether to rename its own types.
+An `I` prefix suggests that a class will implement the interface. That is only useful for a contract with several implementations. The guide states the rule in one place, and existing names stay as they are.
 
 ## Applies When
 
@@ -25,28 +21,27 @@ Existing names stay as they are. Each project decides whether to rename its own 
 
 ## Do Not Apply When
 
-- The project has no documentation app, or moved its guide somewhere else. Apply the same rule in the file that holds the project's naming conventions.
+- The project has no `apps/documentation` app.
 - A human has decided to keep a different interface naming rule after reviewing this intention.
 
 ## Observable Gaps
 
 1. **Rule in the general guide** — signal: `apps/documentation/src/content/docs/references/general.mdx` has no line that starts with `- Interfaces and types: PascalCase, no prefix`.
-   Delete the "Interfaces names" item under "Use PascalCase for". Keep "Type definitions" and "Classes names" in that list. Add the single "Interfaces and types" line from the staged `general.mdx` as a top-level bullet right after the list. Keep the other naming rules as they are.
-   Done when: `rg -n "Interfaces and types: PascalCase, no prefix" apps/documentation/src/content/docs/references/general.mdx` matches, and `rg -n "Interfaces names" apps/documentation/src/content/docs/references/general.mdx` has no match.
+   Delete the "Interfaces names" and "Type definitions" items under "Use PascalCase for". Keep "Classes names" in that list. Add the single "Interfaces and types" line from the staged `general.mdx` as a top-level bullet right after the list. Keep the other naming rules as they are. Reference: staged `general.mdx`.
+   Done when: `rg -n "Interfaces and types: PascalCase, no prefix" apps/documentation/src/content/docs/references/general.mdx` matches, and `rg -n "Interfaces names|Type definitions" apps/documentation/src/content/docs/references/general.mdx` has no match.
 
 2. **No duplicate in the backend guide** — signal: `apps/documentation/src/content/docs/references/backend.mdx` contains a line with `Interfaces/Types` in its naming conventions.
-   Remove that line. Keep the class, method, variable, constant and enum lines.
+   Remove that line. Keep the class, method, variable, constant and enum lines. Reference: staged `backend.mdx`.
    Done when: `rg -n "Interfaces/Types" apps/documentation/src/content/docs/references/backend.mdx` has no match.
 
 3. **No stray I prefix** — signal: `git grep -nE "(interface|type) I[A-Z]"` lists a name that has only one implementation.
-   Each match must be a contract with several implementations, such as `IStorageProvider`. Rename or remove any other `I` prefix in the project's own code, and leave the rest of the code alone.
-   Done when: every match is a contract with several implementations, checked by hand.
+   Each match must be a contract with several implementations, such as `IStorageProvider`. List any other match in the upgrade report for a human to decide. Do not rename it. Reference: the rule in staged `general.mdx`.
+   Done when: every match is either a contract with several implementations, or is listed in the upgrade report for a human decision.
 
 ## Out of Scope
 
 - Renaming existing interfaces or types. The project decides that for itself.
 - The rules for classes, enums, files and variables.
-- The `I` prefix on any contract with several implementations, such as `IStorageProvider`.
 
 ## Reference Paths
 
@@ -57,7 +52,7 @@ Existing names stay as they are. Each project decides whether to rename its own 
 
 - `pnpm lint` passes.
 - `pnpm fmt:check` passes.
-- The two `rg` commands in the observable gaps behave as their "Done when" lines say.
+- The `rg` and `git grep` checks in the observable gaps behave as their "Done when" lines say.
 
 ## Record Result
 
