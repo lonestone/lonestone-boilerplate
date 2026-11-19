@@ -16,6 +16,8 @@ The project has `lefthook.yml` and `lefthook` as a dev dependency, but nothing i
 
 The script runs `lefthook install` only when a `.git` entry exists. Docker image builds and other installs without a repository would fail on a bare `lefthook install`, and `LEFTHOOK=0` does not stop that command. A plain `|| true` was rejected because it hides real failures and prints a boxed error in every Docker build.
 
+The guard alone is not enough when a Docker build uses the repository root as its context: `COPY . .` brings `.git` into the image, the guard passes, and `lefthook install` fails because the image has no `git`. The root `.dockerignore` keeps `.git` out of the context, so the guard skips.
+
 ## Applies When
 
 - The project tracks the `tooling` domain.
@@ -37,26 +39,31 @@ The script runs `lefthook install` only when a `.git` entry exists. Docker image
    Run `pnpm install` (or `pnpm run prepare`).
    Done when: `git commit --allow-empty -m "bad message"` is refused by commitlint.
 
-3. **Contributing note** — signal: `CONTRIBUTING.md` does not say that `pnpm install` installs the hooks.
+3. **Docker build context** — signal: a Dockerfile builds from the repository root (for example `COPY . .`) and the root `.dockerignore` does not list `.git`.
+   Add `.git` to the root `.dockerignore`, matching the staged reference. Use `**/node_modules` rather than `node_modules` there, so the apps' own `node_modules` stay out too.
+   Done when: the root `.dockerignore` lists `.git`, and each Dockerfile that runs `pnpm install` builds.
+
+4. **Contributing note** — signal: `CONTRIBUTING.md` does not say that `pnpm install` installs the hooks.
    Add that one sentence next to the lefthook sentence, matching the staged reference.
    Done when: `CONTRIBUTING.md` mentions that `pnpm install` installs the hooks.
 
 ## Out of Scope
 
 - The hooks themselves (`lefthook.yml`) and the commitlint rules.
-- CI workflows and Dockerfiles: the guard keeps them working unchanged.
+- CI workflows and the Dockerfiles themselves: the guard and the root `.dockerignore` keep them working unchanged.
 - Existing team members: they run `pnpm install` once to get the hooks.
 
 ## Reference Paths
 
 - `package.json` — **adapt**
 - `CONTRIBUTING.md` — **adapt**
+- `.dockerignore` — **adapt**
 
 ## Validation
 
 - `pnpm install` completes, and `.git/hooks/commit-msg` and `.git/hooks/pre-push` exist.
 - `git commit --allow-empty -m "bad message"` is refused.
-- A Docker image build of the project still succeeds (no `.git` in the build).
+- Every Docker image of the project still builds.
 
 ## Record Result
 
