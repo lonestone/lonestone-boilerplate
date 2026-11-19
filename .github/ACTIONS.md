@@ -41,7 +41,7 @@ It includes the following jobs:
 GitHub bills each job in whole minutes, and a private repository has a monthly allowance. Three rules keep the bill down:
 
 - A draft pull request gets no CI run. Marking it ready for review starts the run, and a push to a ready pull request runs it as usual. The `Setup` job is skipped and every other job needs it, so they are skipped too. A skipped job counts as a pass for a required check.
-- A new push to a pull request cancels the run of the previous push. A run on `main` always finishes.
+- A new push to a pull request cancels the run of the previous push. A new push to `main` cancels the run of `main` that is still going, so several merges in a row leave one run, for the last commit.
 - The Release note job is skipped on a pull request that is not a Release PR, so no runner starts.
 
 PR lint runs on every push, because a required check must report on every new commit. A project with no required check can drop `synchronize` from its `types` list: the script reads only the title and the description, and a push changes neither.
