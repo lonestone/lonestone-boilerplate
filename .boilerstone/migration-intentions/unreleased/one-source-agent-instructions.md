@@ -14,7 +14,7 @@ classification: migration
 
 Two things were written twice or shared by accident.
 
-A fixed `container_name` is the same in every checkout. Two worktrees of one repository then shared their containers. A `docker compose down` in one worktree of another project removed the database of the main checkout. Without a fixed name, Compose prefixes the container with the project name, so each checkout gets its own containers.
+A fixed `container_name` is the same in every checkout. Two worktrees of one repository then shared their containers. In one project, a `docker compose down` in a worktree removed the database of the main checkout. Without a fixed name, Compose prefixes the container with the project name, so each checkout gets its own containers.
 
 `CLAUDE.md` was a full copy of `AGENTS.md`. Every change had to be made twice. Claude Code reads `@AGENTS.md` as an import, so one line is enough and the text lives in one place.
 
@@ -32,11 +32,11 @@ A fixed `container_name` is the same in every checkout. Two worktrees of one rep
 ## Observable Gaps
 
 1. **Fixed container names** — signal: `rg container_name docker-compose.yml` finds a match.
-   Remove each `container_name` line. Then replace every reference to the old name in docs and scripts with the service name, for example `docker compose exec maildev …`.
+   Compare with the staged reference `docker-compose.yml`. Remove each `container_name` line. Then replace every reference to the old name in docs and scripts with the service name, for example `docker compose exec maildev …`.
    Done when: `rg container_name docker-compose.yml` finds nothing and `docker compose config` is valid.
 
 2. **`CLAUDE.md` copy** — signal: `CLAUDE.md` has more than the line `@AGENTS.md`.
-   If it differs from `AGENTS.md`, move the lines that only live in `CLAUDE.md` into `AGENTS.md` first. Then replace the content of `CLAUDE.md` with the single line `@AGENTS.md`.
+   If the project file differs from `AGENTS.md`, move the lines that only live in `CLAUDE.md` into `AGENTS.md` first. Then replace `CLAUDE.md` with the staged reference, which is the single line `@AGENTS.md`.
    Done when: `CLAUDE.md` contains only `@AGENTS.md`.
 
 ## Out of Scope
@@ -53,8 +53,8 @@ A fixed `container_name` is the same in every checkout. Two worktrees of one rep
 ## Validation
 
 - `docker compose config` is valid.
-- `docker compose ps` in two worktrees of the same project lists different containers.
-- Claude Code in the project still loads the rules from `AGENTS.md`.
+- `rg container_name docker-compose.yml` finds nothing.
+- `cat CLAUDE.md` prints only `@AGENTS.md`.
 
 ## Record Result
 

@@ -44,8 +44,8 @@ The hook passes `--no-error-on-unmatched-pattern`. A staged file that Oxfmt igno
    Run `pnpm install` (or `pnpm run prepare`). The `prepare` script comes from `unreleased/install-lefthook-hooks`. Existing worktrees need this once, because the assertion is written into the hook script at install time.
    Done when: that file exists, and a badly formatted staged file is fixed by `git commit`.
 
-3. **The rule in the agent and contributor docs** — signal: `AGENTS.md` (and `CLAUDE.md`, if the project keeps a copy) and `CONTRIBUTING.md` do not describe the pre-commit hook, or `AGENTS.md` does not say to format with `pnpm fmt` and never use Prettier.
-   Add the one line from the staged references to `AGENTS.md` (and `CLAUDE.md`), and the one sentence about the hook to `CONTRIBUTING.md`.
+3. **The rule in the agent and contributor docs** — signal: `AGENTS.md` and `CONTRIBUTING.md` do not describe the pre-commit hook, or `AGENTS.md` does not say to format with `pnpm fmt` and never use Prettier.
+   Add the one line from the staged references to `AGENTS.md`, and the one sentence about the hook to `CONTRIBUTING.md`.
    Done when: `rg -i "never use prettier" AGENTS.md` matches and `rg -i "pre-commit" CONTRIBUTING.md` matches.
 
 ## Out of Scope
@@ -58,7 +58,6 @@ The hook passes `--no-error-on-unmatched-pattern`. A staged file that Oxfmt igno
 
 - `lefthook.yml` — **adapt**
 - `AGENTS.md` — **adapt**
-- `CLAUDE.md` — **adapt**
 - `CONTRIBUTING.md` — **adapt**
 
 ## Validation
