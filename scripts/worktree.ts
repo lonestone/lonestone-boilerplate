@@ -337,12 +337,14 @@ function isPromotedIntention(
   )
     .split('\n')
     .filter((candidate) => PROMOTED_INTENTION.exec(candidate)?.[1] === slug)
-  return candidates.some(
-    (candidate) =>
+  return candidates.some((candidate) => {
+    const promoted = tryGit(['show', `${baseRef}:${candidate}`], target)
+    return (
+      promoted !== null &&
       tryGit(['cat-file', '-e', `${mergeBase}:${candidate}`], target) === null &&
-      withoutIntentionId(tryGit(['show', `${baseRef}:${candidate}`], target) ?? '') ===
-        withoutIntentionId(mine),
-  )
+      withoutIntentionId(promoted) === withoutIntentionId(mine)
+    )
+  })
 }
 
 /**
