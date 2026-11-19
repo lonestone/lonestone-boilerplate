@@ -38,7 +38,7 @@ GitHub bills each job in whole minutes, and a private repository has a monthly a
    Done when: `rg "cancel-in-progress" .github/workflows/ci.yml` matches and the value is true only for a pull request.
 
 3. **PR lint** — signal: `rg "concurrency" .github/workflows/pr-lint.yml` returns nothing.
-   Add the `concurrency` block of the reference `pr-lint.yml`. Do not touch the `types` list: a required check must report on every new commit, and the check settings doc asks for this one to be required.
+   Add the `concurrency` block of the reference `pr-lint.yml`. Do not touch the `types` list: a required check must report on every new commit, and `scripts/github-repo-settings.md` asks for this one to be required.
    Done when: `rg "cancel-in-progress" .github/workflows/pr-lint.yml` matches.
 
 4. **Release note** — signal: the job in `.github/workflows/release-note.yml` has no `if`.
@@ -65,4 +65,4 @@ GitHub bills each job in whole minutes, and a private repository has a monthly a
 
 ## Record Result
 
-Run `pnpm boilerplate upgrade record --id vX.Y.Z/ci-skip-draft-pull-requests --applied` after validation passes, or record it as skipped with a reason.
+Run `pnpm boilerplate upgrade record --id unreleased/ci-skip-draft-pull-requests --applied` after validation passes, or record it as skipped with a reason. The id stays `unreleased/…` until the boilerplate release promotes it.
