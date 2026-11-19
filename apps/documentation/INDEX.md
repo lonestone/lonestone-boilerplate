@@ -37,6 +37,7 @@
 ## Guides
 
 - [api-testing.mdx](./src/content/docs/guides/api-testing.mdx) - Guide to test the API using Vitest
+- [data-fetching.mdx](./src/content/docs/guides/data-fetching.mdx) - One way to read and write API data in the frontends — one hook file per feature, a key factory, the generated SDK
 - [database-management.mdx](./src/content/docs/guides/database-management.mdx) - Guide to manage the database
 - [encrypt-env.mdx](./src/content/docs/guides/encrypt-env.mdx) - Setup env file encryption
 - [feature-flags.mdx](./src/content/docs/guides/feature-flags.mdx) - Ship a merged change dark with a single env-var check

@@ -27,7 +27,7 @@ export type PostFormSubmitData = {
 }
 
 interface UserPostFormProps {
-  onSubmit: (data: PostFormSubmitData) => Promise<void>
+  onSubmit: (data: PostFormSubmitData) => void | Promise<void>
   initialData?: PostFormData
   existingImageSrc?: string
   isSubmitting?: boolean

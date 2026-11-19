@@ -1,5 +1,5 @@
 import type { UserPostSchema } from '@boilerstone/openapi-generator'
-import { FadeInImage } from '@boilerstone/ui/components/app'
+import { FadeInImage } from '@boilerstone/ui/components/app/fade-in-image'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { ArrowRight, CalendarDays, Clock } from 'lucide-react'
 import { Link } from 'react-router'

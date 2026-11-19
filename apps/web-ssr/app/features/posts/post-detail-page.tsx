@@ -4,7 +4,7 @@ import {
   publicPostControllerGetPosts,
   publicPostControllerLikePost,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
-import { FadeInImage } from '@boilerstone/ui/components/app'
+import { FadeInImage } from '@boilerstone/ui/components/app/fade-in-image'
 import PostContent from '@boilerstone/ui/components/posts/post-content'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'

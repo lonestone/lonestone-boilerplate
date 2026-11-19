@@ -1,67 +1,48 @@
-import { postControllerCreatePost } from '@boilerstone/openapi-generator/client/sdk.gen'
+import { PageHeader } from '@boilerstone/ui/components/app/page'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
-import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { queryClient } from '@/lib/query-client'
-import { postKeys, saveCoverImage } from './utils/user-posts-queries'
+import { useCreateUserPost, useSaveUserPostCoverImage } from './hooks/use-user-posts'
 import UserPostForm, { type PostFormSubmitData } from './user-post-form'
 
 export default function UserPostCreatePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
-  const { mutate: createPost, isPending } = useMutation({
-    mutationFn: async (data: PostFormSubmitData) => {
-      const response = await postControllerCreatePost({
-        body: {
-          title: data.title,
-          content: data.content,
-          tags: data.tags,
-        },
-      })
+  const { mutate: createPost, isPending: isCreating } = useCreateUserPost()
+  const { mutateAsync: saveCoverImage, isPending: isSavingCoverImage } = useSaveUserPostCoverImage()
 
-      if (response.error || !response.data) {
-        throw response.error ?? new Error(t('toasts.postCreateError'))
-      }
-
-      // The post exists at this point: an image failure must not hide it.
-      try {
-        await saveCoverImage(response.data.id, data.coverImage)
-      } catch {
-        toast.error(t('toasts.postCoverImageError'))
-      }
-
-      return response.data
-    },
-    onSuccess: async (post) => {
-      toast.success(t('toasts.postCreated'))
-      queryClient.invalidateQueries({ queryKey: postKeys.all })
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      navigate(`/dashboard/posts/${post.id}/edit`)
-    },
-    onError: (error) => {
-      toast.error(error?.message || t('toasts.postCreateError'))
-    },
-  })
-
-  const onSubmit = async (data: PostFormSubmitData) => {
-    await createPost(data)
+  const onSubmit = ({ coverImage, ...body }: PostFormSubmitData) => {
+    createPost(body, {
+      onSuccess: async (post) => {
+        // The post exists at this point: an image failure must not hide it.
+        if (coverImage !== undefined) {
+          try {
+            await saveCoverImage({ id: post.id, coverImage })
+          } catch {
+            toast.error(t('toasts.postCoverImageError'))
+          }
+        }
+        toast.success(t('toasts.postCreated'))
+        await new Promise((resolve) => setTimeout(resolve, 800))
+        navigate(`/dashboard/posts/${post.id}/edit`)
+      },
+      onError: (error) => {
+        toast.error(error?.message || t('toasts.postCreateError'))
+      },
+    })
   }
 
   return (
     <div>
       <div className="space-y-6 max-w-3xl">
-        <div className="border-b border-border pb-6">
-          <p className="mb-1 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-            {t('posts.title')}
-          </p>
-          <h1 className="font-sans text-3xl font-black tracking-tight text-foreground">
-            {t('posts.create.title')}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('posts.create.description')}</p>
-        </div>
-        <UserPostForm onSubmit={onSubmit} isSubmitting={isPending} />
+        <PageHeader
+          variant="inset"
+          eyebrow={t('posts.title')}
+          title={t('posts.create.title')}
+          description={t('posts.create.description')}
+        />
+        <UserPostForm onSubmit={onSubmit} isSubmitting={isCreating || isSavingCoverImage} />
       </div>
     </div>
   )

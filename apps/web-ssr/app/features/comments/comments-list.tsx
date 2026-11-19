@@ -1,4 +1,6 @@
 import type { CreateCommentSchema } from '@boilerstone/openapi-generator'
+import { EmptyState } from '@boilerstone/ui/components/app/empty-state'
+import { Section, SectionHeader } from '@boilerstone/ui/components/app/section'
 import { Alert, AlertDescription } from '@boilerstone/ui/components/primitives/alert'
 import { Card, CardContent } from '@boilerstone/ui/components/primitives/card'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
@@ -10,9 +12,9 @@ import { useEffect, useMemo } from 'react'
 import { CommentItem } from '@/features/comments/comment-item'
 import {
   useAddComment,
-  useCommentsQuery,
+  useComments,
   useDeleteComment,
-} from '@/features/comments/utils/comments-queries'
+} from '@/features/comments/hooks/use-comments'
 import { CommentForm } from './comment-form'
 
 interface CommentsListProps {
@@ -24,7 +26,7 @@ interface CommentsListProps {
 export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsListProps) {
   const { ref, inView } = useInView()
 
-  const { mutateAsync: addComment, isPending: isAddingComment } = useAddComment({ postId })
+  const { mutateAsync: addComment, isPending: isAddingComment } = useAddComment(postId)
 
   const onSubmit = async (data: CreateCommentSchema): Promise<void> => {
     await addComment(data)
@@ -37,9 +39,9 @@ export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsLi
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useCommentsQuery({ postId })
+  } = useComments(postId)
 
-  const deleteCommentMutation = useDeleteComment({ postId })
+  const deleteCommentMutation = useDeleteComment(postId)
 
   const allComments = useMemo(() => {
     return commentsPages?.pages.flatMap((page) => page?.data || []) || []
@@ -61,16 +63,18 @@ export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsLi
   }
 
   return (
-    <div className="mt-8">
-      <div className="flex items-center gap-2 mb-6">
-        <h2 className="text-2xl font-bold">Comments</h2>
-        {!isLoading && allComments.length > 0 && (
-          <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-            <MessageSquare className="h-3.5 w-3.5" />
-            <span>{allComments.length}</span>
-          </div>
-        )}
-      </div>
+    <Section>
+      <SectionHeader
+        title="Comments"
+        meta={
+          !isLoading && allComments.length > 0 ? (
+            <div className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-sm text-muted-foreground">
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>{allComments.length}</span>
+            </div>
+          ) : null
+        }
+      />
 
       <CommentForm initialData={EMPTY_COMMENT} onSubmit={onSubmit} isPending={isAddingComment} />
 
@@ -92,7 +96,11 @@ export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsLi
               currentUserId={currentUserId}
               postAuthorId={postAuthorId}
               isAddingComment={isAddingComment}
-              onDelete={(commentId) => deleteCommentMutation.mutate(commentId)}
+              onDelete={(commentId) =>
+                deleteCommentMutation.mutate(commentId, {
+                  onError: (error) => console.error('Error deleting comment:', error),
+                })
+              }
               onReplySubmit={async (data) => {
                 await onSubmit(data)
               }}
@@ -118,17 +126,14 @@ export function CommentsList({ postId, postAuthorId, currentUserId }: CommentsLi
           )}
         </div>
       ) : (
-        <Card className="border-dashed border-2 bg-muted/30">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-center text-muted-foreground font-medium mb-1">No comments yet</p>
-            <p className="text-center text-sm text-muted-foreground/70">
-              Be the first to share your thoughts!
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<MessageSquare className="h-6 w-6 text-muted-foreground" />}
+          title="No comments yet"
+          description="Be the first to share your thoughts!"
+          className="min-h-64 rounded-none border border-dashed border-border"
+        />
       )}
-    </div>
+    </Section>
   )
 }
 

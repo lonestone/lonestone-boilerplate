@@ -1,7 +1,7 @@
 import type { Route } from './+types/home-page'
 import type { PublicPostsSchema } from '@boilerstone/openapi-generator'
 import { publicPostControllerGetPosts } from '@boilerstone/openapi-generator/client/sdk.gen'
-import { FadeInImage } from '@boilerstone/ui/components/app'
+import { FadeInImage } from '@boilerstone/ui/components/app/fade-in-image'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight, BookOpen, Pen } from 'lucide-react'

@@ -1,5 +1,5 @@
 import type { PublicPostsSchema } from '@boilerstone/openapi-generator'
-import { FadeInImage } from '@boilerstone/ui/components/app'
+import { FadeInImage } from '@boilerstone/ui/components/app/fade-in-image'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight, Calendar, Heart, MessageCircle } from 'lucide-react'
