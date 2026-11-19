@@ -3,6 +3,19 @@ output:
   - failure
 colors: false
 
+# Fail the commit when the hooks are not installed in this worktree, instead of skipping them.
+assert_lefthook_installed: true
+
+pre-commit:
+  jobs:
+    - name: format
+      glob: '*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc,json5,css,scss,less,html,vue,md,mdx,yaml,yml,toml,graphql}'
+      run: pnpm exec oxfmt --no-error-on-unmatched-pattern {staged_files}
+      stage_fixed: true
+      env:
+        NO_COLOR: '1'
+        FORCE_COLOR: '0'
+
 commit-msg:
   jobs:
     - name: commitlint

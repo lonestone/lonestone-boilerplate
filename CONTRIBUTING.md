@@ -6,7 +6,7 @@ Valid types and scopes live in [`commitlint.config.ts`](./commitlint.config.ts).
 
 ## Commits
 
-We follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). Every message looks like `type(scope): description`. A local git hook (lefthook) runs commitlint on the message. `pnpm install` installs the hooks for you (root `prepare` script). If it fails, the error tells you which rule broke; the allowed values are in `commitlint.config.ts`. Pre-push runs lint and typecheck; tests run in CI. Those hooks are the same on Windows, macOS, and Linux.
+We follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). Every message looks like `type(scope): description`. A local git hook (lefthook) runs commitlint on the message. `pnpm install` installs the hooks for you (root `prepare` script). If it fails, the error tells you which rule broke; the allowed values are in `commitlint.config.ts`. Pre-commit formats the staged files with oxfmt and stages the result, and the commit fails if the hooks are not installed in your worktree (run `pnpm install` there). Pre-push runs lint and typecheck; tests run in CI. Those hooks are the same on Windows, macOS, and Linux.
 
 The scopes are the `SCOPES` array in `commitlint.config.ts`, and the types are the `TYPES` array in the same file. Commitlint also limits the header and every line of the body and footer to 100 characters (rules from `@commitlint/config-conventional`). Wrap long body lines.
 

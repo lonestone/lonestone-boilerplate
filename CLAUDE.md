@@ -22,3 +22,5 @@ You must always follow these guidelines.
 
 Before committing or opening a PR, read `CONTRIBUTING.md` and follow it.
 Never write the token `BREAKING-CHANGE:` in a commit message unless you intend to force a major release.
+
+Format with `pnpm fmt` (oxfmt). Never use Prettier.
