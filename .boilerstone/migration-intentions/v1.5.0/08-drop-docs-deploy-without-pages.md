@@ -1,5 +1,5 @@
 ---
-id: unreleased/drop-docs-deploy-without-pages
+id: v1.5.0/drop-docs-deploy-without-pages
 domain: ci
 classification: migration
 ---

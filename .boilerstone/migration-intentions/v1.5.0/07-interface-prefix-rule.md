@@ -1,5 +1,5 @@
 ---
-id: unreleased/interface-prefix-rule
+id: v1.5.0/interface-prefix-rule
 domain: tooling
 classification: migration
 ---

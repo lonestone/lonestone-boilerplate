@@ -1,9 +1,9 @@
 ---
-id: unreleased/backend-guide-query-object-no-raw-sql-join-tables
+id: v1.5.0/backend-guide-query-object-no-raw-sql-join-tables
 domain: api
 classification: migration
 requires:
-  - unreleased/backend-guide-transactions-seeders-tests
+  - v1.5.0/backend-guide-transactions-seeders-tests
 ---
 
 # Add three backend rules: query objects, no raw SQL, no service for a simple join table

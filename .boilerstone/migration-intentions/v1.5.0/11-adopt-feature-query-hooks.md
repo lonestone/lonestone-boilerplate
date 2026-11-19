@@ -1,5 +1,5 @@
 ---
-id: unreleased/adopt-feature-query-hooks
+id: v1.5.0/adopt-feature-query-hooks
 domain: frontend
 classification: migration
 pr: 179

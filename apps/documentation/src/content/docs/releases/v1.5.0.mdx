@@ -1,0 +1,26 @@
+---
+title: 1.5.0
+description: The git hooks run on every clone, files can live in S3, worktrees get their own Docker stack, and the frontend reads the API through one hook file per feature
+---
+
+This release exists for three reasons. The git hooks now run for everyone, without a manual step. The API can store files in S3. And the day-to-day tooling around worktrees, pull requests and formatting got safer.
+
+Until now, nothing installed the lefthook hooks, so bad commit messages and unformatted code reached CI. `pnpm install` now installs them. A pre-commit hook formats the staged files with Oxfmt, and CI fails when a file is not formatted. `pnpm lint:pr` checks a PR title and description before `gh pr create`.
+
+The API has an opt-in S3 storage layer that serves files through signed URLs. The posts example uses it for a cover image, sent on its own route.
+
+`pnpm worktree:create <name>` gives a worktree its own Docker project and free ports. Before this, a `docker compose down` in one worktree could delete the database of the main checkout.
+
+On the frontend, each feature reads and writes the API through one file, `hooks/use-<feature>.ts`. Components call those hooks and never write a query key. The backend guide also gained rules on transactions, seeders, test data, query objects and raw SQL.
+
+The generated list of changes is in [`CHANGELOG.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CHANGELOG.md). The reasons behind each change are in the body of its squash commit.
+
+## What this means for consumer projects
+
+- **Apply the tooling intentions in order.** `node-24-22-2` comes first. Then `install-lefthook-hooks`, `ci-fmt-check-quiet-hooks` and `format-at-commit`, which builds on the two before it. A project that builds Docker images from the repository root must also keep `.git` out of the build context, or the images stop building.
+- **`one-source-agent-instructions` comes before `worktree-commands`.** Worktrees need Docker services without a fixed `container_name`.
+- **`adopt-feature-query-hooks` and `compose-page-shells` are frontend refactors.** They change no behavior. A project with its own data-fetching or layout convention can record them as skipped.
+- **`s3-file-storage` is informational.** A human decides whether the project needs file storage. Nothing changes until they do.
+- **`drop-docs-deploy-without-pages` only matters to projects that do not publish their documentation on GitHub Pages.**
+- **The guide intentions copy rules into the project docs.** `backend-guide-transactions-seeders-tests`, `backend-guide-query-object-no-raw-sql-join-tables`, `interface-prefix-rule` and `lint-pr-local-description` touch documentation and scripts, not application code.
+- **The other changes need nothing from an existing project.** The MIT license and the documentation fixes have no intention.

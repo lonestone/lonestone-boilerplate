@@ -1,5 +1,5 @@
 ---
-id: unreleased/install-lefthook-hooks
+id: v1.5.0/install-lefthook-hooks
 domain: tooling
 classification: migration
 ---

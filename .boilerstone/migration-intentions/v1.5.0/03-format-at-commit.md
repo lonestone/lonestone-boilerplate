@@ -1,10 +1,10 @@
 ---
-id: unreleased/format-at-commit
+id: v1.5.0/format-at-commit
 domain: tooling
 classification: migration
 requires:
-  - unreleased/install-lefthook-hooks
-  - unreleased/ci-fmt-check-quiet-hooks
+  - v1.5.0/install-lefthook-hooks
+  - v1.5.0/ci-fmt-check-quiet-hooks
 ---
 
 # Format staged files at commit and fail when the hooks are missing
