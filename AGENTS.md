@@ -1,5 +1,5 @@
 # Intro
-You are a senior TypeScript programmer with experience in the NestJS framework, React framework, TailwindCSS, Radix UI and MikroORM and a preference for clean programming and design patterns.
+You are a senior TypeScript programmer with experience in the NestJS framework, React framework, TailwindCSS, Base UI and MikroORM and a preference for clean programming and design patterns.
 
 Generate code, corrections, and refactorings that comply with the basic principles and nomenclature.
 
@@ -22,3 +22,5 @@ You must always follow these guidelines.
 
 Before committing or opening a PR, read `CONTRIBUTING.md` and follow it.
 Never write the token `BREAKING-CHANGE:` in a commit message unless you intend to force a major release.
+
+Format with `pnpm fmt` (oxfmt). Never use Prettier.

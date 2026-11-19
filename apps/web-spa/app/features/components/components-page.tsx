@@ -260,7 +260,7 @@ export default function ComponentsPage() {
                 </Badge>
                 <Badge variant="outline" className="gap-1.5">
                   <Sparkles className="h-3 w-3" />
-                  Radix Nova
+                  Base Nova
                 </Badge>
                 <Badge variant="outline" className="gap-1.5">
                   <Zap className="h-3 w-3" />

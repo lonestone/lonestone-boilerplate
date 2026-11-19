@@ -30,6 +30,8 @@ interface InstallerOptions {
   ref?: string
   /** The raw `--apps` value, parsed later. Undefined when `--apps` was not passed. */
   apps?: string
+  /** The raw `--public-docs` value, parsed later. Undefined when it was not passed. */
+  publicDocs?: string
   positionals: string[]
 }
 
@@ -105,10 +107,23 @@ function parseApps(value: string): WebApp[] {
   }
 }
 
+/** Parses a `--public-docs` value: yes or no. Dies when it is anything else. */
+function parsePublicDocs(value: string): boolean {
+  const normalized = value.trim().toLowerCase()
+  if (normalized === 'yes') {
+    return true
+  }
+  if (normalized === 'no') {
+    return false
+  }
+  return die('--public-docs needs a value: yes or no')
+}
+
 function parseArgs(argv: string[]): InstallerOptions {
   const [mode = 'help', ...rest] = argv
   let ref: string | undefined
   let apps: string | undefined
+  let publicDocs: string | undefined
   const positionals: string[] = []
 
   for (let index = 0; index < rest.length; index += 1) {
@@ -145,8 +160,25 @@ function parseArgs(argv: string[]): InstallerOptions {
       }
       continue
     }
+    if (current === '--public-docs' || current.startsWith('--public-docs=')) {
+      if (mode !== 'init') {
+        die('--public-docs only applies to init')
+      }
+      if (current === '--public-docs') {
+        const value = rest[index + 1]
+        if (value === undefined || value.startsWith('--')) {
+          publicDocs = ''
+        } else {
+          publicDocs = value
+          index += 1
+        }
+      } else {
+        publicDocs = current.slice('--public-docs='.length)
+      }
+      continue
+    }
     if (current === '-h' || current === '--help') {
-      return { mode: 'help', ref, apps, positionals }
+      return { mode: 'help', ref, apps, publicDocs, positionals }
     }
     if (current.startsWith('--')) {
       die(`Unknown option: ${current}`)
@@ -154,7 +186,7 @@ function parseArgs(argv: string[]): InstallerOptions {
     positionals.push(current)
   }
 
-  return { mode, ref, apps, positionals }
+  return { mode, ref, apps, publicDocs, positionals }
 }
 
 /**
@@ -207,6 +239,11 @@ async function askWebApps(): Promise<WebApp[]> {
   return chosen
 }
 
+/** Without a terminal, promptYesNo answers yes, so the deploy workflow is kept. */
+async function askPublicDocs(): Promise<boolean> {
+  return promptYesNo('Will you publish the documentation publicly (GitHub Pages)?', true)
+}
+
 function assertValidProjectName(dir: string): void {
   const projectName = basename(dir)
   if (!isValidProjectName(projectName)) {
@@ -249,7 +286,13 @@ function fetchSubdirs(repoUrl: string, ref: string, subdirs: string[], cwd: stri
  * there, then move it into place. The CLI runs from outside the project it
  * builds, and a failure leaves nothing behind at `dir`.
  */
-function stageProject(repoUrl: string, ref: string, dir: string, apps: readonly WebApp[]): void {
+function stageProject(
+  repoUrl: string,
+  ref: string,
+  dir: string,
+  apps: readonly WebApp[],
+  publicDocs: boolean,
+): void {
   assertValidProjectName(dir)
   const projectName = basename(dir)
 
@@ -279,6 +322,7 @@ function stageProject(repoUrl: string, ref: string, dir: string, apps: readonly 
       sourceCommit: sourceCommit || undefined,
       remote: process.env.BOILERPLATE_REPO?.trim() || undefined,
       apps,
+      publicDocs,
     })
 
     movePath(staging, dir)
@@ -378,6 +422,9 @@ Options:
   --apps <list>       init only: web apps to include: ${WEB_APPS.join(', ')} (comma separated) or none
                       Without it, init asks about each web app, or keeps them all when it cannot ask
                       api and documentation are always included
+  --public-docs <yes|no>
+                      init only: whether the documentation is published on GitHub Pages. No removes the
+                      deploy workflow. Without it, init asks, or answers yes when it cannot ask
 
 init and onboard use the release that has this CLI's version. Pin a release by
 pinning the CLI: pnpm dlx ${CLI_PACKAGE_NAME}@1.2.0 init my-app
@@ -386,6 +433,7 @@ Examples:
   pnpm dlx ${CLI_PACKAGE_NAME} init my-app --apps web-ssr
   pnpm dlx ${CLI_PACKAGE_NAME} init my-app --apps web-spa,web-ssr
   pnpm dlx ${CLI_PACKAGE_NAME} init my-app --apps none
+  pnpm dlx ${CLI_PACKAGE_NAME} init my-app --public-docs no
 
 Environment:
   BOILERPLATE_REPO    Override the repository URL (e.g. an SSH URL for a private fork)
@@ -398,8 +446,10 @@ async function runInit(options: InstallerOptions, repoUrl: string, cwd: string):
   }
   const dirInput = options.positionals[0] || 'my-app'
   const ref = getCliReleaseRef(options.ref, `init ${dirInput}`)
-  // A bad --apps value fails before any git or pnpm call.
+  // A bad --apps or --public-docs value fails before any git or pnpm call.
   const givenApps = options.apps === undefined ? undefined : parseApps(options.apps)
+  const givenPublicDocs =
+    options.publicDocs === undefined ? undefined : parsePublicDocs(options.publicDocs)
   need('git')
   need('pnpm')
   const dir = resolve(cwd, dirInput)
@@ -409,9 +459,11 @@ async function runInit(options: InstallerOptions, repoUrl: string, cwd: string):
   }
   // Asked last, so nobody answers questions for a run that cannot start.
   const apps = givenApps ?? (await askWebApps())
+  const publicDocs = givenPublicDocs ?? (await askPublicDocs())
   info(`Apps in the new project: ${[...ALWAYS_INCLUDED_APPS, ...apps].join(', ')}`)
+  info(`Public documentation: ${publicDocs ? 'yes' : 'no (the GitHub Pages workflow is removed)'}`)
   info(`Creating new project in ${dir} from ${repoUrl}@${ref}`)
-  stageProject(repoUrl, ref, dir, apps)
+  stageProject(repoUrl, ref, dir, apps, publicDocs)
 
   runGit(['init', '--quiet'], dir)
   runPnpm(['install'], dir)

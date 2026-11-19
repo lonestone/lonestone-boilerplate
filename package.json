@@ -1,13 +1,14 @@
 {
   "name": "boilerstone",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "description": "Monorepo for Lonestone project",
   "keywords": [],
-  "license": "ISC",
+  "license": "MIT",
   "author": "",
   "type": "module",
   "scripts": {
+    "prepare": "node -e \"require('fs').existsSync('.git')&&require('child_process').execSync('lefthook install',{stdio:'inherit'})\"",
     "rock": "boilerstone-cli rock",
     "boilerplate": "boilerstone-cli",
     "dev": "pnpm --parallel dev",
@@ -44,7 +45,7 @@
     "tsx": "^4.23.5"
   },
   "engines": {
-    "node": "24.13.0",
+    "node": "24.22.2",
     "pnpm": "10.28.2"
   },
   "packageManager": "pnpm@10.28.2"

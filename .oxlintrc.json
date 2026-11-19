@@ -34,6 +34,12 @@
       "rules": {
         "typescript/consistent-type-imports": "off"
       }
+    },
+    {
+      "files": ["apps/api/**/*.entity.ts"],
+      "rules": {
+        "eslint/max-classes-per-file": ["error", 1]
+      }
     }
   ]
 }

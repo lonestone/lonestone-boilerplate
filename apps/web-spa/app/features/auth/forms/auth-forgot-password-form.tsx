@@ -43,15 +43,17 @@ export const AuthForgotPasswordForm: React.FC<AuthForgotPasswordFormProps> = ({
           render={({ field }) => (
             <FormItem>
               <FormLabel htmlFor="email">{t('auth.forgotPassword.email')}</FormLabel>
-              <FormControl>
-                <Input
-                  id="email"
-                  {...field}
-                  type="email"
-                  autoComplete="email"
-                  placeholder="your@email.com"
-                />
-              </FormControl>
+              <FormControl
+                render={
+                  <Input
+                    id="email"
+                    {...field}
+                    type="email"
+                    autoComplete="email"
+                    placeholder="your@email.com"
+                  />
+                }
+              />
               <FormMessage />
             </FormItem>
           )}

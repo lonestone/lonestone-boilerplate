@@ -9,9 +9,13 @@ Apply them once on a new consumer repository. From the repo root:
 ```
 
 The script defaults to a dry run (prints the API calls, changes nothing). `--apply` patches merge settings and creates the `staging` and `production` GitHub Environments if they are missing.
+
 <!-- boilerstone:producer-only:begin -->
+
 On the boilerplate repository it also creates the `no-intention` label.
+
 <!-- boilerstone:producer-only:end -->
+
 It does not mutate branch protection or store Dokploy secrets.
 
 ## Checklist
@@ -30,6 +34,7 @@ This last item is load-bearing. Without it, GitHub will not copy the curated des
 ### Labels
 
 <!-- boilerstone:producer-only:begin -->
+
 - [ ] `no-intention` — skip the migration-intention gate (boilerplate producer). Apply it on PRs that do not need a consumer-facing intention (refactors, boilerplate-internal CI).
 <!-- boilerstone:producer-only:end -->
 - [ ] Release-please labels (`autorelease: pending`, …) are created by the Release Please workflow.
@@ -44,6 +49,7 @@ gh label create no-intention \
 ```
 
 `./scripts/configure-github-repo.sh --apply` also creates it if it is missing.
+
 <!-- boilerstone:producer-only:end -->
 
 ### Branch protection on `main`
@@ -61,7 +67,7 @@ Require pull requests, and require these status checks to pass:
 ### Repository variables
 
 - [ ] `REQUIRE_RELEASE_NOTE` — optional. Release notes are not enforced by default; set this variable to `true` to make the **Release note** check block a Release PR until `releases/vX.Y.Z.mdx` exists. The boilerplate repository sets it.
-- [ ] `PROMOTE_ON_RELEASE` — optional. When set to `staging` or `production`, `promote-on-release.yml` dispatches Promote for that environment as soon as the tag images are built. Combine it with required reviewers on the environment to get an "Approve and deploy" button instead of an immediate deploy.
+- [ ] `PROMOTE_ON_RELEASE` — optional. When set to `staging` or `production`, `promote-on-release.yml` dispatches Promote for that environment as soon as the release images are built. Combine it with required reviewers on the environment to get an "Approve and deploy" button instead of an immediate deploy.
 
 ```bash
 gh variable set REQUIRE_RELEASE_NOTE --body true

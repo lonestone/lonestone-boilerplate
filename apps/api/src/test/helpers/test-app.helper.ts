@@ -1,6 +1,6 @@
 // TEST UTILS
 //
-// All test data creation must use factories in src/test/factories/ as per CURSOR_TEST_IMPROVEMENT_PROMPT.md.
+// Test data comes from the module factories (`<module>.factory.ts`) and createUserData.
 // These helpers are for app setup/teardown and request helpers only.
 // Arrange-Act-Assert pattern should be followed in all test files.
 
