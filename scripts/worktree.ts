@@ -199,14 +199,14 @@ function rewriteEnv(
   projectName: string | null,
 ): string {
   const lines = text.split('\n').map((line) => {
-    const match = /^(\s*)([A-Za-z_][A-Za-z0-9_]*)=(.*)$/u.exec(line)
+    const match = /^(\s*)([A-Za-z_][A-Za-z0-9_]*)=(.*?)(\r?)$/u.exec(line)
     if (!match) {
       return line
     }
-    const [, indent = '', key = '', value = ''] = match
+    const [, indent = '', key = '', value = '', eol = ''] = match
     const portKey = key in ports ? (key as PortKey) : PORT_ALIASES[key]
     if (portKey !== undefined) {
-      return `${indent}${key}=${ports[portKey]}`
+      return `${indent}${key}=${ports[portKey]}${eol}`
     }
     let next = value
     for (const [oldPort, newPort] of oldToNew) {
@@ -216,7 +216,7 @@ function rewriteEnv(
       )
       next = next.replace(pattern, `$1:${newPort}`)
     }
-    return `${indent}${key}=${next}`
+    return `${indent}${key}=${next}${eol}`
   })
 
   if (projectName === null) {
@@ -297,6 +297,9 @@ function remove(name: string): void {
     )
   }
   const branch = git(['rev-parse', '--abbrev-ref', 'HEAD'], target)
+  if (branch === 'HEAD') {
+    throw new UserError('The worktree has a detached HEAD. Check out a branch and push it first.')
+  }
   if (tryGit(['rev-parse', '--abbrev-ref', '@{upstream}'], target) === null) {
     throw new UserError(`The branch "${branch}" is not pushed (no upstream). Push it first.`)
   }
@@ -332,6 +335,28 @@ function remove(name: string): void {
   console.log(`Removed ${target}. The branch "${branch}" is kept.`)
 }
 
+function parseArgs(args: string[]): { base: string | undefined; positional: string[] } {
+  let base: string | undefined
+  const positional: string[] = []
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index] ?? ''
+    if (arg === '--base') {
+      index += 1
+      base = args[index]
+      if (base === undefined || base.startsWith('-')) {
+        throw new UserError('--base needs a git ref.')
+      }
+    } else if (arg.startsWith('--base=')) {
+      base = arg.slice('--base='.length)
+    } else if (arg.startsWith('-')) {
+      throw new UserError(`Unknown option ${arg}.`)
+    } else {
+      positional.push(arg)
+    }
+  }
+  return { base, positional }
+}
+
 async function main(): Promise<void> {
   const [command, ...rest] = process.argv.slice(2)
   const wantsHelp = rest.includes('--help') || rest.includes('-h') || command === '--help'
@@ -341,23 +366,19 @@ async function main(): Promise<void> {
     return
   }
 
-  const baseIndex = rest.indexOf('--base')
-  const base = baseIndex === -1 ? 'main' : rest[baseIndex + 1]
-  const positional = rest.filter(
-    (arg, index) => !arg.startsWith('-') && (baseIndex === -1 || index !== baseIndex + 1),
-  )
+  const { base, positional } = parseArgs(rest)
   const name = positional[0]
-  if (name === undefined || base === undefined || positional.length > 1) {
+  if (name === undefined || positional.length > 1) {
     throw new UserError(
       `Usage: pnpm worktree:${command} <name>${command === 'create' ? ' [--base <ref>]' : ''}`,
     )
   }
+  if (base !== undefined && command === 'remove') {
+    throw new UserError('worktree:remove takes no --base option.')
+  }
   if (command === 'create') {
-    await create(name, base)
+    await create(name, base ?? 'main')
   } else {
-    if (baseIndex !== -1) {
-      throw new UserError('worktree:remove takes no --base option.')
-    }
     remove(name)
   }
 }
@@ -365,12 +386,6 @@ async function main(): Promise<void> {
 try {
   await main()
 } catch (error) {
-  if (error instanceof UserError) {
-    console.error(error.message)
-  } else if (error instanceof Error) {
-    console.error(error.message)
-  } else {
-    console.error(error)
-  }
+  console.error(error instanceof Error ? error.message : error)
   process.exitCode = 1
 }
