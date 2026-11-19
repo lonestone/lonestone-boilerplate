@@ -25,7 +25,9 @@
     "test": "pnpm -r test",
     "docs-only": "pnpm --filter=@boilerstone/documentation run dev",
     "knip": "knip --no-exit-code",
-    "lint:pr": "tsx ./scripts/lint-pr.ts"
+    "lint:pr": "tsx ./scripts/lint-pr.ts",
+    "worktree:create": "tsx ./scripts/worktree.ts create",
+    "worktree:remove": "tsx ./scripts/worktree.ts remove"
   },
   "dependencies": {
     "typescript": "^6.0.3"
