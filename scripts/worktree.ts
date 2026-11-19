@@ -25,12 +25,14 @@ worktree:create
     - COMPOSE_PROJECT_NAME=<repo>-<name> (added to the root .env)
     - every Docker port: DATABASE_PORT, API_PORT, SMTP_PORT_WEB, SMTP_PORT,
       STORAGE_API_PORT, STORAGE_CONSOLE_PORT (and EMAIL_PORT, which follows SMTP_PORT)
+    - the dev server ports of the web apps: WEB_SPA_PORT and WEB_SSR_PORT (the
+      vite.config.ts files read them, and fall back to 5174 and 5173)
     - the local URLs that contain those ports (API_BASE_URL, TRUSTED_ORIGINS,
-      STORAGE_ENDPOINT, VITE_API_URL, API_URL)
+      CLIENTS_WEB_APP_URL, CLIENTS_WEB_SSR_URL, STORAGE_ENDPOINT, VITE_API_URL,
+      API_URL), so the front of the worktree talks to the API of the worktree
   Ports are free on this machine and not used by another worktree's .env.
   Then it runs "pnpm install" in the worktree, which installs the git hooks.
-  It prints the ports it chose. The dev servers of the web apps (5173, 5174) are
-  not changed: Vite moves to the next free port by itself.
+  It prints the ports it chose.
   Start the stack of the worktree with "pnpm docker:up" from inside it.
 
 worktree:remove
@@ -38,7 +40,9 @@ worktree:remove
   Then it removes the worktree folder. It never deletes the branch, and it never
   deletes Docker volumes (drop them yourself with "docker volume rm" if you want).
   It stops and says why when the worktree has uncommitted changes, or when its
-  branch has commits that are not pushed.
+  branch has commits that are not pushed. A branch whose work is already in
+  origin/main (for example after a squash merge) counts as done: the files it
+  touches are the same in origin/main, so nothing would be lost.
 `
 
 const ENV_FILES = [
@@ -56,6 +60,8 @@ const DEFAULT_PORTS = {
   SMTP_PORT: 1025,
   STORAGE_API_PORT: 9000,
   STORAGE_CONSOLE_PORT: 9001,
+  WEB_SPA_PORT: 5174,
+  WEB_SSR_PORT: 5173,
 } as const
 
 type PortKey = keyof typeof DEFAULT_PORTS
@@ -223,7 +229,12 @@ function rewriteEnv(
     return lines.join('\n')
   }
   const withoutProject = lines.filter((line) => !/^\s*COMPOSE_PROJECT_NAME=/u.test(line))
-  return [`COMPOSE_PROJECT_NAME=${projectName}`, ...withoutProject].join('\n')
+  const present = parseEnv(text)
+  const missingPorts = PORT_KEYS.filter((key) => !(key in present)).map(
+    (key) => `${key}=${ports[key]}`,
+  )
+  const body = withoutProject.join('\n').replace(/\n*$/u, '')
+  return [`COMPOSE_PROJECT_NAME=${projectName}`, body, ...missingPorts, ''].join('\n')
 }
 
 async function create(name: string, base: string): Promise<void> {
@@ -280,6 +291,42 @@ async function create(name: string, base: string): Promise<void> {
   console.log(`\nDone. cd ${target}`)
 }
 
+/** Why the branch counts as not pushed, or null when everything is on its upstream. */
+function findUnpushedProblem(target: string, branch: string): string | null {
+  if (tryGit(['rev-parse', '--abbrev-ref', '@{upstream}'], target) === null) {
+    return `The branch "${branch}" is not pushed (no upstream). Push it first.`
+  }
+  const unpushed = git(['rev-list', '--count', '@{upstream}..HEAD'], target)
+  return unpushed === '0'
+    ? null
+    : `The branch "${branch}" has ${unpushed} commit(s) that are not pushed.`
+}
+
+/**
+ * True when the work of the branch is already in the base branch, for example after
+ * a squash merge: every file the branch touches is the same in origin/main.
+ */
+function isIntegrated(target: string, mainRoot: string): boolean {
+  tryGit(['fetch', '--quiet', 'origin'], mainRoot)
+  const baseRef = ['origin/main', 'main'].find(
+    (ref) => tryGit(['rev-parse', '--verify', '--quiet', ref], mainRoot) !== null,
+  )
+  if (baseRef === undefined) {
+    return false
+  }
+  const mergeBase = tryGit(['merge-base', baseRef, 'HEAD'], target)
+  if (mergeBase === null) {
+    return false
+  }
+  const touched = git(['diff', '--name-only', mergeBase, 'HEAD'], target)
+    .split('\n')
+    .filter((file) => file !== '')
+  if (touched.length === 0) {
+    return true
+  }
+  return tryGit(['diff', '--quiet', baseRef, 'HEAD', '--', ...touched], target) !== null
+}
+
 function remove(name: string): void {
   if (!WORKTREE_NAME_PATTERN.test(name)) {
     throw new UserError(`"${name}" is not a valid name.`)
@@ -300,12 +347,14 @@ function remove(name: string): void {
   if (branch === 'HEAD') {
     throw new UserError('The worktree has a detached HEAD. Check out a branch and push it first.')
   }
-  if (tryGit(['rev-parse', '--abbrev-ref', '@{upstream}'], target) === null) {
-    throw new UserError(`The branch "${branch}" is not pushed (no upstream). Push it first.`)
-  }
-  const unpushed = git(['rev-list', '--count', '@{upstream}..HEAD'], target)
-  if (unpushed !== '0') {
-    throw new UserError(`The branch "${branch}" has ${unpushed} commit(s) that are not pushed.`)
+  const notPushed = findUnpushedProblem(target, branch)
+  if (notPushed !== null) {
+    if (!isIntegrated(target, mainRoot)) {
+      throw new UserError(notPushed)
+    }
+    console.log(
+      `The branch "${branch}" is not pushed, but its work is already in origin/main. Going on.`,
+    )
   }
 
   const projectName = readEnvIfExists(join(target, '.env')).COMPOSE_PROJECT_NAME
