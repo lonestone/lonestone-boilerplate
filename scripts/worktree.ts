@@ -42,7 +42,8 @@ worktree:remove
   It stops and says why when the worktree has uncommitted changes, or when its
   branch has commits that are not pushed. A branch whose work is already in
   origin/main counts as done (every commit has a twin there, or, after a squash
-  merge, the files it touches are the same in origin/main): nothing would be lost.
+  merge, the files it touches are the same in origin/main, a promoted migration
+  intention included): nothing would be lost.
 `
 
 const ENV_FILES = [
@@ -302,10 +303,53 @@ function findUnpushedProblem(target: string, branch: string): string | null {
     : `The branch "${branch}" has ${unpushed} commit(s) that are not pushed.`
 }
 
+const PROMOTED_INTENTION = /^\.boilerstone\/migration-intentions\/v[^/]+\/\d+-(.+)\.md$/u
+const UNRELEASED_INTENTION = /^\.boilerstone\/migration-intentions\/unreleased\/(.+)\.md$/u
+
+/** An intention text without its `id:` line, which a release rewrites. */
+function withoutIntentionId(text: string): string {
+  return text.replace(/^id:.*$/mu, '')
+}
+
+/**
+ * True when a release moved this unreleased intention to v<version>/NN-<slug>.md in
+ * baseRef, with the same text apart from the id.
+ */
+function isPromotedIntention(
+  file: string,
+  baseRef: string,
+  mergeBase: string,
+  target: string,
+): boolean {
+  const slug = UNRELEASED_INTENTION.exec(file)?.[1]
+  if (slug === undefined) {
+    return false
+  }
+  const mine = tryGit(['show', `HEAD:${file}`], target)
+  if (mine === null) {
+    return false
+  }
+  const candidates = (
+    tryGit(
+      ['ls-tree', '-r', '--name-only', baseRef, '--', '.boilerstone/migration-intentions'],
+      target,
+    ) ?? ''
+  )
+    .split('\n')
+    .filter((candidate) => PROMOTED_INTENTION.exec(candidate)?.[1] === slug)
+  return candidates.some(
+    (candidate) =>
+      tryGit(['cat-file', '-e', `${mergeBase}:${candidate}`], target) === null &&
+      withoutIntentionId(tryGit(['show', `${baseRef}:${candidate}`], target) ?? '') ===
+        withoutIntentionId(mine),
+  )
+}
+
 /**
  * True when the work of the branch is already in origin/main: every commit has a
  * twin there (git cherry), or, after a squash merge, every file the branch touches
- * is the same in origin/main.
+ * is the same in origin/main. An unreleased intention that a release has since
+ * moved to v<version>/NN-<slug>.md counts as the same file.
  */
 function isIntegrated(target: string, mainRoot: string): boolean {
   tryGit(['fetch', '--quiet', 'origin'], mainRoot)
@@ -324,6 +368,7 @@ function isIntegrated(target: string, mainRoot: string): boolean {
   const touched = git(['diff', '--name-only', mergeBase, 'HEAD'], target)
     .split('\n')
     .filter((file) => file !== '')
+    .filter((file) => !isPromotedIntention(file, baseRef, mergeBase, target))
   if (touched.length === 0) {
     return true
   }
