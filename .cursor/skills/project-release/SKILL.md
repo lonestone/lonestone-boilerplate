@@ -20,10 +20,10 @@ In the boilerplate repository (see "Producer or consumer" in `.boilerstone/READM
 
 ## Job
 
-1. Find the open Release PR (label `autorelease: pending`) if it exists. Otherwise draft the note on a regular PR targeting `main`.
-2. Read the next version from `.release-please-manifest.json` on the Release PR, or from a release-please dry-run if that PR is not open yet.
-3. Draft `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx` from `CHANGELOG.md` plus `git show` on the listed commits. The note is the human story of why this release exists. It is not a second changelog.
-4. **Ship in batches.** Follow "Ship in batches" in the canon: merge the pull requests first, then write or rename the note on the Release PR, then the human merges the Release PR. The version changes with every merge, so the note comes last. If the version moved, rename the file; do not rewrite the story. Never open a release per pull request when others are still in flight.
+1. Ship in batches. Merge the pull requests of the batch first, then make one release. Follow "Ship in batches" in the canon. Do not open a release for each pull request.
+2. Find the open Release PR (label `autorelease: pending`). Wait until the batch is merged, because its version changes with every merge.
+3. Read the next version from `.release-please-manifest.json` on the Release PR.
+4. Write `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx` last, on the Release PR branch, just before the human merges it. Use `CHANGELOG.md` and `git show` on the listed commits. The note is the human story of why this release exists. It is not a second changelog. If the version moved, rename the file. Do not rewrite the story.
 5. If the Release PR is open, verify its checks. The release-note check only blocks when the repository variable `REQUIRE_RELEASE_NOTE` is `true`; write the note anyway — it is the point of this skill. If a check fails, the error is the fix.
 
 ## After the human merges

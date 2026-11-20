@@ -38,7 +38,7 @@ Release Please changes the version of its Release PR every time another pull req
 
 3. **Skill** — signal: `rg "Ship in batches" .claude/skills/project-release/SKILL.md` returns nothing.
    Add the "Ship in batches" step to the Job list, and drop the sentence that says to write the note before the Release PR exists. Do the same in `.cursor/skills/project-release/SKILL.md` if the project has that copy.
-   Done when: `rg "Ship in batches" .claude/skills/project-release/SKILL.md` matches.
+   Done when: `rg "Ship in batches" .claude/skills/project-release/SKILL.md` matches, and so does the same search in the `.cursor` copy if it exists.
 
 ## Out of Scope
 
