@@ -6,6 +6,7 @@ import { APP_FILTER } from '@nestjs/core'
 import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup'
 import { LoggerModule } from 'nestjs-pino'
 import { AppController } from './app.controller'
+import { config } from './config/env.config'
 import { AiModule } from './modules/ai/ai.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { DbModule } from './modules/db/db.module'
@@ -28,18 +29,27 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     SentryModule.forRoot(),
     LoggerModule.forRoot({
       pinoHttp: {
-        transport: {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            levelFirst: true,
-            translateTime: 'yyyy-mm-dd HH:MM:ss',
-            singleLine: true,
-            messageFormat: false,
-            ignore: 'pid,hostname,req,res,context,responseTime',
-          },
+        // Readable lines in development. Elsewhere pino writes one JSON object
+        // per line, with pid and hostname, so a log platform can parse them and
+        // tell several API instances apart.
+        transport:
+          config.env === 'development'
+            ? {
+                target: 'pino-pretty',
+                options: {
+                  colorize: true,
+                  levelFirst: true,
+                  translateTime: 'yyyy-mm-dd HH:MM:ss',
+                  singleLine: true,
+                  messageFormat: false,
+                  ignore: 'pid,hostname,req,res,context,responseTime',
+                },
+              }
+            : undefined,
+        autoLogging: {
+          // Load balancers poll the health check every few seconds.
+          ignore: (req: ExpressRequest) => (req.originalUrl || req.url) === '/api/health',
         },
-        autoLogging: true,
         serializers: {
           req: () => {
             return undefined // Don't log request details
