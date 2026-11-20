@@ -142,7 +142,10 @@ Deux artefacts, deux rôles :
 - [`CHANGELOG.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CHANGELOG.md) est l'inventaire généré : une ligne par changement, chacune liée à son commit. Ne l'éditez jamais à la main.
 - [`releases/`](/lonestone-boilerplate/fr/releases) contient les notes écrites par des humains : pourquoi cette version existe.
 
-Les notes de release sont **optionnelles par défaut** : le check CI sur la Release PR passe sans note. Quand votre équipe veut rendre la note obligatoire, mettez la variable de dépôt `REQUIRE_RELEASE_NOTE` à `true` (`gh variable set REQUIRE_RELEASE_NOTE --body true`) et le check bloquera la Release PR tant que `releases/vX.Y.Z.mdx` n'existe pas. Le dépôt du boilerplate l'impose.
+Les notes de release sont **optionnelles par défaut** : le check CI sur la Release PR passe sans note, et la release est publiée avec les notes que release-please génère. Quand votre équipe veut rendre la note obligatoire, mettez la variable de dépôt `REQUIRE_RELEASE_NOTE` à `true` (`gh variable set REQUIRE_RELEASE_NOTE --body true`). Le dépôt du boilerplate l'impose. La variable active deux garde-fous :
+
+- Le check **Release note** échoue sur la Release PR tant que `releases/vX.Y.Z.mdx` n'existe pas. Sans protection de branche (un dépôt privé sur l'offre gratuite de GitHub), un check rouge n'empêche pas le merge.
+- Le workflow **Release Please** retient la release. Si la Release PR a été mergée sans sa note, le run sur `main` échoue avec `Release vX.Y.Z is held` et ne crée ni tag, ni GitHub Release, ni images. Ajoutez la note par une pull request normale vers `main`. Son merge relance le workflow, et la release est publiée à ce moment-là. Tant qu'une release est retenue, Release Please n'ouvre pas de nouvelle Release PR.
 
 Vous pouvez écrire ce fichier **avant** que la Release PR n'existe — sur une PR normale vers `main`. Le check ne regarde que le HEAD de la Release PR, donc une note déjà sur `main` compte. Si la version dans le nom de fichier ne correspond plus, renommez le fichier ; ne réécrivez pas l'histoire.
 
