@@ -51,6 +51,39 @@
       },
       "examples": [["web-spa", "web-ssr"]]
     },
+    "extensions": {
+      "type": "array",
+      "description": "Extensions added with `boilerstone-cli extension add`. Absent means none.",
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "options", "installedAt"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Extension name, e.g. capacitor",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "description": "Extension release without the leading v, or local for a working copy",
+            "minLength": 1
+          },
+          "options": {
+            "type": "object",
+            "description": "Option values chosen at install",
+            "additionalProperties": {
+              "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+            }
+          },
+          "installedAt": {
+            "type": "string",
+            "description": "Installation date (YYYY-MM-DD)",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
     "trackedDomains": {
       "type": "array",
       "description": "Domains this project follows from the boilerplate. Known in this release: tooling, api, frontend, ci, docker-env, monitoring, email, auth, storage, ai. Domains introduced by newer releases are preserved by older CLIs with a warning.",

@@ -27,7 +27,7 @@ That's also why the whole system is plain markdown and JSON. It works the same w
 - **Migration intentions** — published per release, fetched from the boilerplate's git tags.
 - **The CLI** (`pnpm boilerplate …`, the `@lonestone/boilerstone-cli` package) — reads your state, computes what's left to do, and stages the work. It never edits your application code itself. Your project does not install it: its scripts call it with `pnpm dlx`.
 
-A few state-file details that occasionally matter (skip this on first read): the CLI validates the file on every read and write, stores versions without a leading `v`, and stores intention IDs as `vX.Y.Z/slug` — old IDs without the `v` are migrated automatically. Fields and domains introduced by a newer release are kept with a warning rather than rejected, so an older CLI keeps working across version skew. The one hard compatibility gate is `schemaVersion`.
+A few state-file details that occasionally matter (skip this on first read): the CLI validates the file on every read and write, stores versions without a leading `v`, and stores intention IDs as `vX.Y.Z/slug` — old IDs without the `v` are migrated automatically. Fields and domains introduced by a newer release are kept with a warning rather than rejected, so an older CLI keeps working across version skew. The one hard compatibility gate is `schemaVersion`. Extensions added with `extension add` are listed in the optional `extensions` field (name, version, options, date); upgrades do not read it yet.
 
 ## Onboarding
 
@@ -90,6 +90,8 @@ After `prepare`, the actual work begins: applying the staged intentions one at a
 **`upgrade record`** — records a validated intention outcome in `boilerplate.json`, then ticks the matching checkbox in the session checklist. The JSON is the source of truth; if the checkbox update fails after the state was saved, the command still succeeds with a warning — don't record the same outcome twice.
 
 **`upgrade finish`** — bumps `source.currentVersion` once every intention in the prepared range is applied or skipped. It also moves a pinned `pnpm dlx @lonestone/boilerstone-cli@X.Y.Z rock` script to the new version, so local setup follows the release you now track; a custom `rock` script is left alone. It's the final commit of an upgrade, never an intermediate step: it works from local data only and refuses while anything in the range is still unresolved or the target release isn't available locally.
+
+**`extension list` / `extension add <name>`** — add a whole feature to a project, outside the upgrade flow. `add` fetches the newest release of the extension that supports your `source.currentVersion`, checks the clean worktree, every precondition and every file it will change before writing anything, undoes everything if a step fails, and records the extension in `boilerplate.json`. See the [CLI reference](https://lonestone.github.io/lonestone-boilerplate/references/2_boilerstone-cli/#extensions).
 
 ## Tutorial: running an upgrade with an AI agent
 
