@@ -28,6 +28,7 @@
 - [5_orm.mdx](./src/content/docs/explanations/5_orm.mdx) - How to work with your DB
 - [6_database-migrations.mdx](./src/content/docs/explanations/6_database-migrations.mdx) - Understanding database migrations with MikroORM
 - [7_boilerplate-upgrades.mdx](./src/content/docs/explanations/7_boilerplate-upgrades.mdx) - How a generated project stays in sync with the Lonestone boilerplate over time
+- [8_item-registry.mdx](./src/content/docs/explanations/8_item-registry.mdx) - Planned architecture — a small base, plus a registry of reusable items a project adds when it needs them
 
 ## Fr
 
