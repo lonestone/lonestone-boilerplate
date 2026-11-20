@@ -35,6 +35,23 @@ Green checks mean "this PR is allowed to merge", not "send this to production". 
 There is also a technical reason: a merge done with the default `GITHUB_TOKEN` never triggers the follow-up workflow run that creates the tag. Merge it as yourself, from the GitHub UI.
 :::
 
+## Ship in batches
+
+When several people or agents work in parallel, do not release after every merge. Ship in batches: merge several pull requests, then make one release for all of them.
+
+The order is always the same:
+
+1. Merge the pull requests that belong in the release. Each one is reviewed and merged on its own.
+2. Wait until the Release PR shows the final list of changes. Release Please updates it after each merge.
+3. Write the release note on the Release PR branch, or rename the one you already have.
+4. Check that the Release PR checks are green, then merge the Release PR yourself.
+
+:::caution[The version changes with every merge]
+Release Please recomputes the version each time a pull request lands on `main`. A note called `v1.4.0.mdx` can become `v1.5.0.mdx` after one more merge, and the CI run starts again. So the note is the last thing you touch: write it, or rename it, just before you merge the Release PR. Do not merge another pull request after that, or the version may move again.
+:::
+
+Nothing blocks a feature pull request for lacking a note. The **Release note** check only runs on a Release PR (label `autorelease: pending`). On every other pull request it is skipped, and a skipped check counts as a pass.
+
 ## What the pipeline produces
 
 The workflow `.github/workflows/push-to-ghcr.yml` builds a Docker image on GHCR for each runnable app: API, web-spa, and web-ssr. If a Dockerfile is missing (for example because you removed an app), the workflow simply skips it — no need to edit the workflow.
@@ -144,7 +161,7 @@ Two artifacts, two jobs:
 
 Release notes are **optional by default**: the CI check on the Release PR passes without one. When your team wants the note to be mandatory, set the repository variable `REQUIRE_RELEASE_NOTE` to `true` (`gh variable set REQUIRE_RELEASE_NOTE --body true`) and the check will block the Release PR until `releases/vX.Y.Z.mdx` exists. The boilerplate repository enforces it.
 
-You can write that file **before** the Release PR exists — on a regular PR into `main`. The check only looks at the Release PR HEAD, so a note already on `main` counts. If the version in the filename later disagrees, rename the file; do not rewrite the story.
+The check only looks at the Release PR HEAD. You can draft the story early, on a regular PR into `main`, while the work is fresh. But the version in the filename moves with every merge, so check it and rename the file just before you merge the Release PR; do not rewrite the story. See [Ship in batches](#ship-in-batches).
 
 ## Feature flags
 
