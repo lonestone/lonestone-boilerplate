@@ -65,6 +65,15 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic): BetterAuthT
     },
     database: mikroOrmAdapter(options.orm),
     databaseHooks: options.databaseHooks,
+    session: {
+      // Keeps a signed copy of the session in a cookie, so most session reads
+      // skip the database. A revoked session or a changed user stays visible
+      // for up to maxAge.
+      cookieCache: {
+        enabled: true,
+        maxAge: 5 * 60,
+      },
+    },
     advanced: {
       database: {
         generateId: false, // Fix pour Better Auth 1.2.7 - nouvelle syntaxe
