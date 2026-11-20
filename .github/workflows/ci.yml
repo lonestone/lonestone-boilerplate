@@ -8,12 +8,13 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 
 # GitHub bills each job in whole minutes. A new push to a pull request cancels the run of the
-# previous push. Every push to main has its own group, so no run on main is ever cancelled.
+# previous push. A new push to main cancels the run of main that is still going, so a series of
+# merges in a row leaves one run, for the last commit. CI still runs on main.
 # A draft pull request gets no run, because a branch that is pushed often would bill a full run
 # on every push. Marking the pull request ready for review starts the run.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   setup:
