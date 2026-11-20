@@ -23,12 +23,11 @@ On a private repository without GitHub Pro there is no branch protection, so the
 ## Do Not Apply When
 
 - `.boilerstone/migration-intentions/` exists. This is the boilerplate repository, or a fork that publishes its own intentions. Record as skipped.
-- The project has no versions (no `release-please.yml`). Record as skipped.
 
 ## Observable Gaps
 
 1. **Gate script** — signal: `.github/scripts/release-note-gate.sh` is missing.
-   Copy `.github/scripts/release-note-gate.sh` and `.github/scripts/release-note-gate.test.sh`. If the project keeps its release notes somewhere other than `apps/documentation/src/content/docs/releases/`, change the path in both files.
+   Copy `.github/scripts/release-note-gate.sh` and `.github/scripts/release-note-gate.test.sh`. The script assumes one package (the `"."` key of `.release-please-manifest.json`), tags like `vX.Y.Z`, and `python3` on the runner. If the project differs, adapt the script and its test. If the project keeps its release notes somewhere other than `apps/documentation/src/content/docs/releases/`, change that path everywhere it appears: `rg "content/docs/releases" .github`.
    Done when: `bash .github/scripts/release-note-gate.test.sh` prints `All release note gate cases pass`.
 
 2. **Release Please workflow** — signal: `rg "release-note-gate.sh" .github/workflows/release-please.yml` returns nothing.
@@ -39,9 +38,13 @@ On a private repository without GitHub Pro there is no branch protection, so the
    Add the `Test the release note gate` step to the lint job, or to whichever job the project runs on every pull request.
    Done when: `rg "release-note-gate.test.sh" .github/workflows/ci.yml` matches.
 
-4. **Docs and skill** — signal: `rg "is held" apps/documentation/src/content/docs/references/1_release_and_versionning.mdx .claude/skills/project-release/SKILL.md` returns nothing.
-   In the "Changelog and release notes" section of the release reference page (and its French copy if the project keeps it), say that a project that wants this guard sets `REQUIRE_RELEASE_NOTE` to `true`, and how a held release is published. Add the "held" paragraph to the "After the human merges" section of the `project-release` skill, in `.claude` and `.cursor` if both exist. Update the `REQUIRE_RELEASE_NOTE` line of `scripts/github-repo-settings.md` if the project keeps that file.
-   Done when: `rg "is held"` matches in the reference page and the skill.
+4. **Release docs** — signal: `rg "is held" apps/documentation/src/content/docs/references/1_release_and_versionning.mdx` returns nothing.
+   In the "Changelog and release notes" section of the release reference page, and of its French copy if the project keeps it, say that a project that wants this guard sets `REQUIRE_RELEASE_NOTE` to `true`, and how a held release is published. Update the `REQUIRE_RELEASE_NOTE` line of `scripts/github-repo-settings.md` if the project keeps that file.
+   Done when: `rg "is held" apps/documentation/src/content/docs` matches each page the project keeps, and `rg "Release Please" scripts/github-repo-settings.md` matches if that file exists.
+
+5. **Release skill** — signal: `rg "is held" .claude/skills/project-release/SKILL.md` returns nothing.
+   Add the "held" paragraph to the "After the human merges" section of the `project-release` skill, in `.claude` and `.cursor` if both exist.
+   Done when: `rg "is held"` matches in every copy of the skill.
 
 ## Out of Scope
 
@@ -65,7 +68,7 @@ On a private repository without GitHub Pro there is no branch protection, so the
 
 - `bash .github/scripts/release-note-gate.test.sh` passes.
 - `pnpm fmt:check` passes.
-- On the next Release PR, with `REQUIRE_RELEASE_NOTE=true`: merged with its note, the run tags and copies the note into the GitHub Release.
+- The `Release Please` workflow file still parses, and its gate step comes before `googleapis/release-please-action`.
 
 ## Record Result
 

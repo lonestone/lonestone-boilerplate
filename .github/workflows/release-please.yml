@@ -31,10 +31,7 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v4
 
-      # Runs before release-please-action creates any tag. With REQUIRE_RELEASE_NOTE=true, a merged
-      # Release PR whose note is missing on main fails here: no tag, no GitHub Release, no images.
-      # Adding the note through a pull request into main runs this workflow again and publishes the
-      # release. No branch protection needed. See .github/scripts/release-note-gate.sh.
+      # Must run before release-please-action creates any tag. The script explains the hold.
       - name: Hold the release until its note exists
         id: gate
         env:
