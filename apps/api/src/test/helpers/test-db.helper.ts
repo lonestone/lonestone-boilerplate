@@ -4,7 +4,7 @@
 // The global setup builds the schema once, in a template database.
 // Each e2e test gets a fresh database copied from that template, and drops it when it ends.
 
-import { MikroORM } from '@mikro-orm/core'
+import { MikroORM, type EntityClass } from '@mikro-orm/core'
 import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy'
 import { Client } from 'pg'
 import { createTestMikroOrmOptions } from '../../modules/db/db.config'
@@ -27,7 +27,7 @@ export const TEMPLATE_DB_NAME = 'test_template'
 /** Where each test ORM's database lives, so cleanupTestOrm can drop it. */
 const testDatabases = new WeakMap<MikroORM, { dbConfig: TestDbConfig; dbName: string }>()
 
-function getTestEntities() {
+function getTestEntities(): EntityClass<unknown>[] {
   // @ts-expect-error - import.meta is not available in CommonJS BUT DUDE I KNOW WHAT I'M DOING
   // This file is used by Vitest and we need to use the ESM import.meta.glob to get the entities.
   const entityModules = import.meta.glob('../../modules/**/*.entity.ts', { eager: true })
@@ -35,13 +35,18 @@ function getTestEntities() {
   return Array.from(
     new Set(
       Object.values(entityModules).flatMap((mod) =>
-        Object.values(mod as object).filter((val) => typeof val === 'function'),
+        Object.values(mod as object).filter(
+          (val): val is EntityClass<unknown> => typeof val === 'function',
+        ),
       ),
     ),
   )
 }
 
-function createOrmOptions(dbConfig: TestDbConfig, dbName: string) {
+function createOrmOptions(
+  dbConfig: TestDbConfig,
+  dbName: string,
+): ReturnType<typeof createTestMikroOrmOptions> {
   return createTestMikroOrmOptions({
     entitiesTs: getTestEntities(),
     allowGlobalContext: true,
@@ -112,16 +117,16 @@ export async function cleanupTestOrm(orm: MikroORM): Promise<void> {
     // Continue cleanup even if there are errors
   }
 
-  const database = testDatabases.get(orm)
-  if (!database) {
+  const testDatabase = testDatabases.get(orm)
+  if (!testDatabase) {
     return
   }
 
   try {
     // FORCE ends any connection a test left open, so the database is always dropped.
     await runOnServer(
-      database.dbConfig,
-      `DROP DATABASE IF EXISTS "${database.dbName}" WITH (FORCE)`,
+      testDatabase.dbConfig,
+      `DROP DATABASE IF EXISTS "${testDatabase.dbName}" WITH (FORCE)`,
     )
   } catch (error) {
     console.error('Error while dropping the test database:', error)

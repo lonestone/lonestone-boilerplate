@@ -41,15 +41,15 @@ What a test sees does not change: each test still gets its own empty database wi
 3. **Test databases dropped** — signal: `rg "DROP DATABASE" apps/api/src/test/helpers/test-db.helper.ts` finds nothing.
    Copy `cleanupTestOrm`, `runOnServer` and the `testDatabases` map from the staged `test-db.helper.ts`. Check that the project's e2e `afterEach` calls `cleanupTestOrm`.
    Done when: `rg "DROP DATABASE" apps/api/src/test/helpers/test-db.helper.ts` matches and the e2e tests pass.
-4. **Test docs** — signal: `apps/api/src/test/README.md` does not mention the template database.
+4. **Test docs** — signal: `rg "test_template" apps/api/src/test/README.md` finds nothing.
    Bring the README and the helper comments in line with the staged files. Keep the project's own sections.
-   Done when: the README and the comments in `apps/api/src/test/` describe the template database and the drop at the end of each test.
+   Done when: `rg "test_template" apps/api/src/test/README.md` matches and `rg -i "per test|test container" apps/api/src/test/helpers` finds no comment that still describes a container or a schema built for each test.
 
 ## Out of Scope
 
 - The test files themselves (`*.e2e-spec.ts`, `*.spec.ts`).
-- `initializeTestApp`: it still opens its own ORM for the Nest app.
-- The Vitest config and its worker count.
+- `initializeTestApp`: it still opens its own ORM for the Nest app. That costs about 18 ms per test, and sharing the test's ORM would let the Nest app close it.
+- The Vitest config and its worker count. The boilerplate has two e2e files, so the longest one sets the time whatever the worker count.
 
 ## Reference Paths
 

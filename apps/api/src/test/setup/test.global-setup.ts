@@ -11,15 +11,11 @@ import { EntityManager, MikroORM } from '@mikro-orm/core'
 import { INestApplication } from '@nestjs/common'
 import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import { TestRequest } from '../helpers/test-auth.helper'
+import type { TestDbConfig } from '../helpers/test-db.helper'
 
 declare module 'vitest' {
   export interface ProvidedContext {
-    pgConfig: {
-      host: string
-      port: number
-      user: string
-      password: string
-    }
+    pgConfig: TestDbConfig
   }
 
   export interface TestContext {
@@ -81,11 +77,16 @@ export default async function setup(project: TestProject) {
   process.env.DATABASE_PASSWORD = password
   process.env.DATABASE_NAME = dbName
 
-  const pgConfig = { host, port, user, password }
+  const pgConfig: TestDbConfig = { host, port, user, password }
 
   // Imported here, not at the top: db.config validates the environment variables as soon as it loads.
   const { createTemplateDatabase } = await import('../helpers/test-db.helper.js')
-  await createTemplateDatabase(pgConfig)
+  try {
+    await createTemplateDatabase(pgConfig)
+  } catch (error) {
+    await container.stop()
+    throw error
+  }
 
   provide('pgConfig', pgConfig)
 
