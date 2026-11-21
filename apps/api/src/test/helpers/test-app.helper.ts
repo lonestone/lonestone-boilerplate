@@ -42,7 +42,7 @@ function registerMiddleware(app: INestApplication, middleware: express.RequestHa
 }
 
 /**
- * Initializes a NestJS application with a new test container.
+ * Initializes a NestJS application on the test's own database.
  * Auth uses @thallesp/nestjs-better-auth with a mocked auth.api.getSession
  * (AuthGuard reads session from module options, not AuthService).
  *
@@ -55,7 +55,7 @@ export async function initializeTestApp(
 ): Promise<TestAppContext> {
   try {
     // Use test ORM config (entities as classes) to avoid require() on .ts paths → SyntaxError.
-    // One DB per test (isolation): config comes from test-db.helper (contextName there is for the test ORM only).
+    // One DB per test (isolation), copied from the run's template: config comes from test-db.helper (contextName there is for the test ORM only).
     // Nest uses contextName: undefined so MikroOrmModule registers the default EntityManager token (UserService/repos inject EntityManager); named tokens are only for multi-connection apps.
     const testOrmOptions = {
       ...options.orm.config.getAll(),
@@ -138,7 +138,7 @@ export async function initializeTestApp(
 // ============================================================
 
 /**
- * Closes the app and ORM, and cleans up the test container
+ * Closes the app. The test ORM and its database are cleaned up by cleanupTestOrm (test.e2e-setup.ts).
  * @param context The test app context
  */
 export async function closeTestApp(context: TestAppContext): Promise<void> {

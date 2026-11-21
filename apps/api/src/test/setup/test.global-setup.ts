@@ -2,22 +2,20 @@
 //
 // This file runs BEFORE any modules are loaded, ensuring environment variables
 // are set before env.config.ts validates them.
-// Test containers are now managed per test for maximum isolation.
+// It starts one PostgreSQL container for the whole run, and builds the template
+// database that each e2e test copies (see test-db.helper.ts).
 
+import 'reflect-metadata'
 import type { TestProject } from 'vitest/node'
 import { EntityManager, MikroORM } from '@mikro-orm/core'
 import { INestApplication } from '@nestjs/common'
 import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import { TestRequest } from '../helpers/test-auth.helper'
+import type { TestDbConfig } from '../helpers/test-db.helper'
 
 declare module 'vitest' {
   export interface ProvidedContext {
-    pgConfig: {
-      host: string
-      port: number
-      user: string
-      password: string
-    }
+    pgConfig: TestDbConfig
   }
 
   export interface TestContext {
@@ -30,8 +28,20 @@ declare module 'vitest' {
 
 export default async function setup(project: TestProject) {
   const { provide } = project
-  // Start a new container for this test
-  const container = await new PostgreSqlContainer('postgres:16-alpine').start()
+  // One container serves the whole run. The data only has to live as long as the run,
+  // so Postgres keeps it in memory and skips the work that protects it from a crash.
+  const container = await new PostgreSqlContainer('postgres:16-alpine')
+    .withTmpFs({ '/var/lib/postgresql/data': 'rw' })
+    .withCommand([
+      'postgres',
+      '-c',
+      'fsync=off',
+      '-c',
+      'synchronous_commit=off',
+      '-c',
+      'full_page_writes=off',
+    ])
+    .start()
 
   const host = container.getHost()
   const port = container.getPort()
@@ -67,12 +77,18 @@ export default async function setup(project: TestProject) {
   process.env.DATABASE_PASSWORD = password
   process.env.DATABASE_NAME = dbName
 
-  provide('pgConfig', {
-    host,
-    port,
-    user,
-    password,
-  })
+  const pgConfig: TestDbConfig = { host, port, user, password }
+
+  // Imported here, not at the top: db.config validates the environment variables as soon as it loads.
+  const { createTemplateDatabase } = await import('../helpers/test-db.helper.js')
+  try {
+    await createTemplateDatabase(pgConfig)
+  } catch (error) {
+    await container.stop()
+    throw error
+  }
+
+  provide('pgConfig', pgConfig)
 
   return async function teardown(): Promise<void> {
     await container.stop()
