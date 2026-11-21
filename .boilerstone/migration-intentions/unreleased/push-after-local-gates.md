@@ -21,7 +21,7 @@ The pre-push hook runs lint and typecheck, but not tests. An agent that pushes a
 
 ## Do Not Apply When
 
-- The project has no `apps/documentation` app.
+- `.boilerstone/migration-intentions/` exists. This is the boilerplate repository, or a fork that publishes its own intentions. Record as skipped.
 - A human has decided to keep a different push rule after reviewing this intention.
 
 ## Observable Gaps
