@@ -13,6 +13,7 @@
     "dev": "nest start --watch",
     "db:migration:init": "npx mikro-orm migration:create --initial",
     "db:migrate:create": "npx mikro-orm migration:create",
+    "db:migrate:check": "npx mikro-orm migration:check",
     "db:migrate:up": "npx mikro-orm migration:up",
     "db:migrate:down": "npx mikro-orm migration:down",
     "db:migrate:fresh": "npx mikro-orm migration:fresh",

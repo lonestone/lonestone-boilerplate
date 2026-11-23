@@ -281,6 +281,13 @@ export class User {
 - Use pagination for large result sets
 - No raw SQL. Use the EntityManager (`find`, `findOne`, `count`, `nativeUpdate`) or the MikroORM QueryBuilder (`em.createQueryBuilder(Entity)`). Raw SQL is only allowed for something neither can express. Write a comment that says what it is, and keep it as small as you can. A SQL fragment inside a MikroORM call, such as `raw('"likesCount" + 1')` in a `nativeUpdate`, is fine.
 
+### Migrations
+
+- Generate every migration with `pnpm --filter=api db:migrate:create`. It writes the migration and the snapshot from the entities.
+- Never write a migration file from scratch. Edit the generated SQL only for what the generator cannot express, such as a data backfill or a `RENAME COLUMN`.
+- `pnpm --filter=api db:migrate:check` reports no changes before you touch an entity.
+- If it reports changes, or if a generated migration holds changes unrelated to your entities, the snapshot has drifted. Stop and say so instead of trimming the file. The fix is in [When the snapshot drifts](/lonestone-boilerplate/explanations/6_database-migrations#when-the-snapshot-drifts).
+
 ### Seeders
 
 - A seeder gives volume. Generate it with the factories and Faker, in batches (`make(n)`, then one `flush()`).
