@@ -1,5 +1,5 @@
 ---
-id: unreleased/worktree-remove-promoted-intentions
+id: v1.5.1/worktree-remove-promoted-intentions
 domain: tooling
 classification: migration
 requires:

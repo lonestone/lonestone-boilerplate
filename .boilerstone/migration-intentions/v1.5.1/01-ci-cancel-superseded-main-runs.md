@@ -1,5 +1,5 @@
 ---
-id: unreleased/ci-cancel-superseded-main-runs
+id: v1.5.1/ci-cancel-superseded-main-runs
 domain: ci
 classification: migration
 ---

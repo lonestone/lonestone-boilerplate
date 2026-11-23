@@ -1,5 +1,5 @@
 ---
-id: unreleased/ci-skip-draft-pull-requests
+id: v1.5.1/ci-skip-draft-pull-requests
 domain: ci
 classification: migration
 ---
