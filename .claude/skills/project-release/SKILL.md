@@ -30,6 +30,8 @@ In the boilerplate repository (see "Producer or consumer" in `.boilerstone/READM
 
 Merging the Release PR publishes the tag and images. It does not update production — unless the repository variable `PROMOTE_ON_RELEASE` is set, in which case Promote is dispatched automatically once the images are built (and may wait on an environment approval). Otherwise, point the user at Actions → **Promote** (or the link on the GitHub Release). Do not run Promote unless they ask.
 
+If the Release Please run on `main` fails with `Release vX.Y.Z is held`, the Release PR was merged without its note and `REQUIRE_RELEASE_NOTE` is `true`. Nothing was published. Write the note on a regular pull request into `main`. Its merge publishes the release. Do not tag by hand.
+
 ## Guardrails
 
 - Do not write intentions. Consumer projects have no intention machinery.

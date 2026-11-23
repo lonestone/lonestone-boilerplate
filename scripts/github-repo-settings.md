@@ -66,7 +66,7 @@ Require pull requests, and require these status checks to pass:
 
 ### Repository variables
 
-- [ ] `REQUIRE_RELEASE_NOTE` — optional. Release notes are not enforced by default; set this variable to `true` to make the **Release note** check block a Release PR until `releases/vX.Y.Z.mdx` exists. The boilerplate repository sets it.
+- [ ] `REQUIRE_RELEASE_NOTE` — optional. Release notes are not enforced by default. Set this variable to `true` to turn on two guards. The **Release note** check blocks a Release PR until `releases/vX.Y.Z.mdx` exists. The **Release Please** workflow holds the tag, the GitHub Release and the images of a Release PR merged without its note. The hold works without branch protection. The boilerplate repository sets it.
 - [ ] `PROMOTE_ON_RELEASE` — optional. When set to `staging` or `production`, `promote-on-release.yml` dispatches Promote for that environment as soon as the release images are built. Combine it with required reviewers on the environment to get an "Approve and deploy" button instead of an immediate deploy.
 
 ```bash
