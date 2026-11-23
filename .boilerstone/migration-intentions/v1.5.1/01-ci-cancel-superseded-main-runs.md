@@ -46,4 +46,4 @@ Each push to `main` had its own concurrency group, so no run on `main` was ever 
 
 ## Record Result
 
-Run `pnpm boilerplate upgrade record --id unreleased/ci-cancel-superseded-main-runs --applied` after validation passes, or record it as skipped with a reason. The id stays `unreleased/…` until the boilerplate release promotes it.
+Run `pnpm boilerplate upgrade record --id v1.5.1/ci-cancel-superseded-main-runs --applied` after validation passes, or record it as skipped with a reason.

@@ -65,4 +65,4 @@ GitHub bills each job in whole minutes, and a private repository has a monthly a
 
 ## Record Result
 
-Run `pnpm boilerplate upgrade record --id unreleased/ci-skip-draft-pull-requests --applied` after validation passes, or record it as skipped with a reason. The id stays `unreleased/…` until the boilerplate release promotes it.
+Run `pnpm boilerplate upgrade record --id v1.5.1/ci-skip-draft-pull-requests --applied` after validation passes, or record it as skipped with a reason.

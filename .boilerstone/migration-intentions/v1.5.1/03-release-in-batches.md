@@ -59,4 +59,4 @@ Release Please changes the version of its Release PR every time another pull req
 
 ## Record Result
 
-Run `pnpm boilerplate upgrade record --id unreleased/release-in-batches --applied` after validation passes, or record it as skipped with a reason. The id stays `unreleased/…` until the boilerplate release promotes it.
+Run `pnpm boilerplate upgrade record --id v1.5.1/release-in-batches --applied` after validation passes, or record it as skipped with a reason.
