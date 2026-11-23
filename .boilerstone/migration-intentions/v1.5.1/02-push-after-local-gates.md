@@ -1,5 +1,5 @@
 ---
-id: unreleased/push-after-local-gates
+id: v1.5.1/push-after-local-gates
 domain: tooling
 classification: migration
 ---
@@ -45,4 +45,4 @@ The pre-push hook runs lint and typecheck, but not tests. An agent that pushes a
 
 ## Record Result
 
-Run `pnpm boilerplate upgrade record --id unreleased/push-after-local-gates --applied` after validation passes, or record it as skipped with a reason. The id stays `unreleased/…` until the boilerplate release promotes it.
+Run `pnpm boilerplate upgrade record --id v1.5.1/push-after-local-gates --applied` after validation passes, or record it as skipped with a reason.
