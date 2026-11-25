@@ -2,7 +2,7 @@ import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import dotenvx from '@dotenvx/dotenvx'
 import swc from 'unplugin-swc'
-import { defineConfig } from 'vitest/config'
+import { defineConfig, lazyPlugins } from 'vite-plus'
 
 const apiRoot = import.meta.dirname
 const migrationsDir = resolve(apiRoot, 'src/modules/db/migrations')
@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     appType: 'custom',
-    plugins: [swcPlugin],
+    plugins: lazyPlugins(() => [swcPlugin]),
     resolve: {
       alias: resolveAlias,
     },
@@ -69,25 +69,18 @@ export default defineConfig(({ mode }) => {
       pool: 'threads',
       globals: true,
       globalSetup: resolve(apiRoot, './src/test/setup/test.global-setup.ts'),
+      // Since Vitest 5, inline projects inherit this config (plugins, alias, globals, environment).
       projects: [
         {
-          plugins: [swcPlugin],
-          resolve: { alias: resolveAlias },
           test: {
             name: 'unit',
-            globals: true,
-            environment: 'node',
             include: ['../**/*.spec.ts'],
             setupFiles: [resolve(apiRoot, './src/test/setup/test.setup.ts')],
           },
         },
         {
-          plugins: [swcPlugin],
-          resolve: { alias: resolveAlias },
           test: {
             name: 'e2e',
-            globals: true,
-            environment: 'node',
             include: ['../**/*.e2e-spec.ts'],
             setupFiles: [
               resolve(apiRoot, './src/test/setup/test.setup.ts'),

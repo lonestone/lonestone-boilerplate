@@ -14,16 +14,16 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 import {
   generateProject,
   hasTemplateScope,
   isPublishedCliTemplate,
   PRODUCER_FILES_TO_REMOVE,
   stripBoilerstoneProducerArtifacts,
-} from './generate'
-import { trackingState } from './tracking-state'
-import { isolatedGitEnv, spawnProcessSync } from './utils'
+} from './generate.js'
+import { trackingState } from './tracking-state.js'
+import { isolatedGitEnv, spawnProcessSync } from './utils.js'
 import {
   archiveGitReference,
   extractIntentionReferencePaths,
@@ -34,7 +34,7 @@ import {
   prepareUpgrade,
   resolveUpgradePath,
   resolveTargetReference,
-} from './boilerplate'
+} from './boilerplate.js'
 import {
   BOILERPLATE_SCRIPT_COMMAND,
   BOILERPLATE_SCRIPT_NAME,
@@ -55,7 +55,7 @@ import {
   promoteUnreleasedIntentions,
   readOptionValue,
   resolveTargetVersion,
-} from './boilerplate-core'
+} from './boilerplate-core.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

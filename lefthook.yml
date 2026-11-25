@@ -10,7 +10,7 @@ pre-commit:
   jobs:
     - name: format
       glob: '*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc,json5,css,scss,less,html,vue,md,mdx,yaml,yml,toml,graphql}'
-      run: pnpm exec oxfmt --no-error-on-unmatched-pattern {staged_files}
+      run: pnpm exec vp fmt --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true
       env:
         NO_COLOR: '1'
@@ -27,17 +27,9 @@ commit-msg:
 pre-push:
   follow: true
   jobs:
-    - name: quality
-      group:
-        piped: true
-        jobs:
-          - name: lint
-            run: pnpm lint
-            env:
-              NO_COLOR: '1'
-              FORCE_COLOR: '0'
-          - name: typecheck
-            run: pnpm typecheck
-            env:
-              NO_COLOR: '1'
-              FORCE_COLOR: '0'
+    # Format, lint and type checks. --cache replays the result when no input changed since the last run.
+    - name: check
+      run: pnpm exec vp run --cache check
+      env:
+        NO_COLOR: '1'
+        FORCE_COLOR: '0'

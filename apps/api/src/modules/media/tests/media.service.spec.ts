@@ -1,6 +1,6 @@
 import { EntityManager } from '@mikro-orm/core'
 import { Logger } from '@nestjs/common'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { StorageService } from '../../storage/storage.service'
 import { Media } from '../media.entity'
 import { MediaService } from '../media.service'

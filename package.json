@@ -12,22 +12,19 @@
     "rock": "boilerstone-cli rock",
     "boilerplate": "boilerstone-cli",
     "dev": "pnpm --parallel dev",
-    "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck",
+    "build": "vp run -r build",
+    "check": "vp run -F './apps/web-*' typegen && vp check",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
-    "lint": "oxlint",
-    "lint:fix": "oxlint --fix",
-    "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check",
+    "fmt": "vp fmt",
     "generate": "pnpm --filter=@boilerstone/openapi-generator run generate",
-    "test": "pnpm -r test",
+    "test": "vp run -r test",
     "docs-only": "pnpm --filter=@boilerstone/documentation run dev",
     "knip": "knip --no-exit-code",
-    "lint:pr": "tsx ./scripts/lint-pr.ts",
-    "worktree:create": "tsx ./scripts/worktree.ts create",
-    "worktree:remove": "tsx ./scripts/worktree.ts remove"
+    "lint:pr": "vpx ./scripts/lint-pr.ts",
+    "worktree:create": "vpx ./scripts/worktree.ts create",
+    "worktree:remove": "vpx ./scripts/worktree.ts remove"
   },
   "dependencies": {
     "typescript": "^6.0.3"
@@ -42,9 +39,8 @@
     "@types/node": "catalog:build",
     "knip": "^6.31.0",
     "lefthook": "^2.1.10",
-    "oxfmt": "^0.57.0",
-    "oxlint": "^1.77.0",
-    "tsx": "^4.23.5"
+    "tsx": "^4.23.5",
+    "vite-plus": "catalog:build"
   },
   "engines": {
     "node": "24.22.2",

@@ -1,7 +1,7 @@
 import type { EntityName } from '@mikro-orm/core'
 import type { CleanedWhere } from 'better-auth/adapters'
 import { MikroORM } from '@mikro-orm/core'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test'
 import { createMikroOrmOptions } from '../db/db.config'
 import { createAdapterUtils } from './auth-db.adapter'
 import * as authEntities from './auth.entity'

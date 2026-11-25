@@ -67,8 +67,8 @@ jobs:
           path: .
           key: workspace-${{ github.sha }}
 
-  lint:
-    name: 🧹 Lint
+  check:
+    name: 🔎 Check
     needs: [setup]
     runs-on: ubuntu-latest
     steps:
@@ -84,11 +84,8 @@ jobs:
           node-version: ${{ needs.setup.outputs.node-version }}
           pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
 
-      - name: 🔍 Run linter
-        run: pnpm lint
-
-      - name: 🎨 Check formatting
-        run: pnpm fmt:check
+      - name: 🔍 Check format, lint and types
+        run: pnpm check
 
       - name: 🌐 Check translations
         run: pnpm --filter @boilerstone/i18n check-translations
@@ -118,7 +115,7 @@ jobs:
 
   build:
     name: 🏗️ Build
-    needs: [lint, setup]
+    needs: [check, setup]
     runs-on: ubuntu-latest
     steps:
       - name: 📂 Restore workspace
@@ -137,33 +134,13 @@ jobs:
         env:
           NODE_ENV: production
           CI: true
-        run: pnpm -r build
+        run: pnpm build
 
       - name: 💾 Cache built workspace
         uses: actions/cache@v3
         with:
           path: .
           key: workspace-built-${{ github.sha }}
-
-  typecheck:
-    name: 🔎 Type Check
-    needs: [build, setup]
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📂 Restore built workspace
-        uses: actions/cache@v3
-        with:
-          path: .
-          key: workspace-built-${{ github.sha }}
-
-      - name: 🔧 Setup Node.js and pnpm
-        uses: ./.github/actions/setup-node-pnpm
-        with:
-          node-version: ${{ needs.setup.outputs.node-version }}
-          pnpm-version: ${{ needs.setup.outputs.pnpm-version }}
-
-      - name: 📋 Type check
-        run: pnpm -r run typecheck
 
   test:
     name: 🧪 Test

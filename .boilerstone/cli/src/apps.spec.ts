@@ -1,8 +1,8 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
-import { ALWAYS_INCLUDED_APPS, OPTIONAL_PACKAGES, parseAppsOption, WEB_APPS } from './apps'
+import { describe, expect, it } from 'vite-plus/test'
+import { ALWAYS_INCLUDED_APPS, OPTIONAL_PACKAGES, parseAppsOption, WEB_APPS } from './apps.js'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 

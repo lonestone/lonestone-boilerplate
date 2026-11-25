@@ -1,7 +1,7 @@
 import process from 'node:process'
 import { reactRouter } from '@react-router/dev/vite'
 import tailwindcss from '@tailwindcss/vite'
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, lazyPlugins } from 'vite-plus'
 import devtoolsJson from 'vite-plugin-devtools-json'
 
 // `pnpm worktree:create` writes the dev port in the root .env of a worktree, so two
@@ -10,7 +10,7 @@ import devtoolsJson from 'vite-plugin-devtools-json'
 const rootEnv = loadEnv(process.env.NODE_ENV ?? 'development', '../..', 'WEB_SPA_PORT')
 
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouter(), devtoolsJson()],
+  plugins: lazyPlugins(() => [tailwindcss(), reactRouter(), devtoolsJson()]),
   resolve: {
     tsconfigPaths: true,
   },

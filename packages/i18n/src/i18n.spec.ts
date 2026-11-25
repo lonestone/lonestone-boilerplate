@@ -1,5 +1,5 @@
 import type { i18n } from 'i18next'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { DEFAULT_LOCALE, getHtmlLang, isSupportedLocale, normalizeLocale } from './i18n-config'
 import {
   getDefaultLocaleFromAcceptLanguage,

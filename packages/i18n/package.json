@@ -57,8 +57,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "check-translations": "tsx ./src/i18n-sync.ts",
-    "test": "vitest run --config=vitest.config.ts"
+    "check-translations": "vpx ./src/i18n-sync.ts",
+    "test": "vp test run --config=vitest.config.ts"
   },
   "dependencies": {
     "i18next": "catalog:frontend",
@@ -69,8 +69,7 @@
   "devDependencies": {
     "@types/node": "catalog:build",
     "@types/react": "catalog:frontend",
-    "tsx": "^4.23.5",
     "typescript": "catalog:build",
-    "vitest": "^4.1.5"
+    "vite-plus": "catalog:build"
   }
 }

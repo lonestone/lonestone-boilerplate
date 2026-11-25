@@ -1,7 +1,7 @@
 name: Init combos
 
 # Producer-only: generates a project for each `init --apps` choice from this
-# checkout and checks that it installs, lints, typechecks and builds. The four
+# checkout and checks that it installs, passes `pnpm check` and builds. The four
 # choices also cover both answers to `--public-docs`. The job only runs in the
 # boilerplate repository.
 on:

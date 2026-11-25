@@ -10,12 +10,10 @@ The CI workflow (`workflows/ci.yml`) runs on every push to `main`, and on pull r
 
 It includes the following jobs:
 
-#### Lint
+#### Check
 
-- Checks the code with Oxlint.
-- Command: `pnpm lint`
-- Checks the formatting with Oxfmt.
-- Command: `pnpm fmt:check`
+- Checks formatting, lint rules and TypeScript types in one pass with Vite+ (`vp check`).
+- Command: `pnpm check`
 
 #### Knip
 
@@ -24,13 +22,8 @@ It includes the following jobs:
 
 #### Build
 
-- Builds all packages and applications with `pnpm -r build`.
+- Builds all packages and applications with `pnpm build`.
 - Does not regenerate OpenAPI clients (that needs a running API).
-
-#### Type Check
-
-- Checks TypeScript types for all packages and applications with `pnpm -r run typecheck`.
-- Runs after the build job; it does not run `pnpm generate` first.
 
 #### Test
 

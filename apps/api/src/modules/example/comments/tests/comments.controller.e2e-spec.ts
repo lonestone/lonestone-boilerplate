@@ -1,5 +1,5 @@
 import type { EntityManager } from '@mikro-orm/core'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vite-plus/test'
 /**
  * E2E Tests for CommentsController
  *

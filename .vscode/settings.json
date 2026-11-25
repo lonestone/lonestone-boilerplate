@@ -1,5 +1,9 @@
 {
   "editor.formatOnSave": true,
+  // Oxfmt formats whole files only. Lint and format config live in the root vite.config.ts.
+  "editor.formatOnSaveMode": "file",
+  "oxc.disableNestedConfig": true,
+  "oxc.fmt.disableNestedConfig": true,
   "editor.codeActionsOnSave": {
     "source.fixAll.oxc": "explicit",
     "source.organizeImports": "never"

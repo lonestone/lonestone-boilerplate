@@ -14,8 +14,8 @@ import { tmpdir } from 'node:os'
 import { delimiter, dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
-import { isWindows } from './utils'
+import { describe, expect, it } from 'vite-plus/test'
+import { isWindows } from './utils.js'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const cliBin = join(projectRoot, '.boilerstone/cli/bin/boilerstone-cli.mjs')
@@ -94,9 +94,10 @@ process.exit(0)
   )
 
   prepare?.(fixturePath)
-  const result = spawnSync(process.execPath, [cliBin, ...args], {
+  // Node's spawnSync honours `detached` but its types omit it, hence the separate object.
+  const options = {
     cwd: fixturePath,
-    encoding: 'utf-8',
+    encoding: 'utf-8' as const,
     // Own session, so the installer cannot open /dev/tty even when the tests
     // run from a terminal: it must not stop to ask questions.
     detached: !isWindows,
@@ -106,7 +107,8 @@ process.exit(0)
       PATH: isolatedTestPath(binPath),
       ...env,
     },
-  })
+  }
+  const result = spawnSync(process.execPath, [cliBin, ...args], options)
 
   return {
     status: result.status,

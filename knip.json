@@ -38,7 +38,6 @@
       "ignoreFiles": ["src/test/**"],
       "ignoreDependencies": [
         "pino-pretty",
-        "ts-node",
         "@swc-node/register",
         "source-map-support",
         "test",

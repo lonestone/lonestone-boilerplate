@@ -7,8 +7,6 @@
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
     "paths": {
       "src/*": ["./src/*"]
     },
@@ -30,9 +28,6 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "preserveWatchOutput": true
-  },
-  "ts-node": {
-    "require": ["tsconfig-paths/register"]
   },
   "exclude": ["**/dist/**"]
 }

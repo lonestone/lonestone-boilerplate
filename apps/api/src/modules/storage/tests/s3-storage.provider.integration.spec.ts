@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test'
 import { S3StorageProvider } from '../providers/s3-storage.provider'
 
 describe('S3StorageProvider with RustFS', () => {

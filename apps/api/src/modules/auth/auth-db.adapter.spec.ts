@@ -1,6 +1,6 @@
 import type { EntityName } from '@mikro-orm/core'
 import { MikroORM } from '@mikro-orm/core'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test'
 import { createMikroOrmOptions } from '../db/db.config'
 import { validateAuthSchema } from './auth-db.adapter'
 import { createBetterAuth } from './auth.config'
