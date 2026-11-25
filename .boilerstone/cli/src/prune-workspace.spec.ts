@@ -11,9 +11,9 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, describe, expect, it } from 'vitest'
-import type { WebApp } from './apps'
-import { pruneWorkspace } from './prune-workspace'
+import { afterEach, describe, expect, it } from 'vite-plus/test'
+import type { WebApp } from './apps.js'
+import { pruneWorkspace } from './prune-workspace.js'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const temporaryRoots: string[] = []

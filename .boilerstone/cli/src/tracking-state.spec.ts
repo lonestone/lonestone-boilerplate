@@ -9,9 +9,9 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { generateProject } from './generate'
-import { trackingState } from './tracking-state'
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
+import { generateProject } from './generate.js'
+import { trackingState } from './tracking-state.js'
 
 const temporaryProjects: string[] = []
 

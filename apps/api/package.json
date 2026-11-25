@@ -23,8 +23,7 @@
     "db:sync": "dotenvx run -- npx mikro-orm schema:update --run",
     "auth:generate": "dotenvx run -- auth generate --config src/modules/auth/auth.cli.mts --yes",
     "test": "cross-env NODE_ENV=test vp test run --config=vite.config.ts",
-    "test:watch": "cross-env NODE_ENV=test vp test --config=vite.config.ts --watch",
-    "typecheck": "tsc --noEmit"
+    "test:watch": "cross-env NODE_ENV=test vp test --config=vite.config.ts --watch"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.105",
@@ -99,8 +98,8 @@
     "unplugin-swc": "^1.5.10",
     "vite": "catalog:build",
     "vite-node": "^6.0.0",
-    "vitest": "catalog:build",
-    "vite-plus": "catalog:build"
+    "vite-plus": "catalog:build",
+    "vitest": "catalog:build"
   },
   "mikro-orm": {
     "preferTs": true,

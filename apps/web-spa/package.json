@@ -8,7 +8,7 @@
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
-    "typecheck": "react-router typegen && tsc"
+    "typegen": "react-router typegen"
   },
   "dependencies": {
     "@boilerstone/i18n": "workspace:*",

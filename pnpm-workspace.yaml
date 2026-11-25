@@ -10,12 +10,10 @@ peerDependencyRules:
     typescript: '6'
     '@sentry/nestjs>@nestjs/common': '12'
     '@sentry/nestjs>@nestjs/core': '12'
-    vitest: '*'
-  allowAny:
-    - vitest
 # cookie@1 keeps Express (parse/serialize) and Astro <=7.1.1 (parseCookie) compatible under shamefully-hoist
 overrides:
   cookie: 1.1.1
+  # Vite+ replaces Vite with its own build (vite-plus-core) and pins Vitest, for every package
   vite@*: catalog:build
   vitest@*: catalog:build
 # We override dependencies here to ensure that the correct version of the dependency is used for each package

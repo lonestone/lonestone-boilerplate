@@ -12,15 +12,15 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vite-plus/test'
 import {
   generateProject,
   PRODUCER_BLOCK_ROOTS,
   PRODUCER_FILES_TO_REMOVE,
   stripProducerOnlyBlocks,
   stripProducerOnlyBlocksFromText,
-} from './generate'
-import { isolatedGitEnv, runFileSync, spawnProcessSync } from './utils'
+} from './generate.js'
+import { isolatedGitEnv, runFileSync, spawnProcessSync } from './utils.js'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 

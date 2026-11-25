@@ -178,7 +178,7 @@ The project uses Docker Compose to provide the following services:
 
 - **Start development**: `pnpm dev`
 - **Build applications**: `pnpm build`
-- **Lint applications**: `pnpm lint`
+- **Check format, lint and types**: `pnpm check`
 - **Format code**: `pnpm fmt`
 - **Generate OpenAPI clients**: `pnpm generate`
 

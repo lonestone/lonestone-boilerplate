@@ -5,36 +5,35 @@ description: How the linter works, how to use it, how to customize it
 
 ## How it works
 
-The project uses [Oxlint](https://oxc.rs/docs/guide/usage/linter.html) for linting and [Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) for formatting. Configuration lives at the repository root in `.oxlintrc.json` and `.oxfmtrc.json`.
+The project uses [Vite+](https://viteplus.dev/) as its toolchain. For code quality it runs [Oxlint](https://oxc.rs/docs/guide/usage/linter.html) for linting, [Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) for formatting and a TypeScript type checker. Their configuration lives in the `lint` and `fmt` blocks of the root `vite.config.ts`.
 
 Oxlint and Oxfmt replace ESLint and Prettier. This repository has no ESLint flat config and no Prettier config.
 
 ## How to use
 
-- `pnpm lint` — run Oxlint
-- `pnpm lint:fix` — apply Oxlint autofixes
-- `pnpm fmt` — format with Oxfmt
-- `pnpm fmt:check` — check formatting without writing
+- `pnpm check` — check formatting, lint rules and types of every package in one pass
+- `pnpm fmt` — format the code
+- `pnpm exec vp check --fix` — apply formatting and lint autofixes
 
-CI runs `pnpm lint`. Formatting is checked with `pnpm fmt:check` in local/release flows.
+`pnpm check` generates the React Router route types first, then runs `vp check`. CI and the pre-push hook run it. Type checks follow each package's own `tsconfig.json`, so no package has a `typecheck` script.
 
 ## How to customize rules
 
-Rules are centralized in `.oxlintrc.json`. Use `overrides` to change rules for specific files or directories.
+Rules are centralized in the `lint` block of the root `vite.config.ts`. Use `overrides` to change rules for specific files or directories. Configs in sub-folders are not read: keep every rule in the root file.
 
 For example, the API workspace turns off `typescript/consistent-type-imports`:
 
-```json
-{
-  "overrides": [
+```ts
+lint: {
+  overrides: [
     {
-      "files": ["apps/api/**/*.ts", "apps/api/**/*.json"],
-      "rules": {
-        "typescript/consistent-type-imports": "off"
-      }
-    }
-  ]
-}
+      files: ['apps/api/**/*.ts', 'apps/api/**/*.json'],
+      rules: {
+        'typescript/consistent-type-imports': 'off',
+      },
+    },
+  ],
+},
 ```
 
 See the [Oxlint config file reference](https://oxc.rs/docs/guide/usage/linter/config-file-reference.html) for rule names and override syntax.

@@ -29,8 +29,5 @@
     "skipLibCheck": true,
     "preserveWatchOutput": true
   },
-  "ts-node": {
-    "require": ["tsconfig-paths/register"]
-  },
   "exclude": ["**/dist/**"]
 }

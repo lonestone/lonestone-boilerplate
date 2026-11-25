@@ -9,7 +9,7 @@
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc"
+    "typegen": "react-router typegen"
   },
   "dependencies": {
     "@boilerstone/openapi-generator": "workspace:*",

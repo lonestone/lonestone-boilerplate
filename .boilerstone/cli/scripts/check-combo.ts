@@ -1,6 +1,6 @@
 /**
  * Generates a project from the working tree for one `--apps` choice, then
- * proves that it installs, lints, typechecks and builds.
+ * proves that it installs, passes `pnpm check` (format, lint, types) and builds.
  *
  *   pnpm exec tsx .boilerstone/cli/scripts/check-combo.ts --apps web-spa,web-ssr
  *   pnpm exec tsx .boilerstone/cli/scripts/check-combo.ts --apps none --public-docs no
@@ -301,8 +301,7 @@ function main(): void {
     failOnProblems('The lockfile is not what this choice should give', checkLockfile(project, apps))
 
     runStep(project, 'fmt', ['pnpm', 'fmt'], { optional: true })
-    runStep(project, 'lint', ['pnpm', 'lint'])
-    runStep(project, 'typecheck', ['pnpm', 'typecheck'])
+    runStep(project, 'check', ['pnpm', 'check'])
     runStep(project, 'knip', ['pnpm', 'knip'])
     // pnpm exits 0 when the filter matches nothing, as when packages/i18n is gone.
     runStep(project, 'check-translations', [

@@ -11,7 +11,7 @@
     "oxfmt": {
       "initialization_options": {
         "settings": {
-          "fmt.configPath": null
+          "fmt.configPath": "./vite.config.ts"
         }
       }
     }

@@ -1,8 +1,8 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
-import { rewriteWorkspaceScope } from './generate'
+import { afterEach, describe, expect, it } from 'vite-plus/test'
+import { rewriteWorkspaceScope } from './generate.js'
 
 const fixtures: string[] = []
 
