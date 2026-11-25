@@ -53,7 +53,7 @@ requires:
 <!-- Example: -->
 <!-- 1. **Package versions** — signal: `@some/pkg` < 2 in `apps/api/package.json`. -->
 <!--    Align with the staged reference `apps/api/package.json`; touch no other dependency. -->
-<!--    Done when: `pnpm --filter=api typecheck` passes. -->
+<!--    Done when: `pnpm check` passes. -->
 
 ## Out of Scope
 
@@ -74,8 +74,7 @@ requires:
 ## Validation
 
 <!-- Required checks after applying the migration -->
-<!-- Example: "- `pnpm lint` passes" -->
-<!-- Example: "- `pnpm typecheck` passes" -->
+<!-- Example: "- `pnpm check` passes" -->
 <!-- Example: "- API starts without errors" -->
 
 ## Record Result

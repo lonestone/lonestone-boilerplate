@@ -15,7 +15,7 @@ Oxlint and Oxfmt replace ESLint and Prettier. This repository has no ESLint flat
 - `pnpm fmt` — format the code
 - `pnpm exec vp check --fix` — apply formatting and lint autofixes
 
-`pnpm check` generates the React Router route types first, then runs `vp check`. CI and the pre-push hook run it. Type checks follow each package's own `tsconfig.json`, so no package has a `typecheck` script.
+`pnpm check` generates the React Router route types first, then runs `vp check`. CI and the pre-push hook run it. Each package is type-checked against its own `tsconfig.json`.
 
 ## How to customize rules
 

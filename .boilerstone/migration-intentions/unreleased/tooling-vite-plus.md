@@ -58,7 +58,7 @@ The API keeps `unplugin-swc` and `vite-node`. Oxc can emit decorator metadata, b
 
 ## Out of Scope
 
-- The 33 existing lint warnings and the type-aware rules turned off in `vite.config.ts`: enabling them is a separate cleanup.
+- The existing lint warnings and the type-aware rules turned off in `vite.config.ts`: enabling them is a separate cleanup.
 - `packages/ui` components: only its `tsconfig.json` loses `baseUrl`.
 - The API build, dev and test setup beyond the Vitest 5 project cleanup (`unplugin-swc`, `vite-node` stay).
 - The documentation app's scripts: Astro keeps its own CLI.
@@ -69,7 +69,7 @@ The API keeps `unplugin-swc` and `vite-node`. Oxc can emit decorator metadata, b
 - `vite.config.ts` — **adapt**
 - `package.json` — **adapt**
 - `pnpm-workspace.yaml` — **adapt**
-- `lefthook.yml` — **copy**
+- `lefthook.yml` — **adapt**
 - `.github/workflows/ci.yml` — **adapt**
 - `apps/api/vite.config.ts` — **adapt**
 - `apps/api/package.json` — **adapt**

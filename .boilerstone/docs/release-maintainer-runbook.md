@@ -86,8 +86,7 @@ git diff --name-status vPREVIOUS..HEAD
 pnpm boilerplate intentions sync
 pnpm boilerplate intentions lint
 pnpm boilerplate upgrade path --from <previous-version> --to <next-version> --json
-pnpm fmt:check
-pnpm typecheck
+pnpm check
 pnpm test
 ```
 
