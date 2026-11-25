@@ -7,8 +7,6 @@
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
     "paths": {
       "src/*": ["./src/*"]
     },
