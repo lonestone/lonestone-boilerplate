@@ -10,9 +10,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "App"
-        ]
+        "tags": ["App"]
       }
     },
     "/api/posts/{postSlug}/comments": {
@@ -46,9 +44,7 @@
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
-                "required": [
-                  "content"
-                ],
+                "required": ["content"],
                 "title": "CreateCommentSchema",
                 "description": "Schema for creating a comment"
               }
@@ -67,9 +63,7 @@
             }
           }
         },
-        "tags": [
-          "Comments"
-        ]
+        "tags": ["Comments"]
       },
       "get": {
         "operationId": "CommentsController_getComments",
@@ -143,9 +137,7 @@
             }
           }
         },
-        "tags": [
-          "Comments"
-        ]
+        "tags": ["Comments"]
       }
     },
     "/api/posts/{postSlug}/comments/{commentId}": {
@@ -182,9 +174,7 @@
                     "maxLength": 1000
                   }
                 },
-                "required": [
-                  "content"
-                ],
+                "required": ["content"],
                 "title": "UpdateCommentSchema",
                 "description": "Schema for updating a comment"
               }
@@ -203,9 +193,7 @@
             }
           }
         },
-        "tags": [
-          "Comments"
-        ]
+        "tags": ["Comments"]
       },
       "delete": {
         "operationId": "CommentsController_deleteComment",
@@ -232,9 +220,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "Comments"
-        ]
+        "tags": ["Comments"]
       }
     },
     "/api/posts/{postSlug}/comments/count": {
@@ -255,9 +241,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "Comments"
-        ]
+        "tags": ["Comments"]
       }
     },
     "/api/posts/{postSlug}/comments/{commentId}/replies": {
@@ -330,9 +314,7 @@
             }
           }
         },
-        "tags": [
-          "Comments"
-        ]
+        "tags": ["Comments"]
       }
     },
     "/api/admin/posts": {
@@ -363,10 +345,7 @@
                     }
                   }
                 },
-                "required": [
-                  "title",
-                  "content"
-                ],
+                "required": ["title", "content"],
                 "title": "CreatePostSchema",
                 "description": "Schema for creating/updating a post"
               }
@@ -385,9 +364,7 @@
             }
           }
         },
-        "tags": [
-          "Admin Posts"
-        ]
+        "tags": ["Admin Posts"]
       },
       "get": {
         "operationId": "PostController_getUserPosts",
@@ -453,9 +430,7 @@
             }
           }
         },
-        "tags": [
-          "Admin Posts"
-        ]
+        "tags": ["Admin Posts"]
       }
     },
     "/api/admin/posts/{id}": {
@@ -513,9 +488,7 @@
             }
           }
         },
-        "tags": [
-          "Admin Posts"
-        ]
+        "tags": ["Admin Posts"]
       },
       "get": {
         "operationId": "PostController_getUserPost",
@@ -541,9 +514,7 @@
             }
           }
         },
-        "tags": [
-          "Admin Posts"
-        ]
+        "tags": ["Admin Posts"]
       }
     },
     "/api/admin/posts/{id}/multipart": {
@@ -612,9 +583,7 @@
             }
           }
         },
-        "tags": [
-          "Admin Posts"
-        ]
+        "tags": ["Admin Posts"]
       }
     },
     "/api/admin/posts/{id}/cover-image": {
@@ -649,9 +618,7 @@
                     "description": "Cover image: JPEG, PNG, GIF or WebP, 10 MiB max"
                   }
                 },
-                "required": [
-                  "file"
-                ],
+                "required": ["file"],
                 "title": "SetCoverImageSchema",
                 "description": "Multipart body for setting the cover image of a post"
               }
@@ -670,9 +637,7 @@
             }
           }
         },
-        "tags": [
-          "Admin Posts"
-        ]
+        "tags": ["Admin Posts"]
       },
       "delete": {
         "operationId": "PostController_removeCoverImage",
@@ -695,9 +660,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "Admin Posts"
-        ]
+        "tags": ["Admin Posts"]
       }
     },
     "/api/admin/posts/{id}/publish": {
@@ -725,9 +688,7 @@
             }
           }
         },
-        "tags": [
-          "Admin Posts"
-        ]
+        "tags": ["Admin Posts"]
       }
     },
     "/api/admin/posts/{id}/unpublish": {
@@ -755,9 +716,7 @@
             }
           }
         },
-        "tags": [
-          "Admin Posts"
-        ]
+        "tags": ["Admin Posts"]
       }
     },
     "/api/public/posts/random": {
@@ -776,9 +735,7 @@
             }
           }
         },
-        "tags": [
-          "Public Posts"
-        ]
+        "tags": ["Public Posts"]
       }
     },
     "/api/public/posts/{slug}": {
@@ -806,9 +763,7 @@
             }
           }
         },
-        "tags": [
-          "Public Posts"
-        ]
+        "tags": ["Public Posts"]
       }
     },
     "/api/public/posts": {
@@ -876,9 +831,7 @@
             }
           }
         },
-        "tags": [
-          "Public Posts"
-        ]
+        "tags": ["Public Posts"]
       }
     },
     "/api/public/posts/{slug}/like": {
@@ -906,9 +859,7 @@
             }
           }
         },
-        "tags": [
-          "Public Posts"
-        ]
+        "tags": ["Public Posts"]
       }
     },
     "/api/public/authors/{slug}/posts": {
@@ -973,9 +924,7 @@
             }
           }
         },
-        "tags": [
-          "Public Authors"
-        ]
+        "tags": ["Public Authors"]
       }
     },
     "/api/ai/generate-text": {
@@ -1007,9 +956,7 @@
                     "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
-                "required": [
-                  "prompt"
-                ],
+                "required": ["prompt"],
                 "title": "GenerateTextRequest",
                 "description": "Request for simple text generation with a single prompt"
               }
@@ -1028,9 +975,7 @@
             }
           }
         },
-        "tags": [
-          "AI"
-        ]
+        "tags": ["AI"]
       }
     },
     "/api/ai/generate-object": {
@@ -1050,12 +995,7 @@
                   },
                   "schemaType": {
                     "type": "string",
-                    "enum": [
-                      "userProfile",
-                      "task",
-                      "product",
-                      "recipe"
-                    ]
+                    "enum": ["userProfile", "task", "product", "recipe"]
                   },
                   "model": {
                     "type": "string",
@@ -1071,10 +1011,7 @@
                     "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
-                "required": [
-                  "prompt",
-                  "schemaType"
-                ],
+                "required": ["prompt", "schemaType"],
                 "title": "GenerateObjectRequest",
                 "description": "Request for structured object generation with a predefined schema type"
               }
@@ -1093,9 +1030,7 @@
             }
           }
         },
-        "tags": [
-          "AI"
-        ]
+        "tags": ["AI"]
       }
     },
     "/api/ai/chat": {
@@ -1133,9 +1068,7 @@
                     "$ref": "#/components/schemas/ChatSchemaType"
                   }
                 },
-                "required": [
-                  "messages"
-                ],
+                "required": ["messages"],
                 "title": "ChatRequest",
                 "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output."
               }
@@ -1154,9 +1087,7 @@
             }
           }
         },
-        "tags": [
-          "AI"
-        ]
+        "tags": ["AI"]
       }
     },
     "/api/ai/stream-text": {
@@ -1188,9 +1119,7 @@
                     "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
-                "required": [
-                  "prompt"
-                ],
+                "required": ["prompt"],
                 "title": "StreamTextRequest",
                 "description": "Request for streaming text generation with a single prompt"
               }
@@ -1202,9 +1131,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "AI"
-        ]
+        "tags": ["AI"]
       }
     },
     "/api/ai/stream-object": {
@@ -1224,12 +1151,7 @@
                   },
                   "schemaType": {
                     "type": "string",
-                    "enum": [
-                      "userProfile",
-                      "task",
-                      "product",
-                      "recipe"
-                    ]
+                    "enum": ["userProfile", "task", "product", "recipe"]
                   },
                   "model": {
                     "type": "string",
@@ -1245,10 +1167,7 @@
                     "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
-                "required": [
-                  "prompt",
-                  "schemaType"
-                ],
+                "required": ["prompt", "schemaType"],
                 "title": "StreamObjectRequest",
                 "description": "Request for streaming structured object generation"
               }
@@ -1260,9 +1179,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "AI"
-        ]
+        "tags": ["AI"]
       }
     },
     "/api/ai/stream-chat": {
@@ -1297,9 +1214,7 @@
                     "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
-                "required": [
-                  "messages"
-                ],
+                "required": ["messages"],
                 "title": "StreamChatRequest",
                 "description": "Request for streaming multi-turn AI conversation"
               }
@@ -1311,9 +1226,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "AI"
-        ]
+        "tags": ["AI"]
       }
     },
     "/api/ai/examples/use-case-1-single-generation": {
@@ -1345,9 +1258,7 @@
                     "$ref": "#/components/schemas/AiGenerateOptions"
                   }
                 },
-                "required": [
-                  "prompt"
-                ],
+                "required": ["prompt"],
                 "title": "UseCase1SingleGenerationRequest",
                 "description": "Single generation; trace is finalized with name/output so Langfuse shows them"
               }
@@ -1366,9 +1277,7 @@
             }
           }
         },
-        "tags": [
-          "AI Examples"
-        ]
+        "tags": ["AI Examples"]
       }
     },
     "/api/ai/examples/use-case-2-grouped-calls": {
@@ -1403,9 +1312,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "prompts"
-                ],
+                "required": ["prompts"],
                 "title": "UseCase2GroupedCallsRequest",
                 "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end"
               }
@@ -1424,9 +1331,7 @@
             }
           }
         },
-        "tags": [
-          "AI Examples"
-        ]
+        "tags": ["AI Examples"]
       }
     },
     "/api/ai/examples/use-case-3-logical-units": {
@@ -1461,9 +1366,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "workflowPrompts"
-                ],
+                "required": ["workflowPrompts"],
                 "title": "UseCase3LogicalUnitsRequest",
                 "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)"
               }
@@ -1482,9 +1385,7 @@
             }
           }
         },
-        "tags": [
-          "AI Examples"
-        ]
+        "tags": ["AI Examples"]
       }
     },
     "/api/ai/examples/use-case-4-chat-session": {
@@ -1518,10 +1419,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "prompt",
-                  "sessionId"
-                ],
+                "required": ["prompt", "sessionId"],
                 "title": "UseCase4ChatSessionRequest",
                 "description": "Simple generateText with sessionId for grouping traces across requests"
               }
@@ -1540,9 +1438,7 @@
             }
           }
         },
-        "tags": [
-          "AI Examples"
-        ]
+        "tags": ["AI Examples"]
       }
     },
     "/api/ai/examples/use-case-5-chat-session-with-turns-merged": {
@@ -1576,10 +1472,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "prompt",
-                  "sessionId"
-                ],
+                "required": ["prompt", "sessionId"],
                 "title": "UseCase4ChatSessionRequest",
                 "description": "Simple generateText with sessionId for grouping traces across requests"
               }
@@ -1598,9 +1491,7 @@
             }
           }
         },
-        "tags": [
-          "AI Examples"
-        ]
+        "tags": ["AI Examples"]
       }
     }
   },
@@ -1633,9 +1524,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           }
         },
-        "required": [
-          "content"
-        ],
+        "required": ["content"],
         "title": "CreateCommentSchema",
         "description": "Schema for creating a comment"
       },
@@ -1651,14 +1540,7 @@
             "type": "string"
           },
           "authorName": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["string", "null"]
           },
           "createdAt": {
             "type": "string"
@@ -1677,10 +1559,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "id",
-                  "name"
-                ],
+                "required": ["id", "name"],
                 "additionalProperties": false
               },
               {
@@ -1712,14 +1591,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "id",
-          "content",
-          "authorName",
-          "createdAt",
-          "user",
-          "parentId"
-        ],
+        "required": ["id", "content", "authorName", "createdAt", "user", "parentId"],
         "additionalProperties": false,
         "title": "CommentSchema",
         "description": "Schema for a comment"
@@ -1733,9 +1605,7 @@
             "maxLength": 1000
           }
         },
-        "required": [
-          "content"
-        ],
+        "required": ["content"],
         "title": "UpdateCommentSchema",
         "description": "Schema for updating a comment"
       },
@@ -1771,23 +1641,14 @@
           "properties": {
             "property": {
               "type": "string",
-              "enum": [
-                "title",
-                "createdAt"
-              ]
+              "enum": ["title", "createdAt"]
             },
             "direction": {
               "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ]
+              "enum": ["asc", "desc"]
             }
           },
-          "required": [
-            "property",
-            "direction"
-          ],
+          "required": ["property", "direction"],
           "additionalProperties": false,
           "description": "Schema for sorting items"
         }
@@ -1803,10 +1664,7 @@
           "properties": {
             "property": {
               "type": "string",
-              "enum": [
-                "title",
-                "tag"
-              ]
+              "enum": ["title", "tag"]
             },
             "rule": {
               "type": "string",
@@ -1829,10 +1687,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "property",
-            "rule"
-          ],
+          "required": ["property", "rule"],
           "additionalProperties": false,
           "description": "Schema for a single filtering item"
         }
@@ -1862,19 +1717,11 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "offset",
-              "pageSize",
-              "itemCount",
-              "hasMore"
-            ],
+            "required": ["offset", "pageSize", "itemCount", "hasMore"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "data",
-          "meta"
-        ],
+        "required": ["data", "meta"],
         "additionalProperties": false,
         "title": "CommentsSchema",
         "description": "Schema for a paginated list of comments"
@@ -1886,18 +1733,13 @@
             "properties": {
               "type": {
                 "type": "string",
-                "enum": [
-                  "text"
-                ]
+                "enum": ["text"]
               },
               "data": {
                 "type": "string"
               }
             },
-            "required": [
-              "type",
-              "data"
-            ],
+            "required": ["type", "data"],
             "additionalProperties": false
           },
           {
@@ -1905,18 +1747,13 @@
             "properties": {
               "type": {
                 "type": "string",
-                "enum": [
-                  "image"
-                ]
+                "enum": ["image"]
               },
               "data": {
                 "type": "string"
               }
             },
-            "required": [
-              "type",
-              "data"
-            ],
+            "required": ["type", "data"],
             "additionalProperties": false
           },
           {
@@ -1924,18 +1761,13 @@
             "properties": {
               "type": {
                 "type": "string",
-                "enum": [
-                  "video"
-                ]
+                "enum": ["video"]
               },
               "data": {
                 "type": "string"
               }
             },
-            "required": [
-              "type",
-              "data"
-            ],
+            "required": ["type", "data"],
             "additionalProperties": false
           }
         ],
@@ -1963,10 +1795,7 @@
             }
           }
         },
-        "required": [
-          "title",
-          "content"
-        ],
+        "required": ["title", "content"],
         "title": "CreatePostSchema",
         "description": "Schema for creating/updating a post"
       },
@@ -1985,11 +1814,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "title",
-          "createdAt"
-        ],
+        "required": ["id", "title", "createdAt"],
         "additionalProperties": false,
         "title": "PostVersionSchema",
         "description": "Schema for a post version"
@@ -2021,14 +1846,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "filename",
-          "mimeType",
-          "size",
-          "url",
-          "expiresAt"
-        ],
+        "required": ["id", "filename", "mimeType", "size", "url", "expiresAt"],
         "additionalProperties": false,
         "title": "MediaSchema",
         "description": "A stored file. `url` is a short-lived signed download link that expires at `expiresAt`. The storage key is never returned as a field."
@@ -2048,11 +1866,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "slug"
-        ],
+        "required": ["id", "name", "slug"],
         "additionalProperties": false,
         "title": "TagSchema",
         "description": "A tag attached to a post"
@@ -2066,14 +1880,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "slug": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["string", "null"]
           },
           "title": {
             "type": "string"
@@ -2091,21 +1898,11 @@
             }
           },
           "publishedAt": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["string", "null"]
           },
           "type": {
             "type": "string",
-            "enum": [
-              "published",
-              "draft"
-            ]
+            "enum": ["published", "draft"]
           },
           "commentCount": {
             "type": "number"
@@ -2120,14 +1917,7 @@
             }
           }
         },
-        "required": [
-          "id",
-          "title",
-          "content",
-          "versions",
-          "type",
-          "tags"
-        ],
+        "required": ["id", "title", "content", "versions", "type", "tags"],
         "additionalProperties": false,
         "title": "UserPostSchema",
         "description": "Schema for a user's post"
@@ -2196,9 +1986,7 @@
             "description": "Cover image: JPEG, PNG, GIF or WebP, 10 MiB max"
           }
         },
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "SetCoverImageSchema",
         "description": "Multipart body for setting the cover image of a post"
       },
@@ -2216,14 +2004,7 @@
                   "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                 },
                 "slug": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": ["string", "null"]
                 },
                 "title": {
                   "type": "string"
@@ -2235,21 +2016,11 @@
                   }
                 },
                 "publishedAt": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": ["string", "null"]
                 },
                 "type": {
                   "type": "string",
-                  "enum": [
-                    "published",
-                    "draft"
-                  ]
+                  "enum": ["published", "draft"]
                 },
                 "commentCount": {
                   "type": "number"
@@ -2267,14 +2038,7 @@
                   "$ref": "#/components/schemas/PostContentSchema"
                 }
               },
-              "required": [
-                "id",
-                "title",
-                "versions",
-                "type",
-                "tags",
-                "contentPreview"
-              ],
+              "required": ["id", "title", "versions", "type", "tags", "contentPreview"],
               "additionalProperties": false
             }
           },
@@ -2294,19 +2058,11 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "offset",
-              "pageSize",
-              "itemCount",
-              "hasMore"
-            ],
+            "required": ["offset", "pageSize", "itemCount", "hasMore"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "data",
-          "meta"
-        ],
+        "required": ["data", "meta"],
         "additionalProperties": false,
         "title": "UserPostsSchema",
         "description": "Schema for a list of user's posts"
@@ -2324,9 +2080,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "name"
-            ],
+            "required": ["name"],
             "additionalProperties": false
           },
           "content": {
@@ -2357,14 +2111,7 @@
             }
           }
         },
-        "required": [
-          "title",
-          "author",
-          "content",
-          "publishedAt",
-          "likesCount",
-          "tags"
-        ],
+        "required": ["title", "author", "content", "publishedAt", "likesCount", "tags"],
         "additionalProperties": false,
         "title": "PublicPostSchema",
         "description": "A public post"
@@ -2387,9 +2134,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "name"
-                  ],
+                  "required": ["name"],
                   "additionalProperties": false
                 },
                 "publishedAt": {
@@ -2444,19 +2189,11 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "offset",
-              "pageSize",
-              "itemCount",
-              "hasMore"
-            ],
+            "required": ["offset", "pageSize", "itemCount", "hasMore"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "data",
-          "meta"
-        ],
+        "required": ["data", "meta"],
         "additionalProperties": false,
         "title": "PublicPostsSchema",
         "description": "A list of public posts"
@@ -2479,9 +2216,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "name"
-                  ],
+                  "required": ["name"],
                   "additionalProperties": false
                 },
                 "publishedAt": {
@@ -2536,19 +2271,11 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "offset",
-              "pageSize",
-              "itemCount",
-              "hasMore"
-            ],
+            "required": ["offset", "pageSize", "itemCount", "hasMore"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "data",
-          "meta"
-        ],
+        "required": ["data", "meta"],
         "additionalProperties": false,
         "title": "PublicAuthorPostsSchema",
         "description": "A list of posts from a specific author"
@@ -2594,10 +2321,7 @@
               "traceMode": {
                 "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                 "type": "string",
-                "enum": [
-                  "inherit",
-                  "split"
-                ]
+                "enum": ["inherit", "split"]
               },
               "traceId": {
                 "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
@@ -2661,9 +2385,7 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": [
-          "prompt"
-        ],
+        "required": ["prompt"],
         "title": "GenerateTextRequest",
         "description": "Request for simple text generation with a single prompt"
       },
@@ -2680,11 +2402,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "promptTokens",
-          "completionTokens",
-          "totalTokens"
-        ],
+        "required": ["promptTokens", "completionTokens", "totalTokens"],
         "additionalProperties": false,
         "title": "TokenUsage",
         "description": "Token usage information for an AI generation"
@@ -2706,11 +2424,7 @@
             "additionalProperties": {}
           }
         },
-        "required": [
-          "toolCallId",
-          "toolName",
-          "args"
-        ],
+        "required": ["toolCallId", "toolName", "args"],
         "additionalProperties": false,
         "title": "ToolCall",
         "description": "A tool call made by the AI"
@@ -2726,11 +2440,7 @@
           },
           "result": {}
         },
-        "required": [
-          "toolCallId",
-          "toolName",
-          "result"
-        ],
+        "required": ["toolCallId", "toolName", "result"],
         "additionalProperties": false,
         "title": "ToolResult",
         "description": "The result of a tool call"
@@ -2760,9 +2470,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "result"
-        ],
+        "required": ["result"],
         "additionalProperties": false,
         "title": "GenerateTextResponse",
         "description": "Response from text generation"
@@ -2776,12 +2484,7 @@
           },
           "schemaType": {
             "type": "string",
-            "enum": [
-              "userProfile",
-              "task",
-              "product",
-              "recipe"
-            ]
+            "enum": ["userProfile", "task", "product", "recipe"]
           },
           "model": {
             "type": "string",
@@ -2797,10 +2500,7 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": [
-          "prompt",
-          "schemaType"
-        ],
+        "required": ["prompt", "schemaType"],
         "title": "GenerateObjectRequest",
         "description": "Request for structured object generation with a predefined schema type"
       },
@@ -2827,22 +2527,14 @@
           },
           "result": {}
         },
-        "required": [
-          "result"
-        ],
+        "required": ["result"],
         "additionalProperties": false,
         "title": "GenerateObjectResponse",
         "description": "Response from structured object generation"
       },
       "ChatSchemaType": {
         "type": "string",
-        "enum": [
-          "userProfile",
-          "task",
-          "product",
-          "recipe",
-          "none"
-        ],
+        "enum": ["userProfile", "task", "product", "recipe", "none"],
         "title": "ChatSchemaType",
         "description": "Predefined schema types for testing structured output"
       },
@@ -2851,12 +2543,7 @@
         "properties": {
           "role": {
             "type": "string",
-            "enum": [
-              "user",
-              "assistant",
-              "system",
-              "tool"
-            ]
+            "enum": ["user", "assistant", "system", "tool"]
           },
           "content": {
             "type": "string"
@@ -2877,7 +2564,7 @@
                 "description": "ISO 8601 timestamp when the message was created",
                 "type": "string",
                 "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
               },
               "toolCalls": {
                 "description": "Tool calls made to generate the message",
@@ -2896,10 +2583,7 @@
             }
           }
         },
-        "required": [
-          "role",
-          "content"
-        ],
+        "required": ["role", "content"],
         "title": "ChatMessageWithSchemaType",
         "description": "A message with optional schemaType metadata for identifying structured output"
       },
@@ -2930,9 +2614,7 @@
             "$ref": "#/components/schemas/ChatSchemaType"
           }
         },
-        "required": [
-          "messages"
-        ],
+        "required": ["messages"],
         "title": "ChatRequest",
         "description": "Request for multi-turn AI conversation with message history. schemaType can be used to request structured output."
       },
@@ -2967,10 +2649,7 @@
             }
           }
         },
-        "required": [
-          "result",
-          "messages"
-        ],
+        "required": ["result", "messages"],
         "additionalProperties": false,
         "title": "ChatResponse",
         "description": "Response from AI chat conversation"
@@ -2996,9 +2675,7 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": [
-          "prompt"
-        ],
+        "required": ["prompt"],
         "title": "StreamTextRequest",
         "description": "Request for streaming text generation with a single prompt"
       },
@@ -3011,12 +2688,7 @@
           },
           "schemaType": {
             "type": "string",
-            "enum": [
-              "userProfile",
-              "task",
-              "product",
-              "recipe"
-            ]
+            "enum": ["userProfile", "task", "product", "recipe"]
           },
           "model": {
             "type": "string",
@@ -3032,10 +2704,7 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": [
-          "prompt",
-          "schemaType"
-        ],
+        "required": ["prompt", "schemaType"],
         "title": "StreamObjectRequest",
         "description": "Request for streaming structured object generation"
       },
@@ -3063,9 +2732,7 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": [
-          "messages"
-        ],
+        "required": ["messages"],
         "title": "StreamChatRequest",
         "description": "Request for streaming multi-turn AI conversation"
       },
@@ -3090,9 +2757,7 @@
             "$ref": "#/components/schemas/AiGenerateOptions"
           }
         },
-        "required": [
-          "prompt"
-        ],
+        "required": ["prompt"],
         "title": "UseCase1SingleGenerationRequest",
         "description": "Single generation; trace is finalized with name/output so Langfuse shows them"
       },
@@ -3120,9 +2785,7 @@
             ]
           }
         },
-        "required": [
-          "prompts"
-        ],
+        "required": ["prompts"],
         "title": "UseCase2GroupedCallsRequest",
         "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end"
       },
@@ -3142,10 +2805,7 @@
             "$ref": "#/components/schemas/TokenUsage"
           }
         },
-        "required": [
-          "traceName",
-          "results"
-        ],
+        "required": ["traceName", "results"],
         "additionalProperties": false,
         "title": "UseCase2GroupedCallsResponse",
         "description": "Combined results from grouped LLM calls"
@@ -3174,9 +2834,7 @@
             ]
           }
         },
-        "required": [
-          "workflowPrompts"
-        ],
+        "required": ["workflowPrompts"],
         "title": "UseCase3LogicalUnitsRequest",
         "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)"
       },
@@ -3198,17 +2856,12 @@
                   "$ref": "#/components/schemas/TokenUsage"
                 }
               },
-              "required": [
-                "index",
-                "result"
-              ],
+              "required": ["index", "result"],
               "additionalProperties": false
             }
           }
         },
-        "required": [
-          "workflows"
-        ],
+        "required": ["workflows"],
         "additionalProperties": false,
         "title": "UseCase3LogicalUnitsResponse",
         "description": "One result per workflow (each in its own trace)"
@@ -3236,10 +2889,7 @@
             ]
           }
         },
-        "required": [
-          "prompt",
-          "sessionId"
-        ],
+        "required": ["prompt", "sessionId"],
         "title": "UseCase4ChatSessionRequest",
         "description": "Simple generateText with sessionId for grouping traces across requests"
       },
@@ -3248,12 +2898,7 @@
         "properties": {
           "role": {
             "type": "string",
-            "enum": [
-              "user",
-              "assistant",
-              "system",
-              "tool"
-            ]
+            "enum": ["user", "assistant", "system", "tool"]
           },
           "content": {
             "type": "string"
@@ -3274,7 +2919,7 @@
                 "description": "ISO 8601 timestamp when the message was created",
                 "type": "string",
                 "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
               },
               "toolCalls": {
                 "description": "Tool calls made to generate the message",
@@ -3291,10 +2936,7 @@
             "additionalProperties": false
           }
         },
-        "required": [
-          "role",
-          "content"
-        ],
+        "required": ["role", "content"],
         "additionalProperties": false,
         "title": "AiCoreMessage",
         "description": "A message in the conversation history following Vercel AI SDK patterns"
@@ -3310,10 +2952,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "type",
-          "text"
-        ],
+        "required": ["type", "text"],
         "additionalProperties": false,
         "title": "AiStreamTextChunkEvent",
         "description": "A text chunk event during streaming"
@@ -3339,12 +2978,7 @@
             "additionalProperties": {}
           }
         },
-        "required": [
-          "type",
-          "toolCallId",
-          "toolName",
-          "args"
-        ],
+        "required": ["type", "toolCallId", "toolName", "args"],
         "additionalProperties": false,
         "title": "AiStreamToolCallEvent",
         "description": "Event when a tool is being called during streaming"
@@ -3364,12 +2998,7 @@
           },
           "result": {}
         },
-        "required": [
-          "type",
-          "toolCallId",
-          "toolName",
-          "result"
-        ],
+        "required": ["type", "toolCallId", "toolName", "result"],
         "additionalProperties": false,
         "title": "AiStreamToolResultEvent",
         "description": "Event when a tool returns a result during streaming"
@@ -3387,11 +3016,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "promptTokens",
-          "completionTokens",
-          "totalTokens"
-        ],
+        "required": ["promptTokens", "completionTokens", "totalTokens"],
         "additionalProperties": false,
         "title": "AiStreamUsage",
         "description": "Token usage information for the stream"
@@ -3413,10 +3038,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "type",
-          "fullText"
-        ],
+        "required": ["type", "fullText"],
         "additionalProperties": false,
         "title": "AiStreamDoneEvent",
         "description": "Final event when streaming is complete"
@@ -3432,10 +3054,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "type",
-          "message"
-        ],
+        "required": ["type", "message"],
         "additionalProperties": false,
         "title": "AiStreamErrorEvent",
         "description": "Error event during streaming"
@@ -3473,11 +3092,7 @@
           },
           "priority": {
             "type": "string",
-            "enum": [
-              "low",
-              "medium",
-              "high"
-            ]
+            "enum": ["low", "medium", "high"]
           },
           "dueDate": {
             "type": "string"
@@ -3489,11 +3104,7 @@
             }
           }
         },
-        "required": [
-          "title",
-          "description",
-          "priority"
-        ],
+        "required": ["title", "description", "priority"],
         "additionalProperties": false,
         "title": "Task",
         "description": "A task"
@@ -3523,13 +3134,7 @@
             }
           }
         },
-        "required": [
-          "name",
-          "price",
-          "description",
-          "category",
-          "inStock"
-        ],
+        "required": ["name", "price", "description", "category", "inStock"],
         "additionalProperties": false,
         "title": "Product",
         "description": "A product"
@@ -3554,11 +3159,7 @@
           },
           "difficulty": {
             "type": "string",
-            "enum": [
-              "easy",
-              "medium",
-              "hard"
-            ]
+            "enum": ["easy", "medium", "hard"]
           },
           "ingredients": {
             "type": "array",
@@ -3572,10 +3173,7 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "name",
-                "quantity"
-              ],
+              "required": ["name", "quantity"],
               "additionalProperties": false
             }
           },
@@ -3618,7 +3216,7 @@
           "email": {
             "type": "string",
             "format": "email",
-            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
           },
           "bio": {
             "type": "string"
@@ -3630,11 +3228,7 @@
             }
           }
         },
-        "required": [
-          "name",
-          "age",
-          "email"
-        ],
+        "required": ["name", "age", "email"],
         "additionalProperties": false,
         "title": "UserProfile",
         "description": "A user profile"
@@ -3644,23 +3238,14 @@
         "properties": {
           "property": {
             "type": "string",
-            "enum": [
-              "createdAt",
-              "authorName"
-            ]
+            "enum": ["createdAt", "authorName"]
           },
           "direction": {
             "type": "string",
-            "enum": [
-              "asc",
-              "desc"
-            ]
+            "enum": ["asc", "desc"]
           }
         },
-        "required": [
-          "property",
-          "direction"
-        ],
+        "required": ["property", "direction"],
         "additionalProperties": false
       },
       "CommentsController_getComments_sortArray": {
@@ -3674,9 +3259,7 @@
         "properties": {
           "property": {
             "type": "string",
-            "enum": [
-              "content"
-            ]
+            "enum": ["content"]
           },
           "rule": {
             "type": "string",
@@ -3699,10 +3282,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "property",
-          "rule"
-        ],
+        "required": ["property", "rule"],
         "additionalProperties": false
       },
       "CommentsController_getComments_filterArray": {
@@ -3716,23 +3296,14 @@
         "properties": {
           "property": {
             "type": "string",
-            "enum": [
-              "createdAt",
-              "authorName"
-            ]
+            "enum": ["createdAt", "authorName"]
           },
           "direction": {
             "type": "string",
-            "enum": [
-              "asc",
-              "desc"
-            ]
+            "enum": ["asc", "desc"]
           }
         },
-        "required": [
-          "property",
-          "direction"
-        ],
+        "required": ["property", "direction"],
         "additionalProperties": false
       },
       "CommentsController_getCommentReplies_sortArray": {
@@ -3746,23 +3317,14 @@
         "properties": {
           "property": {
             "type": "string",
-            "enum": [
-              "title",
-              "createdAt"
-            ]
+            "enum": ["title", "createdAt"]
           },
           "direction": {
             "type": "string",
-            "enum": [
-              "asc",
-              "desc"
-            ]
+            "enum": ["asc", "desc"]
           }
         },
-        "required": [
-          "property",
-          "direction"
-        ],
+        "required": ["property", "direction"],
         "additionalProperties": false
       },
       "PostController_getUserPosts_sortArray": {
@@ -3776,10 +3338,7 @@
         "properties": {
           "property": {
             "type": "string",
-            "enum": [
-              "title",
-              "tag"
-            ]
+            "enum": ["title", "tag"]
           },
           "rule": {
             "type": "string",
@@ -3802,10 +3361,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "property",
-          "rule"
-        ],
+        "required": ["property", "rule"],
         "additionalProperties": false
       },
       "PostController_getUserPosts_filterArray": {
@@ -3819,23 +3375,14 @@
         "properties": {
           "property": {
             "type": "string",
-            "enum": [
-              "title",
-              "createdAt"
-            ]
+            "enum": ["title", "createdAt"]
           },
           "direction": {
             "type": "string",
-            "enum": [
-              "asc",
-              "desc"
-            ]
+            "enum": ["asc", "desc"]
           }
         },
-        "required": [
-          "property",
-          "direction"
-        ],
+        "required": ["property", "direction"],
         "additionalProperties": false
       },
       "PublicPostController_getPosts_sortArray": {
@@ -3849,10 +3396,7 @@
         "properties": {
           "property": {
             "type": "string",
-            "enum": [
-              "title",
-              "tag"
-            ]
+            "enum": ["title", "tag"]
           },
           "rule": {
             "type": "string",
@@ -3875,10 +3419,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "property",
-          "rule"
-        ],
+        "required": ["property", "rule"],
         "additionalProperties": false
       },
       "PublicPostController_getPosts_filterArray": {
@@ -3892,23 +3433,14 @@
         "properties": {
           "property": {
             "type": "string",
-            "enum": [
-              "title",
-              "createdAt"
-            ]
+            "enum": ["title", "createdAt"]
           },
           "direction": {
             "type": "string",
-            "enum": [
-              "asc",
-              "desc"
-            ]
+            "enum": ["asc", "desc"]
           }
         },
-        "required": [
-          "property",
-          "direction"
-        ],
+        "required": ["property", "direction"],
         "additionalProperties": false
       },
       "PublicAuthorController_getAuthorPosts_sortArray": {
