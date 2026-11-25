@@ -8,7 +8,7 @@ classification: breaking-manual
 
 ## Goal
 
-The API runs on stable NestJS 12.1 as an ES module, validates and documents routes with Nest's built-in Standard Schema support instead of `@lonestone/nzoth`, and builds, runs in dev and tests through one Vite + SWC config.
+The API runs on stable NestJS 12.6 as an ES module, validates and documents routes with Nest's built-in Standard Schema support instead of `@lonestone/nzoth`, and builds, runs in dev and tests through one Vite + SWC config.
 
 ## Why
 
@@ -37,7 +37,7 @@ The image still applies migrations with `pnpm db:migrate:up` and the `MIKRO_ORM_
 Work gap by gap. Skip example modules the project removed. Keep business logic as is: only decorators, imports and config move.
 
 1. **Dependencies and ESM** — signal: `apps/api/package.json` has `@nestjs/core` 11.x, no `"type": "module"`, or lists `@lonestone/nzoth`.
-   Align the Nest pins (`@nestjs/*` 12.1.x, `@nestjs/config` / `swagger` / `cli` / `schematics` 12.0.x), `@amplication/opentelemetry-nestjs` 7, `@mikro-orm/nestjs` 7.1, `express` 5 and `nestjs-pino` 5 with the staged reference. Move every other `@nestjs/*` package the project uses to a release that accepts Nest 12 (for example `@nestjs/schedule` 12.0.x), or remove it if nothing imports it: the reference dropped `@nestjs/schedule` for that reason. Add `"type": "module"`. Remove `@lonestone/nzoth` from every app. In `pnpm-workspace.yaml`, remove any `allowAny` on `@nestjs/*` and add only the scoped `@sentry/nestjs>@nestjs/*` exception.
+   Align the Nest pins (`@nestjs/*` 12.6.x, `@nestjs/config` / `swagger` 12.1.x, `cli` / `schematics` 12.0.x), `@amplication/opentelemetry-nestjs` 7, `@mikro-orm/nestjs` 7.1, `express` 5 and `nestjs-pino` 5 with the staged reference. If the project pins `zod` to `~4.3` for nzoth, lift the pin. Register `SentryGlobalFilter` through a factory that passes `HttpAdapterHost.httpAdapter`, as the staged `app.module.ts` does: `@sentry/nestjs` 10 ships without decorator metadata, and Nest 12.6 warns about it at every start. Move every other `@nestjs/*` package the project uses to a release that accepts Nest 12 (for example `@nestjs/schedule` 12.0.x), or remove it if nothing imports it: the reference dropped `@nestjs/schedule` for that reason. Add `"type": "module"`. Remove `@lonestone/nzoth` from every app. In `pnpm-workspace.yaml`, remove any `allowAny` on `@nestjs/*` and add only the scoped `@sentry/nestjs>@nestjs/*` exception.
    Done when: `pnpm install` passes with `strictPeerDependencies: true` and `rg @lonestone/nzoth apps/*/package.json` returns nothing.
 
 2. **TypeScript module settings** — signal: `apps/api/tsconfig.json` uses `"module": "nodenext"` or lacks `verbatimModuleSyntax`.
