@@ -29,9 +29,9 @@ pnpm boilerplate upgrade finish --to <ver>
 
 Before editing anything or recording any skip, read every pending intention in `.boilerstone/upgrade/upgrade-session.md`, inspect the project, and present a proposal table to the human:
 
-| Intention | Proposal | Why (one observable signal) |
-|---|---|---|
-| `vX.Y.Z/slug` | **apply** / **skip** / **ask** | … |
+| Intention     | Proposal                       | Why (one observable signal) |
+| ------------- | ------------------------------ | --------------------------- |
+| `vX.Y.Z/slug` | **apply** / **skip** / **ask** | …                           |
 
 Wait for confirmation. Then execute only the confirmed plan (one intention at a time unless the human allows a small batch).
 

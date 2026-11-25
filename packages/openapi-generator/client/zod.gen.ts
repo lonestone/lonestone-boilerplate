@@ -118,7 +118,6 @@ export const zPostContentSchema = z.union([
 export const zCreatePostSchema = z.object({
     title: z.string().min(1),
     content: z.array(zPostContentSchema),
-    coverImage: z.optional(z.url()),
     tags: z.optional(z.array(z.string()))
 });
 
@@ -131,6 +130,20 @@ export const zPostVersionSchema = z.object({
     id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
     title: z.string(),
     createdAt: z.string()
+});
+
+/**
+ * MediaSchema
+ *
+ * A stored file. `url` is a short-lived signed download link that expires at `expiresAt`. The storage key is never returned as a field.
+ */
+export const zMediaSchema = z.object({
+    id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+    filename: z.string(),
+    mimeType: z.string(),
+    size: z.int().gte(0).lte(9007199254740991),
+    url: z.url(),
+    expiresAt: z.string()
 });
 
 /**
@@ -164,7 +177,7 @@ export const zUserPostSchema = z.object({
     ])),
     type: z.enum(['published', 'draft']),
     commentCount: z.optional(z.number()),
-    coverImage: z.optional(z.url()),
+    coverImage: z.optional(zMediaSchema),
     tags: z.array(zTagSchema)
 });
 
@@ -176,8 +189,28 @@ export const zUserPostSchema = z.object({
 export const zUpdatePostSchema = z.object({
     title: z.optional(z.string().min(1)),
     content: z.optional(z.array(zPostContentSchema)),
-    coverImage: z.optional(z.url()),
     tags: z.optional(z.array(z.string()))
+});
+
+/**
+ * UpdatePostMultipartSchema
+ *
+ * Multipart body for updating a post and its cover image in one request
+ */
+export const zUpdatePostMultipartSchema = z.object({
+    title: z.optional(z.string().min(1)),
+    content: z.optional(z.array(zPostContentSchema)),
+    tags: z.optional(z.array(z.string())),
+    coverImage: z.optional(z.instanceof(Blob))
+});
+
+/**
+ * SetCoverImageSchema
+ *
+ * Multipart body for setting the cover image of a post
+ */
+export const zSetCoverImageSchema = z.object({
+    file: z.instanceof(Blob)
 });
 
 /**
@@ -200,7 +233,7 @@ export const zUserPostsSchema = z.object({
         ])),
         type: z.enum(['published', 'draft']),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zMediaSchema),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
     })),
@@ -226,7 +259,7 @@ export const zPublicPostSchema = z.object({
     publishedAt: z.string(),
     slug: z.optional(z.string()),
     commentCount: z.optional(z.number()),
-    coverImage: z.optional(z.url()),
+    coverImage: z.optional(zMediaSchema),
     likesCount: z.number(),
     tags: z.array(zTagSchema)
 });
@@ -245,7 +278,7 @@ export const zPublicPostsSchema = z.object({
         publishedAt: z.string(),
         slug: z.optional(z.string()),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zMediaSchema),
         likesCount: z.number(),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
@@ -272,7 +305,7 @@ export const zPublicAuthorPostsSchema = z.object({
         publishedAt: z.string(),
         slug: z.optional(z.string()),
         commentCount: z.optional(z.number()),
-        coverImage: z.optional(z.url()),
+        coverImage: z.optional(zMediaSchema),
         likesCount: z.number(),
         tags: z.array(zTagSchema),
         contentPreview: zPostContentSchema
@@ -990,7 +1023,6 @@ export const zPostControllerCreatePostData = z.object({
     body: z.object({
         title: z.string().min(1),
         content: z.array(zPostContentSchema),
-        coverImage: z.optional(z.url()),
         tags: z.optional(z.array(z.string()))
     }),
     path: z.optional(z.never()),
@@ -1013,7 +1045,6 @@ export const zPostControllerUpdatePostData = z.object({
     body: z.object({
         title: z.optional(z.string().min(1)),
         content: z.optional(z.array(zPostContentSchema)),
-        coverImage: z.optional(z.url()),
         tags: z.optional(z.array(z.string()))
     }),
     path: z.object({
@@ -1023,6 +1054,43 @@ export const zPostControllerUpdatePostData = z.object({
 });
 
 export const zPostControllerUpdatePostResponse = zUserPostSchema;
+
+export const zPostControllerUpdatePostViaMultipartData = z.object({
+    body: z.object({
+        title: z.optional(z.string().min(1)),
+        content: z.optional(z.array(zPostContentSchema)),
+        tags: z.optional(z.array(z.string())),
+        coverImage: z.optional(z.instanceof(Blob))
+    }),
+    path: z.object({
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+export const zPostControllerUpdatePostViaMultipartResponse = zUserPostSchema;
+
+export const zPostControllerRemoveCoverImageData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+export const zPostControllerRemoveCoverImageResponse = z.void();
+
+export const zPostControllerSetCoverImageData = z.object({
+    body: z.object({
+        file: z.instanceof(Blob)
+    }),
+    path: z.object({
+        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+    }),
+    query: z.optional(z.never())
+});
+
+export const zPostControllerSetCoverImageResponse = zUserPostSchema;
 
 export const zPostControllerPublishPostData = z.object({
     body: z.optional(z.never()),

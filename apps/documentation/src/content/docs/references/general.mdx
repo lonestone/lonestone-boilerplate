@@ -15,6 +15,7 @@ description: Common guidelines for development on the project
 - Practice component-driven development
 - Use `pnpm` to manage dependencies and execute scripts.
 - Use `git` commands to manipulate the repository.
+- Push only when `pnpm lint`, `pnpm typecheck` and the tests of the packages you changed (`pnpm --filter <package> test`) pass locally. The CI then confirms.
 
 ## Planning Phase
 
@@ -34,9 +35,8 @@ Respect the current project structure and file names.
 In general, try to follow those Guidelines:
 
 - Use PascalCase for:
-  - Type definitions
-  - Interfaces names
   - Classes names
+- Interfaces and types: PascalCase, no prefix (`UserProfile`, `StoredFile`). Prefix with `I` only a contract that has several implementations, whether classes or objects (`IStorageProvider`).
 - Use kebab-case for:
   - Components
   - Directory names (e.g., components/auth-wizard)

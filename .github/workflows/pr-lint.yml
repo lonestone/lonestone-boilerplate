@@ -8,6 +8,11 @@ permissions:
   contents: read
   pull-requests: read
 
+# Each edit of the title or the description starts a run. Only the last one matters.
+concurrency:
+  group: pr-lint-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: PR title and description
@@ -19,11 +24,13 @@ jobs:
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 24.13.0
+          node-version: 24.22.2
           pnpm-version: 10.28.2
 
+      # The lint only needs the root tooling. The isolated linker lets --filter skip the apps,
+      # which the hoisted linker from .npmrc would install anyway.
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile --filter . --config.node-linker=isolated
 
       - name: Typecheck PR lint script
         run: pnpm exec tsc -p scripts/tsconfig.json

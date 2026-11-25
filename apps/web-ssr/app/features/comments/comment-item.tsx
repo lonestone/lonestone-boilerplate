@@ -1,5 +1,4 @@
 import type { CommentSchema, CreateCommentSchema } from '@boilerstone/openapi-generator'
-import { commentsControllerGetCommentReplies } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import {
   Card,
@@ -9,10 +8,10 @@ import {
 } from '@boilerstone/ui/components/primitives/card'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import { cn } from '@boilerstone/ui/lib/utils'
-import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronUp, Loader2, Reply, Trash2, User } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CommentForm } from '@/features/comments/comment-form'
+import { useReplies } from '@/features/comments/hooks/use-comments'
 
 function Replies({
   commentId,
@@ -33,27 +32,7 @@ function Replies({
   onDelete: (commentId: string) => void
   onReplySubmit: (data: CreateCommentSchema) => Promise<void>
 }) {
-  const { data: replies, isLoading: isLoadingReplies } = useQuery({
-    queryKey: ['replies', postSlug, commentId],
-    queryFn: async () => {
-      const res = await commentsControllerGetCommentReplies({
-        path: {
-          commentId,
-          postSlug,
-        },
-        query: {
-          offset: 0,
-          pageSize: 10,
-        },
-      })
-
-      if (res.error) {
-        throw res.error
-      }
-
-      return res.data
-    },
-  })
+  const { data: replies, isLoading: isLoadingReplies } = useReplies(postSlug, commentId)
 
   if (isLoadingReplies) {
     return (

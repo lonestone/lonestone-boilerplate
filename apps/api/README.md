@@ -11,6 +11,7 @@ The API is organized into modules following NestJS's modular architecture:
 - [Auth](./src/modules/auth/README.md)
 - [Db](./src/modules/db/README.md)
 - [Email](./src/modules/email/README.md)
+- [Storage](../documentation/src/content/docs/core-features/3_filestorage.mdx)
 
 ## Stack
 
@@ -42,6 +43,17 @@ pnpm install
 | `BETTER_AUTH_SECRET` | Secret key for JWTs | Yes | - |
 | `NODE_ENV` | Environment (development, production) | No | `development` |
 | `TRUSTED_ORIGINS` | List of trusted origins. ⚠️ If you change the port of your frontends, you need to update this variable. | Yes | - |
+| `STORAGE_ENABLED` | Enable file storage | No | `false` |
+| `STORAGE_BUCKET` | S3 bucket | When storage is enabled | - |
+| `STORAGE_ENDPOINT` | S3-compatible endpoint. Leave empty for AWS S3 | No | - |
+| `STORAGE_REGION` | S3 region | No | `us-east-1` |
+| `STORAGE_ACCESS_KEY_ID` | S3 access key | When storage is enabled | - |
+| `STORAGE_SECRET_ACCESS_KEY` | S3 secret key | When storage is enabled | - |
+| `STORAGE_FORCE_PATH_STYLE` | Use path-style S3 addresses (needed by RustFS) | No | `false` |
+| `STORAGE_CREATE_BUCKET` | Create the bucket on startup | No | `false` |
+| `STORAGE_SIGNED_URL_EXPIRES_IN` | Lifetime of signed download URLs, in seconds (1 to 604800) | No | `3600` |
+
+Storage is opt-in. The API does not connect to S3 when `STORAGE_ENABLED=false`.
 
 See [`.env.example`](./.env.example) for reference.
 

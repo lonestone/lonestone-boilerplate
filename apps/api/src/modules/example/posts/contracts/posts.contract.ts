@@ -2,6 +2,9 @@ import { createFilterQueryStringSchema } from '../../../../common/http/filtering
 import { createPaginationQuerySchema, paginatedSchema } from '../../../../common/http/pagination'
 import { createSortingQueryStringSchema } from '../../../../common/http/sorting'
 import { z } from 'zod'
+import { mediaSchema } from '../../../media/contracts/media.contract'
+import { IMAGE_MIME_TYPES } from '../../../media/media-file-type.util'
+import { multipartArray } from '../../../media/multipart-array.schema'
 
 // 📖 See API Guidelines: Schema Definition Best Practices
 // https://github.com/lonestone/lonestone-boilerplate/blob/main/docs/api-guidelines.md#schema-definition-best-practices
@@ -67,6 +70,10 @@ export const tagSchema = z
 
 export type Tag = z.infer<typeof tagSchema>
 
+export const postIdSchema = z.uuid().meta({
+  description: 'Post identifier',
+})
+
 // ----------------------------
 // Create/update post schemas //
 // ----------------------------
@@ -76,7 +83,6 @@ export const createPostSchema = z
   .object({
     title: z.string().min(1),
     content: z.array(postContentSchema),
-    coverImage: z.string().url().optional(),
     tags: z.array(z.string()).optional(),
   })
   .meta({
@@ -90,7 +96,6 @@ export const updatePostSchema = z
   .object({
     title: z.string().min(1).optional(),
     content: z.array(postContentSchema).optional(),
-    coverImage: z.string().url().optional(),
     tags: z.array(z.string()).optional(),
   })
   .meta({
@@ -99,6 +104,48 @@ export const updatePostSchema = z
   })
 
 export type UpdatePostInput = z.infer<typeof updatePostSchema>
+
+// --------------------
+// Cover image schema //
+// --------------------
+
+export const POST_COVER_IMAGE_MAX_SIZE_BYTES = 10 * 1024 * 1024
+
+// A refine rather than `.mime()`: `.mime()` emits an `anyOf` that turns the generated client type
+// into `unknown` instead of `Blob | File`.
+const coverImageSchema = z
+  .file()
+  .max(POST_COVER_IMAGE_MAX_SIZE_BYTES)
+  .refine((file) => IMAGE_MIME_TYPES.includes(file.type), {
+    message: `Unsupported image format. Accepted types: ${IMAGE_MIME_TYPES.join(', ')}`,
+  })
+  .meta({ description: 'Cover image: JPEG, PNG, GIF or WebP, 10 MiB max' })
+
+export const setCoverImageSchema = z
+  .object({
+    file: coverImageSchema,
+  })
+  .meta({
+    title: 'SetCoverImageSchema',
+    description: 'Multipart body for setting the cover image of a post',
+  })
+
+export type SetCoverImageInput = z.infer<typeof setCoverImageSchema>
+
+// The same update in one multipart request, with an optional cover image.
+// Array fields use `multipartArray`, so the controller still receives typed arrays.
+export const updatePostMultipartSchema = updatePostSchema
+  .extend({
+    content: multipartArray(postContentSchema).optional(),
+    tags: multipartArray(z.string()).optional(),
+    coverImage: coverImageSchema.optional(),
+  })
+  .meta({
+    title: 'UpdatePostMultipartSchema',
+    description: 'Multipart body for updating a post and its cover image in one request',
+  })
+
+export type UpdatePostMultipartInput = z.infer<typeof updatePostMultipartSchema>
 
 export const userPostSchema = z
   .object({
@@ -110,7 +157,7 @@ export const userPostSchema = z
     publishedAt: z.date().nullish(),
     type: z.enum(['published', 'draft']),
     commentCount: z.number().optional(),
-    coverImage: z.string().url().optional(),
+    coverImage: mediaSchema.optional(),
     tags: z.array(tagSchema),
   })
   .meta({
@@ -149,7 +196,7 @@ export const publicPostSchema = z
     publishedAt: z.date(),
     slug: z.string().optional(),
     commentCount: z.number().optional(),
-    coverImage: z.string().url().optional(),
+    coverImage: mediaSchema.optional(),
     likesCount: z.number(),
     tags: z.array(tagSchema),
   })

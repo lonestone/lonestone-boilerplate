@@ -15,6 +15,8 @@ Le générateur utilise l'outil `@hey-api/openapi-ts` pour transformer la spéci
 
 ## Usage
 
+**Prérequis : l'API doit tourner, en `NODE_ENV=development`, avec sa base.** Le schéma n'est servi sur `${API_URL}/docs.json` qu'en développement (`apps/api/src/main.ts`) : en production, la route répond 404. Sans base joignable, l'API démarre incomplète et le client régénéré perd des routes ; vérifiez le diff de `client/` avant de committer.
+
 Pour générer le client OpenAPI :
 
 ```bash

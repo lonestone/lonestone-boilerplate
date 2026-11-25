@@ -15,7 +15,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "resolveJsonModule": true,
-    "types": ["node", "vitest/globals", "vite/client"],
+    "types": ["node", "vitest/globals", "vite/client", "multer"],
     "strict": true,
     "strictBindCallApply": false,
     "strictNullChecks": true,

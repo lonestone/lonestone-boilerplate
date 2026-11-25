@@ -1,8 +1,13 @@
 import process from 'node:process'
 import { reactRouter } from '@react-router/dev/vite'
 import tailwindcss from '@tailwindcss/vite'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import devtoolsJson from 'vite-plugin-devtools-json'
+
+// `pnpm worktree:create` writes the dev port in the root .env of a worktree, so two
+// worktrees do not fight for the same port. Without it, the port below is used.
+// Keep the literal `port: <number>`: the init CLI rewrites it.
+const rootEnv = loadEnv(process.env.NODE_ENV ?? 'development', '../..', 'WEB_SSR_PORT')
 
 export default defineConfig({
   plugins: [tailwindcss(), reactRouter(), devtoolsJson()],
@@ -15,6 +20,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    ...(rootEnv.WEB_SSR_PORT ? { port: Number(rootEnv.WEB_SSR_PORT) } : {}),
   },
   optimizeDeps: {
     // Preload tanstack react query to avoid hydration error

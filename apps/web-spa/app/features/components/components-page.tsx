@@ -1,6 +1,6 @@
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
-import { AppLoader } from '@boilerstone/ui/components/app'
-import { EmptyState } from '@boilerstone/ui/components/app'
+import { AppLoader } from '@boilerstone/ui/components/app/app-loader'
+import { EmptyState } from '@boilerstone/ui/components/app/empty-state'
 import {
   Accordion,
   AccordionContent,
@@ -260,7 +260,7 @@ export default function ComponentsPage() {
                 </Badge>
                 <Badge variant="outline" className="gap-1.5">
                   <Sparkles className="h-3 w-3" />
-                  Radix Nova
+                  Base Nova
                 </Badge>
                 <Badge variant="outline" className="gap-1.5">
                   <Zap className="h-3 w-3" />

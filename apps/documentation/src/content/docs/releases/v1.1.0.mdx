@@ -84,10 +84,10 @@ sequenceDiagram
 
 ### 5. The two modes: not every project has to version
 
-| Mode | Commit checks | Release |
-| --- | --- | --- |
-| **Without versions** | commitlint only | does not exist — no Release PR |
-| **Versioned** | commitlint + full semver | Release PR merged by a human, tag + versioned images |
+| Mode                 | Commit checks            | Release                                              |
+| -------------------- | ------------------------ | ---------------------------------------------------- |
+| **Without versions** | commitlint only          | does not exist — no Release PR                       |
+| **Versioned**        | commitlint + full semver | Release PR merged by a human, tag + versioned images |
 
 A new project starts **without versions**: every merge goes to staging, which is what you want early on. When the project goes to production, you switch on the versioned mode — the release-please config files already ship with the template. The build pipeline is identical in both modes.
 
@@ -221,10 +221,10 @@ sequenceDiagram
 
 #### 5. Les deux modes : tous les projets ne sont pas obligés de versionner
 
-| Mode | Vérification des commits | Release |
-| --- | --- | --- |
-| **Sans versions** | commitlint uniquement | n'existe pas — pas de Release PR |
-| **Versionné** | commitlint + semver complet | Release PR mergée par un humain, tag + images versionnées |
+| Mode              | Vérification des commits    | Release                                                   |
+| ----------------- | --------------------------- | --------------------------------------------------------- |
+| **Sans versions** | commitlint uniquement       | n'existe pas — pas de Release PR                          |
+| **Versionné**     | commitlint + semver complet | Release PR mergée par un humain, tag + images versionnées |
 
 Un nouveau projet démarre **sans versions** : chaque merge part sur staging, c'est ce qu'on veut en début de projet. Quand le projet va en production, on active le mode versionné — les fichiers de config release-please sont déjà dans le template. Le pipeline de build est identique dans les deux modes.
 

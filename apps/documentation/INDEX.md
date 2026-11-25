@@ -13,7 +13,7 @@
 - [0_env-file.mdx](./src/content/docs/core-features/0_env-file.mdx) - Guide to manage .env files
 - [1_auth.mdx](./src/content/docs/core-features/1_auth.mdx) - How the authentication system works, how to use it. Better Auth explanation.
 - [2_monitoring.mdx](./src/content/docs/core-features/2_monitoring.mdx) - How to report errors, log traces and monitor your project with Sentry
-- [3_filestorage.mdx](./src/content/docs/core-features/3_filestorage.mdx) - File storage explanation
+- [3_filestorage.mdx](./src/content/docs/core-features/3_filestorage.mdx) - Store files in an S3-compatible bucket and serve them through signed URLs
 - [4_ai.mdx](./src/content/docs/core-features/4_ai.mdx) - How to use LLMs in your code (Langfuse, Vercel AI SDK, etc.)
 - [5_email.mdx](./src/content/docs/core-features/5_email.mdx) - Email explanation
 - [99_examples.mdx](./src/content/docs/core-features/99_examples.mdx) - Provided examples
@@ -37,6 +37,7 @@
 ## Guides
 
 - [api-testing.mdx](./src/content/docs/guides/api-testing.mdx) - Guide to test the API using Vitest
+- [data-fetching.mdx](./src/content/docs/guides/data-fetching.mdx) - One way to read and write API data in the frontends — one hook file per feature, a key factory, the generated SDK
 - [database-management.mdx](./src/content/docs/guides/database-management.mdx) - Guide to manage the database
 - [encrypt-env.mdx](./src/content/docs/guides/encrypt-env.mdx) - Setup env file encryption
 - [feature-flags.mdx](./src/content/docs/guides/feature-flags.mdx) - Ship a merged change dark with a single env-var check
@@ -57,6 +58,7 @@
 - [v1.0.0.mdx](./src/content/docs/releases/v1.0.0.mdx) - First public release of the Lonestone boilerplate
 - [v1.1.0.mdx](./src/content/docs/releases/v1.1.0.mdx) - From writing a commit to deploying in production — one squash message, and everything else derives from it
 - [v1.2.0.mdx](./src/content/docs/releases/v1.2.0.mdx) - The installer and upgrade tool become one published CLI, and existing projects get a first bundle of fixes
+- [v1.3.0.mdx](./src/content/docs/releases/v1.3.0.mdx) - New projects choose their web apps, the API delegates its auth glue to a maintained package, and generated projects stop failing the intention checks
 
 ## Root
 

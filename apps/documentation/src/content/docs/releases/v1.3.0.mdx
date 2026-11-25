@@ -1,0 +1,23 @@
+---
+title: 1.3.0
+description: New projects choose their web apps, the API delegates its auth glue to a maintained package, and generated projects stop failing the intention checks
+---
+
+This release exists for three reasons. A new project no longer has to start with both web apps. The API stops carrying its own NestJS glue for Better Auth. And projects generated with 1.2.0 stop failing a check on every pull request.
+
+A new project can now leave out web apps when it is created:
+
+```bash
+pnpm dlx @lonestone/boilerstone-cli init my-project --apps web-ssr
+pnpm dlx @lonestone/boilerstone-cli init my-project --apps none
+```
+
+Without `--apps`, `init` asks one question per web app. A shared package that no remaining app uses is removed too.
+
+The generated list of changes is in [`CHANGELOG.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CHANGELOG.md). The reasons behind each change are in the body of its squash commit.
+
+## What this means for consumer projects
+
+- **`drop-producer-only-workflows` fixes a broken check.** `init` in 1.2.0 copied two workflows that only make sense in the boilerplate repository. In a generated project, `Intention gate` fails on every pull request. This intention removes them. A human must first remove both checks from the required checks of the default branch, or every pull request waits forever.
+- **`nestjs-better-auth` changes who can call the API. Read it before you apply it.** The in-tree guard, decorators and service are replaced by `@thallesp/nestjs-better-auth`. Its guard is global, so every route needs a session unless it is marked `@AllowAnonymous()` or `@OptionalAuth()`. A route that was public only because it had no guard answers 401 after the change. That is why this intention is `breaking-manual`: a person decides, route by route, what stays public. The API also moves from Express 4 to Express 5.
+- **The other changes need nothing from an existing project.** `--apps` only affects new projects. The fixes in the example features and the tooling scripts have no intention: a project that copied that code can compare it with the release if it wants to.

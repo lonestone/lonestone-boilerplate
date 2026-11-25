@@ -28,6 +28,7 @@ modules/feature-name/
 ├── feature-name.entity.ts     # If there is a single entity, a single entity file is fine
 ├── feature-name.contract.ts   # If there is a single entity, a single contract is fine
 ├── feature-name.mapper.ts    # Mapper for the entity (transform entity to contract, used in the controller)
+├── feature-name.factory.ts   # Factories that build the module's entities for tests and seeders
 └── contracts/                 # DTOs and validation schemas
     └── feature-name.contract.ts # If multiple contracts are needed, create a subfolder to store them together
 └── entities/                 # Database entities
@@ -43,7 +44,6 @@ modules/feature-name/
 - **Methods**: Use camelCase for method names (e.g., `getUserProfile`)
 - **Variables**: Use camelCase for variable names (e.g., `userProfile`)
 - **Constants**: Use UPPER_SNAKE_CASE for constants (e.g., `MAX_USERS`)
-- **Interfaces/Types**: Use PascalCase prefixed with 'I' for interfaces (e.g., `IUserProfile`)
 - **Enums**: Use PascalCase for enum names (e.g., `UserRole`)
 
 ## API Design
@@ -52,7 +52,10 @@ There is no module generator. Copy `apps/api/src/modules/example/posts/` and ada
 
 Then follow these steps (adapt as needed):
 
-1. Create an entity, using posts.entity.ts (or another existing entity file if not found) as reference;
+1. Create an entity, using `posts/entities/post.entity.ts` (or another existing entity file if not found) as reference;
+   a. Put one entity class per file, under `<module>/entities/<name>.entity.ts`. MikroORM discovers entities by importing each compiled `*.entity.js` as an ES module, and Node cannot see the exports of a compiled file that exports several classes, so those entities are silently skipped;
+   b. A module with several entities re-exports them from a barrel at `<module>.entity.ts`, like `auth.entity.ts` and `posts.entity.ts`;
+   c. When two entities reference each other, type the relation as `Rel<Entity>` (from `@mikro-orm/core`) to avoid a "Cannot access before initialization" error at startup;
 2. Create a contract, using posts.contract.ts (or another existing contract file if not found) as reference.
    a. The contract file should contain the schema for all CRUD actions (GET/POST/PUT/DELETE);
    b. If related contracts are needed (relations), create the related contract files first;
@@ -61,7 +64,8 @@ Then follow these steps (adapt as needed):
 4. Create a service, using posts.service.ts (or another existing service file if not found) as reference;
 5. Create a controller, using posts.controller.ts (or another existing controller file if not found) as reference;
 6. Create a module, using posts.module.ts (or another existing module file if not found) as reference;
-7. Add an e2e test under `tests/`, using posts.controller.e2e-spec.ts (or another existing e2e test if not found) as reference. See [API testing](/lonestone-boilerplate/guides/api-testing) for how those tests run.
+7. Add a factory per entity in `<module>.factory.ts`, using posts.factory.ts as reference. See [Entity factories](/lonestone-boilerplate/guides/factories);
+8. Add an e2e test under `tests/`, using posts.controller.e2e-spec.ts (or another existing e2e test if not found) as reference. Build its data with the factories. See [API testing](/lonestone-boilerplate/guides/api-testing) for how those tests run.
 
 ### Controllers
 
@@ -74,6 +78,27 @@ Then follow these steps (adapt as needed):
   - `PUT` for full updates
   - `PATCH` for partial updates
   - `DELETE` for removing resources
+- From about three query parameters up, stop stacking named `@Query` decorators. Declare one Zod object schema in the contract and take it whole with `@Query({ schema })`. The schema is the single, validated contract of the query string.
+
+```typescript
+// Avoid: one decorator per parameter
+@Get()
+search(
+  @Query('q', { schema: z.string() }) q: string,
+  @Query('tags', { schema: z.array(z.string()).optional() }) tags?: string[],
+  @Query('page', { schema: z.coerce.number().optional() }) page?: number,
+) {}
+
+// Prefer: one schema, one parameter
+const searchQuerySchema = z.object({
+  q: z.string(),
+  tags: z.array(z.string()).optional(),
+  page: z.coerce.number().optional(),
+})
+
+@Get()
+search(@Query({ schema: searchQuerySchema }) query: z.infer<typeof searchQuerySchema>) {}
+```
 
 ### Request Validation
 
@@ -191,6 +216,18 @@ export const userResponseSchema = z
 
 - Services should usually return entities, to be used accross other services without the need to transform contract back to entities (or re-fetch from the database). If the project aims for a full hexagonal architecture, you can return contracts from the services but they should be different from the contracts used in the controller.
 
+- Do not create a service for a plain join table (one that only links two entities). Set its rows inside the `wrap(entity).assign(...)` of the patch of the entity that owns the relation, so everything is written in the same `flush()`. If several places need the same assignment, extract it into a function.
+- Create a service for a join table only when it is rich: several columns of its own, or behaviour of its own.
+
+```typescript
+async update(id: string, data: UpdatePost) {
+  const post = await this.em.findOneOrFail(Post, id)
+  wrap(post).assign({ title: data.title, tags: data.tagIds }) // join rows follow
+  await this.em.flush() // one flush, one transaction
+  return post
+}
+```
+
 ### Response Mappers
 
 - It's a good practise to use a mapper to transform the entity to the contract in the controller.
@@ -239,10 +276,18 @@ export class User {
 ### Queries
 
 - Use the EntityManager for database operations
-- Use transactions for operations that modify multiple entities. MikroORM wraps each operation in a transaction by default, if they come from a controller.
+- A request does not run in a transaction. Each `em.flush()` runs in its own transaction, and that is all the default gives you.
+- One `flush()` in a method is atomic: leave it as is. Two or more `flush()` calls in one method are not atomic, so decorate the method with `@Transactional()` (from `@mikro-orm/decorators/legacy`; the class needs an `em` property). It joins a transaction that is already open. Do not wrap every method in `em.transactional()`.
+- Replace a collection with `em.assign(entity, { tags })` or `entity.tags.set(items)`. Do not remove and add items by hand: `set` skips the write when nothing changed.
 - Ensure you have a MikroORM Context. Mikro provides one for each request by default, but if you call a method from a CRON you'll need to create one or use the EnsureRequestContext decorator.
 - Optimize queries for performance
 - Use pagination for large result sets
+- No raw SQL. Use the EntityManager (`find`, `findOne`, `count`, `nativeUpdate`) or the MikroORM QueryBuilder (`em.createQueryBuilder(Entity)`). Raw SQL is only allowed for something neither can express. Write a comment that says what it is, and keep it as small as you can. A SQL fragment inside a MikroORM call, such as `raw('"likesCount" + 1')` in a `nativeUpdate`, is fine.
+
+### Seeders
+
+- A seeder gives volume. Generate it with the factories and Faker, in batches (`make(n)`, then one `flush()`).
+- Do not write one case per rule or per screen by hand. The tests cover the rules; each test builds its own data.
 
 ## Authentication & Authorization
 
@@ -288,3 +333,5 @@ export class PublicController {
 - Write integration tests for controllers
 - Use vitest for testing
 - Mock external dependencies
+- Build test data with the module factories, and pass only the values the test checks. See [Entity factories](/lonestone-boilerplate/guides/factories)
+- Write each test in three parts: arrange (create its own data with the factories), act, assert. Do not share a data set between tests, and do not call a seeder from a test: a shared set hides what each test depends on.

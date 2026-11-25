@@ -1,0 +1,23 @@
+---
+title: 1.5.1
+description: The CI stops billing runs nobody needs, a release waits for its note, and agents ship in batches and push only after the local checks pass
+---
+
+This release is about cost and order. Each change is small. Together they make the CI cheaper and releases harder to get wrong.
+
+The CI used to run on every push, even on a draft pull request, and kept going after a newer push made it useless. One project used its whole monthly allowance of GitHub minutes in two weeks this way. Draft pull requests now get no run. A new push cancels the run of the push before it, on pull requests and on `main`.
+
+A Release PR could be merged without its release note, because a private repository without GitHub Pro has no branch protection. Release Please then published the tag and the GitHub Release anyway. When `REQUIRE_RELEASE_NOTE` is `true`, the release is now held until the note lands on `main`.
+
+The guides changed to match. Agents ship releases in batches: merge the pull requests first, then write or rename the note on the Release PR, then merge it. They also push only when lint, typecheck and the tests of the changed packages pass locally.
+
+Last, `pnpm worktree:remove` no longer refuses to remove a merged worktree whose intention a release has since promoted.
+
+The generated list of changes is in [`CHANGELOG.md`](https://github.com/lonestone/lonestone-boilerplate/blob/main/CHANGELOG.md). The reasons behind each change are in the body of its squash commit.
+
+## What this means for consumer projects
+
+- **Apply `ci-skip-draft-pull-requests` before `ci-cancel-superseded-main-runs`.** The first one already copies the final `concurrency` block. A project that applied it can record the second one as skipped.
+- **`release-note-holds-the-tag` only guards a project that sets `REQUIRE_RELEASE_NOTE` to `true`.** A human decides that. Without the variable, releases are published as before.
+- **`release-in-batches` and `push-after-local-gates` change documentation and the `project-release` skill.** They touch no application code.
+- **`worktree-remove-promoted-intentions` needs `v1.5.0/worktree-commands`.** A project without `scripts/worktree.ts` skips it.

@@ -5,13 +5,26 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# GitHub bills each job in whole minutes. A new push to a pull request cancels the run of the
+# previous push. A new push to main cancels the run of main that is still going, so a series of
+# merges in a row leaves one run, for the last commit. CI still runs on main.
+# A draft pull request gets no run, because a branch that is pushed often would bill a full run
+# on every push. Marking the pull request ready for review starts the run.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   setup:
     name: 🛠️ Setup
+    # Every other job needs this one, so skipping it skips the whole run. A skipped job counts as a
+    # pass for a required check.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     outputs:
-      node-version: 24.13.0
+      node-version: 24.22.2
       pnpm-version: 10.28.2
     steps:
       # Full history + tags: the boilerstone test suite resolves this checkout
@@ -25,7 +38,7 @@ jobs:
       - name: 🔧 Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 24.13.0
+          node-version: 24.22.2
           pnpm-version: 10.28.2
 
       - name: 📁 Get pnpm store directory
@@ -74,8 +87,14 @@ jobs:
       - name: 🔍 Run linter
         run: pnpm lint
 
+      - name: 🎨 Check formatting
+        run: pnpm fmt:check
+
       - name: 🌐 Check translations
         run: pnpm --filter @boilerstone/i18n check-translations
+
+      - name: 📝 Test the release note gate
+        run: bash .github/scripts/release-note-gate.test.sh
 
   knip:
     name: ✂️ Knip

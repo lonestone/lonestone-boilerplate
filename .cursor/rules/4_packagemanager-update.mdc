@@ -19,13 +19,20 @@ Package.json files:
 - ./packages/openapi-generator/package.json
 - ./packages/ui/package.json
 - ./packages/i18n/package.json
-- ./.boilerstone/package.json
+- ./.boilerstone/cli/package.json
 
 Actions and workflows:
 - ./.github/actions/setup-node-pnpm/action.yml
 - ./.github/workflows/ci.yml
 - ./.github/workflows/deploy-docs.yml
+- ./.github/workflows/init-combos.yml
+- ./.github/workflows/pr-lint.yml
+- ./.github/workflows/release-please.yml
+- ./.github/workflows/setup-env.yml
 
 Docs and README:
 - README.md
+- ./apps/web-spa/README.md
+- ./apps/web-ssr/README.md
+- ./.github/ACTIONS.md
 - ./apps/documentation/src/content/docs/quickstart.mdx

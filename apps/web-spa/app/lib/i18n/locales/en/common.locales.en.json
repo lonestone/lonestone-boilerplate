@@ -120,6 +120,7 @@
     "postUnpublished": "Post unpublished",
     "postCreateError": "Failed to create post",
     "postUpdateError": "Failed to save post",
+    "postCoverImageError": "Post saved, but the cover image could not be saved",
     "postPublishError": "Failed to publish post",
     "postUnpublishError": "Failed to unpublish post"
   },
@@ -259,8 +260,7 @@
       "titlePlaceholder": "Enter a captivating title...",
       "titleRequired": "Title is required",
       "titleMinLength": "Title must be at least 3 characters",
-      "coverImage": "Cover image URL",
-      "coverImagePlaceholder": "https://images.example.com/cover.jpg",
+      "coverImage": "Cover image",
       "tags": "Tags",
       "tagsPlaceholder": "Comma-separated, e.g. TypeScript, React",
       "content": "Content",

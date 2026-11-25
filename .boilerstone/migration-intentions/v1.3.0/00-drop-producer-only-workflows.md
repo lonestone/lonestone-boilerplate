@@ -1,5 +1,5 @@
 ---
-id: unreleased/drop-producer-only-workflows
+id: v1.3.0/drop-producer-only-workflows
 domain: ci
 classification: migration
 ---
@@ -70,4 +70,4 @@ Work through the gaps in this order. Gap 1 must be closed before gap 2.
 
 ## Record Result
 
-Run `pnpm boilerplate upgrade record --id unreleased/drop-producer-only-workflows --applied` after validation passes, or record it as skipped with a reason. The id stays `unreleased/…` until the boilerplate release promotes it.
+Run `pnpm boilerplate upgrade record --id v1.3.0/drop-producer-only-workflows --applied` after validation passes, or record it as skipped with a reason.

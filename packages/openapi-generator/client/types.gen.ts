@@ -113,7 +113,6 @@ export type PostContentSchema = {
 export type CreatePostSchema = {
     title: string;
     content: Array<PostContentSchema>;
-    coverImage?: string;
     tags?: Array<string>;
 };
 
@@ -126,6 +125,20 @@ export type PostVersionSchema = {
     id: string;
     title: string;
     createdAt: string;
+};
+
+/**
+ * MediaSchema
+ *
+ * A stored file. `url` is a short-lived signed download link that expires at `expiresAt`. The storage key is never returned as a field.
+ */
+export type MediaSchema = {
+    id: string;
+    filename: string;
+    mimeType: string;
+    size: number;
+    url: string;
+    expiresAt: string;
 };
 
 /**
@@ -153,7 +166,7 @@ export type UserPostSchema = {
     publishedAt?: string | null;
     type: 'published' | 'draft';
     commentCount?: number;
-    coverImage?: string;
+    coverImage?: MediaSchema;
     tags: Array<TagSchema>;
 };
 
@@ -165,8 +178,34 @@ export type UserPostSchema = {
 export type UpdatePostSchema = {
     title?: string;
     content?: Array<PostContentSchema>;
-    coverImage?: string;
     tags?: Array<string>;
+};
+
+/**
+ * UpdatePostMultipartSchema
+ *
+ * Multipart body for updating a post and its cover image in one request
+ */
+export type UpdatePostMultipartSchema = {
+    title?: string;
+    content?: Array<PostContentSchema>;
+    tags?: Array<string>;
+    /**
+     * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
+     */
+    coverImage?: Blob | File;
+};
+
+/**
+ * SetCoverImageSchema
+ *
+ * Multipart body for setting the cover image of a post
+ */
+export type SetCoverImageSchema = {
+    /**
+     * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
+     */
+    file: Blob | File;
 };
 
 /**
@@ -183,7 +222,7 @@ export type UserPostsSchema = {
         publishedAt?: string | null;
         type: 'published' | 'draft';
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: MediaSchema;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
     }>;
@@ -209,7 +248,7 @@ export type PublicPostSchema = {
     publishedAt: string;
     slug?: string;
     commentCount?: number;
-    coverImage?: string;
+    coverImage?: MediaSchema;
     likesCount: number;
     tags: Array<TagSchema>;
 };
@@ -228,7 +267,7 @@ export type PublicPostsSchema = {
         publishedAt: string;
         slug?: string;
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: MediaSchema;
         likesCount: number;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
@@ -255,7 +294,7 @@ export type PublicAuthorPostsSchema = {
         publishedAt: string;
         slug?: string;
         commentCount?: number;
-        coverImage?: string;
+        coverImage?: MediaSchema;
         likesCount: number;
         tags: Array<TagSchema>;
         contentPreview: PostContentSchema;
@@ -995,7 +1034,6 @@ export type PostControllerCreatePostData = {
     body: {
         title: string;
         content: Array<PostContentSchema>;
-        coverImage?: string;
         tags?: Array<string>;
     };
     path?: never;
@@ -1033,7 +1071,6 @@ export type PostControllerUpdatePostData = {
     body: {
         title?: string;
         content?: Array<PostContentSchema>;
-        coverImage?: string;
         tags?: Array<string>;
     };
     path: {
@@ -1048,6 +1085,83 @@ export type PostControllerUpdatePostResponses = {
 };
 
 export type PostControllerUpdatePostResponse = PostControllerUpdatePostResponses[keyof PostControllerUpdatePostResponses];
+
+export type PostControllerUpdatePostViaMultipartData = {
+    /**
+     * UpdatePostMultipartSchema
+     *
+     * Multipart body for updating a post and its cover image in one request
+     */
+    body: {
+        title?: string;
+        content?: Array<PostContentSchema>;
+        tags?: Array<string>;
+        /**
+         * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
+         */
+        coverImage?: Blob | File;
+    };
+    path: {
+        /**
+         * Post identifier
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/admin/posts/{id}/multipart';
+};
+
+export type PostControllerUpdatePostViaMultipartResponses = {
+    200: UserPostSchema;
+};
+
+export type PostControllerUpdatePostViaMultipartResponse = PostControllerUpdatePostViaMultipartResponses[keyof PostControllerUpdatePostViaMultipartResponses];
+
+export type PostControllerRemoveCoverImageData = {
+    body?: never;
+    path: {
+        /**
+         * Post identifier
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/admin/posts/{id}/cover-image';
+};
+
+export type PostControllerRemoveCoverImageResponses = {
+    204: void;
+};
+
+export type PostControllerRemoveCoverImageResponse = PostControllerRemoveCoverImageResponses[keyof PostControllerRemoveCoverImageResponses];
+
+export type PostControllerSetCoverImageData = {
+    /**
+     * SetCoverImageSchema
+     *
+     * Multipart body for setting the cover image of a post
+     */
+    body: {
+        /**
+         * Cover image: JPEG, PNG, GIF or WebP, 10 MiB max
+         */
+        file: Blob | File;
+    };
+    path: {
+        /**
+         * Post identifier
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/admin/posts/{id}/cover-image';
+};
+
+export type PostControllerSetCoverImageResponses = {
+    200: UserPostSchema;
+};
+
+export type PostControllerSetCoverImageResponse = PostControllerSetCoverImageResponses[keyof PostControllerSetCoverImageResponses];
 
 export type PostControllerPublishPostData = {
     body?: never;
