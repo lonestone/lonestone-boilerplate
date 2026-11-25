@@ -71,6 +71,6 @@
     "@types/react": "catalog:frontend",
     "tsx": "^4.23.5",
     "typescript": "catalog:build",
-    "vitest": "^4.1.5"
+    "vitest": "catalog:build"
   }
 }

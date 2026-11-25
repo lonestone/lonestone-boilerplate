@@ -86,7 +86,7 @@
     "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "catalog:build",
     "auth": "1.7.28",
     "better-call": "1.4.6",
     "cross-env": "^10.1.0",
@@ -99,8 +99,8 @@
     "typescript": "catalog:build",
     "unplugin-swc": "^1.5.10",
     "vite": "catalog:build",
-    "vite-node": "^5.3.0",
-    "vitest": "^4.1.10"
+    "vite-node": "^6.0.0",
+    "vitest": "catalog:build"
   },
   "mikro-orm": {
     "preferTs": true,

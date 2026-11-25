@@ -37,7 +37,7 @@
   "devDependencies": {
     "@types/node": "catalog:build",
     "typescript": "catalog:build",
-    "vitest": "^4.1.10"
+    "vitest": "catalog:build"
   },
   "engines": {
     "node": ">=24.13.0"
