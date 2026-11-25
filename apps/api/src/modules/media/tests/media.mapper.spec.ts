@@ -1,5 +1,5 @@
 import { ServiceUnavailableException } from '@nestjs/common'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { StorageService } from '../../storage/storage.service'
 import { mediaSchema } from '../contracts/media.contract'
 import { Media } from '../media.entity'

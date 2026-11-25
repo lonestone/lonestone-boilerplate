@@ -2,7 +2,7 @@ import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import dotenvx from '@dotenvx/dotenvx'
 import swc from 'unplugin-swc'
-import { defineConfig } from 'vitest/config'
+import { defineConfig, lazyPlugins } from 'vite-plus'
 
 const apiRoot = import.meta.dirname
 const migrationsDir = resolve(apiRoot, 'src/modules/db/migrations')
@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     appType: 'custom',
-    plugins: [swcPlugin],
+    plugins: lazyPlugins(() => [swcPlugin]),
     resolve: {
       alias: resolveAlias,
     },

@@ -6,7 +6,7 @@
 
 import type { EntityManager, MikroORM } from '@mikro-orm/core'
 import type { INestApplication } from '@nestjs/common'
-import type { TestProject } from 'vitest/node'
+import type { TestProject } from 'vite-plus/test/node'
 import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import type { TestRequest } from '../helpers/test-auth.helper'
 

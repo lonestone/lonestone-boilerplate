@@ -9,7 +9,7 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "vp build",
     "start": "dotenvx run -- node --enable-source-maps dist/main.js",
     "dev": "dotenvx run -- vite-node --watch src/main.ts",
     "db:migration:init": "dotenvx run -- npx mikro-orm migration:create --initial",
@@ -22,8 +22,8 @@
     "db:fresh:seed": "dotenvx run -- npx mikro-orm schema:fresh --run --seed",
     "db:sync": "dotenvx run -- npx mikro-orm schema:update --run",
     "auth:generate": "dotenvx run -- auth generate --config src/modules/auth/auth.cli.mts --yes",
-    "test": "cross-env NODE_ENV=test vitest run --config=vite.config.ts",
-    "test:watch": "cross-env NODE_ENV=test vitest --config=vite.config.ts --watch",
+    "test": "cross-env NODE_ENV=test vp test run --config=vite.config.ts",
+    "test:watch": "cross-env NODE_ENV=test vp test --config=vite.config.ts --watch",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -95,12 +95,12 @@
     "supertest": "^7.3.2",
     "test": "^3.3.0",
     "testcontainers": "^11.14.0",
-    "ts-node": "^10.9.2",
     "typescript": "catalog:build",
     "unplugin-swc": "^1.5.10",
     "vite": "catalog:build",
     "vite-node": "^6.0.0",
-    "vitest": "catalog:build"
+    "vitest": "catalog:build",
+    "vite-plus": "catalog:build"
   },
   "mikro-orm": {
     "preferTs": true,

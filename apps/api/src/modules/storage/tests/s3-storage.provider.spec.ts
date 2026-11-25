@@ -5,7 +5,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
-import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vite-plus/test'
 import { S3StorageProvider, type S3StorageProviderOptions } from '../providers/s3-storage.provider'
 
 describe('S3StorageProvider', () => {

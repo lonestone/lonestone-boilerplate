@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, inject } from 'vitest'
+import { afterEach, beforeEach, inject } from 'vite-plus/test'
 import { clearTestSessionStore } from '../helpers/test-auth.helper'
 import { cleanupTestOrm, createTestOrm } from '../helpers/test-db.helper'
 

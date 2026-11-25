@@ -1,5 +1,5 @@
 import type { AuthSchemaField } from './auth-db.adapter'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { renderProperty } from './auth-schema-codegen'
 
 const unusedResolveEntity = () => undefined
