@@ -3,32 +3,24 @@ title: API Testing
 description: Which API tests to write and which not to write, and how to run them with Vitest
 ---
 
-## The rule: test the routes, end to end
+## The rule: test the routes, and the complex logic
 
-Test the API through its routes. Write `*.e2e-spec.ts` files, nothing else. Keep them few: one test per behaviour, not one per line or per branch. Coverage is not a goal.
+Two kinds of tests are worth writing. Keep them few: one test per behaviour, not one per line or per branch. Coverage is not a goal.
 
-**Write a test for:**
+**1. The routes, end to end (`*.e2e-spec.ts`).** Test the API through its routes:
 
 - The contract of a route: status code, response shape, and the rejection of invalid input.
 - Who may call it: anonymous, logged in, wrong user, wrong role.
 - The business error cases the service decides, such as a conflict or a forbidden state.
 
+**2. Complex business logic, as unit tests (`*.spec.ts`).** A pure function with many cases, such as a calculator or a parser, gets unit tests. Covering every case through the routes would cost more than testing the function directly.
+
 **Do not write:**
 
-- A `*.spec.ts` unit test of a service, mapper, controller, guard or processor. Its routes already cover it.
+- A unit test of a service, mapper, controller, guard or processor that its routes already cover.
 - A test for a one-off script, such as an import or a backfill. A one-off script needs no test and no service.
 - A test that only checks types, a schema shape or a mapping. The compiler and the contract already do that.
-- A second test that asserts what an existing e2e test already asserts.
-
-**One narrow exception.** A pure function with delicate logic that no route reaches (a parser, a price calculation) may have a `*.spec.ts`. Say so in one sentence in the pull request, under its own heading "Test exception", so a human decides. Without that heading, a new `*.spec.ts` file is a review failure.
-
-**What a reviewer checks:**
-
-- Every new or changed route has an e2e test for its contract, its access rules and its business errors.
-- No new `*.spec.ts` file, unless the pull request declares it as the exception above.
-- No test for a one-off script.
-
-The `*.spec.ts` files that already exist in the boilerplate are not a model for new tests.
+- A second test that asserts what an existing test already asserts.
 
 ## Launching tests
 

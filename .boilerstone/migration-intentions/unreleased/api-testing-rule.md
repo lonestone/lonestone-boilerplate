@@ -1,25 +1,25 @@
 ---
-id: unreleased/api-tests-e2e-only
+id: unreleased/api-testing-rule
 domain: docs
 classification: migration
 ---
 
-# Write API e2e tests only
+# Test the routes and the complex logic
 
 ## Goal
 
-The project's agent rules say which tests to write: API e2e tests for routes. They also say which tests not to write: unit tests, and tests for one-off scripts.
+The project's agent rules say which tests to write: API e2e tests for routes, and unit tests for complex business logic. They also say which tests not to write: unit tests of what routes already cover, and tests for one-off scripts.
 
 ## Why
 
 The testing guide showed unit tests and e2e tests side by side and never said which to pick. Agents wrote many tests, some with little value: unit tests of services that their routes already cover, and tests for one-off scripts. Those tests cost time to write, run and maintain.
 
-The guide now has a short, firm rule at the top, with one narrow exception that a pull request must declare. A reviewer can check it. `AGENTS.md` points to it.
+The guide now has a short, firm rule at the top. Complex pure logic, such as a calculator, is unit tested because covering all its cases through routes costs more. `AGENTS.md` points to the rule.
 
 ## Applies When
 
 - The project has the `api` app.
-- `apps/documentation/src/content/docs/guides/api-testing.mdx` does not contain the heading `The rule: test the routes, end to end`.
+- `apps/documentation/src/content/docs/guides/api-testing.mdx` does not contain the heading `The rule: test the routes, and the complex logic`.
 
 ## Do Not Apply When
 
@@ -27,11 +27,11 @@ The guide now has a short, firm rule at the top, with one narrow exception that 
 
 ## Observable Gaps
 
-1. **Rule in the guide** — signal: `api-testing.mdx` has no heading `The rule: test the routes, end to end`.
+1. **Rule in the guide** — signal: `api-testing.mdx` has no heading `The rule: test the routes, and the complex logic`.
    Copy the section from the staged reference and keep the project's own sections below it.
    Done when: the heading exists at the top of the guide.
 
-2. **Contradicting guidelines** — signal: `rg "Write unit tests" apps/documentation/src/content/docs/references` matches.
+2. **Contradicting guidelines** — signal: `rg "Write (unit|acceptance) tests" apps/documentation/src/content/docs/references` matches.
    Replace those bullets with the ones from the staged `general.mdx` and `backend.mdx`.
    Done when: the same `rg` returns nothing.
 
@@ -58,4 +58,4 @@ The guide now has a short, firm rule at the top, with one narrow exception that 
 
 ## Record Result
 
-Run `pnpm boilerplate upgrade record --id vX.Y.Z/api-tests-e2e-only --applied` after validation passes, or record it as skipped with a reason.
+Run `pnpm boilerplate upgrade record --id vX.Y.Z/api-testing-rule --applied` after validation passes, or record it as skipped with a reason.

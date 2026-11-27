@@ -17,12 +17,12 @@ src/test/
 │   └── test.global-setup.ts    # Container PostgreSQL partagé + env variables
 ```
 
-La config Vitest se trouve dans `apps/api/vitest.config.ts` (projets `unit` et `e2e`; on n'écrit que des tests e2e).
+La config Vitest se trouve dans `apps/api/vitest.config.ts` (projets `unit` et `e2e`).
 
 Dans le dossier `src/modules/*/tests/`, vous trouverez les tests pour le module `*`.
 
-- **Tests e2e** : fichiers `*.e2e-spec.ts`. Ce sont les seuls tests à écrire, pour les routes.
-- **Tests unitaires** : fichiers `*.spec.ts`. Pas par défaut : voir la règle dans `apps/documentation/src/content/docs/guides/api-testing.mdx`.
+- **Tests e2e** : fichiers `*.e2e-spec.ts`. Le test par défaut, pour les routes.
+- **Tests unitaires** : fichiers `*.spec.ts`. Seulement pour la logique métier complexe : voir la règle dans `apps/documentation/src/content/docs/guides/api-testing.mdx`.
 
 ## Commandes
 
