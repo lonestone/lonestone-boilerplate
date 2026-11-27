@@ -7,17 +7,33 @@ Testing is done using Vitest. We will outline the most important files and confi
 
 ## Launching tests
 
-You can launch the tests by running the following command:
+Run every test:
 
 ```bash
-cd apps/api && pnpm test
+pnpm test
 ```
 
-You can also launch the tests in watch mode by running the following command:
+Run only the tests that your branch can affect:
+
+```bash
+pnpm test:changed
+```
+
+`test:changed` compares your branch with `origin/main`, committed or not, and runs the tests that import a changed file.
+A change to a file that every test depends on runs the whole suite instead: the test setup and helpers, an entity, the database module, the Vitest config, a `package.json` or the lockfile.
+If nothing your tests import has changed, it runs no test.
+
+Run the tests in watch mode:
 
 ```bash
 cd apps/api && pnpm test:watch
 ```
+
+### When to run what
+
+- While you work, run `pnpm test:changed`. It keeps each run short.
+- Before you open a pull request, or before you call it ready to merge, run `pnpm test` once.
+- The CI always runs every test.
 
 ## Different kinds of tests
 

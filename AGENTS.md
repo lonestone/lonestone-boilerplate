@@ -26,3 +26,5 @@ Never write the token `BREAKING-CHANGE:` in a commit message unless you intend t
 Format with `pnpm fmt` (oxfmt). Never use Prettier.
 
 For any git worktree, use `pnpm worktree:create <name>` and `pnpm worktree:remove <name>` from the repo root (`pnpm worktree:create --help` for details). Never run `git worktree add` yourself: the worktree would share its Docker stack and ports with the main checkout.
+
+Tests: while you work, run `pnpm test:changed`; run `pnpm test` once before you open a pull request or call it ready to merge. Details in `apps/documentation/src/content/docs/guides/api-testing.mdx`, section "When to run what".

@@ -58,7 +58,8 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
     "check-translations": "tsx ./src/i18n-sync.ts",
-    "test": "vitest run --config=vitest.config.ts"
+    "test": "vitest run --config=vitest.config.ts",
+    "test:changed": "vitest run --config=vitest.config.ts --changed origin/main"
   },
   "dependencies": {
     "i18next": "catalog:frontend",
