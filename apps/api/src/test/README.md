@@ -21,8 +21,8 @@ La config Vitest se trouve dans `apps/api/vitest.config.ts` (projets `unit` et `
 
 Dans le dossier `src/modules/*/tests/`, vous trouverez les tests pour le module `*`.
 
-- **Tests unitaires** : fichiers `*.spec.ts`
-- **Tests e2e** : fichiers `*.e2e-spec.ts`
+- **Tests e2e** : fichiers `*.e2e-spec.ts`. Ce sont les seuls tests à écrire, pour les routes.
+- **Tests unitaires** : fichiers `*.spec.ts`. Pas par défaut : voir la règle dans `apps/documentation/src/content/docs/guides/api-testing.mdx`.
 
 ## Commandes
 

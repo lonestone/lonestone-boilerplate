@@ -1,9 +1,34 @@
 ---
 title: API Testing
-description: Guide to test the API using Vitest
+description: Which API tests to write and which not to write, and how to run them with Vitest
 ---
 
-Testing is done using Vitest. We will outline the most important files and configurations.
+## The rule: test the routes, end to end
+
+Test the API through its routes. Write `*.e2e-spec.ts` files, nothing else. Keep them few: one test per behaviour, not one per line or per branch. Coverage is not a goal.
+
+**Write a test for:**
+
+- The contract of a route: status code, response shape, and the rejection of invalid input.
+- Who may call it: anonymous, logged in, wrong user, wrong role.
+- The business error cases the service decides, such as a conflict or a forbidden state.
+
+**Do not write:**
+
+- A `*.spec.ts` unit test of a service, mapper, controller, guard or processor. Its routes already cover it.
+- A test for a one-off script, such as an import or a backfill. A one-off script needs no test and no service.
+- A test that only checks types, a schema shape or a mapping. The compiler and the contract already do that.
+- A second test that asserts what an existing e2e test already asserts.
+
+**One narrow exception.** A pure function with delicate logic that no route reaches (a parser, a price calculation) may have a `*.spec.ts`. Say so in one sentence in the pull request, under its own heading "Test exception", so a human decides. Without that heading, a new `*.spec.ts` file is a review failure.
+
+**What a reviewer checks:**
+
+- Every new or changed route has an e2e test for its contract, its access rules and its business errors.
+- No new `*.spec.ts` file, unless the pull request declares it as the exception above.
+- No test for a one-off script.
+
+The `*.spec.ts` files that already exist in the boilerplate are not a model for new tests.
 
 ## Launching tests
 
@@ -18,17 +43,6 @@ You can also launch the tests in watch mode by running the following command:
 ```bash
 cd apps/api && pnpm test:watch
 ```
-
-## Different kinds of tests
-
-We have two kinds of tests:
-
-- Unit tests
-- E2E tests
-
-Unit tests are tests that test a single unit of code. They are named like this: `*.service.spec.ts` or `*.processor.spec.ts`.
-
-E2E tests are tests that test the entire application end to end, which means mostly testing your controllers. They are named like this: `*.e2e-spec.ts`.
 
 :::note
 If you want to know more about testing in NestJS, you can read the [NestJS testing documentation](https://docs.nestjs.com/fundamentals/testing).

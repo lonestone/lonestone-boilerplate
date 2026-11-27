@@ -23,6 +23,8 @@ You must always follow these guidelines.
 Before committing or opening a PR, read `CONTRIBUTING.md` and follow it.
 Never write the token `BREAKING-CHANGE:` in a commit message unless you intend to force a major release.
 
+Tests: write API e2e tests (`*.e2e-spec.ts`) for routes only. No unit tests, no tests for one-off scripts. Read `apps/documentation/src/content/docs/guides/api-testing.mdx` before writing any test.
+
 Format with `pnpm fmt` (oxfmt). Never use Prettier.
 
 For any git worktree, use `pnpm worktree:create <name>` and `pnpm worktree:remove <name>` from the repo root (`pnpm worktree:create --help` for details). Never run `git worktree add` yourself: the worktree would share its Docker stack and ports with the main checkout.
