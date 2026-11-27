@@ -30,7 +30,7 @@ What a test sees does not change: each e2e test starts from empty tables, with i
 ## Do Not Apply When
 
 - `.boilerstone/migration-intentions/` exists. This is the boilerplate repository, or a fork that publishes its own intentions. Record as skipped.
-- Some entity has a numeric key from a sequence and some test relies on its value. Emptying a table does not reset its sequence. Apply gaps 1 and 4 only, and record why.
+- Some entity has a numeric key from a sequence and some test relies on its value. Emptying a table does not reset its sequence. Skip gap 3 only, and record why.
 
 ## Observable Gaps
 

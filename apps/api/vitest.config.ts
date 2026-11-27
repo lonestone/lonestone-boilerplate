@@ -6,6 +6,9 @@ const swcPlugin = swc.vite({
   module: { type: 'es6' },
 })
 
+/** An absolute glob with forward slashes: Vitest matches the triggers with picomatch, even on Windows. */
+const projectGlob = (path: string): string => resolve(__dirname, path).replaceAll('\\', '/')
+
 const resolveAlias = {
   src: resolve(__dirname, './src'),
 }
@@ -32,12 +35,13 @@ export default defineConfig({
     // `--changed` follows the imports of the test files. It cannot see the setup files, the schema
     // built from every entity, the config nor the dependencies: a change to one of them runs every test.
     forceRerunTriggers: [
-      resolve(__dirname, 'package.json'),
-      resolve(__dirname, 'vitest.config.ts'),
-      resolve(__dirname, 'src/test/**'),
-      resolve(__dirname, 'src/**/*.entity.ts'),
-      resolve(__dirname, 'src/modules/db/**'),
-      resolve(__dirname, '../../pnpm-lock.yaml'),
+      projectGlob('package.json'),
+      projectGlob('tsconfig.json'),
+      projectGlob('vitest.config.ts'),
+      projectGlob('src/test/**'),
+      projectGlob('src/**/*.entity.ts'),
+      projectGlob('src/modules/db/**'),
+      projectGlob('../../pnpm-lock.yaml'),
     ],
     projects: [
       {

@@ -20,8 +20,9 @@ pnpm test:changed
 ```
 
 `test:changed` compares your branch with `origin/main`, committed or not, and runs the tests that import a changed file.
-A change to a file that every test depends on runs the whole suite instead: the test setup and helpers, an entity, the database module, the Vitest config, a `package.json` or the lockfile.
+A change to a file that every test depends on runs the whole suite instead: the test setup and helpers, an entity, the database module, the Vitest config, the API's `tsconfig.json`, a `package.json` or the lockfile.
 If nothing your tests import has changed, it runs no test.
+It needs an up-to-date `origin/main`: run `git fetch origin main` first if your clone is old.
 
 Run the tests in watch mode:
 

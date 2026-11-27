@@ -143,10 +143,22 @@ export async function createTestOrm(dbConfig: TestDbConfig): Promise<TestOrmCont
   const dbName = `test_worker_${process.env.VITEST_POOL_ID ?? '1'}`
   process.env.DATABASE_NAME = dbName
   await ensureWorkerDatabase(dbConfig, dbName)
+  // Ends the connections an earlier test left open, so their work cannot reach this test
+  // nor hold a lock on its tables. It runs before MikroORM opens its own pool on the database.
+  await runOnServer(
+    dbConfig,
+    `select pg_terminate_backend(pid) from pg_stat_activity where datname = '${dbName}'`,
+  )
 
   const mikroOrmOptions = createOrmOptions(dbConfig, dbName)
   const orm = await MikroORM.init(mikroOrmOptions)
-  await emptyWorkerDatabase(orm)
+  try {
+    await emptyWorkerDatabase(orm)
+  } catch (error) {
+    // The test never receives this ORM, so cleanupTestOrm cannot close it.
+    await orm.close(true)
+    throw error
+  }
 
   return {
     orm,
