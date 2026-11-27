@@ -17,7 +17,7 @@ src/test/
 │   └── test.global-setup.ts    # Container PostgreSQL partagé + env variables
 ```
 
-La config Vitest se trouve dans `apps/api/vitest.config.ts` (projets `unit` et `e2e`).
+La config Vitest se trouve dans `apps/api/vitest.config.ts` (projets `unit` et `e2e`; on n'écrit que des tests e2e).
 
 Dans le dossier `src/modules/*/tests/`, vous trouverez les tests pour le module `*`.
 
@@ -97,39 +97,6 @@ describe('postController (e2e)', () => {
 
     // Assert
     expect(response.status).toBe(401)
-  })
-})
-```
-
-## Exemple de test unitaire (service)
-
-```typescript
-// posts.service.spec.ts
-import { Test } from '@nestjs/testing'
-import { PostService } from './posts.service'
-
-describe('PostService', () => {
-  let service: PostService
-
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      providers: [
-        PostService,
-        {
-          provide: 'EntityManager',
-          useValue: {
-            find: vi.fn(),
-            persistAndFlush: vi.fn(),
-          },
-        },
-      ],
-    }).compile()
-
-    service = module.get(PostService)
-  })
-
-  it('should create a post', async () => {
-    // ...
   })
 })
 ```
