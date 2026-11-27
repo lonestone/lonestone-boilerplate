@@ -27,6 +27,8 @@ jobs:
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
+      prs_created: ${{ steps.release.outputs.prs_created }}
+      pr: ${{ steps.release.outputs.pr }}
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -76,6 +78,39 @@ jobs:
           } > "${NOTES_FILE}.out"
           mv "${NOTES_FILE}.out" "$NOTES_FILE"
           gh release edit "$TAG" --notes-file "$NOTES_FILE"
+
+  # release-please pushes the Release PR with GITHUB_TOKEN. GitHub holds the pull_request runs of
+  # that push in action_required, with no job, and turns them into failures when the PR merges:
+  # one false failure mail per workflow. Delete them right after each bot push (prs_created is
+  # true when the PR was created or updated). Only github-actions[bot]'s held runs on the release
+  # branch go. A human push to the PR still runs every check, and real failures stay.
+  clean-bot-runs:
+    name: Clean the bot's pending runs
+    needs: release-please
+    if: ${{ needs.release-please.outputs.prs_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Delete the action_required runs of github-actions[bot]
+        # Best effort: a red cleanup would send the very mail it exists to stop.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
+        run: |
+          set -euo pipefail
+          # The runs appear a few seconds after the push: watch for two minutes.
+          for _ in $(seq 12); do
+            sleep 10
+            gh api --paginate -X GET "repos/${GITHUB_REPOSITORY}/actions/runs" \
+              -f branch="${BRANCH}" -f status=action_required -f actor='github-actions[bot]' \
+              --jq '.workflow_runs[] | select(.actor.login == "github-actions[bot]" and .conclusion == "action_required") | .id' |
+              while read -r id; do
+                echo "Deleting run ${id}"
+                gh run delete "${id}" --repo "${GITHUB_REPOSITORY}"
+              done
+          done
 
   # Builds the version images of the new tag. Called from here because the tag,
   # pushed with GITHUB_TOKEN, starts no workflow on its own.
