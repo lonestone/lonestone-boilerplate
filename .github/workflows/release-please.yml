@@ -79,11 +79,8 @@ jobs:
           mv "${NOTES_FILE}.out" "$NOTES_FILE"
           gh release edit "$TAG" --notes-file "$NOTES_FILE"
 
-  # release-please pushes the Release PR with GITHUB_TOKEN. GitHub holds the pull_request runs of
-  # that push in action_required, with no job, and turns them into failures when the PR merges:
-  # one false failure mail per workflow. Delete them right after each bot push (prs_created is
-  # true when the PR was created or updated). Only github-actions[bot]'s held runs on the release
-  # branch go. A human push to the PR still runs every check, and real failures stay.
+  # GitHub holds the pull_request runs of release-please's GITHUB_TOKEN pushes in action_required,
+  # then fails them at merge (false failure mails). Delete them after each bot push. Human pushes keep their checks.
   clean-bot-runs:
     name: Clean the bot's pending runs
     needs: release-please
@@ -105,7 +102,7 @@ jobs:
             sleep 10
             gh api --paginate -X GET "repos/${GITHUB_REPOSITORY}/actions/runs" \
               -f branch="${BRANCH}" -f status=action_required -f actor='github-actions[bot]' \
-              --jq '.workflow_runs[] | select(.actor.login == "github-actions[bot]" and .conclusion == "action_required") | .id' |
+              --jq '.workflow_runs[] | select(.actor.login == "github-actions[bot]") | .id' |
               while read -r id; do
                 echo "Deleting run ${id}"
                 gh run delete "${id}" --repo "${GITHUB_REPOSITORY}"

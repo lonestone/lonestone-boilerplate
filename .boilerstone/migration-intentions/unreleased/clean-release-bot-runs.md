@@ -16,8 +16,7 @@ release-please pushes the Release PR with `GITHUB_TOKEN`. GitHub holds the `pull
 
 ## Applies When
 
-- `.github/workflows/release-please.yml` exists and runs `googleapis/release-please-action`.
-- The project merges Release PRs and gets failure mails for runs with `action_required` and no job.
+- `.github/workflows/release-please.yml` runs `googleapis/release-please-action` with `token: ${{ secrets.GITHUB_TOKEN }}`.
 
 ## Do Not Apply When
 
@@ -26,12 +25,15 @@ release-please pushes the Release PR with `GITHUB_TOKEN`. GitHub holds the `pull
 
 ## Observable Gaps
 
-1. **Job missing** — signal: no `clean-bot-runs` job in `.github/workflows/release-please.yml`.
-   Copy the job from the staged reference.
-   Done when: the job exists, with `permissions: actions: write` and `continue-on-error: true` on its step.
-2. **Outputs missing** — signal: the `release-please` job has no `prs_created` and `pr` outputs.
+1. **Job missing** — signal: no `clean-bot-runs:` job in `.github/workflows/release-please.yml`.
+   Adapt the job from the staged reference, keeping the project's runner label.
+   Done when: `grep -n 'clean-bot-runs:' .github/workflows/release-please.yml` finds it.
+2. **Outputs missing** — signal: the `release-please` job has no `prs_created` or `pr` output.
    Add both, as in the staged reference.
-   Done when: `clean-bot-runs` reads `needs.release-please.outputs.pr` and `prs_created`.
+   Done when: both names appear under `outputs:` of that job.
+3. **Permission and guard missing** — signal: `clean-bot-runs` has no `actions: write` permission, no `prs_created == 'true'` condition, or no `continue-on-error: true` on its step.
+   Add whichever is missing.
+   Done when: the three lines are present in the job.
 
 ## Out of Scope
 
@@ -44,8 +46,8 @@ release-please pushes the Release PR with `GITHUB_TOKEN`. GitHub holds the `pull
 
 ## Validation
 
-- `actionlint` passes on `.github/workflows/release-please.yml`, if installed.
-- After the next Release PR push by the bot, `gh run list --status action_required` shows no run of `github-actions[bot]` on the release branch.
+- `grep -c 'clean-bot-runs' .github/workflows/release-please.yml` is at least 1.
+- `actionlint .github/workflows/release-please.yml` passes, if installed.
 
 ## Record Result
 
