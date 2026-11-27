@@ -58,10 +58,12 @@ One PostgreSQL container serves the whole test run. `src/test/setup/test.global-
 
 The global setup then builds a template database once, with `orm.schema.refresh()`. You don't have to do anything when you add an entity: the template is rebuilt from the entities on every run.
 
-Each e2e test gets its own database:
+Each e2e test starts from empty tables:
 
-- `src/test/setup/test.e2e-setup.ts` calls `createTestOrm` before each test. It copies the template with `CREATE DATABASE … TEMPLATE`, which is much faster than building the schema again.
-- After each test, `cleanupTestOrm` closes the ORM and drops the test's database.
+- Each Vitest worker copies the template once, with `CREATE DATABASE … TEMPLATE`, into its own database (`test_worker_<n>`). A worker runs its tests one at a time, so no two tests share a database at the same moment.
+- `src/test/setup/test.e2e-setup.ts` calls `createTestOrm` before each test. It deletes every row of the worker's database, which is faster than copying the template again.
+- After each test, `cleanupTestOrm` closes the ORM. The database stays for the worker's next test.
+- The e2e project sets `isolate: false`: a worker keeps the app modules loaded from one test file to the next. Don't leave a `vi.mock`, fake timers or a changed `process.env` behind in an e2e file: the next file in the same worker would see it.
 
 A test file only has to start its NestJS app on the test's ORM:
 
