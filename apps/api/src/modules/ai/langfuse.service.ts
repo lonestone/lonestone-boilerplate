@@ -7,17 +7,13 @@ import {
   updateActiveObservation,
   updateActiveTrace,
 } from '@langfuse/tracing'
+import type { SpanContext } from '@opentelemetry/api'
+import type { StreamTextOnErrorCallback, StreamTextOnFinishCallback, ToolSet } from 'ai'
+import type { AiGenerateOptions } from './contracts/ai.contract'
 import { Injectable, Logger } from '@nestjs/common'
-import { SpanContext, trace } from '@opentelemetry/api'
-import {
-  generateText,
-  streamText,
-  StreamTextOnErrorCallback,
-  StreamTextOnFinishCallback,
-  ToolSet,
-} from 'ai'
+import { trace } from '@opentelemetry/api'
+import { generateText, streamText } from 'ai'
 import { config } from '../../config/env.config'
-import { AiGenerateOptions } from './contracts/ai.contract'
 
 /** Attributes for the active (root) trace. Call this when you want to set name/output after the fact (e.g. single generation or after a group of LLM calls). */
 export interface FinalizeTraceInput {

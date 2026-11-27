@@ -1,6 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
 import { MediaMapper } from '../../media/media.mapper'
-import {
+import type {
   PublicAuthorPosts,
   PublicPost,
   PublicPosts,
@@ -8,13 +7,14 @@ import {
   UserPost,
   UserPosts,
 } from './contracts/posts.contract'
-import { Content, Post, PostVersion } from './posts.entity'
-import {
+import type { Content, Post, PostVersion } from './posts.entity'
+import type {
   PublicAuthorPostsResult,
   PublicPostResult,
   PublicPostsResult,
   UserPostsResult,
 } from './posts.service'
+import { Injectable, NotFoundException } from '@nestjs/common'
 
 type PostContentItem = UserPost['content'][number]
 

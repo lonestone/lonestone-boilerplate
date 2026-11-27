@@ -46,14 +46,17 @@ export const setCoverImageSchema = z.object({
 })
 ```
 
-3. Add `@MultipartFile` on the route. It hands the uploaded file to `TypedMultipartBody` as a `File`, typed from its first bytes rather than from what the client claims. `maxSize` stops an oversized file before it is loaded in memory.
+3. Add `@MultipartFile` on the route. It puts the uploaded file in the body as a `File`, typed from its first bytes rather than from what the client claims, so `@Body({ schema })` validates it. `maxSize` stops an oversized file before it is loaded in memory. `@ApiConsumes('multipart/form-data')` documents the route as multipart, so the generated SDK sends form data.
 
 ```typescript
-@TypedRoute.Put(':id/cover-image', userPostSchema)
+@Put(':id/cover-image')
+@ApiConsumes('multipart/form-data')
 @MultipartFile('file', { maxSize: 10 * 1024 * 1024 })
+@SerializeOptions({ schema: userPostSchema })
+@ApiOkResponse({ standardSchema: userPostSchema })
 async setCoverImage(
-  @TypedParam('id', postIdSchema) id: string,
-  @TypedMultipartBody(setCoverImageSchema) body: SetCoverImageInput,
+  @Param('id', { schema: postIdSchema }) id: string,
+  @Body({ schema: setCoverImageSchema }) body: SetCoverImageInput,
 ) {}
 ```
 

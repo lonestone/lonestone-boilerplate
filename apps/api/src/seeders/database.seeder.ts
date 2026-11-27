@@ -1,6 +1,7 @@
 /* oxlint-disable no-console */
 
-import { Dictionary, EntityManager } from '@mikro-orm/core'
+import type { Dictionary } from '@mikro-orm/core'
+import { EntityManager } from '@mikro-orm/core'
 import { Seeder } from '@mikro-orm/seeder'
 import { AuthSeeder } from '../modules/auth/auth.seeder'
 import { CommentSeeder } from '../modules/example/comments/comment.seeder'

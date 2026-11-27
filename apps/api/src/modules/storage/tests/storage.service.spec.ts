@@ -1,6 +1,9 @@
 import { InternalServerErrorException, ServiceUnavailableException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { IStorageProvider, StorageUnavailableError } from '../providers/storage-provider.interface'
+import {
+  type IStorageProvider,
+  StorageUnavailableError,
+} from '../providers/storage-provider.interface'
 import { StorageService } from '../storage.service'
 
 describe('StorageService', () => {

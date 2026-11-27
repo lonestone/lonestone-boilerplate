@@ -1,6 +1,6 @@
+import type { LanguageModelUsage } from 'ai'
 import type { AiGenerateOptions, TokenUsage } from './contracts/ai.contract'
 import { randomUUID } from 'node:crypto'
-import { LanguageModelUsage } from 'ai'
 import { LangfuseService } from './langfuse.service'
 
 // TODO private method should be static

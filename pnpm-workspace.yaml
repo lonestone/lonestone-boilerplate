@@ -4,22 +4,25 @@ packages:
   - .boilerstone/cli
 strictPeerDependencies: true
 # Several packages still declare typescript@^5; TS 6 is compatible here
+# @sentry/nestjs 10 peers on Nest <=11; Nest 12 support starts at @sentry/nestjs 11
 peerDependencyRules:
   allowedVersions:
     typescript: '6'
+    '@sentry/nestjs>@nestjs/common': '12'
+    '@sentry/nestjs>@nestjs/core': '12'
 # cookie@1 keeps Express (parse/serialize) and Astro <=7.1.1 (parseCookie) compatible under shamefully-hoist
 overrides:
   cookie: 1.1.1
-  vite: ^8.2.2
+  vite: ^8.3.8
 # We override dependencies here to ensure that the correct version of the dependency is used for each package
 catalogs:
   auth:
     '@thallesp/nestjs-better-auth': ^2.8.0
-    better-auth: ^1.6.25
+    better-auth: ^1.7.28
   build:
     '@types/node': ^25.9.5
     typescript: ^6.0.3
-    vite: ^8.2.2
+    vite: ^8.3.8
   frontend:
     '@hookform/resolvers': ^5.7.1
     '@react-router/dev': ^8.3.0
@@ -39,7 +42,7 @@ catalogs:
     tailwindcss: ^4.3.3
     tailwindcss-animate: ^1.0.7
   validation:
-    zod: ~4.3.6
+    zod: ^4.6.7
     zod-openapi: 5.4.6
 
 onlyBuiltDependencies:

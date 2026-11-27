@@ -1,17 +1,18 @@
-import { EntityManager, FilterQuery, raw } from '@mikro-orm/core'
-import { Injectable, NotFoundException } from '@nestjs/common'
-import slugify from 'slugify'
-import { User } from '../../auth/auth.entity'
-import { buildOrderBy } from '../../db/query-order.util'
-import { Comment } from '../../example/comments/comments.entity'
+import type { FilterQuery } from '@mikro-orm/core'
 import { MediaService } from '../../media/media.service'
-import {
+import type {
   CreatePostInput,
   PostFiltering,
   PostPagination,
   PostSorting,
   UpdatePostInput,
 } from './contracts/posts.contract'
+import { EntityManager, raw } from '@mikro-orm/core'
+import { Injectable, NotFoundException } from '@nestjs/common'
+import slugify from 'slugify'
+import { User } from '../../auth/auth.entity'
+import { buildOrderBy } from '../../db/query-order.util'
+import { Comment } from '../../example/comments/comments.entity'
 import { Tag } from '../tags/tag.entity'
 import { Post, PostVersion } from './posts.entity'
 

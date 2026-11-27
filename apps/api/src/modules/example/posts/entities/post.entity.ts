@@ -21,7 +21,7 @@ export class Post {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
-  @ManyToOne(() => User, { fieldName: 'userId' })
+  @ManyToOne(() => User, { fieldName: 'userId', updateRule: 'cascade' })
   @Index()
   user!: User
 
@@ -52,7 +52,12 @@ export class Post {
   @Property({ default: 0 })
   likesCount: number = 0
 
-  @ManyToMany(() => Tag, (tag) => tag.posts, { owner: true, pivotTable: 'post_tag' })
+  @ManyToMany(() => Tag, (tag) => tag.posts, {
+    owner: true,
+    pivotTable: 'post_tag',
+    updateRule: 'cascade',
+    deleteRule: 'cascade',
+  })
   tags = new Collection<Tag>(this)
 
   async currentVersion() {

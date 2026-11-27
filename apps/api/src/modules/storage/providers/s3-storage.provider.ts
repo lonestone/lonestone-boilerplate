@@ -9,12 +9,12 @@ import {
 } from '@aws-sdk/client-s3'
 import type { BucketLocationConstraint } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { OnModuleInit } from '@nestjs/common'
+import { type OnModuleInit } from '@nestjs/common'
 import {
-  IStorageProvider,
-  SignedUrl,
-  SignedUrlOptions,
-  StorageProviderUploadInput,
+  type IStorageProvider,
+  type SignedUrl,
+  type SignedUrlOptions,
+  type StorageProviderUploadInput,
 } from './storage-provider.interface'
 
 export interface S3StorageProviderOptions {

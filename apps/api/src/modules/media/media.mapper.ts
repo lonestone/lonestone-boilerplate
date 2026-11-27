@@ -1,6 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common'
 import { StorageService } from '../storage/storage.service'
-import { MediaResponse } from './contracts/media.contract'
+import { type MediaResponse } from './contracts/media.contract'
 import { Media } from './media.entity'
 
 @Injectable()

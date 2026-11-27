@@ -11,16 +11,16 @@ import { beforeEach, describe, expect, it } from 'vitest'
  * - Auth guard behavior (401 when unauthenticated)
  */
 import {
-  IStorageProvider,
-  SignedUrl,
+  type IStorageProvider,
+  type SignedUrl,
   STORAGE_PROVIDER,
-  StorageProviderUploadInput,
+  type StorageProviderUploadInput,
 } from '../../../storage/providers/storage-provider.interface'
 import { Media } from '../../../media/media.entity'
 import { initializeTestApp } from '../../../../test/helpers/test-app.helper'
-import { createRequest, TestRequest } from '../../../../test/helpers/test-auth.helper'
+import { createRequest, type TestRequest } from '../../../../test/helpers/test-auth.helper'
 import { createUserWithSession } from '../../../../test/helpers/test-user.helpers'
-import { BetterAuthSession } from '../../../auth/auth.config'
+import type { BetterAuthSession } from '../../../auth/auth.config'
 import { Post } from '../posts.entity'
 import { createUserData } from '../../../auth/auth.factory'
 import { PostFactory, PostVersionFactory } from '../posts.factory'

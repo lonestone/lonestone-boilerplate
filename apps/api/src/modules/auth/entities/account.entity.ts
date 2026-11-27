@@ -12,7 +12,7 @@ export class Account {
   @Property()
   providerId!: string
 
-  @ManyToOne(() => User, { fieldName: 'userId' })
+  @ManyToOne(() => User, { fieldName: 'userId', updateRule: 'cascade' })
   user!: User
 
   @Property({ nullable: true })

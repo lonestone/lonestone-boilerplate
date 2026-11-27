@@ -2,7 +2,7 @@ import { IncomingMessage, ServerResponse } from 'node:http'
 import { OpenTelemetryModule } from '@amplication/opentelemetry-nestjs'
 import { Module } from '@nestjs/common'
 import { ConfigModule as NestConfigModule } from '@nestjs/config'
-import { APP_FILTER } from '@nestjs/core'
+import { APP_FILTER, HttpAdapterHost } from '@nestjs/core'
 import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup'
 import { LoggerModule } from 'nestjs-pino'
 import { AppController } from './app.controller'
@@ -100,7 +100,10 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
   providers: [
     {
       provide: APP_FILTER,
-      useClass: SentryGlobalFilter,
+      // @sentry/nestjs 10 ships without decorator metadata, so Nest cannot see what to inject.
+      // Pass the HTTP adapter explicitly until Sentry 11, which supports Nest 12.
+      useFactory: (host: HttpAdapterHost) => new SentryGlobalFilter(host.httpAdapter),
+      inject: [HttpAdapterHost],
     },
   ],
 })

@@ -16,11 +16,16 @@ export class Comment {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
-  @ManyToOne(() => Post, { fieldName: 'postId' })
+  @ManyToOne(() => Post, { fieldName: 'postId', updateRule: 'cascade' })
   @Index()
   post!: Rel<Post>
 
-  @ManyToOne(() => User, { fieldName: 'userId', nullable: true })
+  @ManyToOne(() => User, {
+    fieldName: 'userId',
+    nullable: true,
+    updateRule: 'cascade',
+    deleteRule: 'set null',
+  })
   @Index()
   user?: User
 
@@ -33,7 +38,12 @@ export class Comment {
   @Property()
   createdAt: Date = new Date()
 
-  @ManyToOne(() => Comment, { fieldName: 'parentId', nullable: true })
+  @ManyToOne(() => Comment, {
+    fieldName: 'parentId',
+    nullable: true,
+    updateRule: 'cascade',
+    deleteRule: 'set null',
+  })
   @Index()
   parent?: Comment
 

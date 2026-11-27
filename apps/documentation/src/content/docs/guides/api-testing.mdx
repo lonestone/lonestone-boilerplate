@@ -38,6 +38,8 @@ If you want to know more about testing in NestJS, you can read the [NestJS testi
 
 We use Testcontainers to mock the infrastructure, mainly for things like databases, redis, etc.
 
+`test.global-setup.ts` starts one shared PostgreSQL container, then applies all **source** migrations once on a dedicated database (`orm.migrator.up()`) and calls `orm.migrator.checkSchema()` against `snapshot.json`. If entities have drifted from that snapshot, `pnpm test` fails before the first test. This does not run the compiled migrations in `dist/`, and it does not belong in `test.e2e-setup.ts` (that file creates a fresh `test_<uuid>` database per test).
+
 You will find an example of launching the database in the `test/test.utils.ts` file:
 
 ```typescript

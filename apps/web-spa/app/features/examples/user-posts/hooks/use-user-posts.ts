@@ -9,7 +9,6 @@ import {
   postControllerUnpublishPost,
   postControllerUpdatePost,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
-import { FilterRule } from '@lonestone/nzoth/client'
 import type { QueryClient } from '@tanstack/react-query'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -36,9 +35,7 @@ export function useUserPosts(params: UserPostsListParams) {
         query: {
           offset: (params.page - 1) * params.pageSize,
           pageSize: params.pageSize,
-          filter: params.search
-            ? [{ property: 'title', rule: FilterRule.LIKE, value: params.search }]
-            : [],
+          filter: params.search ? [{ property: 'title', rule: 'like', value: params.search }] : [],
         },
         signal,
         throwOnError: true,

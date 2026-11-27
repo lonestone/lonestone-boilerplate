@@ -14,14 +14,14 @@ export class PostVersion {
 
   // Rel<> keeps the decorator metadata from reading Post while the two files
   // import each other.
-  @ManyToOne(() => Post, { fieldName: 'postId' })
+  @ManyToOne(() => Post, { fieldName: 'postId', updateRule: 'cascade' })
   post!: Rel<Post>
 
   @Property()
   @Index()
   title!: string
 
-  @Property({ type: 'json' })
+  @Property({ type: 'json', nullable: true })
   content?: Content[]
 
   @Property()

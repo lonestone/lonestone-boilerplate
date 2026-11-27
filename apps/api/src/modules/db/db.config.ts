@@ -10,12 +10,16 @@ type CreateMikroOrmOptions = {
   isTest?: boolean
 } & Options
 
+// Folder discovery, for the MikroORM CLI. Code that runs through Vite passes the classes
+// from `entities.ts` instead (see `db.service.ts`).
 export const entityGlobs = {
   entities: ['./dist/**/*.entity.js'],
   entitiesTs: ['./src/**/*.entity.ts'],
 }
 
 export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
+  const { migrations, ...rest } = options ?? {}
+
   return defineConfig({
     host: config.database.host,
     port: config.database.port,
@@ -36,8 +40,11 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
     migrations: {
       path: './dist/modules/db/migrations',
       pathTs: './src/modules/db/migrations',
+      // MikroORM writes `${snapshotName}.json` in the migrations folder.
+      snapshotName: 'snapshot',
       allOrNothing: true,
       disableForeignKeys: false,
+      ...migrations,
     },
     seeder: {
       path: './dist/seeders',
@@ -47,7 +54,7 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
       emit: 'ts',
       fileName: (className: string) => className,
     },
-    ...options,
+    ...rest,
   })
 }
 

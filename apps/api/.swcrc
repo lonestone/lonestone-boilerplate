@@ -13,5 +13,8 @@
     "target": "esnext",
     "keepClassNames": true
   },
+  "module": {
+    "type": "es6"
+  },
   "minify": false
 }

@@ -1,8 +1,8 @@
 import {
-  CallHandler,
-  ExecutionContext,
+  type CallHandler,
+  type ExecutionContext,
   Injectable,
-  NestInterceptor,
+  type NestInterceptor,
   UseInterceptors,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
@@ -44,15 +44,15 @@ class FileToBodyInterceptor implements NestInterceptor {
 
 /**
  * Accepts one file from a multipart field and adds it to the body as a `File`, so the route's
- * `TypedMultipartBody` schema validates it with `z.file()`. Declare the field in that schema to
- * document it in OpenAPI.
+ * `@Body({ schema })` validates it with `z.file()`. Declare the field in that schema, and add
+ * `@ApiConsumes('multipart/form-data')`, to document it in OpenAPI.
  *
  * The file's type is read from its first bytes: the MIME type sent by the client is ignored.
  * `maxSize` stops Multer before an oversized file is loaded in memory (413).
  *
  * @example
  * @MultipartFile('file', { maxSize: 10 * 1024 * 1024 })
- * async setCoverImage(@TypedMultipartBody(setCoverImageSchema) body: SetCoverImageInput) {}
+ * async setCoverImage(@Body({ schema: setCoverImageSchema }) body: SetCoverImageInput) {}
  */
 export function MultipartFile(fieldName: string, options: MultipartFileOptions): MethodDecorator {
   const maxFields = options.maxFields ?? 0

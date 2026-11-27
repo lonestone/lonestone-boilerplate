@@ -47,7 +47,7 @@ export const commentsControllerGetCommentCount = <ThrowOnError extends boolean =
 
 export const commentsControllerGetCommentReplies = <ThrowOnError extends boolean = false>(options: Options<CommentsControllerGetCommentRepliesData, ThrowOnError>) => (options.client ?? client).get<CommentsControllerGetCommentRepliesResponses, unknown, ThrowOnError>({ url: '/api/posts/{postSlug}/comments/{commentId}/replies', ...options });
 
-export const postControllerGetUserPosts = <ThrowOnError extends boolean = false>(options: Options<PostControllerGetUserPostsData, ThrowOnError>) => (options.client ?? client).get<PostControllerGetUserPostsResponses, unknown, ThrowOnError>({ url: '/api/admin/posts', ...options });
+export const postControllerGetUserPosts = <ThrowOnError extends boolean = false>(options?: Options<PostControllerGetUserPostsData, ThrowOnError>) => (options?.client ?? client).get<PostControllerGetUserPostsResponses, unknown, ThrowOnError>({ url: '/api/admin/posts', ...options });
 
 export const postControllerCreatePost = <ThrowOnError extends boolean = false>(options: Options<PostControllerCreatePostData, ThrowOnError>) => (options.client ?? client).post<PostControllerCreatePostResponses, unknown, ThrowOnError>({
     url: '/api/admin/posts',
@@ -99,7 +99,7 @@ export const publicPostControllerGetRandomPost = <ThrowOnError extends boolean =
 
 export const publicPostControllerGetPost = <ThrowOnError extends boolean = false>(options: Options<PublicPostControllerGetPostData, ThrowOnError>) => (options.client ?? client).get<PublicPostControllerGetPostResponses, unknown, ThrowOnError>({ url: '/api/public/posts/{slug}', ...options });
 
-export const publicPostControllerGetPosts = <ThrowOnError extends boolean = false>(options: Options<PublicPostControllerGetPostsData, ThrowOnError>) => (options.client ?? client).get<PublicPostControllerGetPostsResponses, unknown, ThrowOnError>({ url: '/api/public/posts', ...options });
+export const publicPostControllerGetPosts = <ThrowOnError extends boolean = false>(options?: Options<PublicPostControllerGetPostsData, ThrowOnError>) => (options?.client ?? client).get<PublicPostControllerGetPostsResponses, unknown, ThrowOnError>({ url: '/api/public/posts', ...options });
 
 export const publicPostControllerLikePost = <ThrowOnError extends boolean = false>(options: Options<PublicPostControllerLikePostData, ThrowOnError>) => (options.client ?? client).post<PublicPostControllerLikePostResponses, unknown, ThrowOnError>({ url: '/api/public/posts/{slug}/like', ...options });
 

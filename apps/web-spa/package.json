@@ -16,7 +16,6 @@
     "@boilerstone/ui": "workspace:*",
     "@fontsource/source-sans-pro": "^5.3.0",
     "@hookform/resolvers": "catalog:frontend",
-    "@lonestone/nzoth": "^1.2.0",
     "@react-router/node": "catalog:frontend",
     "@react-router/serve": "catalog:frontend",
     "@tanstack/react-query": "catalog:frontend",

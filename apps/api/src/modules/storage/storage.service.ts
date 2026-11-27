@@ -6,9 +6,9 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common'
 import {
-  IStorageProvider,
-  SignedUrl,
-  SignedUrlOptions,
+  type IStorageProvider,
+  type SignedUrl,
+  type SignedUrlOptions,
   STORAGE_PROVIDER,
   StorageUnavailableError,
 } from './providers/storage-provider.interface'
