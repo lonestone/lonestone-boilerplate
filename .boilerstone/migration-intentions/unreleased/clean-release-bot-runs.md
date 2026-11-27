@@ -26,14 +26,14 @@ release-please pushes the Release PR with `GITHUB_TOKEN`. GitHub holds the `pull
 ## Observable Gaps
 
 1. **Job missing** — signal: no `clean-bot-runs:` job in `.github/workflows/release-please.yml`.
-   Adapt the job from the staged reference, keeping the project's runner label.
+   Adapt the job from the staged `.github/workflows/release-please.yml`, keeping the project's runner label.
    Done when: `grep -n 'clean-bot-runs:' .github/workflows/release-please.yml` finds it.
 2. **Outputs missing** — signal: the `release-please` job has no `prs_created` or `pr` output.
-   Add both, as in the staged reference.
+   Add both, as in the staged `.github/workflows/release-please.yml`.
    Done when: both names appear under `outputs:` of that job.
 3. **Permission and guard missing** — signal: `clean-bot-runs` has no `actions: write` permission, no `prs_created == 'true'` condition, or no `continue-on-error: true` on its step.
-   Add whichever is missing.
-   Done when: the three lines are present in the job.
+   Add whichever is missing, as in the staged `.github/workflows/release-please.yml`.
+   Done when: `grep -c -e 'actions: write' -e "prs_created == 'true'" -e 'continue-on-error: true' .github/workflows/release-please.yml` is at least 3.
 
 ## Out of Scope
 
