@@ -1,8 +1,0 @@
----
-description: 
-globs: apps/api/**
-alwaysApply: false
----
- # Rules
-
-The most important document you need is [backend.mdx](../../apps/documentation/src/content/docs/references/backend.mdx). Always read this file.

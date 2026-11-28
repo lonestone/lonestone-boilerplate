@@ -1,9 +1,0 @@
----
-description: React/Vite Vite React TypeScript You are an expert in TypeScript, Vite React Router, React, Tailwind, Tanstack react-query.
-globs: apps/web-ssr/**,apps/web-spa/**
-alwaysApply: false
----
-
-# Your rule content
-
-- Follow guidelines in [frontend.mdx](../../apps/documentation/src/content/docs/references/frontend.mdx)
