@@ -1,0 +1,7 @@
+---
+description: Project rules for agents
+globs:
+alwaysApply: true
+---
+
+Read [AGENTS.md](../../AGENTS.md) before starting a new conversation, and follow it.
