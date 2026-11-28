@@ -39,13 +39,14 @@ Let's explore each of these elements in detail.
 
 The snapshot is a JSON file located by default in `apps/api/src/modules/db/migrations/.snapshot.json`. It's a crucial concept to understand: **the snapshot is MikroORM's memory of what your entities looked like when you last generated a migration.**
 
-Unlike some ORMs that inspect your actual database to detect changes, MikroORM works entirely from your codebase:
+Unlike some ORMs that inspect your actual database to detect changes, MikroORM generates migrations from your codebase:
 
-- It never connects to your database to see what's there
-- It only compares your current TypeScript entities against this snapshot file
+- It compares your current TypeScript entities against this snapshot file
 - The snapshot represents the "before" state, your current entities represent the "after" state
 
 This is why committing the snapshot to Git is mandatory - it's the only way MikroORM knows what changed between migrations.
+
+There is one exception. After `db:migrate:up` or `db:migrate:down`, MikroORM compares the migrated database with the snapshot. When they differ, it rewrites the snapshot from the database, so that the next migration starts from what the database really holds. A database that has drifted from the entities therefore drags the snapshot with it.
 
 **How it works:**
 
@@ -66,6 +67,20 @@ One thing to keep in mind: **if someone modifies the database schema manually (o
 :::caution[Important]
 The snapshot file must be committed to Git along with migration files. If someone generates a migration but doesn't commit the updated snapshot, the next person will see duplicate changes when generating their migration.
 :::
+
+### When the snapshot drifts
+
+`pnpm --filter=api db:migrate:check` compares the entities with the snapshot. On a clean branch, it reports no changes.
+
+The snapshot has drifted when that check reports changes nobody made, or when a new migration holds changes unrelated to your entities. It usually comes from a local database changed outside the migrations (`db:sync`, tables left by another branch), from a migration written from scratch, or from a rollback. Each time, MikroORM rewrote the snapshot from a database that no longer matched the entities.
+
+Never trim the generated migration by hand to hide the extra changes: the snapshot stays wrong and the next migration brings them back. Fix the drift once:
+
+1. Rebuild your local database from the migrations alone with `pnpm --filter=api db:migrate:fresh`. This removes anything the migrations did not create.
+2. Delete the snapshot file and run `pnpm --filter=api db:migrate:create`. Without a snapshot, MikroORM compares the entities with this database and writes the snapshot from the entities.
+3. If it writes a migration, that migration is the gap between the migration history and the entities. Review it and keep it. Write each statement so that it does nothing on a database that already matches, since production may already hold the change.
+4. If it reports no changes, it writes no snapshot either. Run `pnpm --filter=api db:migrate:create --blank` to write it, then delete the empty migration it created.
+5. `pnpm --filter=api db:migrate:check` reports no changes. Commit the snapshot, and the migration if there is one.
 
 ### Migration Files
 

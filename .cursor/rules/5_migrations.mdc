@@ -8,3 +8,5 @@ Migrations should be created using the `mikro-orm` CLI, after modifying any enti
 cd apps/api
 pnpm db:migrate:create
 ```
+
+Never write a migration file from scratch. Run `pnpm db:migrate:check` before touching an entity: it must report no changes. If it does, or if a generated migration holds changes unrelated to your entities, the snapshot has drifted: stop and say so instead of trimming the file. See "Migrations" in the backend guidelines.
