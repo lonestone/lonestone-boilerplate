@@ -55,13 +55,13 @@ export const getCryptoPriceTool = tool({
 
       const data = await response.json()
       return {
-        success: true,
+        success: true as const,
         data,
         timestamp: new Date().toISOString(),
       }
     } catch (error) {
       return {
-        success: false,
+        success: false as const,
         error: error instanceof Error ? error.message : 'Unknown error occurred',
         timestamp: new Date().toISOString(),
       }

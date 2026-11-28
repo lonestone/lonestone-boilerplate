@@ -3,10 +3,10 @@ packages:
   - apps/*
   - .boilerstone/cli
 strictPeerDependencies: true
-# Several packages still declare typescript@^5; TS 6 is compatible here
+# Several packages still declare typescript@^5; TS 7 is compatible here
 peerDependencyRules:
   allowedVersions:
-    typescript: '6'
+    typescript: '7'
 # cookie@1 keeps Express (parse/serialize) and Astro <=7.1.1 (parseCookie) compatible under shamefully-hoist
 overrides:
   cookie: 1.1.1
@@ -18,7 +18,8 @@ catalogs:
     better-auth: ^1.6.25
   build:
     '@types/node': ^25.9.5
-    typescript: ^6.0.3
+    # TypeScript 7 is the native compiler; its `tsc` runs every typecheck / build script
+    typescript: ^7.0.2
     vite: ^8.2.2
   frontend:
     '@hookform/resolvers': ^5.7.1

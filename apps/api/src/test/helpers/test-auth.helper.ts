@@ -4,7 +4,7 @@ import type { DynamicModule } from '@nestjs/common'
 import { INestApplication } from '@nestjs/common'
 import { AuthModule as BetterAuthModule } from '@thallesp/nestjs-better-auth'
 import { NextFunction, Request, Response } from 'express'
-import { BetterAuthSession } from 'src/modules/auth/auth.config'
+import { BetterAuthSession } from '../../modules/auth/auth.config'
 import { User } from '../../modules/auth/auth.entity'
 import supertest from 'supertest'
 

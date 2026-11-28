@@ -3,10 +3,8 @@
   "display": "Base Config",
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@boilerstone/*": ["packages/*/src"]
-    },
-    "ignoreDeprecations": "6.0"
+    }
   }
 }
