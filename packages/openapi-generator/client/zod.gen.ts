@@ -58,7 +58,7 @@ export const zUseCase4ChatSessionRequest = z.object({
  */
 export const zCreateCommentSchema = z.object({
     content: z.string().min(1).max(1000),
-    parentId: z.optional(z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/))
+    parentId: z.optional(z.uuid())
 });
 
 /**
@@ -174,7 +174,7 @@ export const zChatMessageWithSchemaType = z.object({
             totalTokens: z.number()
         })),
         finishReason: z.optional(z.string()),
-        timestamp: z.optional(z.iso.datetime().regex(/^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/)),
+        timestamp: z.optional(z.iso.datetime()),
         toolCalls: z.optional(z.array(z.object({
             toolCallId: z.string(),
             toolName: z.string(),
@@ -224,7 +224,7 @@ export const zChatSchemaType = z.enum([
  * Schema for a comment
  */
 export const zCommentSchema = z.object({
-    id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+    id: z.uuid(),
     content: z.string(),
     authorName: z.union([
         z.string(),
@@ -233,16 +233,16 @@ export const zCommentSchema = z.object({
     createdAt: z.string(),
     user: z.union([
         z.object({
-            id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+            id: z.uuid(),
             name: z.string()
         }),
         z.null()
     ]),
     parentId: z.union([
-        z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+        z.uuid(),
         z.null()
     ]),
-    replyIds: z.optional(z.array(z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/))),
+    replyIds: z.optional(z.array(z.uuid())),
     replyCount: z.optional(z.number())
 });
 
@@ -309,7 +309,7 @@ export const zUpdatePostSchema = z.object({
  * Schema for a post version
  */
 export const zPostVersionSchema = z.object({
-    id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+    id: z.uuid(),
     title: z.string(),
     createdAt: z.string()
 });
@@ -320,7 +320,7 @@ export const zPostVersionSchema = z.object({
  * A stored file. `url` is a short-lived signed download link that expires at `expiresAt`. The storage key is never returned as a field.
  */
 export const zMediaSchema = z.object({
-    id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+    id: z.uuid(),
     filename: z.string(),
     mimeType: z.string(),
     size: z.int().gte(0).lte(9007199254740991),
@@ -334,7 +334,7 @@ export const zMediaSchema = z.object({
  * A tag attached to a post
  */
 export const zTagSchema = z.object({
-    id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+    id: z.uuid(),
     name: z.string(),
     slug: z.string()
 });
@@ -345,7 +345,7 @@ export const zTagSchema = z.object({
  * Schema for a user's post
  */
 export const zUserPostSchema = z.object({
-    id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+    id: z.uuid(),
     slug: z.optional(z.union([
         z.string(),
         z.null()
@@ -370,7 +370,7 @@ export const zUserPostSchema = z.object({
  */
 export const zUserPostsSchema = z.object({
     data: z.array(z.object({
-        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/),
+        id: z.uuid(),
         slug: z.optional(z.union([
             z.string(),
             z.null()
@@ -506,7 +506,7 @@ export const zAiCoreMessage = z.object({
         isConsideredSystemMessage: z.optional(z.boolean()),
         usage: z.optional(zTokenUsage),
         finishReason: z.optional(z.string()),
-        timestamp: z.optional(z.iso.datetime().regex(/^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/)),
+        timestamp: z.optional(z.iso.datetime()),
         toolCalls: z.optional(z.array(zToolCall)),
         reasonning: z.optional(z.string())
     }))
@@ -613,7 +613,7 @@ export const zRecipe = z.object({
 export const zUserProfile = z.object({
     name: z.string(),
     age: z.number(),
-    email: z.email().regex(/^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/),
+    email: z.email(),
     bio: z.optional(z.string()),
     skills: z.optional(z.array(z.string()))
 });
@@ -949,7 +949,7 @@ export const zCommentsControllerGetCommentsResponse = zCommentsSchema;
 export const zCommentsControllerCreateCommentData = z.object({
     body: z.object({
         content: z.string().min(1).max(1000),
-        parentId: z.optional(z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/))
+        parentId: z.optional(z.uuid())
     }),
     path: z.object({
         postSlug: z.string()
@@ -1121,7 +1121,7 @@ export const zPostControllerUpdatePostViaMultipartData = z.object({
         coverImage: z.optional(z.instanceof(Blob))
     }),
     path: z.object({
-        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+        id: z.uuid()
     }),
     query: z.optional(z.never())
 });
@@ -1134,7 +1134,7 @@ export const zPostControllerUpdatePostViaMultipartResponse = zUserPostSchema;
 export const zPostControllerRemoveCoverImageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+        id: z.uuid()
     }),
     query: z.optional(z.never())
 });
@@ -1146,7 +1146,7 @@ export const zPostControllerSetCoverImageData = z.object({
         file: z.instanceof(Blob)
     }),
     path: z.object({
-        id: z.uuid().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/)
+        id: z.uuid()
     }),
     query: z.optional(z.never())
 });
@@ -1344,7 +1344,7 @@ export const zAiExampleControllerChatData = z.object({
                     totalTokens: z.number()
                 })),
                 finishReason: z.optional(z.string()),
-                timestamp: z.optional(z.iso.datetime().regex(/^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/)),
+                timestamp: z.optional(z.iso.datetime()),
                 toolCalls: z.optional(z.array(z.object({
                     toolCallId: z.string(),
                     toolName: z.string(),
@@ -1495,7 +1495,7 @@ export const zAiExampleControllerStreamChatData = z.object({
                     totalTokens: z.number()
                 })),
                 finishReason: z.optional(z.string()),
-                timestamp: z.optional(z.iso.datetime().regex(/^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/)),
+                timestamp: z.optional(z.iso.datetime()),
                 toolCalls: z.optional(z.array(z.object({
                     toolCallId: z.string(),
                     toolName: z.string(),
