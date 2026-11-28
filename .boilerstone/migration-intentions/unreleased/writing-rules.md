@@ -8,7 +8,7 @@ classification: migration
 
 ## Goal
 
-The project's documentation guidelines say that documentation explains how things work and does not retell the code, and its general guidelines carry a short cognitive load rule.
+The project's documentation guidelines say that documentation explains how things work. They say it does not retell the code. The general guidelines carry a short cognitive load rule.
 
 ## Why
 
@@ -25,14 +25,14 @@ Documentation that copies the code goes stale and is costly to maintain. Code th
 ## Observable Gaps
 
 1. **Documentation rule missing** — signal: no `## What to write` section in `references/0_documentation.mdx`.
-   Adapt the section from the staged file.
-   Done when: `grep -n 'What to write' apps/documentation/src/content/docs/references/0_documentation.mdx` finds it.
+   Adapt the `What to write` section from the staged `references/0_documentation.mdx`.
+   Done when: `grep -n '## What to write' apps/documentation/src/content/docs/references/0_documentation.mdx` finds it.
 2. **Cognitive load rule missing** — signal: no `## Cognitive load` section in `references/general.mdx`.
-   Adapt the section from the staged file; fix the link to the design philosophy page.
-   Done when: `grep -n 'Cognitive load' apps/documentation/src/content/docs/references/general.mdx` finds it.
+   Adapt the `Cognitive load` section from the staged `references/general.mdx`. Keep its link to the design philosophy page pointing at the project's own page.
+   Done when: `grep -n '## Cognitive load' apps/documentation/src/content/docs/references/general.mdx` finds it.
 3. **Reasons missing** — signal: no `Keeping the cognitive load low` section in `explanations/0_designphilosophy.mdx`.
-   Adapt the section from the staged file.
-   Done when: `grep -n 'cognitive load low' apps/documentation/src/content/docs/explanations/0_designphilosophy.mdx` finds it.
+   Adapt the `Keeping the cognitive load low` section from the staged `explanations/0_designphilosophy.mdx`.
+   Done when: `grep -n '## Keeping the cognitive load low' apps/documentation/src/content/docs/explanations/0_designphilosophy.mdx` finds it.
 
 ## Out of Scope
 
