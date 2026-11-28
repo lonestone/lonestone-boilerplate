@@ -24,17 +24,34 @@ Two kinds of tests are worth writing. Keep them few: one test per behaviour, not
 
 ## Launching tests
 
-You can launch the tests by running the following command:
+Run every test:
 
 ```bash
-cd apps/api && pnpm test
+pnpm test
 ```
 
-You can also launch the tests in watch mode by running the following command:
+Run only the tests that your branch can affect:
+
+```bash
+pnpm test:changed
+```
+
+`test:changed` compares your branch with `origin/main`, committed or not, and runs the tests that import a changed file.
+A change to a file that every test depends on runs the whole suite instead: the test setup and helpers, an entity, the database module, the Vitest config, the API's `tsconfig.json`, a `package.json` or the lockfile.
+If nothing your tests import has changed, it runs no test.
+It needs an up-to-date `origin/main`: run `git fetch origin main` first if your clone is old.
+
+Run the tests in watch mode:
 
 ```bash
 cd apps/api && pnpm test:watch
 ```
+
+### When to run what
+
+- While you work, run `pnpm test:changed`. It keeps each run short.
+- Before you open a pull request, or before you call it ready to merge, run `pnpm test` once.
+- The CI always runs every test.
 
 :::note
 If you want to know more about testing in NestJS, you can read the [NestJS testing documentation](https://docs.nestjs.com/fundamentals/testing).
@@ -42,52 +59,36 @@ If you want to know more about testing in NestJS, you can read the [NestJS testi
 
 ## Infrastructure setup
 
-We use Testcontainers to mock the infrastructure, mainly for things like databases, redis, etc.
+We use Testcontainers to run the infrastructure the tests need, mainly the database.
 
-You will find an example of launching the database in the `test/test.utils.ts` file:
+One PostgreSQL container serves the whole test run. `src/test/setup/test.global-setup.ts` starts it once, before any test file loads. The container keeps its data in memory and runs without durability (`fsync`, `synchronous_commit` and `full_page_writes` are off). The data only has to live as long as the run, so this is safe, and it makes each write much faster.
+
+The global setup then builds a template database once, with `orm.schema.refresh()`. You don't have to do anything when you add an entity: the template is rebuilt from the entities on every run.
+
+Each e2e test starts from empty tables:
+
+- Each Vitest worker copies the template once, with `CREATE DATABASE … TEMPLATE`, into its own database (`test_worker_<n>`). A worker runs its tests one at a time, so no two tests share a database at the same moment.
+- `src/test/setup/test.e2e-setup.ts` calls `createTestOrm` before each test. It deletes every row of the worker's database, which is faster than copying the template again.
+- After each test, `cleanupTestOrm` closes the ORM. The database stays for the worker's next test.
+- The e2e project sets `isolate: false`: a worker keeps the app modules loaded from one test file to the next. Don't leave a `vi.mock`, fake timers or a changed `process.env` behind in an e2e file: the next file in the same worker would see it.
+
+A test file only has to start its NestJS app on the test's ORM:
 
 ```typescript
-// Initialize DB with test containers
-postgresContainer = await new PostgreSqlContainer('postgres:16-alpine').start()
-
-const mikroOrmOptions = createTestMikroOrmOptions({
-  allowGlobalContext: true,
-  dbName: postgresContainer.getDatabase(),
-  host: postgresContainer.getHost(),
-  port: postgresContainer.getPort(),
-  user: postgresContainer.getUsername(),
-  password: postgresContainer.getPassword(),
+beforeEach(async (context) => {
+  const { orm, app } = await initializeTestApp(
+    { orm: context.orm },
+    {
+      imports: [PostModule],
+    },
+  )
+  context.app = app
+  context.em = orm.em.fork()
+  context.request = createRequest(app)
 })
 ```
 
-Note that we use the default mikro-orm configuration for the test database (`createTestMikroOrmOptions`), but we override the database name, host, port, user and password to use the test container.
-
-You will want to stop the test container at the end of your test suite, and you'll probably want to clean the database at the beginning of each test.
-
-```typescript
-// We initialize the NestJS app and the database
-beforeAll(async () => {
-  // Initialize the test application (this will launch the test container)
-  testContext = await initializeTestApp({
-    imports: [PostModule],
-  })
-  app = testContext.app
-  orm = testContext.orm
-  em = orm.em.fork()
-})
-
-// Before each test we clean the database to ensure we start with a fresh state
-beforeEach(async () => {
-  await orm.schema.refreshDatabase()
-  testUser = await createUserData(em)
-  requestWithAuth = initRequestWithAuth(app, testUser.id)
-})
-
-// After all tests we close the NestJS app and the database, the testcontainer is shut down
-afterAll(async () => {
-  await closeTestApp(testContext)
-})
-```
+The `src/test/README.md` file has the full layout of the test helpers.
 
 ## Service mocking
 
