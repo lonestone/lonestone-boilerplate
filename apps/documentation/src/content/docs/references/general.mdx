@@ -9,7 +9,7 @@ description: Common guidelines for development on the project
 
 - Write clean, maintainable, and scalable code
 - Use English for all code and documentation
-- Follow SOLID principles
+- Add no abstraction without a real second use (see [Cognitive load](#cognitive-load))
 - Prefer functional and declarative programming patterns over imperative
 - Emphasize type safety and static analysis
 - Practice component-driven development
@@ -101,7 +101,7 @@ In general, try to follow those Guidelines:
 
 In this context, what is understood as a function will also apply to a method.
 
-- Write short functions with a single purpose.
+- Write functions that do one thing and read in one block, top to bottom. Do not split a function only to make it shorter.
 - Name functions with a verb and something else.
   - If it returns a boolean, use isX or hasX, canX, etc.
   - If it doesn't return anything, use executeX or saveX, etc.
