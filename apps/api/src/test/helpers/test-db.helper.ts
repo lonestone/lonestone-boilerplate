@@ -2,7 +2,8 @@
 //
 // One PostgreSQL container serves the whole run (see test.global-setup.ts).
 // The global setup builds the schema once, in a template database.
-// Each e2e test gets a fresh database copied from that template, and drops it when it ends.
+// Each Vitest worker copies that template once, into its own database.
+// Before each e2e test, the worker empties its database, so every test starts from empty tables.
 
 import { MikroORM, type EntityClass } from '@mikro-orm/core'
 import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy'
@@ -21,11 +22,17 @@ export interface TestOrmContext {
   mikroOrmOptions: ReturnType<typeof createTestMikroOrmOptions>
 }
 
-/** The database the global setup builds once per run, and that each test copies. */
+/** The database the global setup builds once per run, and that each worker copies. */
 export const TEMPLATE_DB_NAME = 'test_template'
 
-/** Where each test ORM's database lives, so cleanupTestOrm can drop it. */
-const testDatabases = new WeakMap<MikroORM, { dbConfig: TestDbConfig; dbName: string }>()
+/** PostgreSQL error code for CREATE DATABASE on a name that already exists. */
+const DUPLICATE_DATABASE = '42P04'
+
+/**
+ * The tables of this worker's database, listed on its first test.
+ * Module state lives as long as the worker's module cache: with `isolate: false`, the whole run.
+ */
+let workerTables: string[] | undefined
 
 function getTestEntities(): EntityClass<unknown>[] {
   // @ts-expect-error - import.meta is not available in CommonJS BUT DUDE I KNOW WHAT I'M DOING
@@ -87,17 +94,71 @@ export async function createTemplateDatabase(dbConfig: TestDbConfig): Promise<vo
 }
 
 /**
- * Creates a database copied from the template and initializes MikroORM on it.
+ * Copies the template into this worker's database, unless an earlier test file already did.
+ * Workers run their tests one at a time, so one database per worker is never shared by two tests.
+ */
+async function ensureWorkerDatabase(dbConfig: TestDbConfig, dbName: string): Promise<void> {
+  if (workerTables) {
+    return
+  }
+  try {
+    await runOnServer(dbConfig, `CREATE DATABASE "${dbName}" TEMPLATE "${TEMPLATE_DB_NAME}"`)
+  } catch (error) {
+    // With `isolate: true`, each test file reloads this module: the database exists, the cache does not.
+    if ((error as { code?: string }).code !== DUPLICATE_DATABASE) {
+      throw error
+    }
+  }
+}
+
+/**
+ * Deletes every row of the worker's database.
+ * `delete` beats `truncate` on tables this small. The replica role skips the foreign key checks,
+ * so the tables can be emptied in any order. Every key is a uuid, so no sequence needs a reset.
+ */
+async function emptyWorkerDatabase(orm: MikroORM): Promise<void> {
+  const connection = orm.em.getConnection()
+  if (!workerTables) {
+    const rows: { tablename: string }[] = await connection.execute(
+      `select tablename from pg_tables where schemaname = 'public'`,
+    )
+    workerTables = rows.map((row) => row.tablename)
+  }
+  const tables = workerTables
+
+  await connection.execute(
+    [
+      'set session_replication_role = replica;',
+      ...tables.map((table) => `delete from "${table}";`),
+      'set session_replication_role = default;',
+    ].join(' '),
+  )
+}
+
+/**
+ * Opens MikroORM on this worker's database, emptied for the test.
  * @returns TestOrmContext with ORM and MikroORM options
  */
 export async function createTestOrm(dbConfig: TestDbConfig): Promise<TestOrmContext> {
-  const dbName = `test_${crypto.randomUUID()}`
+  const dbName = `test_worker_${process.env.VITEST_POOL_ID ?? '1'}`
   process.env.DATABASE_NAME = dbName
-  await runOnServer(dbConfig, `CREATE DATABASE "${dbName}" TEMPLATE "${TEMPLATE_DB_NAME}"`)
+  await ensureWorkerDatabase(dbConfig, dbName)
+  // Ends the connections an earlier test left open, so their work cannot reach this test
+  // nor hold a lock on its tables. It runs before MikroORM opens its own pool on the database.
+  await runOnServer(
+    dbConfig,
+    `select pg_terminate_backend(pid) from pg_stat_activity where datname = '${dbName}'`,
+  )
 
   const mikroOrmOptions = createOrmOptions(dbConfig, dbName)
   const orm = await MikroORM.init(mikroOrmOptions)
-  testDatabases.set(orm, { dbConfig, dbName })
+  try {
+    await emptyWorkerDatabase(orm)
+  } catch (error) {
+    // The test never receives this ORM, so cleanupTestOrm cannot close it.
+    await orm.close(true)
+    throw error
+  }
 
   return {
     orm,
@@ -106,7 +167,7 @@ export async function createTestOrm(dbConfig: TestDbConfig): Promise<TestOrmCont
 }
 
 /**
- * Closes the ORM and drops its database
+ * Closes the test ORM. The worker's database stays: the next test empties it.
  * @param orm The ORM instance to cleanup
  */
 export async function cleanupTestOrm(orm: MikroORM): Promise<void> {
@@ -114,22 +175,6 @@ export async function cleanupTestOrm(orm: MikroORM): Promise<void> {
     await orm.close(true)
   } catch (error) {
     console.error('Error while closing the test ORM:', error)
-    // Continue cleanup even if there are errors
-  }
-
-  const testDatabase = testDatabases.get(orm)
-  if (!testDatabase) {
-    return
-  }
-
-  try {
-    // FORCE ends any connection a test left open, so the database is always dropped.
-    await runOnServer(
-      testDatabase.dbConfig,
-      `DROP DATABASE IF EXISTS "${testDatabase.dbName}" WITH (FORCE)`,
-    )
-  } catch (error) {
-    console.error('Error while dropping the test database:', error)
   }
 }
 
