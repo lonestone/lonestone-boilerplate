@@ -176,21 +176,6 @@ export async function cleanupTestOrm(orm: MikroORM): Promise<void> {
   } catch (error) {
     console.error('Error while closing the test ORM:', error)
   }
-
-  const testDatabase = testDatabases.get(orm)
-  if (!testDatabase) {
-    return
-  }
-
-  try {
-    // FORCE ends any connection a test left open, so the database is always dropped.
-    await runOnServer(
-      testDatabase.dbConfig,
-      `DROP DATABASE IF EXISTS "${testDatabase.dbName}" WITH (FORCE)`,
-    )
-  } catch (error) {
-    console.error('Error while dropping the test database:', error)
-  }
 }
 
 /**
