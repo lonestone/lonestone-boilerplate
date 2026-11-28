@@ -27,21 +27,31 @@ jobs:
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
+      prs_created: ${{ steps.release.outputs.prs_created }}
+      pr: ${{ steps.release.outputs.pr }}
     steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      # Must run before release-please-action creates any tag. The script explains the hold.
+      - name: Hold the release until its note exists
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REQUIRE_RELEASE_NOTE: ${{ vars.REQUIRE_RELEASE_NOTE }}
+          BASE_BRANCH: ${{ github.ref_name }}
+        run: bash .github/scripts/release-note-gate.sh
+
       - name: Open or update the Release PR
         id: release
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Checkout the tagged commit
-        if: ${{ steps.release.outputs.release_created }}
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.release.outputs.tag_name }}
-
+      # Reads the note from main, not from the tag: when a held release is published later, the
+      # tag points at the Release PR merge, which does not have the note.
       - name: Mirror the release note to the GitHub Release
-        if: ${{ steps.release.outputs.release_created }}
+        if: ${{ steps.release.outputs.release_created && steps.gate.outputs.mirror == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release.outputs.tag_name }}
@@ -49,10 +59,6 @@ jobs:
           set -euo pipefail
           VERSION="${TAG#v}"
           NOTE="apps/documentation/src/content/docs/releases/v${VERSION}.mdx"
-          if [[ ! -f "$NOTE" ]]; then
-            echo "add ${NOTE} before merging"
-            exit 1
-          fi
           NOTES_FILE="$(mktemp)"
           python3 - "$NOTE" "$NOTES_FILE" <<'PY'
           import re
@@ -72,6 +78,36 @@ jobs:
           } > "${NOTES_FILE}.out"
           mv "${NOTES_FILE}.out" "$NOTES_FILE"
           gh release edit "$TAG" --notes-file "$NOTES_FILE"
+
+  # GitHub holds the pull_request runs of release-please's GITHUB_TOKEN pushes in action_required,
+  # then fails them at merge (false failure mails). Delete them after each bot push. Human pushes keep their checks.
+  clean-bot-runs:
+    name: Clean the bot's pending runs
+    needs: release-please
+    if: ${{ needs.release-please.outputs.prs_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Delete the action_required runs of github-actions[bot]
+        # Best effort: a red cleanup would send the very mail it exists to stop.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
+        run: |
+          set -euo pipefail
+          # The runs appear a few seconds after the push: watch for two minutes.
+          for _ in $(seq 12); do
+            sleep 10
+            gh api --paginate -X GET "repos/${GITHUB_REPOSITORY}/actions/runs" \
+              -f branch="${BRANCH}" -f status=action_required -f actor='github-actions[bot]' \
+              --jq '.workflow_runs[] | select(.actor.login == "github-actions[bot]") | .id' |
+              while read -r id; do
+                echo "Deleting run ${id}"
+                gh run delete "${id}" --repo "${GITHUB_REPOSITORY}"
+              done
+          done
 
   # Builds the version images of the new tag. Called from here because the tag,
   # pushed with GITHUB_TOKEN, starts no workflow on its own.

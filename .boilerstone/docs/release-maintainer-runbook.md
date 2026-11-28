@@ -46,7 +46,7 @@ Not every PR yields an intention. Refactors and boilerplate-internal CI take the
 
 The note is a file: `apps/documentation/src/content/docs/releases/vX.Y.Z.mdx`. The CI check on the Release PR only cares that this file exists on the PR HEAD. It does not care _when_ it was written.
 
-Write it as soon as you know why the bundle exists — on a regular PR into `main`, or later on the Release PR. Waiting for the Release PR to exist first is a circle: that PR only appears after a push to `main`, and the story is easiest to write while the work is still fresh.
+You may draft the story early, on a regular PR into `main`, while the work is fresh. The version in the filename moves with every merge, so check it and rename the file just before you merge the Release PR. Merge the pull requests of the batch first. See "Ship in batches" in the release reference page.
 
 How to name the file:
 

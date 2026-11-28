@@ -1,5 +1,5 @@
 ---
-id: unreleased/worktree-remove-promoted-intentions
+id: v1.5.1/worktree-remove-promoted-intentions
 domain: tooling
 classification: migration
 requires:
@@ -42,4 +42,4 @@ The fix: accept that file when `origin/main` has `vX.Y.Z/NN-<slug>.md` with the 
 
 ## Record Result
 
-Run `pnpm boilerplate upgrade record --id unreleased/worktree-remove-promoted-intentions --applied` after validation passes, or record it as skipped with a reason. The id stays `unreleased/…` until the boilerplate release promotes it.
+Run `pnpm boilerplate upgrade record --id v1.5.1/worktree-remove-promoted-intentions --applied` after validation passes, or record it as skipped with a reason.

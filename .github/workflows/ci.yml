@@ -93,6 +93,9 @@ jobs:
       - name: 🌐 Check translations
         run: pnpm --filter @boilerstone/i18n check-translations
 
+      - name: 📝 Test the release note gate
+        run: bash .github/scripts/release-note-gate.test.sh
+
   knip:
     name: ✂️ Knip
     needs: [setup]
