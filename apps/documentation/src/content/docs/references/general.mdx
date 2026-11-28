@@ -9,13 +9,23 @@ description: Common guidelines for development on the project
 
 - Write clean, maintainable, and scalable code
 - Use English for all code and documentation
-- Follow SOLID principles
+- Add no abstraction without a real second use (see [Cognitive load](#cognitive-load))
 - Prefer functional and declarative programming patterns over imperative
 - Emphasize type safety and static analysis
 - Practice component-driven development
 - Use `pnpm` to manage dependencies and execute scripts.
 - Use `git` commands to manipulate the repository.
 - Push only when `pnpm lint`, `pnpm typecheck` and the tests of the packages you changed (`pnpm --filter <package> test`) pass locally. The CI then confirms.
+
+## Cognitive load
+
+Keep what a reader must hold in their head small. The reasons are in the [design philosophy](/lonestone-boilerplate/explanations/0_designphilosophy#keeping-the-cognitive-load-low).
+
+- Name complex conditions and return early instead of nesting.
+- Prefer a few deep modules to many small ones. Do not split a function only to shorten it.
+- Compose, do not inherit. Add no repository, adapter or interface without a real second use.
+- Accept a little duplication over a shared abstraction between unrelated features.
+- Use readable codes: text statuses in the database, and business error names that explain themselves.
 
 ## Planning Phase
 
@@ -91,7 +101,7 @@ In general, try to follow those Guidelines:
 
 In this context, what is understood as a function will also apply to a method.
 
-- Write short functions with a single purpose.
+- Write functions that do one thing and read in one block, top to bottom. Do not split a function only to make it shorter.
 - Name functions with a verb and something else.
   - If it returns a boolean, use isX or hasX, canX, etc.
   - If it doesn't return anything, use executeX or saveX, etc.

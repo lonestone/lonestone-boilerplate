@@ -28,3 +28,15 @@ Evolution of an existing project is another important factor. Without a CLI, rem
 - **Only the 80%**. If a feature is not used in 80% of Lonestone's projects, it should be added as a guide in this documentation, and not shipped with the boilerplate.
 - **Robustness is not all about code**. The documentation should feature numerous guides to add "almost necessary" features to the project, such as logging, tracing, analytics, etc.
 - **Learning place**. Finally, this boilerplate is not only a starting point for new projects, but also a learning place for new developers. The documentation should be clear and easy to understand, and feature numerous explanations as to why we chose some tools.
+
+## Keeping the cognitive load low
+
+The code of a project is read far more often than it is written. What limits a developer is not the size of the codebase but how much they must hold in their head at once. This section follows [the cognitive load article by Artem Zakirullin](https://github.com/zakirullin/cognitive-load). The short rule is in the [general guidelines](/lonestone-boilerplate/references/general).
+
+- **Name complex conditions, and leave early.** Put a hard condition in a named value (`isAllowed`, `isExpired`). Return early instead of nesting `if` blocks.
+- **Prefer a few deep modules over many shallow ones.** A deep module has a simple interface and hides a lot. Do not split a function only to make it short: the core of a piece of logic should read in one block, top to bottom.
+- **Compose, do not inherit.** Combine small parts instead of building class hierarchies.
+- **No layer "just in case".** No repository, adapter or interface without a real second use. The way NestJS splits things is enough.
+- **A little copying beats a little dependency.** Some duplication is better than a shared abstraction that forces two unrelated features to change together.
+- **Use codes that explain themselves.** A business error code like `invitation_expired` says more than a meaning hidden behind an HTTP status. In the database, store statuses as text, not as numbers.
+- **Familiar is not simple.** If a newcomer stays stuck on a spot for a long time, simplify that spot.

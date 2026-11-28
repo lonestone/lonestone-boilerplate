@@ -29,6 +29,15 @@ In general, the documentation should be written in the Astro Documentation app, 
 - Comments in the codebase are essential, as they auto documentation API (jsdoc) and are easier to update than the Documentation app (notably by LLMs, which will update the jsdoc as they refactor)
 - The Documentation app should not duplicate API specifications already available in the source code. That means that in general, no API reference should be written in the Documentation app.
 
+## What to write
+
+Documentation explains how the system works and why it is built that way. It does not retell the code.
+
+- Describe the flow, the responsibilities and the decisions. Use a diagram (Mermaid) for anything that has several steps or actors.
+- Do not list files, functions, fields or parameters. The code already says that, and a copy goes stale the day the code changes.
+- Link to the code, or name the module, when a reader needs the details.
+- Documentation lives in the Documentation app, not in a `docs/` folder next to the code.
+
 ## Language
 
 For now, the documentation is written in English.
