@@ -695,3 +695,46 @@ describe('generateProject apps', () => {
     }
   })
 })
+
+describe('tracking state extensions', () => {
+  it('records an installed extension', () => {
+    const state = trackingState.addExtension(trackingState.create({ currentVersion: '1.4.0' }), {
+      name: 'sample',
+      version: '1.0.0',
+      options: { app: 'web-spa', features: ['search'] },
+      installedAt: '2026-10-26',
+    })
+
+    expect(state.extensions).toEqual([
+      {
+        name: 'sample',
+        version: '1.0.0',
+        options: { app: 'web-spa', features: ['search'] },
+        installedAt: '2026-10-26',
+      },
+    ])
+  })
+
+  it('refuses to record the same extension twice', () => {
+    const state = trackingState.addExtension(trackingState.create({ currentVersion: '1.4.0' }), {
+      name: 'sample',
+      version: '1.0.0',
+      options: {},
+    })
+
+    expect(() =>
+      trackingState.addExtension(state, { name: 'sample', version: '1.1.0', options: {} }),
+    ).toThrow('Extension already recorded: sample')
+  })
+
+  it('rejects a malformed extensions entry', () => {
+    const projectPath = writeTrackingState({
+      ...trackingState.create({ currentVersion: '1.4.0' }),
+      extensions: [{ name: 'sample', version: '1.0.0' }],
+    })
+
+    expect(() => trackingState.read(projectPath)).toThrow(
+      'extensions[0] needs a name, a version, an options object and an installedAt YYYY-MM-DD date',
+    )
+  })
+})
