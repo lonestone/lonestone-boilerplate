@@ -70,7 +70,7 @@ try {
 }
 ```
 
-When you replace or delete a media, call `em.remove(media)` before the flush and `mediaService.remove(media)` after it, so a failed save keeps the old file. `mediaService.remove` never throws: a failure only leaves an orphan in the bucket, and is logged. With `em.transactional()`, put the `try`/`catch` around the whole transaction.
+When you replace or delete a media, call `em.remove(media)` before the flush and `mediaService.remove(media)` after it, so a failed save keeps the old file. `mediaService.remove` never throws: a failure only leaves an orphan in the bucket, and is logged. With `@Transactional()`, put the `try`/`catch` around the whole decorated method, or the call to it.
 
 5. In the mapper, `MediaMapper.toOptionalMedia` signs a URL. Reuse `mediaSchema` in your response contract.
 

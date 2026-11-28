@@ -275,8 +275,9 @@ export class User {
 - Use the EntityManager for database operations
 - A request does not run in a transaction. Each `em.flush()` runs in its own transaction, and that is all the default gives you.
 - One `flush()` in a method is atomic: leave it as is. Two or more `flush()` calls in one method are not atomic, so decorate the method with `@Transactional()` (from `@mikro-orm/decorators/legacy`; the class needs an `em` property). It joins a transaction that is already open. Do not wrap every method in `em.transactional()`.
+- In a service, do not call `em.fork()` or `em.transactional()` by hand: use `@Transactional()`. `em.fork()` only makes sense outside a request (a job, a script). Then write a comment that says why, and add `// oxlint-disable-next-line eslint/no-restricted-properties`. The linter blocks both calls in `apps/api/src`, except in specs and `src/test`.
 - Replace a collection with `em.assign(entity, { tags })` or `entity.tags.set(items)`. Do not remove and add items by hand: `set` skips the write when nothing changed.
-- Ensure you have a MikroORM Context. Mikro provides one for each request by default, but if you call a method from a CRON you'll need to create one or use the EnsureRequestContext decorator.
+- Ensure you have a MikroORM Context. Mikro provides one for each request by default, but if you call a method from a CRON you'll need to create one or use the `@EnsureRequestContext()` decorator.
 - Optimize queries for performance
 - Use pagination for large result sets
 - No raw SQL. Use the EntityManager (`find`, `findOne`, `count`, `nativeUpdate`) or the MikroORM QueryBuilder (`em.createQueryBuilder(Entity)`). Raw SQL is only allowed for something neither can express. Write a comment that says what it is, and keep it as small as you can. A SQL fragment inside a MikroORM call, such as `raw('"likesCount" + 1')` in a `nativeUpdate`, is fine.
