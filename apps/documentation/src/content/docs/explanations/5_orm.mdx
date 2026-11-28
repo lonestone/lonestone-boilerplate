@@ -29,7 +29,7 @@ The project is not longer maintained by a dedicated team, and its stability and 
 We have tested [Prisma](https://www.prisma.io/) extensively, and even use it in production for some projects. However we chose to stick to MikroORM because:
 
 - Prisma adds a compilation step, which slows down the development process (often need to restart the ts-server, and this can get slow on large projects)
-- Prisma does not provide a "default" transaction management for incoming HTTP requests, which is a must-have for NestJS projects
+- Prisma has no per-request context like the MikroORM one, which gives each HTTP request its own Unit of Work and Identity Map. This is a must-have for NestJS projects. Neither tool wraps a request in a transaction by default.
 - The support for custom columns is really bad. A custom column will remove the main methods on the entity (`findMany`, `create`, etc.), the column is completely ignored by the ORM. You need to then [extend](https://www.prisma.io/docs/orm/prisma-client/client-extensions) the whole Prisma client to re-create the methods. Comparatively, other ORM allow to create "hooks" or transformation methods (in input and output) on the column ([Mikro](https://mikro-orm.io/docs/custom-types) or [Drizzle](https://github.com/drizzle-team/drizzle-orm/blob/main/docs/custom-types.md)).
 - To build these methods in the extended client, the only solution is to pass by SQL, which cannot be validated at build (IDE extensions allow to validate at least at dev time). To avoid losing too much reliability, we decided to double some queries (we let Prisma do a `find` then we do a `SELECT` manually just for our missing custom column), it’s far from optimal but we prefer it to … rewrite everything in SQL!
 - The experience with Nest.JS is very bad if you need to extend the Prisma client. I lost hours to find a clean solution, and I’m not convinced yet. [Issue Github](https://github.com/prisma/prisma/issues/18628)
@@ -59,7 +59,7 @@ We use Mikro in a very basic way, it's up to you to read the [official documenta
 Some important concepts to know:
 
 - MikroORM use the concept of "[Unit of Work](https://mikro-orm.io/docs/unit-of-work)" and "[Identity Map](https://mikro-orm.io/docs/identity-map)". Those concepts are really key, so ensure you understand them well.
-- Linked to those concepts, be warry of `em.fork()` which will create a new Context
+- Linked to those concepts, avoid `em.fork()`, which creates a new Context. The linter blocks it in the API (see [Backend](/lonestone-boilerplate/references/backend))
 - MikroORM NestJS module automatically creates a new Context for each request, you don't need to do anything special to get it. But if you want to use some functions outside of a request — for example in a CRON job — you will need to create a new Context manually (or use the `EnsureRequestContext` decorator).
 - Deprecated methods removed in v7: use `em.persist(entity)` + `await em.flush()` instead of `em.persistAndFlush(entity)`, `em.remove(entity)` + `await em.flush()` instead of `em.removeAndFlush(entity)`, and `orm.schema.refresh()` instead of `orm.schema.refreshDatabase()`. Decorators are now imported from `@mikro-orm/decorators/legacy` instead of `@mikro-orm/core`.
 
