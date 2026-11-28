@@ -41,6 +41,6 @@ For example, the API workspace turns off `typescript/consistent-type-imports`:
 
 An architecture rule that must not be broken belongs in the linter. The linter talks to the agent at the moment it writes the code. A sentence in the docs is easy to miss.
 
-For example, `em.fork()` and `em.transactional()` are blocked in `apps/api/src` with `no-restricted-properties`. The error message says to use `@Transactional()`. Specs and `src/test` are excluded. The paths in `overrides` are relative to the folder of `.oxlintrc.json`.
+For example, the API blocks `em.fork()` and `em.transactional()` with `no-restricted-properties`, and the error message says what to do instead. The rule itself is in [Backend](/lonestone-boilerplate/references/backend). Paths in `overrides` are relative to the folder of `.oxlintrc.json`.
 
 See the [Oxlint config file reference](https://oxc.rs/docs/guide/usage/linter/config-file-reference.html) for rule names and override syntax.

@@ -16,12 +16,11 @@ The rule "use `@Transactional()`" was only in the docs, and an agent still wrote
 
 ## Applies When
 
-- The project has `apps/api` and uses MikroORM.
+- The project has `apps/api`, uses MikroORM and uses Oxlint.
 - `.oxlintrc.json` has no `no-restricted-properties` rule on `fork` and `transactional`.
 
 ## Do Not Apply When
 
-- The project does not use Oxlint.
 - A human decided to keep `em.fork()` and `em.transactional()` allowed in services.
 
 ## Observable Gaps
@@ -31,9 +30,9 @@ The rule "use `@Transactional()`" was only in the docs, and an agent still wrote
    Done when: `grep -c '"property": "fork"' .oxlintrc.json` is at least 1.
 2. **Spec exclusion missing** — signal: no override that turns the rule `off` for `apps/api/src/**/*spec.ts` and `apps/api/src/test/**`.
    Add it after the rule override, as in the staged `.oxlintrc.json`.
-   Done when: `pnpm lint` shows no `no-restricted-properties` error in a spec.
+   Done when: `grep -c 'e2e-spec.ts' .oxlintrc.json` is at least 1.
 3. **Existing calls** — signal: `pnpm lint` reports `no-restricted-properties` in a service.
-   Replace `em.transactional()` with `@Transactional()`. Remove a useless `em.fork()`. For a real use outside a request, add a comment that says why, then `// oxlint-disable-next-line eslint/no-restricted-properties`.
+   Propose the fix to a human, one call at a time. Replace `em.transactional()` with `@Transactional()`. Remove a useless `em.fork()`. For a real use outside a request, add a comment that says why, then `// oxlint-disable-next-line eslint/no-restricted-properties`.
    Done when: `pnpm lint` has no `no-restricted-properties` error.
 4. **Docs** — signal: `references/backend.mdx` does not say "do not call `em.fork()` or `em.transactional()` by hand".
    Add the one bullet from the staged `references/backend.mdx` if the project keeps these docs.
@@ -50,6 +49,7 @@ The rule "use `@Transactional()`" was only in the docs, and an agent still wrote
 - `.oxlintrc.json` — **adapt** (keep the project's own rules, paths and overrides)
 - `apps/documentation/src/content/docs/references/backend.mdx` — **adapt**
 - `apps/documentation/src/content/docs/explanations/3_linter.mdx` — **adapt**
+- `apps/documentation/src/content/docs/core-features/3_filestorage.mdx` and `explanations/5_orm.mdx` — **adapt** (wording only)
 
 ## Validation
 

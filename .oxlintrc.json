@@ -42,17 +42,21 @@
           "error",
           {
             "property": "fork",
-            "message": "Do not call em.fork() in the API. The request already has its own EntityManager. For two or more writes, decorate the method with @Transactional(). Outside a request, add a comment that says why, then // oxlint-disable-next-line. See references/backend.mdx, section Queries."
+            "message": "Do not call em.fork() in the API: a request already has its own EntityManager. Use @Transactional() for several writes. Outside a request, comment why, then // oxlint-disable-next-line. See references/backend.mdx, Queries."
           },
           {
             "property": "transactional",
-            "message": "Do not call em.transactional() by hand. Decorate the method with @Transactional() from @mikro-orm/decorators/legacy. See references/backend.mdx, section Queries."
+            "message": "Do not call em.transactional() by hand: decorate the method with @Transactional(). See references/backend.mdx, Queries."
           }
         ]
       }
     },
     {
-      "files": ["apps/api/src/**/*spec.ts", "apps/api/src/test/**"],
+      "files": [
+        "apps/api/src/**/*.spec.ts",
+        "apps/api/src/**/*.e2e-spec.ts",
+        "apps/api/src/test/**"
+      ],
       "rules": {
         "eslint/no-restricted-properties": "off"
       }
