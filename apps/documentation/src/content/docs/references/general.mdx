@@ -121,11 +121,8 @@ In this context, what is understood as a function will also apply to a method.
 - Follow the Arrange-Act-Assert convention for tests.
 - Name test variables clearly.
   - Follow the convention: inputX, mockX, actualX, expectedX, etc.
-- Write unit tests for each public function.
-  - Use test doubles to simulate dependencies.
-    - Except for third-party dependencies that are not expensive to execute.
-- Write acceptance tests for each module.
-  - Follow the Given-When-Then convention.
+- Test the API routes end to end, and complex business logic with unit tests. Do not unit test what the routes already cover, and do not test one-off scripts. See [API testing](/lonestone-boilerplate/guides/api-testing).
+- Follow the Given-When-Then convention for the route tests.
 
 # Documentation
 

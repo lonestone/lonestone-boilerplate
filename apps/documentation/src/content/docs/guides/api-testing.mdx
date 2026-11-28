@@ -1,9 +1,26 @@
 ---
 title: API Testing
-description: Guide to test the API using Vitest
+description: Which API tests to write and which not to write, and how to run them with Vitest
 ---
 
-Testing is done using Vitest. We will outline the most important files and configurations.
+## The rule: test the routes, and the complex logic
+
+Two kinds of tests are worth writing. Keep them few: one test per behaviour, not one per line or per branch. Coverage is not a goal.
+
+**1. The routes, end to end (`*.e2e-spec.ts`).** Test the API through its routes:
+
+- The contract of a route: status code, response shape, and the rejection of invalid input.
+- Who may call it: anonymous, logged in, wrong user, wrong role.
+- The business error cases the service decides, such as a conflict or a forbidden state.
+
+**2. Complex business logic, as unit tests (`*.spec.ts`).** A pure function with many cases, such as a calculator or a parser, gets unit tests. Covering every case through the routes would cost more than testing the function directly.
+
+**Do not write:**
+
+- A unit test of a service, mapper, controller, guard or processor that its routes already cover.
+- A test for a one-off script, such as an import or a backfill. A one-off script needs no test and no service.
+- A test that only checks types, a schema shape or a mapping. The compiler and the contract already do that.
+- A second test that asserts what an existing test already asserts.
 
 ## Launching tests
 
@@ -35,17 +52,6 @@ cd apps/api && pnpm test:watch
 - While you work, run `pnpm test:changed`. It keeps each run short.
 - Before you open a pull request, or before you call it ready to merge, run `pnpm test` once.
 - The CI always runs every test.
-
-## Different kinds of tests
-
-We have two kinds of tests:
-
-- Unit tests
-- E2E tests
-
-Unit tests are tests that test a single unit of code. They are named like this: `*.service.spec.ts` or `*.processor.spec.ts`.
-
-E2E tests are tests that test the entire application end to end, which means mostly testing your controllers. They are named like this: `*.e2e-spec.ts`.
 
 :::note
 If you want to know more about testing in NestJS, you can read the [NestJS testing documentation](https://docs.nestjs.com/fundamentals/testing).

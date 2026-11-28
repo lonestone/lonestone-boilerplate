@@ -36,10 +36,11 @@
 
 ## Guides
 
-- [api-testing.mdx](./src/content/docs/guides/api-testing.mdx) - Guide to test the API using Vitest
+- [api-testing.mdx](./src/content/docs/guides/api-testing.mdx) - Which API tests to write and which not to write, and how to run them with Vitest
 - [data-fetching.mdx](./src/content/docs/guides/data-fetching.mdx) - One way to read and write API data in the frontends — one hook file per feature, a key factory, the generated SDK
 - [database-management.mdx](./src/content/docs/guides/database-management.mdx) - Guide to manage the database
 - [encrypt-env.mdx](./src/content/docs/guides/encrypt-env.mdx) - Setup env file encryption
+- [factories.mdx](./src/content/docs/guides/factories.mdx) - Build test and seed data with MikroORM factories and Faker
 - [feature-flags.mdx](./src/content/docs/guides/feature-flags.mdx) - Ship a merged change dark with a single env-var check
 - [generating-types.mdx](./src/content/docs/guides/generating-types.mdx) - Generate types and SDKs from the OpenAPI schema
 
@@ -59,6 +60,9 @@
 - [v1.1.0.mdx](./src/content/docs/releases/v1.1.0.mdx) - From writing a commit to deploying in production — one squash message, and everything else derives from it
 - [v1.2.0.mdx](./src/content/docs/releases/v1.2.0.mdx) - The installer and upgrade tool become one published CLI, and existing projects get a first bundle of fixes
 - [v1.3.0.mdx](./src/content/docs/releases/v1.3.0.mdx) - New projects choose their web apps, the API delegates its auth glue to a maintained package, and generated projects stop failing the intention checks
+- [v1.4.0.mdx](./src/content/docs/releases/v1.4.0.mdx) - Release images are built for real, the UI package finishes its move to Base UI, and the API gets entity factories for tests and seeders
+- [v1.5.0.mdx](./src/content/docs/releases/v1.5.0.mdx) - The git hooks run on every clone, files can live in S3, worktrees get their own Docker stack, and the frontend reads the API through one hook file per feature
+- [v1.5.1.mdx](./src/content/docs/releases/v1.5.1.mdx) - The CI stops billing runs nobody needs, a release waits for its note, and agents ship in batches and push only after the local checks pass
 
 ## Root
 

@@ -326,8 +326,7 @@ export class PublicController {
 
 ## Testing
 
-- Write unit tests for services
-- Write integration tests for controllers
+- Test the routes with e2e tests (`*.e2e-spec.ts`) and complex business logic with unit tests. Do not unit test a service its routes already cover, and do not test one-off scripts. See [API testing](/lonestone-boilerplate/guides/api-testing)
 - Use vitest for testing
 - Mock external dependencies
 - Build test data with the module factories, and pass only the values the test checks. See [Entity factories](/lonestone-boilerplate/guides/factories)

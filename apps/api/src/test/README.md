@@ -21,8 +21,8 @@ La config Vitest se trouve dans `apps/api/vitest.config.ts` (projets `unit` et `
 
 Dans le dossier `src/modules/*/tests/`, vous trouverez les tests pour le module `*`.
 
-- **Tests unitaires** : fichiers `*.spec.ts`
-- **Tests e2e** : fichiers `*.e2e-spec.ts`
+- **Tests e2e** : fichiers `*.e2e-spec.ts`. Le test par défaut, pour les routes.
+- **Tests unitaires** : fichiers `*.spec.ts`. Seulement pour la logique métier complexe : voir la règle dans `apps/documentation/src/content/docs/guides/api-testing.mdx`.
 
 ## Commandes
 
@@ -104,39 +104,6 @@ describe('postController (e2e)', () => {
 
     // Assert
     expect(response.status).toBe(401)
-  })
-})
-```
-
-## Exemple de test unitaire (service)
-
-```typescript
-// posts.service.spec.ts
-import { Test } from '@nestjs/testing'
-import { PostService } from './posts.service'
-
-describe('PostService', () => {
-  let service: PostService
-
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      providers: [
-        PostService,
-        {
-          provide: 'EntityManager',
-          useValue: {
-            find: vi.fn(),
-            persistAndFlush: vi.fn(),
-          },
-        },
-      ],
-    }).compile()
-
-    service = module.get(PostService)
-  })
-
-  it('should create a post', async () => {
-    // ...
   })
 })
 ```
