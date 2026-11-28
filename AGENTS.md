@@ -17,9 +17,10 @@ A rule is written in one place: a file in `apps/documentation/src/content/docs/r
 
 - General, always: `references/general.mdx`
 - Backend, when working on `apps/api`: `references/backend.mdx`
-- Frontend, when working on a web app or a shared package: `references/frontend.mdx`
+- Frontend, when working on `apps/web-spa` or `apps/web-ssr`: `references/frontend.mdx`
 - Documentation, when writing docs: `references/0_documentation.mdx`
 - Commits and pull requests: `CONTRIBUTING.md`
+- Anything else the README cites that fits your task
 
 Never write the token `BREAKING-CHANGE:` in a commit message unless you intend to force a major release.
 

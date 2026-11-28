@@ -247,7 +247,7 @@ Whether a project versions, and what each environment runs, is documented in [Re
 ### AI Agents good practice
 When working with an AI Agent (such as Copilot, Cursor or Claude), please follow these guidelines:
 
-- Do not add personal rules to the repo. Keep your own in your user settings, so they benefit several projects. The project's rules live in one place, `apps/documentation/src/content/docs/references/`, and [`AGENTS.md`](./AGENTS.md) points to them. `CLAUDE.md` and the Cursor rule only point to `AGENTS.md`.
+- Do not add personal rules to the repo. Keep your own in your user settings, so they benefit several projects. The project's rules live in one place, `apps/documentation/src/content/docs/references/`, and [`AGENTS.md`](./AGENTS.md) points to them.
 - Exception: the committed product shims are `boilerstone-*`, `finalize-pr`, and `project-release` under `.claude/skills/` and `.cursor/skills/`. They must stay thin and point to their canon (`CONTRIBUTING.md` or `.boilerstone/docs/`).
 - If the agent needs markdown documents (like specifications or TODO tasks), write them in the documentation app (`apps/documentation`), not in a side `docs/` folder.
 

@@ -30,15 +30,15 @@ The same instructions lived in `AGENTS.md`, in four Cursor rules and in the READ
 
 1. **Pointers in AGENTS.md** — signal: `AGENTS.md` has no line that names `references/backend.mdx`.
    Compare with the staged `AGENTS.md`. Add the pointer list. Keep every rule the project wrote itself, and move a project rule that repeats `references/` into `references/` instead of deleting it.
-   Done when: `AGENTS.md` points to each `references/` file the project has.
+   Done when: `rg "references/backend.mdx" AGENTS.md` finds a line, and so for each `references/` file the project has.
 
 2. **Cursor rules that only point** — signal: a file in `.cursor/rules/` holds only "read file X" (open each one; `wc -l .cursor/rules/*` shows the short ones).
    Replace the pointer rules with the staged `.cursor/rules/0_agents.mdc`. Keep any rule with its own content (package manager update, migrations, or the project's own).
-   Done when: no Cursor rule only says "read file X", except `0_agents.mdc`.
+   Done when: `wc -l .cursor/rules/*` shows no rule that only says "read file X", except `0_agents.mdc`.
 
 3. **README sentence** — signal: the README section on AI agents says "Do not add rules to the repo".
    Replace it with the staged sentence: no personal rules in the repo, the project's rules live in `references/`, and `AGENTS.md` points to them. Keep the project's own exceptions, such as skills.
-   Done when: the section says where project rules live.
+   Done when: `rg "Do not add rules" README.md` returns nothing.
 
 4. **Cursor wording in the guidelines** — signal: `rg -i "rules \(cursor\)|cursor rules" apps/documentation/src/content/docs/references README.md` matches.
    Reword the line so it names the docs and no tool. Done when: the same `rg` returns nothing.
@@ -59,7 +59,7 @@ The same instructions lived in `AGENTS.md`, in four Cursor rules and in the READ
 ## Validation
 
 - `pnpm fmt:check` passes.
-- Every file named in `AGENTS.md` exists.
+- `rg -o "references/[^` ]+" AGENTS.md`names only files that exist under`apps/documentation/src/content/docs/references/`.
 
 ## Record Result
 
